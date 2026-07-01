@@ -1,6 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/angular';
 import { AccordionGroupComponent } from './accordion-group.component';
 import { AccordionComponent } from './accordion.component';
+import { AccordionHeaderDirective } from './accordion-header.directive';
+import { AccordionContentDirective } from './accordion-content.directive';
+import { BadgeComponent } from '../badge/badge.component';
 
 /**
  * Accordion Group manages multiple accordion panels, supporting exclusive
@@ -28,6 +31,7 @@ Accordion Group wraps multiple \`<lc-accordion>\` components and coordinates the
 - Multi-expand mode: all panels can be open independently
 - \`collapseAll()\` / \`expandAll()\` programmatic API
 - Works with all accordion variants and sizes
+- Single-open is preserved across **dynamic** child lists (\`@for\`) — see *Rich Header List*
 `,
       },
     },
@@ -148,5 +152,66 @@ export const WithDisabled: Story = {
           <p style="margin: 0; color: var(--lc-color-neutral-600);">Click to expand.</p>
         </lc-accordion>
       </lc-accordion-group>`,
+  }),
+};
+
+/**
+ * The full composition: a single-open group of flat rows, each with a rich
+ * projected header (label, status badge, meta, right-aligned value) and a lazy
+ * templated body that only mounts when its row is first opened. Opening one row
+ * collapses the others.
+ */
+export const RichHeaderList: Story = {
+  name: 'Rich Header List (Lazy, Single Expand)',
+  render: () => ({
+    moduleMetadata: {
+      imports: [
+        AccordionGroupComponent,
+        AccordionComponent,
+        AccordionHeaderDirective,
+        AccordionContentDirective,
+        BadgeComponent,
+      ],
+    },
+    template: `
+      <div style="max-width: 600px;">
+        <lc-accordion-group [multi]="false">
+          <lc-accordion variant="flat" chevronPosition="leading" [lazy]="true" ariaLabel="Item one">
+            <ng-template lcAccordionHeader>
+              <span style="font-weight: 600;">Item One</span>
+              <lc-badge variant="success" size="sm">Complete</lc-badge>
+              <span style="color: var(--lc-color-neutral-500); font-weight: 400;">Meta · detail · info</span>
+              <span style="margin-left: auto; color: var(--lc-color-neutral-500); font-weight: 400; font-variant-numeric: tabular-nums;">12:04</span>
+            </ng-template>
+            <ng-template lcAccordionContent>
+              <p style="margin: 0; color: var(--lc-color-neutral-600);">Body for item one — created lazily on first open.</p>
+            </ng-template>
+          </lc-accordion>
+
+          <lc-accordion variant="flat" chevronPosition="leading" [lazy]="true" ariaLabel="Item two">
+            <ng-template lcAccordionHeader>
+              <span style="font-weight: 600;">Item Two</span>
+              <lc-badge variant="info" size="sm">Running</lc-badge>
+              <span style="color: var(--lc-color-neutral-500); font-weight: 400;">Meta · detail · info</span>
+              <span style="margin-left: auto; color: var(--lc-color-neutral-500); font-weight: 400; font-variant-numeric: tabular-nums;">12:07</span>
+            </ng-template>
+            <ng-template lcAccordionContent>
+              <p style="margin: 0; color: var(--lc-color-neutral-600);">Body for item two — created lazily on first open.</p>
+            </ng-template>
+          </lc-accordion>
+
+          <lc-accordion variant="flat" chevronPosition="leading" [lazy]="true" ariaLabel="Item three">
+            <ng-template lcAccordionHeader>
+              <span style="font-weight: 600;">Item Three</span>
+              <lc-badge variant="error" size="sm">Failed</lc-badge>
+              <span style="color: var(--lc-color-neutral-500); font-weight: 400;">Meta · detail · info</span>
+              <span style="margin-left: auto; color: var(--lc-color-neutral-500); font-weight: 400; font-variant-numeric: tabular-nums;">12:09</span>
+            </ng-template>
+            <ng-template lcAccordionContent>
+              <p style="margin: 0; color: var(--lc-color-neutral-600);">Body for item three — created lazily on first open.</p>
+            </ng-template>
+          </lc-accordion>
+        </lc-accordion-group>
+      </div>`,
   }),
 };

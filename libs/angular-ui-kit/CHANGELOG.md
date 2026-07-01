@@ -2,6 +2,35 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.7.0] - 2026-07-01
+
+### Added
+
+- **Accordion: rich header template** (`lc-accordion`) — project arbitrary
+  non-interactive header content (label, `lc-badge`, meta, a right-aligned
+  value) via `<ng-template lcAccordionHeader>` instead of the plain `title`
+  string. The component keeps owning the disclosure chevron, click/keyboard
+  handling and focus ring; the consumer supplies only the inner content.
+  - New `chevronPosition` input (`'trailing'` default | `'leading'`). `leading`
+    frees the right edge so a header element pinned with `margin-left: auto`
+    (e.g. a timestamp) is not pushed inward.
+  - `title` is now optional and, when a header template is present, serves as
+    the accessible-label fallback; a new `ariaLabel` input can override it.
+- **Accordion: lazy / deferred body** (`lc-accordion`) — with an
+  `<ng-template lcAccordionContent>` body, `[lazy]="true"` defers body creation
+  until the first open (then keeps it mounted on collapse), and
+  `[destroyOnClose]="true"` discards it on every collapse and recreates it on
+  reopen. Default `<ng-content>` bodies are unchanged (always eager).
+- Header/panel are now wired with `aria-controls` / `aria-labelledby` and the
+  chevron is `aria-hidden`.
+
+### Notes
+
+- Fully backward compatible: without `lcAccordionHeader` / `lcAccordionContent` /
+  the new inputs, `lc-accordion` behaves exactly as before (`title` + eager
+  `<ng-content>` body). `lc-accordion-group [multi]="false"` keeps single-open
+  behavior across dynamic `@for` child lists.
+
 ## [2.6.0] - 2026-06-29
 
 ### Fixed

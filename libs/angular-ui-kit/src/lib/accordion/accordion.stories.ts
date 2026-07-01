@@ -1,5 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/angular';
+import { moduleMetadata } from '@storybook/angular';
 import { AccordionComponent } from './accordion.component';
+import { AccordionHeaderDirective } from './accordion-header.directive';
+import { AccordionContentDirective } from './accordion-content.directive';
+import { BadgeComponent } from '../badge/badge.component';
 
 /**
  * Accordions expand and collapse sections of content, helping users focus on
@@ -23,6 +27,26 @@ const meta: Meta<AccordionComponent> = {
     },
     expanded: { description: 'Whether the content section is visible (supports two-way binding)' },
     disabled: { description: 'Prevents the accordion from being toggled' },
+    chevronPosition: {
+      control: 'select',
+      options: ['leading', 'trailing'],
+      description:
+        'Where the disclosure chevron sits. `trailing` (default) keeps the original layout; `leading` frees the right edge for a right-aligned header element.',
+    },
+    lazy: {
+      control: 'boolean',
+      description:
+        'With an `lcAccordionContent` template, defers body creation until the first open (kept afterwards). No effect on `<ng-content>` bodies.',
+    },
+    destroyOnClose: {
+      control: 'boolean',
+      description:
+        'With an `lcAccordionContent` template, discards the body on collapse and recreates it on reopen. Takes precedence over `lazy`.',
+    },
+    ariaLabel: {
+      description:
+        'Explicit accessible label for the header button, used when the header is a rich template with no plain-text title. Falls back to `title`.',
+    },
   },
 
   parameters: {
@@ -35,8 +59,34 @@ Accordion component for collapsible content sections.
 - Expandable/collapsible content panels
 - Two-way binding for expanded state
 - Animated expand/collapse transitions
-- Content projection for custom body content
-- Accessible with keyboard support
+- Plain-string \`title\` **or** a rich projected header via \`<ng-template lcAccordionHeader>\`
+- Eager \`<ng-content>\` body **or** lazy / destroyable template body via \`<ng-template lcAccordionContent>\` + \`[lazy]\` / \`[destroyOnClose]\`
+- Configurable chevron side (\`chevronPosition\`) so right-aligned header elements stay pinned
+- Accessible: real \`<button>\` header with \`aria-expanded\` / \`aria-controls\`, keyboard support and focus ring
+
+**Rich header + lazy body**
+
+\`\`\`html
+<lc-accordion variant="flat" chevronPosition="leading" [lazy]="true">
+  <ng-template lcAccordionHeader>
+    <span>Item label</span>
+    <lc-badge variant="success" size="sm">Done</lc-badge>
+    <span style="margin-left: auto;">12:04</span>
+  </ng-template>
+  <ng-template lcAccordionContent>
+    <expensive-panel />
+  </ng-template>
+</lc-accordion>
+\`\`\`
+
+**A11y constraint:** because the header is itself a \`<button>\`, the \`lcAccordionHeader\`
+template must contain **no nested interactive elements** (no button / link / input) —
+text, badges and other non-interactive nodes only. When the header is a template with no
+plain-text \`title\`, set \`ariaLabel\` (or \`title\` as a fallback) so the button has an
+accessible name.
+
+Fully backward compatible: without \`lcAccordionHeader\` / \`lcAccordionContent\` / the new
+inputs, the accordion behaves exactly as before (\`title\` + eager \`<ng-content>\` body).
 `,
       },
     },
@@ -170,6 +220,53 @@ export const SettingsPanel: Story = {
             <p style="margin: 0; color: var(--lc-color-neutral-600);">Deleting your account is permanent and cannot be undone. All data will be lost.</p>
           </lc-accordion>
         </div>
+      </div>`,
+  }),
+};
+
+/**
+ * Project rich, non-interactive content into the header with an
+ * `<ng-template lcAccordionHeader>` — badges, meta text, a right-aligned value.
+ * The accordion still owns the chevron, click/keyboard handling and focus ring.
+ * Use `chevronPosition="leading"` so a right-aligned element (here pinned with
+ * `margin-left: auto`) stays at the edge.
+ */
+export const RichHeader: Story = {
+  name: 'Rich Header (Template)',
+  decorators: [moduleMetadata({ imports: [AccordionHeaderDirective, BadgeComponent] })],
+  render: () => ({
+    template: `
+      <div style="max-width: 560px;">
+        <lc-accordion variant="outlined" chevronPosition="leading" ariaLabel="Item one details">
+          <ng-template lcAccordionHeader>
+            <span style="font-weight: 600;">Item One</span>
+            <lc-badge variant="success" size="sm">Complete</lc-badge>
+            <span style="color: var(--lc-color-neutral-500); font-weight: 400;">Meta · detail · info</span>
+            <span style="margin-left: auto; color: var(--lc-color-neutral-500); font-weight: 400; font-variant-numeric: tabular-nums;">12:04</span>
+          </ng-template>
+          <p style="margin: 0; color: var(--lc-color-neutral-600);">Body content revealed on expand. The header above is fully projected, while the chevron, keyboard handling and focus ring are owned by the component.</p>
+        </lc-accordion>
+      </div>`,
+  }),
+};
+
+/**
+ * With an `<ng-template lcAccordionContent>` body and `[lazy]="true"`, the body
+ * is not created until the panel is first opened, then kept in the DOM on
+ * collapse. Ideal for expensive or network-backed content. Use
+ * `[destroyOnClose]="true"` instead to also discard it on every collapse.
+ */
+export const LazyBody: Story = {
+  name: 'Lazy Body (Deferred Template)',
+  decorators: [moduleMetadata({ imports: [AccordionContentDirective] })],
+  render: () => ({
+    template: `
+      <div style="max-width: 560px;">
+        <lc-accordion title="Deferred section" variant="outlined" [lazy]="true">
+          <ng-template lcAccordionContent>
+            <p style="margin: 0; color: var(--lc-color-neutral-600);">This paragraph is only instantiated the first time the panel opens, then kept mounted. Swap in any expensive component here.</p>
+          </ng-template>
+        </lc-accordion>
       </div>`,
   }),
 };

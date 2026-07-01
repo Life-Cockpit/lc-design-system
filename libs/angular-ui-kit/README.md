@@ -58,7 +58,7 @@ export class MyComponent {}
 
 | Component | Selector | Description |
 |-----------|----------|-------------|
-| Accordion | `lc-accordion` | Expandable/collapsible content panels |
+| Accordion | `lc-accordion` | Expandable/collapsible panels with optional rich header template (`lcAccordionHeader`) and lazy/deferred body (`lcAccordionContent` + `[lazy]`/`[destroyOnClose]`) |
 | Button | `lc-button` | Primary, secondary, and text buttons |
 | Card | `lc-card` | Content container with elevation |
 | Chat | `lc-chat` | Conversational UI with streaming, custom message templates |

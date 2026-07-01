@@ -85,11 +85,30 @@
     text-align: left;
   }
 
+  // Rich projected header (lcAccordionHeader) — takes the full available width
+  // so a trailing element can be right-aligned via `margin-left: auto`.
+  &__header-content {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    align-items: center;
+    gap: 0.75rem;
+    text-align: left;
+    font-weight: inherit;
+  }
+
   // Chevron icon — smooth rotation
   &__icon {
     flex-shrink: 0;
     color: var(--color-text-secondary);
     transition: transform 300ms cubic-bezier(0.25, 0.46, 0.45, 0.94), color 200ms ease;
+  }
+
+  // Chevron placement. Trailing (default) keeps the original layout; leading
+  // moves it to the front so a right-aligned header element (e.g. a timestamp)
+  // is not pushed inward.
+  &--chevron-leading &__icon {
+    order: -1;
   }
 
   &__header:hover &__icon {
