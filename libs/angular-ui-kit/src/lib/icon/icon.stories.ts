@@ -88,6 +88,11 @@ const meta: Meta<IconComponent> = {
     color: { description: 'CSS color value (default: currentColor, inherits text color)' },
     ariaLabel: { description: 'Accessible label for screen readers (omit for decorative icons)' },
     decorative: { description: 'If true, icon is hidden from screen readers (aria-hidden)' },
+    strict: {
+      control: 'boolean',
+      description:
+        'If true, an unknown icon name throws in development mode (CI guard). Default just warns + renders a visible placeholder.',
+    },
   },
 
   parameters: {
@@ -103,6 +108,26 @@ Icon component - Tabler Icons wrapper for displaying SVG icons
 - Custom color support (CSS colors, variables)
 - Accessibility attributes (ARIA labels, decorative icons)
 - Dynamic SVG loading from Tabler Icons
+
+**Valid names & fail-loud**
+
+The component serves the **Tabler** icon set and also accepts a set of documented
+**Heroicon/Material aliases**. An unknown name (a typo, or an un-aliased Heroicon
+name like \`beaker\` / \`table-cells\`) no longer disappears silently: in development
+it logs \`[lc-icon] Unknown icon "…"\` and always renders a **visible placeholder**
+(a dashed frame with a "?"). Set \`[strict]="true"\` to throw in dev instead — useful
+as a CI guard.
+
+The canonical set of valid names is exported for static checking:
+
+\`\`\`ts
+import { ICON_NAMES, isValidIconName, ICON_ALIASES } from '@life-cockpit/angular-ui-kit';
+// or, for build tooling:
+import iconNames from '@life-cockpit/angular-ui-kit/icon-names.json';
+
+isValidIconName('flask');  // true
+isValidIconName('beaker'); // false — did you mean 'flask'?
+\`\`\`
 `,
       },
     },
@@ -195,5 +220,29 @@ export const AllIcons: Story = {
   render: () => ({
     moduleMetadata: { imports: [IconGalleryComponent] },
     template: `<icon-gallery></icon-gallery>`,
+  }),
+};
+
+/**
+ * Unknown names no longer vanish silently. A valid name renders its icon; an
+ * unknown name (typo or un-aliased Heroicon name) renders a visible dashed "?"
+ * placeholder and, in development, logs a `[lc-icon] Unknown icon "…"` warning.
+ */
+export const UnknownNameFallback: Story = {
+  name: 'Unknown Name → Visible Fallback',
+  render: () => ({
+    template: `
+      <div style="display: grid; grid-template-columns: auto auto; gap: 12px 24px; align-items: center;">
+        <span style="font-size: 12px; color: #6B7280; font-weight: 600;">Name</span>
+        <span style="font-size: 12px; color: #6B7280; font-weight: 600;">Rendered</span>
+        <span style="font-size: 13px; font-family: monospace;">flask (valid)</span>
+        <lc-icon name="flask" size="lg"></lc-icon>
+        <span style="font-size: 13px; font-family: monospace;">x-mark (alias)</span>
+        <lc-icon name="x-mark" size="lg"></lc-icon>
+        <span style="font-size: 13px; font-family: monospace;">beaker (unknown)</span>
+        <lc-icon name="beaker" size="lg"></lc-icon>
+        <span style="font-size: 13px; font-family: monospace;">table-cells (unknown)</span>
+        <lc-icon name="table-cells" size="lg"></lc-icon>
+      </div>`,
   }),
 };

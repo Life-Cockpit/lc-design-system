@@ -4,7 +4,8 @@
   "license": "MIT",
   "scripts": {
     "postinstall": "node scripts/patch-storybook-angular.js",
-    "build:tokens": "nx run angular-ui-kit:build:tokens"
+    "build:tokens": "nx run angular-ui-kit:build:tokens",
+    "generate:icon-names": "node scripts/generate-icon-names.mjs"
   },
   "private": true,
   "dependencies": {

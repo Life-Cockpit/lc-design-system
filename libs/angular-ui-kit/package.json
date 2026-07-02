@@ -1,6 +1,6 @@
 {
   "name": "@life-cockpit/angular-ui-kit",
-  "version": "2.7.0",
+  "version": "2.8.0",
   "description": "Life Cockpit Design System - Angular UI component library",
   "license": "MIT",
   "repository": {
@@ -31,6 +31,9 @@
     },
     "./styles/*": {
       "default": "./src/styles/*"
+    },
+    "./icon-names.json": {
+      "default": "./src/assets/icon-names.json"
     },
     "./package.json": {
       "default": "./package.json"

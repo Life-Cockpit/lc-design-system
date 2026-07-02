@@ -2,6 +2,44 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.8.0] - 2026-07-01
+
+### Added
+
+- **Icon: fail-loud on unknown names** (`lc-icon`) — a name that is neither a
+  served Tabler icon nor a documented alias (e.g. `beaker`, `table-cells`,
+  `cpu-chip`) no longer renders as a silent empty space. It now logs
+  `[lc-icon] Unknown icon "…"` in development **and** always renders a visible
+  placeholder glyph (a dashed frame with a `?`) in every mode.
+  - New `strict` input: when `true`, an unknown name **throws** in development
+    (a CI guard to catch typos); no effect in production.
+- **Icon: transient load retry** (`lc-icon`) — a failed asset request is now
+  retried twice with a short backoff before showing the placeholder, so a
+  transient hiccup (connection reset, server busy, or a large burst of icons
+  hitting the browser's pending-request limit) no longer leaves an otherwise
+  valid icon stuck on the fallback. A genuine `404` is not retried.
+- **Icon: canonical name catalog exported** — the design system now exports the
+  machine-readable set of valid `lc-icon` names so consumers can lint statically
+  against an official source instead of parsing `node_modules`:
+  - `ICON_NAMES` (`readonly string[]`), `isValidIconName(name)`, and the
+    `IconName` type, all from the package entry.
+  - `ICON_ALIASES` (Heroicon/Material → Tabler) is now public/documented.
+  - A generated `icon-names.json` is shipped and importable at
+    `@life-cockpit/angular-ui-kit/icon-names.json` for build tooling.
+  - Regenerate after bumping `@tabler/icons` or editing the alias/inline maps
+    with `npm run generate:icon-names` (a unit test guards against drift).
+- Icon `aria-hidden` is set on the decorative fallback; the header/panel wiring
+  is unchanged.
+
+### Notes
+
+- Backward compatible for valid names: rendering, aliases, sizing, colors and
+  accessibility are unchanged. The `iconAliasMap` / `inlineSvgMap` internals were
+  extracted into `icon-aliases.ts` / `icon-inline-svgs.ts` (no public change).
+- The previous behavior logged `Failed to load icon "…"` for **every** failed
+  request (including in unit tests); that noise is gone — unknown names are
+  reported once, up front, and known-but-unreachable assets fall back silently.
+
 ## [2.7.0] - 2026-07-01
 
 ### Added

@@ -48,6 +48,7 @@ export * from './lib/checkbox/checkbox.component';
 
 // Icon Component
 export * from './lib/icon/icon.component';
+export * from './lib/icon/icon-catalog';
 
 // Logo Component
 export * from './lib/logo/logo.component';

@@ -62,7 +62,7 @@ export class MyComponent {}
 | Button | `lc-button` | Primary, secondary, and text buttons |
 | Card | `lc-card` | Content container with elevation |
 | Chat | `lc-chat` | Conversational UI with streaming, custom message templates |
-| Icon | `lc-icon` | SVG icon display |
+| Icon | `lc-icon` | Tabler SVG icons; fail-loud on unknown names (dev warning + visible placeholder, optional `[strict]` throw); exports `ICON_NAMES` / `isValidIconName` / `ICON_ALIASES` (+ `icon-names.json`) for static checking |
 | Logo | `lc-logo` | Life Cockpit logo |
 | Markdown | `lc-markdown` | GFM renderer (tables with alignment, task lists, autolinks, code/mermaid) with in-place change highlighting |
 | Menu | `lc-menu` | Dropdown menu |

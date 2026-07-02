@@ -102,14 +102,14 @@ describe('IconComponent', () => {
 
   describe('Icon Variants', () => {
     it('should render outline variant by default', () => {
-      fixture.componentRef.setInput('name', 'academic-cap');
+      fixture.componentRef.setInput('name', 'anchor');
       fixture.detectChanges();
       const container = fixture.nativeElement.querySelector('.icon-container');
       expect(container?.classList.contains('icon-outline')).toBe(true);
     });
 
     it('should render solid variant', () => {
-      fixture.componentRef.setInput('name', 'academic-cap');
+      fixture.componentRef.setInput('name', 'anchor');
       fixture.componentRef.setInput('variant', 'solid');
       fixture.detectChanges();
       const container = fixture.nativeElement.querySelector('.icon-container');
@@ -117,10 +117,10 @@ describe('IconComponent', () => {
     });
 
     it('should load correct SVG path for outline variant', () => {
-      fixture.componentRef.setInput('name', 'academic-cap');
+      fixture.componentRef.setInput('name', 'anchor');
       fixture.componentRef.setInput('variant', 'outline');
       fixture.detectChanges();
-      expect(component.iconPath()).toContain('/outline/academic-cap.svg');
+      expect(component.iconPath()).toContain('/outline/anchor.svg');
     });
 
     it('should load correct SVG path for solid variant', () => {
@@ -142,10 +142,10 @@ describe('IconComponent', () => {
 
     Object.entries(sizes).forEach(([size, pixels]) => {
       it(`should apply ${size} size (${pixels})`, async () => {
-        fixture.componentRef.setInput('name', 'academic-cap');
+        fixture.componentRef.setInput('name', 'anchor');
         fixture.componentRef.setInput('size', size);
         fixture.detectChanges();
-        mockIconLoad('academic-cap');
+        mockIconLoad('anchor');
         await waitForAsync();
 
         const svg = fixture.nativeElement.querySelector('svg');
@@ -155,10 +155,10 @@ describe('IconComponent', () => {
     });
 
     it('should have size class on container', async () => {
-      fixture.componentRef.setInput('name', 'academic-cap');
+      fixture.componentRef.setInput('name', 'anchor');
       fixture.componentRef.setInput('size', 'lg');
       fixture.detectChanges();
-      mockIconLoad('academic-cap');
+      mockIconLoad('anchor');
       await waitForAsync();
 
       const container = fixture.nativeElement.querySelector('.icon-container');
@@ -168,9 +168,9 @@ describe('IconComponent', () => {
 
   describe('Icon Colors', () => {
     it('should apply currentColor by default', async () => {
-      fixture.componentRef.setInput('name', 'academic-cap');
+      fixture.componentRef.setInput('name', 'anchor');
       fixture.detectChanges();
-      mockIconLoad('academic-cap');
+      mockIconLoad('anchor');
       await waitForAsync();
 
       const svg = fixture.nativeElement.querySelector('svg');
@@ -178,10 +178,10 @@ describe('IconComponent', () => {
     });
 
     it('should apply custom hex color', async () => {
-      fixture.componentRef.setInput('name', 'academic-cap');
+      fixture.componentRef.setInput('name', 'anchor');
       fixture.componentRef.setInput('color', '#FF5733');
       fixture.detectChanges();
-      mockIconLoad('academic-cap');
+      mockIconLoad('anchor');
       await waitForAsync();
 
       const svg = fixture.nativeElement.querySelector('svg');
@@ -189,10 +189,10 @@ describe('IconComponent', () => {
     });
 
     it('should apply CSS variable color', async () => {
-      fixture.componentRef.setInput('name', 'academic-cap');
+      fixture.componentRef.setInput('name', 'anchor');
       fixture.componentRef.setInput('color', 'var(--color-primary-500)');
       fixture.detectChanges();
-      mockIconLoad('academic-cap');
+      mockIconLoad('anchor');
       await waitForAsync();
 
       const svg = fixture.nativeElement.querySelector('svg');
@@ -203,10 +203,10 @@ describe('IconComponent', () => {
     });
 
     it('should apply CSS variable color', async () => {
-      fixture.componentRef.setInput('name', 'academic-cap');
+      fixture.componentRef.setInput('name', 'anchor');
       fixture.componentRef.setInput('color', 'var(--color-primary-500)');
       fixture.detectChanges();
-      mockIconLoad('academic-cap');
+      mockIconLoad('anchor');
       await waitForAsync();
 
       expect(component.colorStyle()).toBe('var(--color-primary-500)');
@@ -215,7 +215,7 @@ describe('IconComponent', () => {
 
   describe('Computed Classes', () => {
     it('should compute correct classes for default state', () => {
-      fixture.componentRef.setInput('name', 'academic-cap');
+      fixture.componentRef.setInput('name', 'anchor');
       fixture.detectChanges();
       const classes = component.computedClasses().split(' ');
       expect(classes).toContain('icon-container');
@@ -237,39 +237,46 @@ describe('IconComponent', () => {
 
   describe('SVG Loading', () => {
     it('should fetch SVG content for valid icon', async () => {
-      fixture.componentRef.setInput('name', 'academic-cap');
+      fixture.componentRef.setInput('name', 'anchor');
       fixture.detectChanges();
-      mockIconLoad('academic-cap');
+      mockIconLoad('anchor');
       await waitForAsync();
 
       // SVG content should be loaded
       expect(component.svgContent()).toBeTruthy();
     });
 
-    it('should handle missing icon gracefully', async () => {
+    it('should handle missing icon gracefully with a visible fallback', async () => {
+      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {
+        // silence expected dev warning
+      });
       fixture.componentRef.setInput('name', 'non-existent-icon-xyz');
       fixture.detectChanges();
 
       const req = httpMock.expectOne(
         '/tabler-icons/outline/non-existent-icon-xyz.svg',
       );
-      req.error(new ProgressEvent('error'));
+      req.flush('Not Found', { status: 404, statusText: 'Not Found' });
 
       await waitForAsync();
-      // Should not throw error, shows fallback icon
-      expect(component.svgContent()).toBeTruthy();
+      // Should not throw error, shows a visible placeholder glyph (dashed frame
+      // with a "?"), not an empty space.
+      const el = fixture.nativeElement.querySelector('.icon-container');
+      expect(el?.innerHTML).toContain('stroke-dasharray');
+      expect(el?.textContent).toContain('?');
+      warnSpy.mockRestore();
     });
 
     it('should update SVG when name changes', async () => {
-      fixture.componentRef.setInput('name', 'academic-cap');
+      fixture.componentRef.setInput('name', 'anchor');
       fixture.detectChanges();
-      mockIconLoad('academic-cap');
+      mockIconLoad('anchor');
       await waitForAsync();
       const firstContent = component.svgContent();
 
-      fixture.componentRef.setInput('name', 'beaker');
+      fixture.componentRef.setInput('name', 'settings');
       fixture.detectChanges();
-      mockIconLoad('beaker');
+      mockIconLoad('settings');
       await waitForAsync();
       const secondContent = component.svgContent();
 
@@ -277,16 +284,16 @@ describe('IconComponent', () => {
     });
 
     it('should update SVG when variant changes', async () => {
-      fixture.componentRef.setInput('name', 'academic-cap');
+      fixture.componentRef.setInput('name', 'anchor');
       fixture.componentRef.setInput('variant', 'outline');
       fixture.detectChanges();
-      mockIconLoad('academic-cap', 'outline');
+      mockIconLoad('anchor', 'outline');
       await waitForAsync();
       const outlineContent = component.svgContent();
 
       fixture.componentRef.setInput('variant', 'solid');
       fixture.detectChanges();
-      mockIconLoad('academic-cap', 'solid');
+      mockIconLoad('anchor', 'solid');
       await waitForAsync();
       const solidContent = component.svgContent();
 
@@ -294,11 +301,52 @@ describe('IconComponent', () => {
     });
   });
 
+  describe('Transient load retry', () => {
+    // This project runs zoneless (no zone.js/testing), so we use real timers.
+    const waitFor = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+    it('retries a transient failure and then renders the icon', async () => {
+      fixture.componentRef.setInput('name', 'anchor');
+      fixture.detectChanges();
+
+      // First attempt fails transiently (e.g. connection reset / server busy)
+      httpMock
+        .expectOne('/tabler-icons/outline/anchor.svg')
+        .error(new ProgressEvent('error'));
+
+      await waitFor(300); // allow the backoff timer to elapse
+
+      // Retry succeeds
+      httpMock.expectOne('/tabler-icons/outline/anchor.svg').flush(MOCK_SVG);
+      fixture.detectChanges();
+
+      const el = fixture.nativeElement.querySelector('.icon-container');
+      expect(el?.innerHTML).not.toContain('stroke-dasharray');
+      expect(fixture.nativeElement.querySelector('svg')).toBeTruthy();
+    });
+
+    it('does not retry a genuine 404 and falls back immediately', async () => {
+      fixture.componentRef.setInput('name', 'anchor');
+      fixture.detectChanges();
+
+      httpMock
+        .expectOne('/tabler-icons/outline/anchor.svg')
+        .flush('Not Found', { status: 404, statusText: 'Not Found' });
+
+      await waitFor(300); // no retry should be scheduled
+      httpMock.expectNone('/tabler-icons/outline/anchor.svg');
+      fixture.detectChanges();
+
+      const el = fixture.nativeElement.querySelector('.icon-container');
+      expect(el?.innerHTML).toContain('stroke-dasharray');
+    });
+  });
+
   describe('Accessibility', () => {
     it('should have role="img" by default', async () => {
-      fixture.componentRef.setInput('name', 'academic-cap');
+      fixture.componentRef.setInput('name', 'anchor');
       fixture.detectChanges();
-      mockIconLoad('academic-cap');
+      mockIconLoad('anchor');
       await waitForAsync();
 
       const svg = fixture.nativeElement.querySelector('svg');
@@ -306,10 +354,10 @@ describe('IconComponent', () => {
     });
 
     it('should accept custom aria-label', async () => {
-      fixture.componentRef.setInput('name', 'academic-cap');
+      fixture.componentRef.setInput('name', 'anchor');
       fixture.componentRef.setInput('ariaLabel', 'User profile');
       fixture.detectChanges();
-      mockIconLoad('academic-cap');
+      mockIconLoad('anchor');
       await waitForAsync();
 
       const svg = fixture.nativeElement.querySelector('svg');
@@ -317,10 +365,10 @@ describe('IconComponent', () => {
     });
 
     it('should be aria-hidden when decorative', async () => {
-      fixture.componentRef.setInput('name', 'academic-cap');
+      fixture.componentRef.setInput('name', 'anchor');
       fixture.componentRef.setInput('decorative', true);
       fixture.detectChanges();
-      mockIconLoad('academic-cap');
+      mockIconLoad('anchor');
       await waitForAsync();
 
       const svg = fixture.nativeElement.querySelector('svg');
@@ -328,11 +376,11 @@ describe('IconComponent', () => {
     });
 
     it('should not have aria-label when decorative', async () => {
-      fixture.componentRef.setInput('name', 'academic-cap');
+      fixture.componentRef.setInput('name', 'anchor');
       fixture.componentRef.setInput('decorative', true);
       fixture.componentRef.setInput('ariaLabel', 'Should be ignored');
       fixture.detectChanges();
-      mockIconLoad('academic-cap');
+      mockIconLoad('anchor');
       await waitForAsync();
 
       const svg = fixture.nativeElement.querySelector('svg');
@@ -352,7 +400,7 @@ describe('IconComponent', () => {
       const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {
         // Mock implementation
       });
-      fixture.componentRef.setInput('name', 'academic-cap');
+      fixture.componentRef.setInput('name', 'anchor');
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       fixture.componentRef.setInput('variant', 'invalid' as any);
       fixture.detectChanges();
@@ -364,9 +412,9 @@ describe('IconComponent', () => {
 
   describe('Performance', () => {
     it('should not reload SVG unnecessarily', async () => {
-      fixture.componentRef.setInput('name', 'academic-cap');
+      fixture.componentRef.setInput('name', 'anchor');
       fixture.detectChanges();
-      mockIconLoad('academic-cap');
+      mockIconLoad('anchor');
       await waitForAsync();
 
       // Change unrelated property (size/color won't trigger HTTP reload)
@@ -376,15 +424,15 @@ describe('IconComponent', () => {
 
       // SVG content HTML will be different (due to size attribute change)
       // but no new HTTP request was made
-      expect(component.name()).toBe('academic-cap'); // Name hasn't changed
+      expect(component.name()).toBe('anchor'); // Name hasn't changed
     });
   });
 
   describe('Visual Rendering', () => {
     it('should render inline SVG', async () => {
-      fixture.componentRef.setInput('name', 'academic-cap');
+      fixture.componentRef.setInput('name', 'anchor');
       fixture.detectChanges();
-      mockIconLoad('academic-cap');
+      mockIconLoad('anchor');
       await waitForAsync();
 
       const svg = fixture.nativeElement.querySelector('svg');
@@ -392,9 +440,9 @@ describe('IconComponent', () => {
     });
 
     it('should preserve SVG attributes', async () => {
-      fixture.componentRef.setInput('name', 'academic-cap');
+      fixture.componentRef.setInput('name', 'anchor');
       fixture.detectChanges();
-      mockIconLoad('academic-cap');
+      mockIconLoad('anchor');
       await waitForAsync();
 
       const svg = fixture.nativeElement.querySelector('svg');
@@ -403,6 +451,79 @@ describe('IconComponent', () => {
       expect(svg?.getAttribute('viewBox')).toBe('0 0 24 24');
       expect(svg?.getAttribute('stroke-width')).toBe('1.5');
       expect(svg?.getAttribute('stroke')).toBe('currentColor');
+    });
+  });
+
+  describe('Fail-loud on unknown names', () => {
+    let warnSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {
+        // capture without printing
+      });
+    });
+
+    afterEach(() => {
+      warnSpy.mockRestore();
+    });
+
+    it('warns in dev mode for an unknown icon name', () => {
+      fixture.componentRef.setInput('name', 'beaker');
+      fixture.detectChanges();
+
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+      expect(warnSpy.mock.calls[0][0]).toContain('[lc-icon] Unknown icon "beaker"');
+    });
+
+    it('does NOT warn for a valid Tabler name', () => {
+      fixture.componentRef.setInput('name', 'anchor');
+      fixture.detectChanges();
+
+      expect(warnSpy).not.toHaveBeenCalled();
+    });
+
+    it('does NOT warn for a documented Heroicon alias', () => {
+      fixture.componentRef.setInput('name', 'x-mark');
+      fixture.detectChanges();
+
+      expect(warnSpy).not.toHaveBeenCalled();
+    });
+
+    it('renders a visible placeholder for an unknown name after load fails', async () => {
+      fixture.componentRef.setInput('name', 'beaker');
+      fixture.detectChanges();
+
+      const req = httpMock.expectOne('/tabler-icons/outline/beaker.svg');
+      req.flush('Not Found', { status: 404, statusText: 'Not Found' });
+      await waitForAsync();
+
+      const el = fixture.nativeElement.querySelector('.icon-container');
+      expect(el?.innerHTML).toContain('stroke-dasharray');
+      expect(el?.textContent).toContain('?');
+    });
+
+    it('does not warn when the name is cleared', () => {
+      fixture.componentRef.setInput('name', '');
+      fixture.detectChanges();
+
+      expect(warnSpy).not.toHaveBeenCalled();
+      expect(component.svgContent()).toBe('');
+    });
+
+    describe('strict mode', () => {
+      it('throws in dev mode for an unknown name', () => {
+        fixture.componentRef.setInput('strict', true);
+        fixture.componentRef.setInput('name', 'beaker');
+
+        expect(() => fixture.detectChanges()).toThrow(/Unknown icon "beaker"/);
+      });
+
+      it('does not throw for a valid name', () => {
+        fixture.componentRef.setInput('strict', true);
+        fixture.componentRef.setInput('name', 'anchor');
+
+        expect(() => fixture.detectChanges()).not.toThrow();
+      });
     });
   });
 });
