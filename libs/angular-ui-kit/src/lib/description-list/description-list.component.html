@@ -1,0 +1,15 @@
+<dl [class]="hostClasses()">
+  @for (item of items(); track item.term) {
+    <div class="lc-dl__row" (click)="itemClick.emit(item)">
+      <dt class="lc-dl__term">{{ item.term }}</dt>
+      <span class="lc-dl__leader" aria-hidden="true"></span>
+      <dd [class]="valueClass(item)">
+        @if (item.href) {
+          <a class="lc-dl__link" [href]="item.href">{{ item.value }}</a>
+        } @else {
+          {{ item.value }}
+        }
+      </dd>
+    </div>
+  }
+</dl>

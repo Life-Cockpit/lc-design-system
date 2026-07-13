@@ -1,0 +1,104 @@
+:host {
+  display: block;
+}
+
+.lc-dl {
+  margin: 0;
+
+  &__row {
+    display: flex;
+    align-items: baseline;
+    gap: var(--spacing-2);
+  }
+
+  &__term {
+    flex-shrink: 0;
+    color: var(--color-text-secondary);
+    font-weight: var(--font-weight-medium);
+  }
+
+  // The leader fills the gap between term and value. It only shows a visible
+  // dotted line in the `--leaders` variant; otherwise it's an invisible spacer
+  // that pushes the value to the right edge.
+  &__leader {
+    flex: 1 1 auto;
+    align-self: center;
+    min-width: var(--spacing-4);
+  }
+
+  &__value {
+    flex-shrink: 0;
+    text-align: right;
+    color: var(--color-text-primary);
+    font-weight: var(--font-weight-medium);
+    font-variant-numeric: tabular-nums;
+
+    &--muted {
+      color: var(--color-text-tertiary);
+      font-weight: var(--font-weight-normal);
+    }
+
+    &--strong {
+      color: var(--color-text-primary);
+      font-weight: var(--font-weight-semibold);
+    }
+
+    &--primary {
+      color: var(--color-primary-500);
+      font-weight: var(--font-weight-semibold);
+    }
+  }
+
+  &__link {
+    color: var(--color-primary-500);
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  // ── rows layout (default) ──────────────────────────────────────────────────
+  &--rows &__row {
+    padding-block: var(--spacing-2);
+    border-bottom: 1px solid var(--color-divider);
+
+    &:last-child {
+      border-bottom: 0;
+    }
+  }
+
+  &--leaders &__leader {
+    border-bottom: 1px dotted var(--color-border-strong);
+    transform: translateY(-0.15em);
+  }
+
+  // ── stacked layout ─────────────────────────────────────────────────────────
+  &--stacked &__row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--spacing-1);
+    padding-block: var(--spacing-2);
+  }
+
+  &--stacked &__leader {
+    display: none;
+  }
+
+  &--stacked &__value {
+    text-align: left;
+  }
+
+  // ── size ───────────────────────────────────────────────────────────────────
+  &--sm {
+    font-size: var(--font-size-xs);
+  }
+
+  &--sm &__row {
+    padding-block: var(--spacing-1);
+  }
+
+  &--md {
+    font-size: var(--font-size-sm);
+  }
+}

@@ -1,0 +1,30 @@
+<ol [class]="hostClass()">
+  @for (step of steps(); track $index; let last = $last) {
+    <li [class]="stepClass(step)" [class.lc-pipeline__step--last]="last">
+      @if (clickable()) {
+        <button type="button" class="lc-pipeline__hit" (click)="onActivate(step)">
+          <ng-container [ngTemplateOutlet]="body" [ngTemplateOutletContext]="{ $implicit: step }" />
+        </button>
+      } @else {
+        <ng-container [ngTemplateOutlet]="body" [ngTemplateOutletContext]="{ $implicit: step }" />
+      }
+    </li>
+  }
+</ol>
+
+<ng-template #body let-step>
+  <span class="lc-pipeline__marker">
+    <span class="lc-pipeline__connector" aria-hidden="true"></span>
+    <span class="lc-pipeline__node">
+      @if (iconFor(step)) {
+        <lc-icon [name]="iconFor(step)" size="xs" [decorative]="true" />
+      }
+    </span>
+  </span>
+  <span class="lc-pipeline__text">
+    <span class="lc-pipeline__label">{{ step.label }}</span>
+    @if (step.caption) {
+      <span class="lc-pipeline__caption">{{ step.caption }}</span>
+    }
+  </span>
+</ng-template>

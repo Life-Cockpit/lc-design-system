@@ -206,6 +206,8 @@
   --color-surface: #ffffff;
   --color-surface-2: #{$color-neutral-50};
   --color-surface-sunken: #{$color-neutral-100};
+  // Sidebar reads as a subtle off-white rail against the white content area.
+  --color-sidebar: #{$color-neutral-50};
   --color-surface-hover: #{$color-neutral-100};
   --color-surface-selected: #{$color-primary-50};
   --color-surface-muted: #{$color-neutral-50};

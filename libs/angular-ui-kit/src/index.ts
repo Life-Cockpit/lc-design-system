@@ -346,6 +346,12 @@ export * from './lib/combobox/combobox.component';
 // Stage List Component
 export * from './lib/stage-list/stage-list.component';
 
+// Description List Component
+export * from './lib/description-list/description-list.component';
+
+// Pipeline Component
+export * from './lib/pipeline/pipeline.component';
+
 // ============================================================================
 // Styles
 // ============================================================================

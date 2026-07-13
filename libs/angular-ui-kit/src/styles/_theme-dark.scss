@@ -212,6 +212,9 @@
   --color-surface: #{$color-surface-dark-base};
   --color-surface-2: #{$color-surface-dark-raised};
   --color-surface-sunken: #{$color-surface-dark-sunken};
+  // Darkest shell layer — the nav rail / sidebar sits below the app background,
+  // giving the two-tone shell (dark sidebar, slightly lighter content area).
+  --color-sidebar: #{$color-sidebar-dark};
   --color-surface-hover: rgba(132, 199, 212, 0.06);
   --color-surface-selected: rgba(32, 132, 151, 0.12);
   --color-surface-muted: rgba(255, 255, 255, 0.02);

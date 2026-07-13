@@ -2,6 +2,48 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.9.0] - 2026-07-13
+
+### Added
+
+- **Pipeline** (`lc-pipeline`) — a new status timeline of connected process
+  nodes. Unlike `lc-stepper` (a navigation stepper whose states derive from the
+  active index), **each node carries its own explicit status**, so completed,
+  current, pending, warning and error nodes can appear in the same chain — each
+  with an optional caption under its label. Status drives the node color and a
+  default icon (overridable per node); `horizontal` / `vertical` orientation and
+  an optional `clickable` mode (`stepClick`).
+- **Description List** (`lc-description-list`) — a new component for key/value
+  metadata rendered as a semantic `<dl>`. `rows` layout (term left, value right)
+  with an optional dotted **leader line** (`[leaders]`), or `stacked` layout for
+  narrow columns; per-row value emphasis (`default` / `muted` / `strong` /
+  `primary`) and optional links.
+- **Card: leading header icon** (`lc-card`) — new `[icon]` input renders a
+  Tabler icon as a teal brand tile to the left of the title, with
+  `[iconVariant]` (`brand` gradient tile / `subtle` translucent tile). Purely
+  additive; cards without `icon` are unchanged.
+- **Page Header: `title-suffix` slot** (`lc-page-header`) — a new
+  `[slot="title-suffix"]` projects one or more chips/badges inline next to the
+  title (beside the existing single `badge`). The row wraps on narrow viewports
+  and collapses when empty.
+
+### Changed
+
+- **DS2.0 dark shell is darker** — the dark app background token
+  (`--color-background`) drops from `#111827` to `#0A121B` (a deeper teal-black),
+  so raised card surfaces (`#14222E`) read with more separation.
+- **New `--color-sidebar` surface token** — the darkest shell layer
+  (`#070E15` dark / `neutral-50` light). `lc-sidenav` now uses it, producing the
+  two-tone shell (dark nav rail against a slightly lighter content area). Falls
+  back to `--color-surface` where the token is not defined.
+
+### Notes
+
+- Backward compatible: the two new components are additive, and the `lc-card` /
+  `lc-page-header` additions are opt-in inputs/slots that leave existing usage
+  unchanged. The background change only affects the dark theme's app-level
+  surfaces; component surfaces and text tokens are unchanged.
+
 ## [2.8.0] - 2026-07-01
 
 ### Added

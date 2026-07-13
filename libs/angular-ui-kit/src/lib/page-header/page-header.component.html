@@ -13,6 +13,9 @@
               @if (badge()) {
                 <span class="lc-page-header__badge">{{ badge() }}</span>
               }
+              <span class="lc-page-header__title-suffix">
+                <ng-content select="[slot='title-suffix']" />
+              </span>
             </h1>
           }
           @case (2) {
@@ -21,6 +24,9 @@
               @if (badge()) {
                 <span class="lc-page-header__badge">{{ badge() }}</span>
               }
+              <span class="lc-page-header__title-suffix">
+                <ng-content select="[slot='title-suffix']" />
+              </span>
             </h2>
           }
           @case (3) {
@@ -29,6 +35,9 @@
               @if (badge()) {
                 <span class="lc-page-header__badge">{{ badge() }}</span>
               }
+              <span class="lc-page-header__title-suffix">
+                <ng-content select="[slot='title-suffix']" />
+              </span>
             </h3>
           }
         }

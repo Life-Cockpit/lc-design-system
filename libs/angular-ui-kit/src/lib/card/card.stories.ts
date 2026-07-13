@@ -55,6 +55,13 @@ Use it for content sections, dashboard widgets, and list items.
       options: ['default', 'primary', 'success', 'warning', 'error'],
       description: 'Color variant of the badge',
     },
+    icon: { description: 'Optional leading icon (Tabler name) shown as a tile before the title' },
+    iconVariant: {
+      control: 'select',
+      options: ['brand', 'subtle'],
+      description: 'Visual treatment of the leading icon tile',
+      table: { defaultValue: { summary: 'brand' } },
+    },
   },
 };
 
@@ -70,6 +77,27 @@ export const Default: Story = {
         <p style="margin: 0; color: #4b5563; font-size: 14px; line-height: 1.5;">
           Your project is on track. 12 of 15 tasks completed this sprint.
           The team velocity has increased by 20% compared to last month.
+        </p>
+      </lc-card>`,
+  }),
+};
+
+export const WithIcon: Story = {
+  args: {
+    title: 'Section Title',
+    subtitle: 'Supporting description text',
+    icon: 'settings',
+    iconVariant: 'brand',
+    variant: 'elevated',
+    padding: 'md',
+  },
+  render: (args) => ({
+    props: args,
+    template: `
+      <lc-card [title]="title" [subtitle]="subtitle" [icon]="icon" [iconVariant]="iconVariant"
+               [variant]="variant" [padding]="padding" [badge]="badge" [badgeVariant]="badgeVariant">
+        <p style="margin: 0; color: var(--color-text-secondary); font-size: 14px; line-height: 1.5;">
+          A leading icon tile pairs with the title to give each card a clear, scannable identity.
         </p>
       </lc-card>`,
   }),

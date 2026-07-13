@@ -91,6 +91,19 @@
     line-height: var(--line-height-normal, 1.5);
   }
 
+  // Inline row of status chips/badges beside the title. Hidden when nothing is
+  // projected so it never adds stray gap.
+  &__title-suffix {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--lc-density-gap-sm, 0.5rem);
+  }
+
+  &__title-suffix:empty {
+    display: none;
+  }
+
   &__badge {
     display: inline-flex;
     align-items: center;

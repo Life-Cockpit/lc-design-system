@@ -1,0 +1,196 @@
+:host {
+  display: block;
+}
+
+.lc-pipeline {
+  --lc-pipeline-node-size: 1.75rem;
+  --lc-pipeline-line: var(--color-border-strong);
+  --lc-pipeline-line-done: var(--color-primary-500);
+
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+
+  &__step {
+    position: relative;
+    display: flex;
+    min-width: 0;
+  }
+
+  &__hit {
+    display: flex;
+    background: none;
+    border: 0;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    color: inherit;
+    text-align: inherit;
+    cursor: pointer;
+    width: 100%;
+
+    &:focus-visible {
+      outline: 2px solid var(--color-primary-500);
+      outline-offset: 2px;
+      border-radius: var(--border-radius-sm);
+    }
+  }
+
+  &__marker {
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  &__node {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--lc-pipeline-node-size);
+    height: var(--lc-pipeline-node-size);
+    border-radius: var(--border-radius-full);
+    background-color: var(--color-surface);
+    border: 2px solid var(--lc-pipeline-line);
+    color: var(--color-text-tertiary);
+    box-sizing: border-box;
+  }
+
+  &__label {
+    display: block;
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-primary);
+  }
+
+  &__caption {
+    display: block;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-tertiary);
+    line-height: 1.35;
+  }
+
+  // ── Horizontal ──────────────────────────────────────────────────────────────
+  &--horizontal {
+    align-items: flex-start;
+    gap: var(--spacing-2);
+
+    .lc-pipeline__step {
+      flex: 1 1 0;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .lc-pipeline__hit {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    // Connector runs from this node's center to the next node's center. Each
+    // step is an equal-width flex item, so a 100% width starting at the node's
+    // horizontal center reaches the next node's center.
+    .lc-pipeline__connector {
+      position: absolute;
+      top: calc(var(--lc-pipeline-node-size) / 2);
+      left: calc(var(--lc-pipeline-node-size) / 2);
+      width: calc(100% + var(--spacing-2));
+      height: 2px;
+      transform: translateY(-50%);
+      background-color: var(--lc-pipeline-line);
+    }
+
+    .lc-pipeline__step--last .lc-pipeline__connector {
+      display: none;
+    }
+
+    .lc-pipeline__text {
+      margin-top: var(--spacing-2);
+      padding-right: var(--spacing-3);
+    }
+  }
+
+  // ── Vertical ────────────────────────────────────────────────────────────────
+  &--vertical {
+    flex-direction: column;
+    gap: 0;
+
+    .lc-pipeline__step {
+      flex-direction: row;
+      align-items: flex-start;
+      gap: var(--spacing-3);
+      padding-bottom: var(--spacing-4);
+    }
+
+    .lc-pipeline__hit {
+      flex-direction: row;
+      align-items: flex-start;
+      gap: var(--spacing-3);
+    }
+
+    .lc-pipeline__connector {
+      position: absolute;
+      left: calc(var(--lc-pipeline-node-size) / 2);
+      top: var(--lc-pipeline-node-size);
+      width: 2px;
+      height: calc(100% - var(--lc-pipeline-node-size));
+      transform: translateX(-50%);
+      background-color: var(--lc-pipeline-line);
+    }
+
+    .lc-pipeline__step--last .lc-pipeline__connector {
+      display: none;
+    }
+
+    .lc-pipeline__text {
+      padding-top: calc((var(--lc-pipeline-node-size) - 1.25rem) / 2);
+    }
+  }
+
+  // ── Status treatments ───────────────────────────────────────────────────────
+  // A step colors the connector leaving it as "done" once it is complete.
+  &__step--complete {
+    .lc-pipeline__node {
+      background-color: var(--color-primary-500);
+      border-color: var(--color-primary-500);
+      color: var(--color-on-primary, #fff);
+    }
+    .lc-pipeline__connector {
+      background-color: var(--lc-pipeline-line-done);
+    }
+  }
+
+  &__step--current {
+    .lc-pipeline__node {
+      border-color: var(--color-primary-500);
+      color: var(--color-primary-500);
+      box-shadow: var(--shadow-brand-glow);
+    }
+    .lc-pipeline__connector {
+      background-color: var(--lc-pipeline-line-done);
+    }
+  }
+
+  &__step--warning {
+    .lc-pipeline__node {
+      border-color: var(--color-warning);
+      color: var(--color-warning);
+    }
+  }
+
+  &__step--error {
+    .lc-pipeline__node {
+      border-color: var(--color-error);
+      color: var(--color-error);
+    }
+  }
+
+  &__step--pending {
+    .lc-pipeline__node {
+      border-style: dashed;
+    }
+    .lc-pipeline__label {
+      color: var(--color-text-secondary);
+    }
+  }
+}

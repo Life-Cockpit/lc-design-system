@@ -60,7 +60,7 @@ export class MyComponent {}
 |-----------|----------|-------------|
 | Accordion | `lc-accordion` | Expandable/collapsible panels with optional rich header template (`lcAccordionHeader`) and lazy/deferred body (`lcAccordionContent` + `[lazy]`/`[destroyOnClose]`) |
 | Button | `lc-button` | Primary, secondary, and text buttons |
-| Card | `lc-card` | Content container with elevation |
+| Card | `lc-card` | Content container with elevation; optional leading brand-tile header icon (`[icon]` / `[iconVariant]`) |
 | Chat | `lc-chat` | Conversational UI with streaming, custom message templates |
 | Icon | `lc-icon` | Tabler SVG icons; fail-loud on unknown names (dev warning + visible placeholder, optional `[strict]` throw); exports `ICON_NAMES` / `isValidIconName` / `ICON_ALIASES` (+ `icon-names.json`) for static checking |
 | Logo | `lc-logo` | Life Cockpit logo |
@@ -111,12 +111,14 @@ export class MyComponent {}
 | Avatar | `lc-avatar` | User avatar |
 | Badge | `lc-badge` | Status badge |
 | Chip | `lc-chip` | Tag/label chip |
+| Description List | `lc-description-list` | Key/value metadata (`<dl>`) with rows/stacked layout, optional dotted leaders and per-row emphasis/links |
 | Empty State | `lc-empty-state` | Placeholder for empty content |
 | Field Group | `lc-field-group` | Grouped form fields |
 | Filter Bar | `lc-filter-bar` | Filter controls |
 | List | `lc-list` | List display |
 | Log Viewer | `lc-log-viewer` | Streaming log/terminal viewer with virtualization |
 | Metric Card | `lc-metric-card` | KPI/metric display |
+| Pipeline | `lc-pipeline` | Status timeline of connected process nodes; per-node status (complete/current/pending/warning/error) with captions, horizontal/vertical |
 | Skeleton | `lc-skeleton` | Loading placeholder |
 | Spinner | `lc-spinner` | Loading indicator |
 | Stepper | `lc-stepper` | Step-by-step progress |

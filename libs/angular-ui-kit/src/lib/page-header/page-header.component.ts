@@ -14,10 +14,12 @@ import {
  * to get consistent rhythm between title, metadata and content below.
  *
  * Slots:
- *  - `[slot="breadcrumbs"]` — rendered above the title (e.g. `<lc-breadcrumbs>`)
- *  - `[slot="actions"]`     — right-aligned actions (buttons, menus)
- *  - `[slot="meta"]`        — secondary metadata under the title row (chips, tags)
- *  - default                — short header-internal description text
+ *  - `[slot="breadcrumbs"]`   — rendered above the title (e.g. `<lc-breadcrumbs>`)
+ *  - `[slot="title-suffix"]`  — inline beside the title, after the optional `badge`
+ *                               (for one or more status chips/badges)
+ *  - `[slot="actions"]`       — right-aligned actions (buttons, menus)
+ *  - `[slot="meta"]`          — secondary metadata under the title row (chips, tags)
+ *  - default                  — short header-internal description text
  *
  * Full-blown navigation primitives like `lc-tabs` — which render both the tab
  * strip **and** their panel content — belong **below** the page header, never
@@ -31,6 +33,8 @@ import {
  *   [showDivider]="true"
  * >
  *   <lc-breadcrumbs slot="breadcrumbs" [items]="crumbs" />
+ *   <lc-chip slot="title-suffix" size="sm">Beta</lc-chip>
+ *   <lc-chip slot="title-suffix" size="sm" variant="success">Ready</lc-chip>
  *   <lc-button slot="actions" variant="primary">New report</lc-button>
  *   <lc-chip slot="meta">12 active</lc-chip>
  * </lc-page-header>

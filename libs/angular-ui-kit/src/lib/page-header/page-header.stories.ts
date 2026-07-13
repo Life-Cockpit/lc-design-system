@@ -243,6 +243,31 @@ export const WithBadgeAndMeta: Story = {
   }),
 };
 
+export const TitleSuffixBadges: Story = {
+  name: 'Multiple badges beside the title (title-suffix slot)',
+  args: { title: 'Project Overview', subtitle: 'Migration & modernization', showDivider: false },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'When one `badge` is not enough, project the `[slot="title-suffix"]` to place ' +
+          'several chips/badges inline next to the title — e.g. an identifier chip plus a ' +
+          'status pill. The slot wraps on narrow viewports and collapses when empty.',
+      },
+    },
+  },
+  render: (args) => ({
+    props: args,
+    template: `
+      <lc-page-header [title]="title" [subtitle]="subtitle" [showDivider]="showDivider">
+        <lc-chip slot="title-suffix" size="sm">identifier</lc-chip>
+        <lc-chip slot="title-suffix" size="sm" variant="success">Ready</lc-chip>
+        <lc-button slot="actions" variant="primary">New item</lc-button>
+      </lc-page-header>
+    `,
+  }),
+};
+
 export const WithBodyContent: Story = {
   name: 'Followed by tabs (tabs live below the header)',
   args: { title: 'Members', subtitle: '24 active across 3 teams', showDivider: false },
@@ -381,7 +406,6 @@ export const FullExample: Story = {
         <lc-tab label="Releases">Releases content</lc-tab>
         <lc-tab label="Activity">Activity content</lc-tab>
       </lc-tabs>
-      </lc-page-header>
     `,
   }),
 };

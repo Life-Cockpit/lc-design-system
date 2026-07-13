@@ -6,6 +6,7 @@ import {
   HostListener,
   computed,
 } from '@angular/core';
+import { IconComponent } from '../icon/icon.component';
 
 /**
  * Card component for content grouping and visual hierarchy.
@@ -14,7 +15,7 @@ import {
  * - Variant styles (elevated, outlined, filled)
  * - Configurable padding (none, sm, md, lg)
  * - Border radius options (none, sm, md, lg, xl)
- * - Optional title display
+ * - Optional title display, with an optional leading icon tile
  * - Content projection for flexible body content
  *
  * @example
@@ -22,11 +23,17 @@ import {
  * <lc-card title="Card Title" variant="elevated" padding="md">
  *   <p>Card body content</p>
  * </lc-card>
+ *
+ * <!-- With a leading brand-tile icon in the header -->
+ * <lc-card title="Repository" subtitle="Checkout &amp; profile" icon="git-branch">
+ *   ...
+ * </lc-card>
  * ```
  */
 @Component({
   selector: 'lc-card',
   standalone: true,
+  imports: [IconComponent],
   templateUrl: './card.component.html',
   styleUrls: ['./card.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -42,6 +49,20 @@ export class CardComponent {
    * Optional subtitle rendered below the title.
    */
   subtitle = input<string | undefined>(undefined);
+
+  /**
+   * Optional leading icon (Tabler icon name) rendered as a teal brand tile to
+   * the left of the title. Only shown when `title` is set.
+   */
+  icon = input<string | undefined>(undefined);
+
+  /**
+   * Visual treatment of the leading icon tile.
+   * - brand: gradient teal tile with light ink (default)
+   * - subtle: translucent surface tile with brand-teal ink
+   * @default 'brand'
+   */
+  iconVariant = input<'brand' | 'subtle'>('brand');
 
   /**
    * Optional badge text/count shown next to the title (e.g. item count).

@@ -52,7 +52,8 @@ export const ColorAccentViolet = "#4e3f84";
 export const ColorSurfaceDarkBase = "#14222e"; // DS2.0 dark card surface
 export const ColorSurfaceDarkRaised = "#1a2c3a"; // DS2.0 raised dark surface
 export const ColorSurfaceDarkSunken = "#0c1722"; // DS2.0 sunken dark surface
-export const ColorBackgroundDark = "#111827"; // DS2.0 dark app background (== neutral-900)
+export const ColorBackgroundDark = "#0a121b"; // DS2.0 dark app background — deep teal-black, sits below the raised card surfaces
+export const ColorSidebarDark = "#070e15"; // DS2.0 dark sidebar/nav rail — darkest shell layer (below app background)
 export const ColorTextDarkPrimary = "#eef4f6"; // DS2.0 dark primary text
 export const ColorTextDarkSecondary = "#aebfc7"; // DS2.0 dark secondary text
 export const ColorTextDarkTertiary = "#71858f"; // DS2.0 dark muted text

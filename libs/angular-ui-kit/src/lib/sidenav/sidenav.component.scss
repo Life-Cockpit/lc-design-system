@@ -42,7 +42,7 @@
 .lc-sidenav {
   // DS2.0 dark-first: default sidenav tokens are the brand dark surface. The
   // `.lc-sidenav--light` modifier opts back into the light treatment.
-  --lc-sidenav-bg: var(--color-surface);
+  --lc-sidenav-bg: var(--color-sidebar, var(--color-surface));
   --lc-sidenav-fg: var(--color-text-secondary);
   --lc-sidenav-fg-active: var(--color-text-primary);
   --lc-sidenav-border: var(--color-border);
@@ -615,7 +615,7 @@
 
 // ── Explicit dark variant (alias of the default, kept for API stability) ──
 .lc-sidenav--dark {
-  --lc-sidenav-bg: var(--color-surface);
+  --lc-sidenav-bg: var(--color-sidebar, var(--color-surface));
   --lc-sidenav-fg: var(--color-text-secondary);
   --lc-sidenav-fg-active: var(--color-text-primary);
   --lc-sidenav-border: var(--color-border);

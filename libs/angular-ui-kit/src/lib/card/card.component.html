@@ -7,6 +7,11 @@
 >
   @if (title()) {
     <div class="card__header">
+      @if (icon()) {
+        <div class="card__icon card__icon--{{ iconVariant() }}" aria-hidden="true">
+          <lc-icon [name]="icon()!" size="sm" [decorative]="true" />
+        </div>
+      }
       <div class="card__header-left">
         <div class="card__title-row">
           <h3 class="card__title">{{ title() }}</h3>
