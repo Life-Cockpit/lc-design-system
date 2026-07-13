@@ -98,8 +98,17 @@ export interface ChatFileAttachEvent {
 /**
  * Chat component for conversational user interfaces.
  *
+ * Compact, document-style layout: agent/system turns flow as full-width text on
+ * a left timeline rail, while user turns render as right-aligned, accent-tinted
+ * bubbles (no name label) with the timestamp on a muted line beneath. Spacing is
+ * a single space-efficient scale (tunable via the `--lc-chat-*` custom
+ * properties); there is no separate roomy variant.
+ *
  * Features:
  * - User, agent, and system message roles
+ * - Right-aligned user bubbles with an optional avatar: `msg.avatar` image, or a
+ *   monogram built from `msg.name` initials (gated by `showAvatars`)
+ * - Agent/system turns on a left rail with a status dot, avatar or semantic icon
  * - Streaming cursor indicator for AI responses
  * - Typing indicator with animated dots
  * - Auto-scroll to latest message
@@ -351,6 +360,33 @@ export class ChatComponent implements AfterViewChecked {
   protected formatTime(date: Date | undefined): string {
     if (!date) return '';
     return date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  /**
+   * Up to two uppercase initials from a name (first + last word), used for the
+   * user avatar monogram when no `avatar` image is provided. Returns `''` for an
+   * empty/whitespace name so the caller can skip rendering.
+   */
+  protected initials(name: string | undefined): string {
+    if (!name) return '';
+    const parts = name.trim().split(/\s+/).filter(Boolean);
+    if (parts.length === 0) return '';
+    const first = parts[0][0] ?? '';
+    const last = parts.length > 1 ? parts[parts.length - 1][0] ?? '' : '';
+    return (first + last).toUpperCase();
+  }
+
+  /**
+   * Whether to show an avatar on a user turn: only when avatars are enabled and
+   * the message carries either an image or a name we can build a monogram from.
+   * Keeps the labelless bubble clean when there's nothing to show.
+   */
+  protected showUserAvatar(msg: ChatMessage): boolean {
+    return (
+      msg.role === 'user' &&
+      this.showAvatars() &&
+      !!(msg.avatar || this.initials(msg.name))
+    );
   }
 
   protected shouldRenderMarkdown(role: ChatMessageRole): boolean {

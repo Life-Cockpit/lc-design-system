@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.11.0] - 2026-07-13
+
+### Added
+
+- **Chat: user avatar** (`lc-chat`) — user turns can now show an avatar on the
+  outer right edge: the message's `avatar` image, or an initials **monogram**
+  built from `name` when no image is set. Gated by the existing `showAvatars`
+  input, so it stays off when neither is present; `showAvatars=false` disables
+  it entirely. Agent/system turns keep their left-rail dot/avatar/status icon.
+
+### Changed
+
+- **Chat: compact, redesigned layout** (`lc-chat`) — the chat now uses a single
+  space-efficient spacing scale (tighter thread gap, padding, line-height and
+  font) so noticeably more turns fit on screen; there is **no roomy variant**.
+  User turns are redesigned as **right-aligned, accent-tinted bubbles without a
+  name label**, with the timestamp on a muted line beneath; agent turns show
+  their timestamp inline next to the name. This is a visible change to the
+  default appearance (no API change). The spacing is exposed as `--lc-chat-*`
+  custom properties for CSS-level fine-tuning.
+
 ## [2.10.0] - 2026-07-13
 
 ### Added

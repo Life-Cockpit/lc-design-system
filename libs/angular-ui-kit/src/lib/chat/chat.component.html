@@ -25,18 +25,21 @@
           [class.lc-chat__message--user]="msg.role === 'user'"
           [class.lc-chat__message--agent]="msg.role === 'agent'"
           [class.lc-chat__message--system]="msg.role === 'system'"
+          [class.lc-chat__message--avatar]="showUserAvatar(msg)"
           [class.lc-chat__message--streaming]="msg.streaming"
           [attr.role]="msg.status === 'error' ? 'alert' : null"
           [attr.aria-live]="statusAriaLive(msg.status)"
         >
-          @if (msg.role !== 'user' && (showAvatars() || isSemanticStatus(msg.status))) {
-            <div class="lc-chat__marker">
-              @if (isSemanticStatus(msg.status)) {
+          @if ((msg.role !== 'user' && (showAvatars() || isSemanticStatus(msg.status))) || showUserAvatar(msg)) {
+            <div class="lc-chat__marker" [class.lc-chat__marker--user]="msg.role === 'user'">
+              @if (isSemanticStatus(msg.status) && msg.role !== 'user') {
                 <span class="lc-chat__status-icon">
                   <lc-icon [name]="statusIcon(msg.status)" size="xs" [color]="statusColor(msg.status)" [decorative]="true" />
                 </span>
               } @else if (msg.avatar) {
                 <img [src]="msg.avatar" [alt]="msg.name || msg.role" class="lc-chat__avatar-img" />
+              } @else if (msg.role === 'user') {
+                <span class="lc-chat__monogram" [attr.aria-label]="msg.name">{{ initials(msg.name) }}</span>
               } @else {
                 <span
                   class="lc-chat__dot"
@@ -48,15 +51,15 @@
           }
 
           <div class="lc-chat__bubble" [class.lc-chat__bubble--streaming]="msg.streaming">
-            @if (msg.role === 'user') {
-              <div class="lc-chat__meta">
-                <span class="lc-chat__name">{{ msg.name || 'Du' }}</span>
-                @if (showTimestamps() && msg.timestamp) {
+            @if (msg.name && msg.role !== 'user') {
+              @if (showTimestamps() && msg.timestamp) {
+                <div class="lc-chat__meta lc-chat__meta--agent">
+                  <span class="lc-chat__name">{{ msg.name }}</span>
                   <span class="lc-chat__time">{{ formatTime(msg.timestamp) }}</span>
-                }
-              </div>
-            } @else if (msg.name) {
-              <div class="lc-chat__name">{{ msg.name }}</div>
+                </div>
+              } @else {
+                <div class="lc-chat__name">{{ msg.name }}</div>
+              }
             }
             <div class="lc-chat__content">
               @if (isSemanticStatus(msg.status)) {
@@ -99,10 +102,13 @@
                 }
               </div>
             }
-            @if (showTimestamps() && msg.timestamp && msg.role !== 'user') {
-              <div class="lc-chat__time">{{ formatTime(msg.timestamp) }}</div>
+            @if (showTimestamps() && msg.timestamp && msg.role !== 'user' && !msg.name) {
+              <div class="lc-chat__time lc-chat__time--tight">{{ formatTime(msg.timestamp) }}</div>
             }
           </div>
+          @if (showTimestamps() && msg.timestamp && msg.role === 'user') {
+            <div class="lc-chat__time lc-chat__time--user">{{ formatTime(msg.timestamp) }}</div>
+          }
         </div>
       }
 

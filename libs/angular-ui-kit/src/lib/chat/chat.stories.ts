@@ -48,8 +48,15 @@ const meta: Meta<ChatComponent> = {
         component: `
 Chat component for conversational user interfaces.
 
+Compact, document-style layout: agent/system turns flow as full-width text on a
+left timeline rail; user turns are right-aligned, accent-tinted bubbles (no name
+label) with an optional avatar — an \`avatar\` image or an initials monogram from
+\`name\`. Spacing is a single space-efficient scale (no roomy variant), tunable
+via the \`--lc-chat-*\` custom properties.
+
 **Key Features:**
 - User, agent, and system message roles
+- Right-aligned user bubbles with avatar / initials monogram (\`showAvatars\`)
 - **Semantic status** per message (\`info\` / \`success\` / \`warning\` / \`error\`)
 - Streaming cursor indicator for AI responses
 - Typing indicator with animated dots
@@ -90,6 +97,38 @@ export const Default: Story = {
       </div>
     `,
     props: { messages: conversationMessages },
+    moduleMetadata: { imports: [ChatComponent] },
+  }),
+};
+
+// A tiny inline SVG avatar so the story stays self-contained (no network).
+const sampleAvatar =
+  'data:image/svg+xml;utf8,' +
+  encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48"><rect width="48" height="48" rx="24" fill="#208497"/><text x="24" y="31" font-family="sans-serif" font-size="20" fill="#fff" text-anchor="middle">A</text></svg>`,
+  );
+
+/**
+ * User turns render as a right-aligned accent bubble. With `showAvatars` (on by
+ * default), a user turn shows its `avatar` image on the outer right edge, or a
+ * monogram built from `name` when no image is set. Agent turns keep the left
+ * rail. Set `showAvatars=false` to drop avatars entirely.
+ */
+export const UserAvatar: Story = {
+  name: 'User avatar & monogram',
+  render: () => ({
+    template: `
+      <div style="height: 500px;">
+        <lc-chat title="Spec Author" [messages]="messages"></lc-chat>
+      </div>
+    `,
+    props: {
+      messages: [
+        { id: '1', role: 'user', content: 'Nachricht mit Avatar-Bild.', name: 'Anna', avatar: sampleAvatar, timestamp: t(5) },
+        { id: '2', role: 'agent', content: 'Alles klar, ich übernehme das.', name: 'Spec Author', timestamp: t(4) },
+        { id: '3', role: 'user', content: 'Diese hier fällt auf ein Monogramm zurück (kein Bild).', name: 'Eric Fritzsche', timestamp: t(3) },
+      ] as ChatMessage[],
+    },
     moduleMetadata: { imports: [ChatComponent] },
   }),
 };

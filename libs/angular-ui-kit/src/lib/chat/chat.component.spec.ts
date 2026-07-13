@@ -31,6 +31,57 @@ describe('ChatComponent', () => {
     expect(fixture.nativeElement.querySelector('.lc-chat__message--user')).toBeTruthy();
   });
 
+  describe('user bubble', () => {
+    it('does not render a name label inside the user bubble', () => {
+      fixture.componentRef.setInput('messages', messages);
+      fixture.detectChanges();
+      const user = fixture.nativeElement.querySelector('.lc-chat__message--user');
+      expect(user.querySelector('.lc-chat__name')).toBeNull();
+      expect(user.textContent).not.toContain('Eric');
+    });
+
+    it('renders the user timestamp on a line below the bubble', () => {
+      fixture.componentRef.setInput('messages', messages);
+      fixture.detectChanges();
+      const user = fixture.nativeElement.querySelector('.lc-chat__message--user');
+      const time = user.querySelector('.lc-chat__time--user');
+      expect(time).toBeTruthy();
+      // It is a sibling of the bubble, not nested inside it.
+      expect(user.querySelector('.lc-chat__bubble .lc-chat__time--user')).toBeNull();
+    });
+
+    it('shows a monogram from the name when the user has no avatar image', () => {
+      fixture.componentRef.setInput('messages', [
+        { id: 'u', role: 'user', content: 'Hi', name: 'Eric Fritzsche', timestamp: new Date() },
+      ]);
+      fixture.detectChanges();
+      const user = fixture.nativeElement.querySelector('.lc-chat__message--user');
+      expect(user.classList).toContain('lc-chat__message--avatar');
+      const mono = user.querySelector('.lc-chat__marker--user .lc-chat__monogram');
+      expect(mono).toBeTruthy();
+      expect(mono.textContent.trim()).toBe('EF');
+    });
+
+    it('uses the avatar image on the user side when provided', () => {
+      fixture.componentRef.setInput('messages', [
+        { id: 'u', role: 'user', content: 'Hi', name: 'Eric', avatar: 'x.png', timestamp: new Date() },
+      ]);
+      fixture.detectChanges();
+      const user = fixture.nativeElement.querySelector('.lc-chat__message--user');
+      expect(user.querySelector('.lc-chat__marker--user .lc-chat__avatar-img')).toBeTruthy();
+      expect(user.querySelector('.lc-chat__monogram')).toBeNull();
+    });
+
+    it('shows no user avatar when showAvatars is false', () => {
+      fixture.componentRef.setInput('messages', messages);
+      fixture.componentRef.setInput('showAvatars', false);
+      fixture.detectChanges();
+      const user = fixture.nativeElement.querySelector('.lc-chat__message--user');
+      expect(user.classList).not.toContain('lc-chat__message--avatar');
+      expect(user.querySelector('.lc-chat__marker--user')).toBeNull();
+    });
+  });
+
   it('should render agent messages on the left', () => {
     fixture.componentRef.setInput('messages', messages);
     fixture.detectChanges();
@@ -41,6 +92,29 @@ describe('ChatComponent', () => {
     fixture.componentRef.setInput('title', 'Test Chat');
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.lc-chat__title').textContent).toContain('Test Chat');
+  });
+
+  describe('agent timestamp placement', () => {
+    it('pulls a named agent message timestamp onto the label row', () => {
+      fixture.componentRef.setInput('messages', messages);
+      fixture.detectChanges();
+      const agent = fixture.nativeElement.querySelector('.lc-chat__message--agent');
+      // messages[1] has a name → timestamp sits inline in the meta/label row.
+      expect(agent.querySelector('.lc-chat__meta--agent .lc-chat__time')).toBeTruthy();
+      expect(agent.querySelector('.lc-chat__bubble > .lc-chat__time')).toBeNull();
+    });
+
+    it('keeps a content-only (nameless) agent timestamp as a tucked trailing line', () => {
+      fixture.componentRef.setInput('messages', [
+        { id: 'a', role: 'agent', content: 'Working…', timestamp: new Date() },
+      ]);
+      fixture.detectChanges();
+      const agent = fixture.nativeElement.querySelector('.lc-chat__message--agent');
+      expect(agent.querySelector('.lc-chat__meta--agent')).toBeNull();
+      const time = agent.querySelector('.lc-chat__bubble > .lc-chat__time');
+      expect(time).toBeTruthy();
+      expect(time.classList).toContain('lc-chat__time--tight');
+    });
   });
 
   it('should be bordered (card style) by default', () => {
@@ -111,12 +185,15 @@ describe('ChatComponent', () => {
     expect(btn.disabled).toBe(true);
   });
 
-  it('should show a rail marker for the agent message but not the user message', () => {
+  it('puts a rail dot on the agent turn and a right-side avatar on the user turn', () => {
     fixture.componentRef.setInput('messages', messages);
     fixture.detectChanges();
-    // messages = [user, agent] → only the agent sits on the rail with a dot.
-    expect(fixture.nativeElement.querySelectorAll('.lc-chat__marker').length).toBe(1);
-    expect(fixture.nativeElement.querySelector('.lc-chat__dot--agent')).toBeTruthy();
+    // Agent sits on the rail with a dot (left); no rail dot on the user side.
+    const agent = fixture.nativeElement.querySelector('.lc-chat__message--agent');
+    expect(agent.querySelector('.lc-chat__marker .lc-chat__dot--agent')).toBeTruthy();
+    const user = fixture.nativeElement.querySelector('.lc-chat__message--user');
+    expect(user.querySelector('.lc-chat__marker--user')).toBeTruthy();
+    expect(user.querySelector('.lc-chat__dot')).toBeNull();
   });
 
   it('should hide rail markers when showAvatars is false', () => {

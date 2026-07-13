@@ -2,12 +2,28 @@
 //
 // Layout: a flat surface column with a header, a scrolling message area whose
 // inner thread is constrained to a centered readable column, and a single
-// rounded composer at the bottom. User turns are calm surface cards on the
-// right; assistant turns flow as full-width document text (via lc-markdown).
+// rounded composer at the bottom. User turns are right-aligned accent bubbles
+// (with an optional avatar/monogram); assistant turns flow as full-width
+// document text (via lc-markdown) on a left timeline rail. A single compact
+// spacing scale — no roomy variant — tunable via the --lc-chat-* custom props.
 
 .lc-chat {
   // Width of the centered reading column for thread + composer.
   --lc-chat-content-width: 46rem;
+
+  // Vertical rhythm — a single compact scale so the chat stays space-efficient
+  // for dense tool/agent logs. Exposed as custom properties so a consumer can
+  // still fine-tune the spacing via CSS without a component input.
+  --lc-chat-thread-gap: var(--spacing-3, 0.75rem);
+  --lc-chat-messages-pad-block: var(--spacing-4, 1rem);
+  --lc-chat-messages-pad-inline: var(--spacing-3, 0.75rem);
+  --lc-chat-bubble-font: var(--font-size-sm, 0.875rem);
+  --lc-chat-bubble-line: var(--line-height-normal, 1.5);
+  --lc-chat-bubble-pad-block: var(--spacing-2, 0.5rem);
+  --lc-chat-bubble-pad-inline: var(--spacing-3, 0.75rem);
+  --lc-chat-header-pad-block: var(--spacing-2, 0.5rem);
+  --lc-chat-input-area-pad: var(--spacing-3, 0.75rem);
+  --lc-chat-composer-pad: var(--spacing-2, 0.5rem);
 
   display: flex;
   flex-direction: column;
@@ -38,7 +54,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--spacing-3) var(--spacing-4);
+  padding: var(--lc-chat-header-pad-block) var(--spacing-4);
   border-bottom: 1px solid var(--color-divider);
   background: var(--color-surface);
 }
@@ -70,8 +86,8 @@
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  padding-block: var(--spacing-6, 1.5rem);
-  padding-inline: var(--spacing-4, 1rem);
+  padding-block: var(--lc-chat-messages-pad-block);
+  padding-inline: var(--lc-chat-messages-pad-inline);
 }
 
 .lc-chat__thread {
@@ -83,7 +99,7 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-5, 1.25rem);
+  gap: var(--lc-chat-thread-gap);
 }
 
 // Bottom-anchored: few messages sit at the bottom with empty space above.
@@ -102,6 +118,41 @@
   gap: var(--spacing-3, 0.75rem);
   align-self: stretch;
   max-width: 100%;
+}
+
+// User turn: a right-aligned column — a narrower accent bubble sits on the
+// right (no name label needed), with its timestamp on a muted line beneath.
+.lc-chat__message--user {
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--spacing-1, 0.25rem);
+}
+
+// With an avatar: two-column grid so the avatar sits on the outer right edge,
+// spanning the bubble + timestamp rows. (Only applied when an avatar/monogram
+// is actually shown, so the plain bubble keeps its clean right-aligned column.)
+.lc-chat__message--user.lc-chat__message--avatar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'bubble avatar'
+    'time   avatar';
+  column-gap: var(--spacing-2, 0.5rem);
+  align-items: start;
+
+  > .lc-chat__bubble {
+    grid-area: bubble;
+    justify-self: end;
+  }
+
+  > .lc-chat__time--user {
+    grid-area: time;
+    justify-self: end;
+  }
+
+  > .lc-chat__marker--user {
+    grid-area: avatar;
+  }
 }
 
 // ── Timeline marker (dot + connector on the rail) ───────────
@@ -123,7 +174,7 @@
   position: absolute;
   left: 50%;
   top: 0.55rem; // dot centre
-  bottom: calc(-1 * var(--spacing-5, 1.25rem)); // bridge the gap to the next dot
+  bottom: calc(-1 * var(--lc-chat-thread-gap)); // bridge the gap to the next dot
   width: 1.5px;
   transform: translateX(-50%);
   background: var(--color-divider);
@@ -178,6 +229,33 @@
   box-shadow: 0 0 0 3px var(--color-surface);
 }
 
+// User avatar on the outer right edge — wide enough for the 1.5rem image /
+// monogram (the base marker width is sized for the thin rail dot) and with no
+// rail connector (user turns break the timeline).
+.lc-chat__marker--user {
+  width: auto;
+
+  &::before {
+    display: none;
+  }
+}
+
+// Monogram fallback when a user turn has a name but no avatar image.
+.lc-chat__monogram {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--color-primary-500) 18%, var(--color-surface-2));
+  color: var(--color-primary-500);
+  font-size: var(--font-size-xs, 0.75rem);
+  font-weight: var(--font-weight-semibold, 600);
+  line-height: 1;
+  box-shadow: 0 0 0 3px var(--color-surface);
+}
+
 // Semantic status replaces the dot/avatar with a coloured icon on the rail.
 // The icon colour is the semantic token (set via lc-icon's color input); the
 // surface background + halo cut the rail connector cleanly around it, matching
@@ -214,19 +292,22 @@
 .lc-chat__bubble {
   flex: 1;
   min-width: 0;
-  font-size: var(--font-size-base, 0.9375rem);
-  line-height: var(--line-height-relaxed, 1.6);
+  font-size: var(--lc-chat-bubble-font);
+  line-height: var(--lc-chat-bubble-line);
   word-break: break-word;
   color: var(--color-text-primary);
 
-  // User: a full-width box that interrupts the rail (solid bg covers the line).
+  // User: a right-aligned, accent-tinted bubble — a calm surface card on the
+  // right, sized to its content rather than the full column width.
   .lc-chat__message--user & {
     position: relative;
     z-index: 1;
-    padding: var(--spacing-3, 0.75rem) var(--spacing-4, 1rem);
-    border: 1px solid var(--color-border);
+    flex: 0 1 auto;
+    max-width: min(85%, 34rem);
+    padding: var(--lc-chat-bubble-pad-block) var(--lc-chat-bubble-pad-inline);
+    border: 1px solid color-mix(in srgb, var(--color-primary-500) 22%, transparent);
     border-radius: var(--border-radius-lg);
-    background: var(--color-surface-2);
+    background: color-mix(in srgb, var(--color-primary-500) 10%, var(--color-surface-2));
   }
 
   // Assistant: no box — text flows as a document next to the rail dot.
@@ -293,6 +374,18 @@
   flex-shrink: 0;
 }
 
+// Content-only messages keep the timestamp tucked right under the text instead
+// of a full line's gap below it.
+.lc-chat__time--tight {
+  margin-top: 0;
+}
+
+// User timestamp: sits on its own muted line beneath the right-aligned bubble.
+.lc-chat__time--user {
+  margin-top: 0;
+  padding-inline: var(--spacing-1, 0.25rem);
+}
+
 // ── Typing indicator ────────────────────────────────────────
 .lc-chat__typing {
   display: flex;
@@ -318,7 +411,7 @@
 
 // ── Composer (input area) ───────────────────────────────────
 .lc-chat__input-area {
-  padding: var(--spacing-4, 0.75rem);
+  padding: var(--lc-chat-input-area-pad);
   border-top: 1px solid var(--color-divider);
   background: var(--color-surface);
 }
@@ -330,7 +423,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-2, 0.5rem);
-  padding: var(--spacing-3, 0.75rem);
+  padding: var(--lc-chat-composer-pad);
   background: var(--color-surface-2);
   border: 1px solid var(--color-border);
   border-radius: var(--border-radius-xl);
