@@ -23,6 +23,7 @@ optional caption under each label.
   },
   argTypes: {
     orientation: { control: 'inline-radio', options: ['horizontal', 'vertical'] },
+    size: { control: 'inline-radio', options: ['sm', 'md'] },
     clickable: { control: 'boolean' },
   },
 };
@@ -51,6 +52,18 @@ export const Vertical: Story = {
   render: (args) => ({
     props: args,
     template: `<div style="max-width: 320px;"><lc-pipeline [steps]="steps" [orientation]="orientation" [clickable]="clickable" /></div>`,
+  }),
+};
+
+export const Compact: Story = {
+  name: 'Compact (size="sm")',
+  args: { steps, orientation: 'horizontal', size: 'sm', clickable: false },
+  parameters: {
+    docs: { description: { story: 'Use `size="sm"` for a dense status spine — e.g. under a panel header. Nodes, connectors and the grid all tighten; captions stay legible.' } },
+  },
+  render: (args) => ({
+    props: args,
+    template: `<div style="max-width: 640px;"><lc-pipeline [steps]="steps" [orientation]="orientation" [size]="size" [clickable]="clickable" /></div>`,
   }),
 };
 

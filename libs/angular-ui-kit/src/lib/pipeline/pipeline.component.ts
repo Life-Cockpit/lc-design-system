@@ -37,6 +37,7 @@ export interface PipelineStep {
 }
 
 export type PipelineOrientation = 'horizontal' | 'vertical';
+export type PipelineSize = 'sm' | 'md';
 
 const STATUS_ICON: Record<PipelineStatus, string> = {
   complete: 'check',
@@ -80,6 +81,14 @@ export class PipelineComponent {
   /** Layout direction. @default 'horizontal' */
   readonly orientation = input<PipelineOrientation>('horizontal');
 
+  /**
+   * Node/connector scale.
+   * - md: default nodes (1.75rem)
+   * - sm: compact spine — smaller nodes, thinner connectors, tighter grid
+   * @default 'md'
+   */
+  readonly size = input<PipelineSize>('md');
+
   /** Whether nodes are clickable (emits `stepClick`). @default false */
   readonly clickable = input<boolean>(false);
 
@@ -87,7 +96,8 @@ export class PipelineComponent {
   readonly stepClick = output<PipelineStep>();
 
   protected readonly hostClass = computed(
-    () => `lc-pipeline lc-pipeline--${this.orientation()}`,
+    () =>
+      `lc-pipeline lc-pipeline--${this.orientation()} lc-pipeline--size-${this.size()}`,
   );
 
   protected iconFor(step: PipelineStep): string {

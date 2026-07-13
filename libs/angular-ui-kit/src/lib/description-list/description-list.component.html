@@ -9,6 +9,9 @@
         } @else {
           {{ item.value }}
         }
+        @if (item.valueSuffix) {
+          <span class="lc-dl__value-suffix">{{ item.valueSuffix }}</span>
+        }
       </dd>
     </div>
   }

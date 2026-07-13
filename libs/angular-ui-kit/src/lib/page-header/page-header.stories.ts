@@ -141,6 +141,19 @@ input for a header-specific override.
       table: { defaultValue: { summary: 'false' } },
     },
     badge: { control: 'text', description: 'Optional pill next to the title (e.g. `Beta`).' },
+    icon: { control: 'text', description: 'Optional leading icon (Tabler name) shown as a tile before the title.' },
+    iconVariant: {
+      control: 'inline-radio',
+      options: ['brand', 'subtle'],
+      description: 'Visual treatment of the leading icon tile.',
+      table: { defaultValue: { summary: 'brand' } },
+    },
+    iconSize: {
+      control: 'inline-radio',
+      options: ['sm', 'md'],
+      description: 'Size of the leading icon tile.',
+      table: { defaultValue: { summary: 'md' } },
+    },
   },
 };
 export default meta;
@@ -179,6 +192,42 @@ export const Default: Story = {
       >
         <lc-button slot="actions" variant="secondary">Export</lc-button>
         <lc-button slot="actions" variant="primary">New report</lc-button>
+      </lc-page-header>
+    `,
+  }),
+};
+
+export const WithIcon: Story = {
+  name: 'With leading icon tile',
+  args: {
+    title: 'Repository',
+    subtitle: 'Checkout & profile',
+    icon: 'git-branch',
+    iconVariant: 'subtle',
+    showDivider: true,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Set `icon` to render a leading brand tile beside the title, mirroring `lc-card`. ' +
+          'Combine with `iconVariant` (`brand`/`subtle`) and `iconSize` (`sm`/`md`), and pair ' +
+          'with a status badge in the `title-suffix` slot.',
+      },
+    },
+  },
+  render: (args) => ({
+    props: args,
+    template: `
+      <lc-page-header
+        [title]="title"
+        [subtitle]="subtitle"
+        [icon]="icon"
+        [iconVariant]="iconVariant"
+        [showDivider]="showDivider"
+      >
+        <lc-chip slot="title-suffix" size="sm" variant="success">Ready</lc-chip>
+        <lc-button slot="actions" variant="primary">Open</lc-button>
       </lc-page-header>
     `,
   }),

@@ -47,6 +47,18 @@
       color: var(--color-primary-500);
       font-weight: var(--font-weight-semibold);
     }
+
+    &--mono {
+      font-family: var(--font-family-mono);
+      font-variant-numeric: normal;
+    }
+  }
+
+  // Muted qualifier appended after the value (same line, wraps if needed).
+  &__value-suffix {
+    margin-left: 0.375rem;
+    color: var(--color-text-tertiary);
+    font-weight: var(--font-weight-normal);
   }
 
   &__link {
@@ -61,11 +73,21 @@
   // ── rows layout (default) ──────────────────────────────────────────────────
   &--rows &__row {
     padding-block: var(--spacing-2);
+  }
+
+  // Per-row separator style (rows layout only). `line` is the default and
+  // matches the historic look; `divider` is a subtle dashed line; `none` off.
+  &--rows.lc-dl--sep-line &__row,
+  &--rows.lc-dl--sep-divider &__row {
     border-bottom: 1px solid var(--color-divider);
 
     &:last-child {
       border-bottom: 0;
     }
+  }
+
+  &--rows.lc-dl--sep-divider &__row {
+    border-bottom-style: dashed;
   }
 
   &--leaders &__leader {

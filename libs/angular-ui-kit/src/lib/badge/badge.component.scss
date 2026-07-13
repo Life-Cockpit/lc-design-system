@@ -94,6 +94,18 @@
   &--rounded {
     border-radius: var(--border-radius-full, 9999px);
   }
+
+  // Leading status dot — fills in the variant's text color (currentColor), so
+  // it always matches the label ink across every variant. Sized relative to the
+  // label so it scales with the badge size automatically.
+  &__dot {
+    flex-shrink: 0;
+    width: 0.5em;
+    height: 0.5em;
+    margin-right: 0.4em;
+    border-radius: var(--border-radius-full, 9999px);
+    background-color: currentColor;
+  }
 }
 
 // Responsive behavior

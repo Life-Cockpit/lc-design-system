@@ -62,6 +62,12 @@ Use it for content sections, dashboard widgets, and list items.
       description: 'Visual treatment of the leading icon tile',
       table: { defaultValue: { summary: 'brand' } },
     },
+    iconSize: {
+      control: 'inline-radio',
+      options: ['sm', 'md'],
+      description: 'Size of the leading icon tile',
+      table: { defaultValue: { summary: 'md' } },
+    },
   },
 };
 
@@ -100,6 +106,44 @@ export const WithIcon: Story = {
           A leading icon tile pairs with the title to give each card a clear, scannable identity.
         </p>
       </lc-card>`,
+  }),
+};
+
+export const CompactIcon: Story = {
+  name: 'Compact icon (iconSize="sm")',
+  parameters: {
+    docs: { description: { story: 'Use `iconSize="sm"` for dense card headers where the default tile feels too large. Pairs with either `iconVariant`.' } },
+  },
+  render: () => ({
+    template: `
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; max-width: 640px;">
+        <lc-card variant="outlined" title="Default tile" subtitle="iconSize=&quot;md&quot;" icon="settings" iconVariant="subtle" padding="md">
+          <p style="margin: 0; font-size: 14px; color: var(--color-text-secondary);">Standard leading tile.</p>
+        </lc-card>
+        <lc-card variant="outlined" title="Compact tile" subtitle="iconSize=&quot;sm&quot;" icon="settings" iconVariant="subtle" iconSize="sm" padding="md">
+          <p style="margin: 0; font-size: 14px; color: var(--color-text-secondary);">Smaller chip for dense layouts.</p>
+        </lc-card>
+      </div>`,
+  }),
+};
+
+export const StatusBadgeSlot: Story = {
+  name: 'Status badge slot (card-badge)',
+  parameters: {
+    docs: { description: { story: 'Project a full `lc-badge` into the `card-badge` slot for a rich status pill (e.g. with a leading `[dot]`) — takes visual precedence over the plain `badge` string input.' } },
+  },
+  render: () => ({
+    template: `
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; max-width: 640px;">
+        <lc-card variant="outlined" title="Configuration" icon="adjustments" iconVariant="subtle" iconSize="sm" padding="md">
+          <lc-badge card-badge variant="success" [rounded]="true" [dot]="true">Complete</lc-badge>
+          <p style="margin: 0; font-size: 14px; color: var(--color-text-secondary);">All required fields are set.</p>
+        </lc-card>
+        <lc-card variant="outlined" title="Data source" icon="database" iconVariant="subtle" iconSize="sm" padding="md">
+          <lc-badge card-badge variant="warning" [rounded]="true" [dot]="true">Out of date</lc-badge>
+          <p style="margin: 0; font-size: 14px; color: var(--color-text-secondary);">Last synced a while ago.</p>
+        </lc-card>
+      </div>`,
   }),
 };
 
@@ -200,6 +244,29 @@ export const WithFooter: Story = {
         <div style="display: flex; gap: 8px; justify-content: flex-end; padding-top: 12px; border-top: 1px solid #e5e7eb;">
           <lc-button variant="ghost" size="sm">Remind Later</lc-button>
           <lc-button variant="primary" size="sm">Renew Now</lc-button>
+        </div>
+      </lc-card>`,
+  }),
+};
+
+export const FooterSlot: Story = {
+  name: 'Footer slot (card-footer)',
+  parameters: {
+    docs: { description: { story: 'Project content into the `card-footer` slot to get a standardized footer with a divider and consistent padding — no manual `border-top` needed. Layout inside the footer is up to you (e.g. an action left, a link right).' } },
+  },
+  render: () => ({
+    template: `
+      <lc-card variant="elevated" title="Component" subtitle="Overview" icon="package" iconVariant="subtle" iconSize="sm" padding="md" style="max-width: 400px;">
+        <lc-badge card-badge variant="primary" [rounded]="true" [dot]="true">Ready</lc-badge>
+        <lc-description-list
+          [items]="[
+            { term: 'Type', value: 'Container' },
+            { term: 'Version', value: '1.4.0', emphasis: 'mono' },
+            { term: 'Status', value: 'Maintained', emphasis: 'strong' }
+          ]" />
+        <div card-footer style="width: 100%; display: flex; align-items: center; justify-content: space-between;">
+          <lc-button variant="ghost" size="sm">Edit</lc-button>
+          <a href="#" style="font-size: 13px; color: var(--color-primary-500); text-decoration: none;">Details ›</a>
         </div>
       </lc-card>`,
   }),

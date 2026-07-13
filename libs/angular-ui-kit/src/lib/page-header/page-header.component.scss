@@ -71,6 +71,36 @@
     flex: 1 1 auto;
   }
 
+  // Leading brand-tile icon (optional). Mirrors lc-card's header icon so the
+  // same recognizable teal square appears in page headers.
+  &__icon {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: var(--border-radius-md);
+
+    &--size-sm {
+      width: 2rem;
+      height: 2rem;
+      border-radius: var(--border-radius-sm);
+    }
+
+    &--brand {
+      background-image: var(--gradient-brand-tile);
+      color: var(--color-on-primary, #fff);
+      box-shadow: var(--shadow-brand-glow);
+    }
+
+    &--subtle {
+      background-color: rgba(32, 132, 151, 0.14);
+      color: var(--color-primary-500);
+      border: 1px solid var(--color-border-strong);
+    }
+  }
+
   &__title {
     margin: 0;
     font-family: var(--font-family-sans, inherit);

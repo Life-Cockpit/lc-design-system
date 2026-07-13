@@ -65,7 +65,17 @@ export class CardComponent {
   iconVariant = input<'brand' | 'subtle'>('brand');
 
   /**
+   * Size of the leading icon tile.
+   * - md: 2.25rem tile (default)
+   * - sm: compact ~1.75rem chip for dense card headers
+   * @default 'md'
+   */
+  iconSize = input<'sm' | 'md'>('md');
+
+  /**
    * Optional badge text/count shown next to the title (e.g. item count).
+   * For a richer status badge (e.g. a leading status dot), project an
+   * `lc-badge` into the `card-badge` slot instead — the slot takes precedence.
    */
   badge = input<string | undefined>(undefined);
 

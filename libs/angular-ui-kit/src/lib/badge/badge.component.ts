@@ -38,6 +38,13 @@ export class BadgeComponent {
   rounded = input<boolean>(false);
 
   /**
+   * Render a small leading status dot, filled in the variant's `currentColor`,
+   * before the label (the "● label" pattern). Purely additive.
+   * @default false
+   */
+  dot = input<boolean>(false);
+
+  /**
    * Computed CSS classes for the badge
    */
   badgeClasses = computed(() => {
@@ -48,6 +55,10 @@ export class BadgeComponent {
 
     if (this.rounded()) {
       classes.push('lc-badge--rounded');
+    }
+
+    if (this.dot()) {
+      classes.push('lc-badge--has-dot');
     }
 
     return classes.join(' ');

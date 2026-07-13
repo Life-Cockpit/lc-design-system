@@ -140,6 +140,14 @@
     height: 2.25rem;
     border-radius: var(--border-radius-md);
 
+    // Compact chip for dense card headers. The inner icon already drops to
+    // `xs` in the template, so the tile just needs to shrink.
+    &--size-sm {
+      width: 1.75rem;
+      height: 1.75rem;
+      border-radius: var(--border-radius-sm);
+    }
+
     &--brand {
       background-image: var(--gradient-brand-tile);
       color: var(--color-on-primary, #fff);
@@ -162,6 +170,17 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
+  }
+
+  // Projection wrapper for a rich status badge (e.g. an lc-badge). Collapses
+  // entirely when nothing is projected so it never adds a stray gap.
+  &__badge-slot {
+    display: inline-flex;
+    align-items: center;
+
+    &:empty {
+      display: none;
+    }
   }
 
   &__title {

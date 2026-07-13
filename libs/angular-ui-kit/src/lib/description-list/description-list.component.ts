@@ -6,18 +6,28 @@ import {
   computed,
 } from '@angular/core';
 
-/** Emphasis treatment applied to a row's value. */
+/**
+ * Emphasis treatment applied to a row's value.
+ * - `mono` renders the value in the monospace font (paths, URLs, hashes).
+ */
 export type DescriptionListEmphasis =
   | 'default'
   | 'strong'
   | 'muted'
-  | 'primary';
+  | 'primary'
+  | 'mono';
 
 export interface DescriptionListItem {
   /** Label shown on the term side of the row. */
   term: string;
   /** Value shown on the description side of the row. */
   value: string;
+  /**
+   * Optional qualifying suffix appended after the value on the same line and
+   * rendered muted (e.g. a rating grade or "last checked" hint). Wraps if the
+   * combined value + suffix exceed the available width.
+   */
+  valueSuffix?: string;
   /** Optional link — renders the value as an anchor. */
   href?: string;
   /** Optional visual emphasis for the value. @default 'default' */
@@ -28,6 +38,16 @@ export interface DescriptionListItem {
 
 export type DescriptionListLayout = 'rows' | 'stacked';
 export type DescriptionListSize = 'sm' | 'md';
+
+/**
+ * Per-row separator style (applies to the `rows` layout).
+ * - `line`    solid hairline under each row (default — unchanged look)
+ * - `divider` subtle dashed line, for the dense card look
+ * - `none`    no row separator
+ *
+ * Orthogonal to `leaders`, which draws dotted leaders *between* term and value.
+ */
+export type DescriptionListSeparator = 'line' | 'divider' | 'none';
 
 /**
  * Description list for key/value metadata (a styled `<dl>`).
@@ -79,6 +99,13 @@ export class DescriptionListComponent {
   /** Density of the rows. @default 'md' */
   readonly size = input<DescriptionListSize>('md');
 
+  /**
+   * Per-row separator style for the `rows` layout. Defaults to `line`, which is
+   * identical to the previous behavior. Orthogonal to `leaders`.
+   * @default 'line'
+   */
+  readonly separator = input<DescriptionListSeparator>('line');
+
   /** Emitted when a row is clicked. */
   readonly itemClick = output<DescriptionListItem>();
 
@@ -87,6 +114,7 @@ export class DescriptionListComponent {
       'lc-dl',
       `lc-dl--${this.layout()}`,
       `lc-dl--${this.size()}`,
+      `lc-dl--sep-${this.separator()}`,
       this.leaders() && this.layout() === 'rows' ? 'lc-dl--leaders' : '',
     ]
       .filter(Boolean)

@@ -4,6 +4,7 @@ import {
   DescriptionListComponent,
   DescriptionListItem,
   DescriptionListLayout,
+  DescriptionListSeparator,
 } from './description-list.component';
 
 @Component({
@@ -14,6 +15,7 @@ import {
       [items]="items()"
       [layout]="layout()"
       [leaders]="leaders()"
+      [separator]="separator()"
       (itemClick)="onItemClick($event)"
     />
   `,
@@ -26,6 +28,7 @@ class TestHost {
   ]);
   readonly layout = signal<DescriptionListLayout>('rows');
   readonly leaders = signal(false);
+  readonly separator = signal<DescriptionListSeparator>('line');
 
   readonly onItemClick = jest.fn<(item: DescriptionListItem) => void>();
 }
@@ -82,5 +85,30 @@ describe('DescriptionListComponent', () => {
     expect(host.onItemClick).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'repo', term: 'Repository' }),
     );
+  });
+
+  it('renders a muted value suffix when provided', () => {
+    host.items.set([{ term: 'Score', value: '78 / 100', valueSuffix: 'good' }]);
+    fixture.detectChanges();
+    const suffix = hostElement.querySelector('.lc-dl__value-suffix');
+    expect(suffix?.textContent?.trim()).toBe('good');
+  });
+
+  it('applies the mono emphasis modifier', () => {
+    host.items.set([{ term: 'Revision', value: 'a1b2c3d', emphasis: 'mono' }]);
+    fixture.detectChanges();
+    expect(hostElement.querySelector('.lc-dl__value')?.classList).toContain('lc-dl__value--mono');
+  });
+
+  it('applies the separator modifier (default line, then divider / none)', () => {
+    expect(hostElement.querySelector('.lc-dl')?.classList).toContain('lc-dl--sep-line');
+
+    host.separator.set('divider');
+    fixture.detectChanges();
+    expect(hostElement.querySelector('.lc-dl')?.classList).toContain('lc-dl--sep-divider');
+
+    host.separator.set('none');
+    fixture.detectChanges();
+    expect(hostElement.querySelector('.lc-dl')?.classList).toContain('lc-dl--sep-none');
   });
 });

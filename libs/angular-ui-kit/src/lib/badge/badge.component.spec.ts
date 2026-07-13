@@ -125,6 +125,22 @@ describe('BadgeComponent', () => {
     });
   });
 
+  describe('Dot Prop', () => {
+    it('should render a dot and add the has-dot class when true', () => {
+      fixture.componentRef.setInput('dot', true);
+      fixture.detectChanges();
+      const badge = fixture.debugElement.query(By.css('.lc-badge'));
+      expect(badge.nativeElement.className).toContain('lc-badge--has-dot');
+      expect(fixture.debugElement.query(By.css('.lc-badge__dot'))).toBeTruthy();
+    });
+
+    it('should not render a dot by default', () => {
+      const badge = fixture.debugElement.query(By.css('.lc-badge'));
+      expect(badge.nativeElement.className).not.toContain('lc-badge--has-dot');
+      expect(fixture.debugElement.query(By.css('.lc-badge__dot'))).toBeNull();
+    });
+  });
+
   describe('Computed Classes', () => {
     it('should compute correct CSS classes for default xs badge', () => {
       fixture.componentRef.setInput('variant', 'default');

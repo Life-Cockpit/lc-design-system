@@ -34,6 +34,7 @@ Use it for statuses, categories, notifications, and metadata.
       table: { defaultValue: { summary: 'md' } },
     },
     rounded: { control: 'boolean', description: 'Pill-shaped badge' },
+    dot: { control: 'boolean', description: 'Show a leading status dot in the variant color' },
   },
 };
 
@@ -89,6 +90,36 @@ export const Pill: Story = {
   render: (args) => ({
     props: args,
     template: `<lc-badge [variant]="variant" [rounded]="rounded">12</lc-badge>`,
+  }),
+};
+
+export const WithDot: Story = {
+  name: 'With status dot',
+  parameters: {
+    docs: { description: { story: 'Set `[dot]` to prefix the label with a small dot filled in the variant color — a scannable "● label" status pattern.' } },
+  },
+  args: { variant: 'success', rounded: true, dot: true },
+  render: (args) => ({
+    props: args,
+    template: `<lc-badge [variant]="variant" [rounded]="rounded" [dot]="dot">Ready</lc-badge>`,
+  }),
+};
+
+export const StatusDots: Story = {
+  name: 'Status dots (all variants)',
+  parameters: {
+    docs: { description: { story: 'The dot inherits each variant’s text color, so it stays consistent across the whole scale.' } },
+  },
+  render: () => ({
+    template: `
+      <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+        <lc-badge variant="default" [rounded]="true" [dot]="true">Idle</lc-badge>
+        <lc-badge variant="primary" [rounded]="true" [dot]="true">Assigned</lc-badge>
+        <lc-badge variant="info" [rounded]="true" [dot]="true">In progress</lc-badge>
+        <lc-badge variant="warning" [rounded]="true" [dot]="true">Needs review</lc-badge>
+        <lc-badge variant="success" [rounded]="true" [dot]="true">Complete</lc-badge>
+        <lc-badge variant="error" [rounded]="true" [dot]="true">Blocked</lc-badge>
+      </div>`,
   }),
 };
 

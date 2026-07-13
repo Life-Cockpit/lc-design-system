@@ -8,13 +8,19 @@
   @if (title()) {
     <div class="card__header">
       @if (icon()) {
-        <div class="card__icon card__icon--{{ iconVariant() }}" aria-hidden="true">
-          <lc-icon [name]="icon()!" size="sm" [decorative]="true" />
+        <div
+          class="card__icon card__icon--{{ iconVariant() }} card__icon--size-{{ iconSize() }}"
+          aria-hidden="true"
+        >
+          <lc-icon [name]="icon()!" [size]="iconSize() === 'sm' ? 'xs' : 'sm'" [decorative]="true" />
         </div>
       }
       <div class="card__header-left">
         <div class="card__title-row">
           <h3 class="card__title">{{ title() }}</h3>
+          <!-- Rich status badge: project an lc-badge here (takes visual
+               precedence over the `badge` string). Wrapper hides when empty. -->
+          <span class="card__badge-slot"><ng-content select="[card-badge]"></ng-content></span>
           @if (badge()) {
             <span class="card__badge card__badge--{{ badgeVariant() }}">{{ badge() }}</span>
           }

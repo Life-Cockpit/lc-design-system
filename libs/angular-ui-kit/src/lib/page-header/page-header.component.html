@@ -4,6 +4,14 @@
   </div>
 
   <div class="lc-page-header__row">
+    @if (icon()) {
+      <div
+        class="lc-page-header__icon lc-page-header__icon--{{ iconVariant() }} lc-page-header__icon--size-{{ iconSize() }}"
+        aria-hidden="true"
+      >
+        <lc-icon [name]="icon()!" [size]="iconSize() === 'sm' ? 'xs' : 'sm'" [decorative]="true" />
+      </div>
+    }
     <div class="lc-page-header__titles">
       @if (title()) {
         @switch (level()) {

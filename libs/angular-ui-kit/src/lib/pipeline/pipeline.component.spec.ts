@@ -4,6 +4,7 @@ import {
   PipelineComponent,
   PipelineStep,
   PipelineOrientation,
+  PipelineSize,
 } from './pipeline.component';
 
 @Component({
@@ -13,6 +14,7 @@ import {
     <lc-pipeline
       [steps]="steps()"
       [orientation]="orientation()"
+      [size]="size()"
       [clickable]="clickable()"
       (stepClick)="onStepClick($event)"
     />
@@ -27,6 +29,7 @@ class TestHost {
     { label: 'Publish', status: 'pending' },
   ]);
   readonly orientation = signal<PipelineOrientation>('horizontal');
+  readonly size = signal<PipelineSize>('md');
   readonly clickable = signal(false);
 
   readonly onStepClick = jest.fn<(step: PipelineStep) => void>();
@@ -96,5 +99,15 @@ describe('PipelineComponent', () => {
     host.orientation.set('vertical');
     fixture.detectChanges();
     expect(hostElement.querySelector('.lc-pipeline')?.classList).toContain('lc-pipeline--vertical');
+  });
+
+  it('applies the md size modifier by default', () => {
+    expect(hostElement.querySelector('.lc-pipeline')?.classList).toContain('lc-pipeline--size-md');
+  });
+
+  it('switches to the compact size modifier', () => {
+    host.size.set('sm');
+    fixture.detectChanges();
+    expect(hostElement.querySelector('.lc-pipeline')?.classList).toContain('lc-pipeline--size-sm');
   });
 });

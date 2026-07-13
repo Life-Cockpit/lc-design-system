@@ -414,4 +414,47 @@ describe('CardComponent', () => {
       expect(cardElement.classList.contains('card-selected')).toBe(true);
     });
   });
+
+  describe('Icon size', () => {
+    let iconFixture: ComponentFixture<CardComponent>;
+
+    beforeEach(() => {
+      iconFixture = TestBed.createComponent(CardComponent);
+      iconFixture.componentRef.setInput('title', 'Section');
+      iconFixture.componentRef.setInput('icon', 'settings');
+    });
+
+    it('applies the md tile size by default', () => {
+      iconFixture.detectChanges();
+      const tile = iconFixture.nativeElement.querySelector('.card__icon');
+      expect(tile.classList).toContain('card__icon--size-md');
+    });
+
+    it('applies the sm tile size when iconSize="sm"', () => {
+      iconFixture.componentRef.setInput('iconSize', 'sm');
+      iconFixture.detectChanges();
+      const tile = iconFixture.nativeElement.querySelector('.card__icon');
+      expect(tile.classList).toContain('card__icon--size-sm');
+    });
+  });
+
+  describe('card-badge slot', () => {
+    it('projects a badge into the title row and hides the empty slot otherwise', async () => {
+      @Component({
+        standalone: true,
+        imports: [CardComponent],
+        template: `
+          <lc-card title="With slot"><span card-badge class="probe">Ready</span></lc-card>
+          <lc-card title="No slot"></lc-card>
+        `,
+      })
+      class BadgeSlotHost {}
+
+      const f = TestBed.createComponent(BadgeSlotHost);
+      f.detectChanges();
+      const cards = f.nativeElement.querySelectorAll('lc-card');
+      expect(cards[0].querySelector('.card__title-row .probe')?.textContent).toContain('Ready');
+      expect(cards[1].querySelector('.card__badge-slot')?.textContent?.trim()).toBe('');
+    });
+  });
 });

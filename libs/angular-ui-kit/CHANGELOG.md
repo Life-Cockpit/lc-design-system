@@ -2,6 +2,45 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.10.0] - 2026-07-13
+
+### Added
+
+- **Badge: leading status dot** (`lc-badge`) — new `[dot]` input renders a small
+  dot filled in the variant's `currentColor` before the label (the scannable
+  "● label" status pattern). Works across every size and variant; purely additive.
+- **Card: compact icon tile** (`lc-card`) — new `[iconSize]` input (`sm` | `md`,
+  default `md`). `sm` renders a smaller ~1.75rem chip for dense card headers;
+  combines with `[iconVariant]`. Default size unchanged.
+- **Card: rich status badge slot** (`lc-card`) — new `card-badge` projection
+  slot in the title row so a full `lc-badge` (e.g. with a leading `[dot]`) can be
+  placed beside the title. Takes visual precedence over the plain `badge` string;
+  the slot collapses when empty. The existing `badge`/`badgeVariant` string API is
+  unchanged.
+- **Description List: value suffix + monospace values** (`lc-description-list`) —
+  new optional `valueSuffix` per item renders a muted qualifier after the value on
+  the same line; new `emphasis: 'mono'` renders the value in `--font-family-mono`
+  (paths, URLs, hashes). Existing items without the new fields are unchanged.
+- **Description List: row separator style** (`lc-description-list`) — new
+  `[separator]` input (`line` | `divider` | `none`, default `line`). `divider`
+  swaps the solid per-row line for a subtle dashed one; `none` removes it. Default
+  matches the previous look exactly and is orthogonal to `leaders`.
+- **Pipeline: compact size** (`lc-pipeline`) — new `[size]` input (`sm` | `md`,
+  default `md`). `sm` shrinks nodes, thins connectors and tightens the grid for a
+  dense status spine; captions stay legible. Default size unchanged.
+- **Page Header: leading icon tile** (`lc-page-header`) — new `[icon]` input
+  (with `[iconVariant]` and `[iconSize]`) renders a leading brand tile beside the
+  title, mirroring `lc-card`. Purely additive; the `title-suffix`/`actions` slots
+  are unchanged.
+
+### Notes
+
+- All changes are additive and backward-compatible; existing usages render
+  identically. On `lc-description-list`, `separator` is deliberately separate from
+  the existing `leaders` input rather than merging the two (which would have been
+  a breaking change): `leaders` still controls the dotted term↔value leader,
+  while `separator` controls the per-row line.
+
 ## [2.9.0] - 2026-07-13
 
 ### Added

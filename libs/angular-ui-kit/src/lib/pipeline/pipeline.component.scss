@@ -4,8 +4,30 @@
 
 .lc-pipeline {
   --lc-pipeline-node-size: 1.75rem;
+  --lc-pipeline-line-weight: 2px;
+  --lc-pipeline-gap: var(--spacing-2);
   --lc-pipeline-line: var(--color-border-strong);
   --lc-pipeline-line-done: var(--color-primary-500);
+
+  // Compact spine: smaller nodes, thinner connectors, tighter grid. The label
+  // and caption drop a step so the whole chain reads as a dense status strip.
+  &--size-sm {
+    --lc-pipeline-node-size: 1.25rem;
+    --lc-pipeline-line-weight: 1px;
+    --lc-pipeline-gap: var(--spacing-1);
+
+    .lc-pipeline__label {
+      font-size: var(--font-size-xs);
+    }
+
+    .lc-pipeline__caption {
+      font-size: var(--font-size-2xs, 0.6875rem);
+    }
+
+    .lc-pipeline__node lc-icon {
+      transform: scale(0.85);
+    }
+  }
 
   list-style: none;
   margin: 0;
@@ -52,7 +74,7 @@
     height: var(--lc-pipeline-node-size);
     border-radius: var(--border-radius-full);
     background-color: var(--color-surface);
-    border: 2px solid var(--lc-pipeline-line);
+    border: var(--lc-pipeline-line-weight) solid var(--lc-pipeline-line);
     color: var(--color-text-tertiary);
     box-sizing: border-box;
   }
@@ -74,7 +96,7 @@
   // ── Horizontal ──────────────────────────────────────────────────────────────
   &--horizontal {
     align-items: flex-start;
-    gap: var(--spacing-2);
+    gap: var(--lc-pipeline-gap);
 
     .lc-pipeline__step {
       flex: 1 1 0;
@@ -94,8 +116,8 @@
       position: absolute;
       top: calc(var(--lc-pipeline-node-size) / 2);
       left: calc(var(--lc-pipeline-node-size) / 2);
-      width: calc(100% + var(--spacing-2));
-      height: 2px;
+      width: calc(100% + var(--lc-pipeline-gap));
+      height: var(--lc-pipeline-line-weight);
       transform: translateY(-50%);
       background-color: var(--lc-pipeline-line);
     }
@@ -132,7 +154,7 @@
       position: absolute;
       left: calc(var(--lc-pipeline-node-size) / 2);
       top: var(--lc-pipeline-node-size);
-      width: 2px;
+      width: var(--lc-pipeline-line-weight);
       height: calc(100% - var(--lc-pipeline-node-size));
       transform: translateX(-50%);
       background-color: var(--lc-pipeline-line);

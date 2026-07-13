@@ -43,6 +43,22 @@ describe('PageHeaderComponent', () => {
       expect(rootEl.classList).toContain('lc-page-header--flush-x');
     });
 
+    it('does not render an icon tile by default', () => {
+      expect(rootEl.querySelector('.lc-page-header__icon')).toBeNull();
+    });
+
+    it('renders a leading icon tile with variant and size modifiers', () => {
+      fixture.componentRef.setInput('icon', 'git-branch');
+      fixture.componentRef.setInput('iconVariant', 'subtle');
+      fixture.componentRef.setInput('iconSize', 'sm');
+      fixture.detectChanges();
+      const tile = rootEl.querySelector('.lc-page-header__icon');
+      expect(tile).toBeTruthy();
+      expect(tile?.classList).toContain('lc-page-header__icon--subtle');
+      expect(tile?.classList).toContain('lc-page-header__icon--size-sm');
+      expect(tile?.querySelector('lc-icon')).toBeTruthy();
+    });
+
     it('renders title at requested level', () => {
       fixture.componentRef.setInput('level', 2);
       fixture.detectChanges();

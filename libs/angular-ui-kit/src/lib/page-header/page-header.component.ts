@@ -5,6 +5,7 @@ import {
   computed,
   input,
 } from '@angular/core';
+import { IconComponent } from '../icon/icon.component';
 
 /**
  * Page header — top-of-page title block with optional subtitle,
@@ -43,6 +44,7 @@ import {
 @Component({
   selector: 'lc-page-header',
   standalone: true,
+  imports: [IconComponent],
   templateUrl: './page-header.component.html',
   styleUrl: './page-header.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -54,6 +56,26 @@ import {
 export class PageHeaderComponent {
   /** Main heading text. */
   title = input<string | undefined>(undefined);
+
+  /**
+   * Optional leading icon (Tabler icon name) rendered as a brand tile to the
+   * left of the title block, mirroring `lc-card`'s header icon. Purely additive.
+   */
+  icon = input<string | undefined>(undefined);
+
+  /**
+   * Visual treatment of the leading icon tile.
+   * - brand: gradient teal tile with light ink (default)
+   * - subtle: translucent surface tile with brand-teal ink
+   * @default 'brand'
+   */
+  iconVariant = input<'brand' | 'subtle'>('brand');
+
+  /**
+   * Size of the leading icon tile.
+   * @default 'md'
+   */
+  iconSize = input<'sm' | 'md'>('md');
 
   /** Short supporting line below the title. */
   subtitle = input<string | undefined>(undefined);
