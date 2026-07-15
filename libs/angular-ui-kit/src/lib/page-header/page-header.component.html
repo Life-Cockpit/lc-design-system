@@ -13,50 +13,53 @@
       </div>
     }
     <div class="lc-page-header__titles">
-      @if (title()) {
-        @switch (level()) {
-          @case (1) {
-            <h1 class="lc-page-header__title">
-              {{ title() }}
-              @if (badge()) {
-                <span class="lc-page-header__badge">{{ badge() }}</span>
-              }
-              <span class="lc-page-header__title-suffix">
-                <ng-content select="[slot='title-suffix']" />
-              </span>
-            </h1>
-          }
-          @case (2) {
-            <h2 class="lc-page-header__title">
-              {{ title() }}
-              @if (badge()) {
-                <span class="lc-page-header__badge">{{ badge() }}</span>
-              }
-              <span class="lc-page-header__title-suffix">
-                <ng-content select="[slot='title-suffix']" />
-              </span>
-            </h2>
-          }
-          @case (3) {
-            <h3 class="lc-page-header__title">
-              {{ title() }}
-              @if (badge()) {
-                <span class="lc-page-header__badge">{{ badge() }}</span>
-              }
-              <span class="lc-page-header__title-suffix">
-                <ng-content select="[slot='title-suffix']" />
-              </span>
-            </h3>
+      <div class="lc-page-header__title-row">
+        @if (title()) {
+          @switch (level()) {
+            @case (1) {
+              <h1 class="lc-page-header__title">
+                {{ title() }}
+                @if (badge()) {
+                  <span class="lc-page-header__badge">{{ badge() }}</span>
+                }
+                <span class="lc-page-header__title-suffix">
+                  <ng-content select="[slot='title-suffix']" />
+                </span>
+              </h1>
+            }
+            @case (2) {
+              <h2 class="lc-page-header__title">
+                {{ title() }}
+                @if (badge()) {
+                  <span class="lc-page-header__badge">{{ badge() }}</span>
+                }
+                <span class="lc-page-header__title-suffix">
+                  <ng-content select="[slot='title-suffix']" />
+                </span>
+              </h2>
+            }
+            @case (3) {
+              <h3 class="lc-page-header__title">
+                {{ title() }}
+                @if (badge()) {
+                  <span class="lc-page-header__badge">{{ badge() }}</span>
+                }
+                <span class="lc-page-header__title-suffix">
+                  <ng-content select="[slot='title-suffix']" />
+                </span>
+              </h3>
+            }
           }
         }
-      }
+
+        <div class="lc-page-header__actions">
+          <ng-content select="[slot='actions']" />
+        </div>
+      </div>
+
       @if (subtitle()) {
         <p class="lc-page-header__subtitle">{{ subtitle() }}</p>
       }
-    </div>
-
-    <div class="lc-page-header__actions">
-      <ng-content select="[slot='actions']" />
     </div>
   </div>
 

@@ -2,5 +2,11 @@
   display: block;
 }
 
-// Container component relies entirely on Tailwind utilities
-// No custom styles needed
+// sm…xl and full rely entirely on Tailwind utilities. `xxl` is the exception:
+// it reads the --lc-content-max-width token instead of a Tailwind class, so the
+// cap has a single source of truth that an app shell can reference (or override)
+// and stay in lockstep with the container. The fallback keeps xxl working when
+// the DS global styles aren't imported.
+:host(.container-xxl) {
+  max-width: var(--lc-content-max-width, 1536px);
+}

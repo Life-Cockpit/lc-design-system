@@ -3,6 +3,9 @@ import { Component, input, computed, HostBinding, ChangeDetectionStrategy } from
 /** Where the layout takes its height from. */
 export type PageLayoutFill = 'screen' | 'parent';
 
+/** How wide the layout lets its content grow. */
+export type PageLayoutContentWidth = 'capped' | 'full';
+
 @Component({
   selector: 'lc-page-layout',
   standalone: true,
@@ -71,6 +74,20 @@ export class PageLayoutComponent {
   /** Add density-aware padding to the body. Off by default so embedded components keep their own padding. */
   padded = input<boolean>(false);
 
+  /**
+   * How wide content may grow on very large monitors.
+   * - `'capped'` (default): header, body and footer are capped at
+   *   `--lc-content-max-width` and centred, so content doesn't stretch edge to
+   *   edge on wide/ultrawide displays. All three regions share the cap, so the
+   *   page title stays aligned with the body beneath it.
+   * - `'full'`: no cap — content spans the whole shell. Use for full-bleed
+   *   bodies (maps, boards, canvases) that should use every pixel.
+   *
+   * Override the width itself — globally or per subtree — via the
+   * `--lc-content-max-width` custom property.
+   */
+  contentWidth = input<PageLayoutContentWidth>('capped');
+
   @HostBinding('class')
   get hostClasses(): string {
     return this.classes();
@@ -81,6 +98,7 @@ export class PageLayoutComponent {
     classes.push(`fill-${this.fill()}`);
     if (this.scrollBody()) classes.push('scroll-body');
     if (this.padded()) classes.push('padded');
+    if (this.contentWidth() === 'capped') classes.push('content-capped');
     return classes.join(' ');
   });
 }

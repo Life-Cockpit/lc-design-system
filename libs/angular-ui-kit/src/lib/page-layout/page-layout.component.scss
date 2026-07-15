@@ -45,6 +45,24 @@
   overflow: auto;
 }
 
+// ── Content width cap ───────────────────────────────────────────────────────
+// Without a cap the shell stretches content across the full width of a wide or
+// ultrawide monitor, which reads as "pulled apart". Capping happens per region
+// rather than on :host so the shell itself still fills its parent (the height
+// chain above depends on that) while the content settles into one centred
+// column. All three regions share the same cap, so a page title in the header
+// stays aligned with the body below it.
+//
+// The regions are stretched flex items, so `max-width` bounds them and the auto
+// inline margins centre what's left.
+:host(.content-capped) .lc-page-layout__header,
+:host(.content-capped) .lc-page-layout__body,
+:host(.content-capped) .lc-page-layout__footer {
+  max-width: var(--lc-content-max-width, 1536px);
+  margin-inline: auto;
+  width: 100%;
+}
+
 :host(.padded) .lc-page-layout__body {
   padding: var(--lc-density-padding-md, 1rem);
 

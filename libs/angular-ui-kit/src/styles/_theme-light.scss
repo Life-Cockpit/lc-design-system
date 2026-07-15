@@ -198,6 +198,14 @@
   --size-min-touch-height: #{$size-min-touch-height};
 
   // ============================================================================
+  // Layout - Content Width
+  // ============================================================================
+  // Canonical cap for page content. `lc-container size="xxl"` reads this, so an
+  // app shell that centres its own content against the same custom property
+  // stays in lockstep with the container instead of hard-coding a width.
+  --lc-content-max-width: #{$size-content-max-width};
+
+  // ============================================================================
   // Semantic Color Mappings for Light Theme (DS2.0 — mirrors dark token names)
   // ============================================================================
   // Surfaces

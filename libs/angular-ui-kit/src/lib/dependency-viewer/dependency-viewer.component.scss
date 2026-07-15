@@ -2,7 +2,7 @@
   display: block;
   position: relative;
   overflow: hidden;
-  border: 1px solid var(--color-neutral-200);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   background: var(--color-surface);
 }
@@ -13,8 +13,8 @@
     align-items: center;
     gap: 4px;
     padding: 8px 12px;
-    border-bottom: 1px solid var(--color-neutral-200);
-    background: var(--color-neutral-50);
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-surface-2);
     user-select: none;
   }
 
@@ -24,15 +24,16 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid var(--color-neutral-300);
+    border: 1px solid var(--color-border);
     border-radius: 4px;
     background: var(--color-surface);
+    color: var(--color-text-secondary);
     cursor: pointer;
     font-size: 14px;
     line-height: 1;
 
     &:hover {
-      background: var(--color-neutral-100);
+      background: var(--color-surface-hover);
     }
 
     &--reset {
@@ -98,6 +99,12 @@
     }
   }
 
+  // Matches the viewer's own background (see :host), so a translucent node tint
+  // composites to the same colour it would against an empty canvas.
+  &__node-backdrop {
+    fill: var(--color-surface);
+  }
+
   &__node-label {
     font-size: 12px;
     font-weight: 500;
@@ -109,14 +116,33 @@
     cursor: pointer;
 
     &:hover circle {
-      fill: var(--color-neutral-200);
+      fill: var(--color-surface-hover);
+    }
+  }
+
+  // "+N" marker for nodes whose neighbourhood is capped. Deliberately quiet —
+  // it flags truncation, it isn't a call to action.
+  &__more {
+    pointer-events: none;
+
+    rect {
+      fill: var(--color-surface-2);
+      stroke: var(--color-border-strong);
+      stroke-width: 1;
+    }
+
+    text {
+      font-size: 9px;
+      font-weight: 600;
+      fill: var(--color-text-secondary);
+      user-select: none;
     }
   }
 
   &__toggle-text {
     font-size: 11px;
     font-weight: 600;
-    fill: var(--color-neutral-600);
+    fill: var(--color-text-secondary);
     pointer-events: none;
     user-select: none;
   }
@@ -126,8 +152,8 @@
     flex-wrap: wrap;
     gap: 12px;
     padding: 6px 12px;
-    border-top: 1px solid var(--color-neutral-200);
-    background: var(--color-neutral-50);
+    border-top: 1px solid var(--color-border);
+    background: var(--color-surface-2);
   }
 
   &__legend-item {
@@ -147,8 +173,8 @@
     right: 12px;
     width: 240px;
     padding: 12px;
-    background: var(--color-surface);
-    border: 1px solid var(--color-neutral-200);
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border);
     border-radius: 8px;
     box-shadow: var(--elevation-1);
     font-size: 12px;
@@ -163,6 +189,16 @@
     font-size: 13px;
   }
 
+  &__detail-type {
+    margin-left: auto;
+    padding: 1px 6px;
+    border-radius: 3px;
+    background: var(--color-surface-hover);
+    color: var(--color-text-secondary);
+    font-size: 10px;
+    font-weight: 500;
+  }
+
   &__detail-status {
     font-size: 10px;
 
@@ -171,7 +207,7 @@
     &--success { color: var(--color-success-default); }
     &--warning { color: var(--color-warning-default); }
     &--error   { color: var(--color-error-default); }
-    &--muted   { color: var(--color-neutral-300); }
+    &--muted   { color: var(--color-text-disabled); }
   }
 
   &__detail-desc {
@@ -191,7 +227,7 @@
   &__detail-deps {
     margin-top: 8px;
     padding-top: 8px;
-    border-top: 1px solid var(--color-neutral-100);
+    border-top: 1px solid var(--color-border);
 
     ul {
       list-style: none;
@@ -208,7 +244,7 @@
   &__dep-relation {
     display: inline-block;
     padding: 1px 4px;
-    background: var(--color-neutral-100);
+    background: var(--color-surface-hover);
     border-radius: 3px;
     font-size: 10px;
     font-weight: 500;

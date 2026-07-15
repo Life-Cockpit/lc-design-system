@@ -2,6 +2,123 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.12.0] - 2026-07-15
+
+### Changed
+
+- **Page layout caps content width by default** (`lc-page-layout`) — **visible change
+  for every page using this component.** Header, body and footer are now capped at
+  `--lc-content-max-width` (1536px) and centred, so content no longer stretches edge
+  to edge on wide and ultrawide monitors. All three regions share the cap, so a page
+  title stays aligned with the body beneath it. Below 1536px nothing changes.
+
+  This is the piece that actually delivers a content cap: it applies to every page in
+  the shell regardless of what each one uses internally — including pages on
+  `<lc-container size="full">`.
+
+  Opt out per instance with `contentWidth="full"` (for full-bleed maps, boards or
+  canvases), or retune the width globally/per subtree via `--lc-content-max-width`.
+  The internal scroll behaviour and height chain are unchanged: the body remains the
+  scroll container, and children relying on `height: 100%` (e.g. `lc-chat`) still
+  resolve against it.
+
+### Added
+
+- **Container: `xxl` size** (`lc-container`) — new preset between `xl` (1280px) and
+  `full`, capping content at **1536px** and keeping it centred. Closes the gap that
+  forced data-dense pages (dashboards, two-column card layouts, tables) to choose
+  between an `xl` that squeezes and a `full` that stretches across ultrawide
+  displays. `sm`/`md`/`lg`/`xl`/`full` are unchanged — this is purely additive.
+- **`--lc-content-max-width` token** — the canonical content cap (1536px, matching
+  `size="xxl"`), also exported as the `SizeContentMaxWidth` TypeScript constant. App
+  shells that centre content outside of `lc-container` should reference this instead
+  of hard-coding a width, so every LC app lands on the same content width:
+
+  ```scss
+  .app-content {
+    max-width: var(--lc-content-max-width);
+    margin-inline: auto;
+  }
+  ```
+
+  Unlike `sm`–`xl` (which map onto Tailwind's screen scale), `xxl` reads this token
+  in CSS, so overriding the custom property retunes the container and the shell
+  together rather than letting them drift apart.
+- **Dependency viewer: node events** (`lc-dependency-viewer`) — `(nodeSelect)` fires on
+  selection (not on deselect) and `(nodeExpand)` on double-click, both carrying the
+  original `DependencyNode`. This is the hook for click-to-expand and custom detail
+  panels.
+- **Dependency viewer: opaque `data` passthrough** — `DependencyNode.data?: Record<string,
+  unknown>` is never read by the component and handed back unchanged on `nodeSelect` /
+  `nodeExpand`, so callers can carry their own metadata through the viewer.
+- **Dependency viewer: viewport anchoring** — new `[anchorNodeId]` (defaults to the
+  selected node) keeps a node pinned to its screen position across `root` updates.
+- **Dependency viewer: free-form edge labels** — `DependencyEdgeDef.relationLabel?: string`
+  renders any label verbatim (`CALLS`, `HAS_COLUMN`, …) without squeezing it into the
+  seven built-in relations. The `relation` enum is unchanged and still drives colour.
+- **Dependency viewer: truncation indicator** — `DependencyNode.moreCount?: number` renders
+  a quiet "+N" marker for nodes whose neighbourhood is capped.
+- **Dependency viewer: node types** — `DependencyNode.type?: string` plus `[typeColors]`
+  colours nodes along a category axis, with its own legend. Additive to `status`: a
+  resolved type colour wins for the fill, otherwise `status` applies exactly as before.
+- **Dependency viewer: filters** — `[hiddenRelations]` and `[hiddenTypes]` hide edges and
+  nodes without reshuffling the remaining layout.
+- **Dependency viewer: imperative API** — `focusNode(id)`, `resetView()`, `expand(id)`,
+  `collapse(id)`, `expandAll()`, `collapseAll()` for deep links and programmatic control.
+
+### Fixed
+
+- **Dependency viewer no longer crashes on cyclic input** (`lc-dependency-viewer`) — a cycle
+  (`a → b → a`) previously recursed until `RangeError: Maximum call stack size exceeded`,
+  and a node reachable from two parents was rendered twice at two positions. The layout now
+  treats its input as a graph: a link back to an already-placed node is drawn as a
+  cross-reference arrow instead of being followed. Every node is laid out exactly once, and
+  no input can make the layout recurse forever.
+- **Dependency viewer: O(n²) work per change detection** — `hasChildren()` walked the whole
+  tree for every node on every cycle, and the layout resolved parents with a linear scan.
+  Both are map lookups now.
+- **Dependency viewer: edges showed through nodes in the dark theme**
+  (`lc-dependency-viewer`) — the status fills resolve to translucent tints
+  (`--color-success-50` → `rgba(…, 0.18)`), so edges routed behind a node were visible
+  straight through it. Nodes now carry an opaque backdrop beneath the tint. The paint
+  order was never the problem: edges were always drawn under the nodes.
+- **Dependency viewer: cross-references cut across unrelated nodes** — a cross-reference
+  joins an arbitrary pair, so its direct curve could pass behind a node in between and
+  read as a broken edge. They now detour around it (parent→child edges always ran down
+  the gutter and never had this problem). This is a small fixed search over candidate
+  routes, not obstacle-avoiding routing: a dense enough graph can still leave the
+  least-bad route crossing something.
+- **Dependency viewer: unreadable labels in the dark theme** — node labels used
+  `--color-<status>-700`, which is dark ink in *both* themes (`--color-error-700` is
+  `#6b0909`), leaving dark-on-dark text over the dark theme's tints. Labels now use the
+  theme's semantic `--color-text-*`, which flips with the theme; status stays legible
+  through the border and tint.
+- **Dependency viewer: chrome used the raw neutral scale** — toolbar, legend, detail panel
+  and toggles read `--color-neutral-*`, which the dark theme inverts into blue-greys that
+  clashed with the DS2.0 teal-tinted surface (a `#111827` panel on a `#14222e` card). They
+  now use the semantic `--color-surface-*` / `--color-border` / `--color-text-*` tokens.
+- **Page header: actions align to the title line** (`lc-page-header`) — the title and
+  the `[slot="actions"]` now share an internal `__title-row` that centres them against
+  each other, with the subtitle below that row. Previously `__row` used
+  `align-items: flex-start`, so actions sat ~3px above the title's optical centre
+  (measured: 2.75px at `size="default"` with `size="sm"` buttons, up to 13.75px for
+  `compact` + `lg`). Actions now centre on the title line for every combination of
+  header size (compact/default/comfortable) and button size (sm/md/lg).
+
+  This also fixes a larger latent bug: because `__row` wraps and `__titles` reported a
+  wide max-content size, **a long subtitle pushed the actions onto their own line
+  below the subtitle even on wide viewports** — buttons landed ~77px below the title
+  and left-aligned. They now stay on the title line regardless of subtitle length.
+
+  Two visible consequences, both intentional:
+  - When actions wrap on narrow viewports they now sit **between the title and the
+    subtitle** rather than below the subtitle.
+  - Wrapped actions stay **right-aligned** (previously they went left), matching the
+    documented "right-aligned actions" contract.
+
+  Apps that worked around the offset with a `min-height` on `.lc-page-header__title`
+  (e.g. via `::ng-deep`) should remove it — it will now over-tall the title row.
+
 ## [2.11.0] - 2026-07-13
 
 ### Added

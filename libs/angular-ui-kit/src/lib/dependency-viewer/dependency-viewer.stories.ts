@@ -196,3 +196,116 @@ export const SingleNode: Story = {
     height: '200px',
   },
 };
+
+// ── Graph explorer capabilities ──────────────────────────────────────────────
+
+export const FreeFormRelationLabels: Story = {
+  name: 'Free-form Relation Labels',
+  args: {
+    root: {
+      id: 'n1',
+      label: 'Node One',
+      status: 'active',
+      children: [
+        { id: 'n2', label: 'Node Two' },
+        { id: 'n3', label: 'Node Three', dependsOn: [{ id: 'n2', relationLabel: 'CUSTOM_LABEL' }] },
+        { id: 'n4', label: 'Node Four', dependsOn: [{ id: 'n3', relationLabel: 'ANOTHER_LABEL' }] },
+      ],
+    },
+    direction: 'horizontal',
+    height: '400px',
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Use `relationLabel` on an edge when the relationship vocabulary is wider than the ' +
+          'built-in `relation` enum. The label is shown verbatim; colouring follows `relation` ' +
+          '(here omitted, so edges take the generic style).',
+      },
+    },
+  },
+};
+
+export const TypedNodes: Story = {
+  name: 'Node Types & Legend',
+  args: {
+    root: {
+      id: 'root',
+      label: 'Root',
+      type: 'Alpha',
+      children: [
+        { id: 'c1', label: 'Item One', type: 'Beta' },
+        { id: 'c2', label: 'Item Two', type: 'Gamma', children: [{ id: 'c3', label: 'Item Three', type: 'Beta' }] },
+      ],
+    },
+    typeColors: {
+      Alpha: '#c1e3e9',
+      Beta: '#cdd6c2',
+      Gamma: '#f1d3a7',
+    },
+    direction: 'horizontal',
+    height: '400px',
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '`type` colours nodes along a category axis, independent of the semantic `status` axis, ' +
+          'and drives its own legend. A resolved type colour wins over `status` for the fill.',
+      },
+    },
+  },
+};
+
+export const CappedNeighbourhood: Story = {
+  name: 'Truncation Indicator',
+  args: {
+    root: {
+      id: 'hub',
+      label: 'Hub Node',
+      status: 'active',
+      moreCount: 128,
+      children: [
+        { id: 'x1', label: 'Neighbour One' },
+        { id: 'x2', label: 'Neighbour Two', moreCount: 7 },
+      ],
+    },
+    direction: 'horizontal',
+    height: '300px',
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Set `moreCount` when a node has more neighbours than are shown, so the truncation is ' +
+          'visible instead of silent. Typical for highly connected nodes whose neighbourhood is capped.',
+      },
+    },
+  },
+};
+
+export const CyclicGraph: Story = {
+  name: 'Cyclic Graph (Tolerance)',
+  args: {
+    root: (() => {
+      const three: DependencyNode = { id: 'three', label: 'Three' };
+      const two: DependencyNode = { id: 'two', label: 'Two', children: [three] };
+      const one: DependencyNode = { id: 'one', label: 'One', status: 'active', children: [two] };
+      three.children = [one]; // closes the loop: one → two → three → one
+      return one;
+    })(),
+    direction: 'horizontal',
+    height: '300px',
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'The input is a tree, but real graphs loop. A link back to an already-placed node — a ' +
+          'cycle, or a node reached from a second parent — is drawn as a cross-reference arrow ' +
+          'instead of being followed, so each node is rendered exactly once.',
+      },
+    },
+  },
+};

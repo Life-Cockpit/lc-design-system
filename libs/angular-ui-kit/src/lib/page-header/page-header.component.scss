@@ -71,6 +71,21 @@
     flex: 1 1 auto;
   }
 
+  // Title and actions share this row, so `align-items: center` lines the actions
+  // up with the title's line box rather than with the whole title column. The
+  // subtitle deliberately sits *outside* this row (below it, but still inside
+  // __titles so it stays indented past the optional icon) — inside, it would
+  // stretch the centring reference and drag the actions down into the middle of
+  // the block. Wraps, so tall/many actions still reflow on narrow viewports.
+  &__title-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--lc-density-gap-md, 1rem);
+    min-width: 0;
+  }
+
   // Leading brand-tile icon (optional). Mirrors lc-card's header icon so the
   // same recognizable teal square appears in page headers.
   &__icon {
@@ -156,6 +171,10 @@
     gap: var(--lc-density-gap-sm, 0.5rem);
     flex: 0 0 auto;
     justify-content: flex-end;
+    // Right-aligns the actions within the title row. Replaces the
+    // `justify-content: space-between` that __row used to provide, and keeps
+    // them right-aligned even once they wrap onto their own line.
+    margin-inline-start: auto;
   }
 
   // ── Size variants ────────────────────────────────────────────────────────

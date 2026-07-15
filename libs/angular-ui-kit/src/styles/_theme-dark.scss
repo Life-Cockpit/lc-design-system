@@ -200,6 +200,11 @@
   --size-min-touch-height: #{$size-min-touch-height};
 
   // ============================================================================
+  // Layout - Content Width (Same as light theme)
+  // ============================================================================
+  --lc-content-max-width: #{$size-content-max-width};
+
+  // ============================================================================
   // Semantic Color Mappings for Dark Theme (DS2.0 — teal-tinted surfaces)
   // ============================================================================
   // Surfaces

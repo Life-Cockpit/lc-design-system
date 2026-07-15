@@ -126,3 +126,4 @@ export const SizeInteractiveLgPadding = "0.625rem 1.25rem";
 export const SizeInteractiveLgFontSize = "1.125rem";
 export const SizeMinTouchWidth = "2.75rem"; // 44px minimum
 export const SizeMinTouchHeight = "2.75rem"; // 44px minimum
+export const SizeContentMaxWidth = "1536px"; // Canonical page content cap — matches lc-container size="xxl" and Tailwind's 2xl breakpoint

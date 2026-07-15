@@ -1,6 +1,6 @@
 import { Component, input, computed, HostBinding, ChangeDetectionStrategy } from '@angular/core';
 
-export type ContainerSize = 'sm' | 'md' | 'lg' | 'xl' | 'full';
+export type ContainerSize = 'sm' | 'md' | 'lg' | 'xl' | 'xxl' | 'full';
 
 @Component({
   selector: 'lc-container',
@@ -14,10 +14,14 @@ export type ContainerSize = 'sm' | 'md' | 'lg' | 'xl' | 'full';
  * Container component for responsive max-width content layout.
  *
  * Features:
- * - Max-width presets (sm, md, lg, xl, full)
+ * - Max-width presets (sm, md, lg, xl, xxl, full)
  * - Optional horizontal padding removal
  * - Optional vertical padding
  * - Centered content alignment
+ *
+ * `xxl` caps at the `--lc-content-max-width` token (1536px) — the widest step
+ * before `full`, for data-dense pages that `xl` squeezes but `full` stretches
+ * across ultrawide displays.
  *
  * @example
  * ```html
@@ -40,15 +44,18 @@ export class ContainerComponent {
     // Semantic size class
     classes.push(`container-${this.size()}`);
 
-    // Size/Max-width
-    if (this.size() !== 'full') {
-      const sizeMap: Record<Exclude<ContainerSize, 'full'>, string> = {
-        sm: 'max-w-screen-sm',
-        md: 'max-w-screen-md',
-        lg: 'max-w-screen-lg',
-        xl: 'max-w-screen-xl',
-      };
-      classes.push(sizeMap[this.size() as Exclude<ContainerSize, 'full'>]);
+    // Size/Max-width — sm…xl map onto Tailwind's screen scale. `xxl` is capped
+    // in SCSS from the --lc-content-max-width token so apps can retune both the
+    // container and their own shell from one place; `full` stays uncapped.
+    const sizeMap: Partial<Record<ContainerSize, string>> = {
+      sm: 'max-w-screen-sm',
+      md: 'max-w-screen-md',
+      lg: 'max-w-screen-lg',
+      xl: 'max-w-screen-xl',
+    };
+    const maxWidthClass = sizeMap[this.size()];
+    if (maxWidthClass) {
+      classes.push(maxWidthClass);
     }
 
     // Padding

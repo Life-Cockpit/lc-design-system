@@ -1,14 +1,23 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { By } from '@angular/platform-browser';
-import { PageLayoutComponent, PageLayoutFill } from './page-layout.component';
+import {
+  PageLayoutComponent,
+  PageLayoutContentWidth,
+  PageLayoutFill,
+} from './page-layout.component';
 
 @Component({
   standalone: true,
   imports: [PageLayoutComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <lc-page-layout [fill]="fill" [scrollBody]="scrollBody" [padded]="padded">
+    <lc-page-layout
+      [fill]="fill"
+      [scrollBody]="scrollBody"
+      [padded]="padded"
+      [contentWidth]="contentWidth"
+    >
       <header layout-header>Header</header>
       <p>Body content</p>
       <footer layout-footer>Footer</footer>
@@ -19,6 +28,7 @@ class TestHostComponent {
   fill: PageLayoutFill = 'screen';
   scrollBody = true;
   padded = false;
+  contentWidth: PageLayoutContentWidth = 'capped';
 }
 
 describe('PageLayoutComponent', () => {
@@ -78,6 +88,19 @@ describe('PageLayoutComponent', () => {
     it('should not be padded by default', () => {
       hostFixture.detectChanges();
       expect(hostEl.classList).not.toContain('padded');
+    });
+
+    // The cap itself is CSS (max-width + auto inline margins on each region),
+    // which jsdom can't measure — pin the class the stylesheet keys off instead.
+    it('should cap the content width by default', () => {
+      hostFixture.detectChanges();
+      expect(hostEl.classList).toContain('content-capped');
+    });
+
+    it('should drop the cap for full-bleed layouts', () => {
+      hostFixture.componentInstance.contentWidth = 'full';
+      hostFixture.detectChanges();
+      expect(hostEl.classList).not.toContain('content-capped');
     });
 
     it('should add the padded class when requested', () => {

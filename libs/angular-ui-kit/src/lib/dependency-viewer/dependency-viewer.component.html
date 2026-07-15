@@ -42,19 +42,19 @@
         [attr.stroke]="edge.color"
         [attr.stroke-width]="edgeWidth()"
         [attr.stroke-dasharray]="edge.dashed ? '6 3' : 'none'"
-        [attr.marker-end]="edge.isCrossRef ? 'url(#arrow-' + (edge.relation || 'default') + ')' : ''"
+        [attr.marker-end]="edge.isCrossRef ? 'url(#arrow-' + edge.marker + ')' : ''"
         fill="none"
         class="dep-viewer__edge"
         [class.dep-viewer__edge--cross-ref]="edge.isCrossRef"
       />
-      @if (showEdgeLabels() && edge.isCrossRef && edge.relation) {
+      @if (showEdgeLabels() && edge.isCrossRef && edge.label) {
         <text
           [attr.x]="edge.labelX"
           [attr.y]="edge.labelY"
           class="dep-viewer__edge-label"
           [attr.fill]="edge.color"
           text-anchor="middle"
-        >{{ getRelationLabel(edge.relation) }}</text>
+        >{{ edge.label }}</text>
       }
     }
 
@@ -64,24 +64,55 @@
         class="dep-viewer__node"
         [class.dep-viewer__node--selected]="selectedNodeId() === node.id"
         (click)="selectNode(node.id, $event)"
+        (dblclick)="expandNode(node.id, $event)"
       >
+        <!-- Opaque backdrop. The status fills are translucent tints (in the dark
+             theme --color-success-50 & co. resolve to rgba(…, 0.18)), so without
+             something solid beneath them the edges routed under a node show
+             straight through it. This keeps the tint compositing against the
+             viewer's own surface instead of against whatever passes behind. -->
         <rect
           [attr.x]="node.x"
           [attr.y]="node.y"
           [attr.width]="node.width"
           [attr.height]="node.height"
           rx="6" ry="6"
-          [attr.fill]="getNodeBg(node.status)"
-          [attr.stroke]="selectedNodeId() === node.id ? 'var(--color-primary-500)' : getNodeBorder(node.status)"
+          class="dep-viewer__node-backdrop"
+        />
+        <rect
+          class="dep-viewer__node-fill"
+          [attr.x]="node.x"
+          [attr.y]="node.y"
+          [attr.width]="node.width"
+          [attr.height]="node.height"
+          rx="6" ry="6"
+          [attr.fill]="getNodeBg(node)"
+          [attr.stroke]="selectedNodeId() === node.id ? 'var(--color-primary-500)' : getNodeBorder(node)"
           stroke-width="1.5"
         />
         <text
           [attr.x]="node.x + node.width / 2"
           [attr.y]="node.y + node.height / 2 + 4"
           text-anchor="middle"
-          [attr.fill]="getNodeText(node.status)"
+          [attr.fill]="getNodeText(node)"
           class="dep-viewer__node-label"
         >{{ node.label }}</text>
+
+        <!-- "+N" marker: this node has more neighbours than are shown -->
+        @if (node.moreCount) {
+          <g class="dep-viewer__more">
+            <rect
+              [attr.x]="node.x + node.width - 26"
+              [attr.y]="node.y - 8"
+              width="32" height="16" rx="8" ry="8"
+            />
+            <text
+              [attr.x]="node.x + node.width - 10"
+              [attr.y]="node.y + 3"
+              text-anchor="middle"
+            >+{{ node.moreCount }}</text>
+          </g>
+        }
 
         <!-- Collapse/expand toggle -->
         @if (hasChildren(node.id)) {
@@ -124,9 +155,9 @@
 </div>
 
 <!-- Legend -->
-@if (legendItems().length) {
+@if (legendItems().length || typeLegendItems().length) {
   <div class="dep-viewer__legend">
-    @for (item of legendItems(); track item.relation) {
+    @for (item of legendItems(); track item.label) {
       <span class="dep-viewer__legend-item">
         <svg width="24" height="10">
           <line
@@ -139,6 +170,14 @@
         <span class="dep-viewer__legend-text">{{ item.label }}</span>
       </span>
     }
+    @for (item of typeLegendItems(); track item.type) {
+      <span class="dep-viewer__legend-item">
+        <svg width="10" height="10">
+          <rect width="10" height="10" rx="2" ry="2" [attr.fill]="item.color" />
+        </svg>
+        <span class="dep-viewer__legend-text">{{ item.type }}</span>
+      </span>
+    }
   </div>
 }
 
@@ -148,6 +187,9 @@
     <div class="dep-viewer__detail-header">
       <span class="dep-viewer__detail-status dep-viewer__detail-status--{{ node.status }}">●</span>
       <strong>{{ node.label }}</strong>
+      @if (node.type) {
+        <span class="dep-viewer__detail-type">{{ node.type }}</span>
+      }
     </div>
     @if (node.description) {
       <p class="dep-viewer__detail-desc">{{ node.description }}</p>
@@ -163,7 +205,9 @@
         <ul>
           @for (dep of selectedDependsOn(); track dep.id) {
             <li>
-              <span class="dep-viewer__dep-relation">{{ getRelationLabel(dep.relation || 'depends') }}</span>
+              <span class="dep-viewer__dep-relation">{{
+                dep.relationLabel || getRelationLabel(dep.relation || 'depends')
+              }}</span>
               → {{ dep.id }}
             </li>
           }

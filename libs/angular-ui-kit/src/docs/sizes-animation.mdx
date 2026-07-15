@@ -35,6 +35,25 @@ Standardized sizes for interactive elements (buttons, inputs, etc.).
 
 The minimum touch target is **44px** (`spacing-11`) per WCAG 2.5.5. All interactive elements should be at least this size.
 
+## Content Width
+
+`--lc-content-max-width` (**1536px**) is the canonical cap for page content — the width
+that data-dense app pages (dashboards, two-column card layouts, tables) should settle on
+rather than stretching edge-to-edge on ultrawide displays.
+
+`<lc-container size="xxl">` applies it for you. Use the token directly only where content
+is centred outside of a container, e.g. in an app shell:
+
+```scss
+.app-content {
+  max-width: var(--lc-content-max-width);
+  margin-inline: auto;
+}
+```
+
+It is also exported as the `SizeContentMaxWidth` TypeScript constant. Prefer either of
+these over a hard-coded width, so every LC app lands on the same content width.
+
 ---
 
 # Animation

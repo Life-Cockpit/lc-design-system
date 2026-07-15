@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { By } from '@angular/platform-browser';
-import { ContainerComponent } from './container.component';
+import { ContainerComponent, ContainerSize } from './container.component';
 
 @Component({
   standalone: true,
@@ -14,7 +14,7 @@ import { ContainerComponent } from './container.component';
   `,
 })
 class TestHostComponent {
-  size: 'sm' | 'md' | 'lg' | 'xl' | 'full' = 'lg';
+  size: ContainerSize = 'lg';
   noPadding: boolean = false;
   paddingY: boolean = false;
 }
@@ -76,6 +76,27 @@ describe('ContainerComponent', () => {
       hostFixture.detectChanges();
       expect(containerElement.classList).toContain('container-xl');
       expect(containerElement.classList).toContain('max-w-screen-xl');
+    });
+
+    it('should render xxl size (capped in SCSS via --lc-content-max-width)', () => {
+      hostFixture.componentInstance.size = 'xxl';
+      hostFixture.detectChanges();
+      expect(containerElement.classList).toContain('container-xxl');
+      // xxl deliberately carries no Tailwind max-w utility — the cap comes from
+      // the token in container.component.scss.
+      const hasTailwindMaxWidth = Array.from(containerElement.classList).some((cls) =>
+        cls.startsWith('max-w-')
+      );
+      expect(hasTailwindMaxWidth).toBe(false);
+    });
+
+    it('should keep centering and padding on xxl', () => {
+      hostFixture.componentInstance.size = 'xxl';
+      hostFixture.detectChanges();
+      expect(containerElement.classList).toContain('mx-auto');
+      expect(containerElement.classList).toContain('px-4');
+      expect(containerElement.classList).toContain('sm:px-6');
+      expect(containerElement.classList).toContain('lg:px-8');
     });
 
     it('should render full size (no max-width)', () => {

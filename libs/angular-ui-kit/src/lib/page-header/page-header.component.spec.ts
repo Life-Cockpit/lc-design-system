@@ -121,5 +121,24 @@ describe('PageHeaderComponent', () => {
       expect(rootEl.querySelector('.lc-page-header__meta')?.textContent).toContain('12 active');
       expect(rootEl.querySelector('.lc-page-header__body')?.textContent).toContain('Description');
     });
+
+    // The actions only centre on the title's line box while they share a row
+    // with the title and the subtitle stays out of that row. jsdom can't verify
+    // the resulting geometry, so pin the structure the CSS depends on instead.
+    it('puts the title and the actions in a shared title row', () => {
+      const titleRow = rootEl.querySelector('.lc-page-header__title-row');
+      expect(titleRow).toBeTruthy();
+      expect(titleRow?.querySelector('.lc-page-header__title')).toBeTruthy();
+      expect(titleRow?.querySelector('.lc-page-header__actions')).toBeTruthy();
+    });
+
+    it('keeps the subtitle out of the title row so it cannot drag the actions down', () => {
+      const titleRow = rootEl.querySelector('.lc-page-header__title-row');
+      expect(titleRow?.querySelector('.lc-page-header__subtitle')).toBeNull();
+
+      // …but still inside __titles, so it stays indented past an optional icon.
+      const subtitle = rootEl.querySelector('.lc-page-header__subtitle');
+      expect(subtitle?.parentElement?.classList).toContain('lc-page-header__titles');
+    });
   });
 });
