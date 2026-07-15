@@ -84,6 +84,18 @@
     font-weight: 500;
     pointer-events: none;
     user-select: none;
+    // Centre the glyphs on labelY (the curve's midpoint). Without this the y
+    // attribute is a baseline, so the text hangs ~8px above the point it's meant
+    // to mark — enough to leave a tight gutter and land on a node.
+    dominant-baseline: central;
+    // A label sits at its edge's midpoint, which often lands on a node or on the
+    // edge itself. `paint-order: stroke` draws this stroke *behind* the glyphs,
+    // giving them a halo in the viewer's own background — cheaper and better
+    // fitting than a background plate, since SVG text has no background.
+    paint-order: stroke;
+    stroke: var(--color-surface);
+    stroke-width: 3px;
+    stroke-linejoin: round;
   }
 
   &__node {

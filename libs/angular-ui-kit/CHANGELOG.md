@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.12.1] - 2026-07-15
+
+### Fixed
+
+- **Dependency viewer: edge labels were hidden behind nodes** (`lc-dependency-viewer`) —
+  labels are drawn in their own pass after the nodes now, and carry a halo in the
+  viewer's background colour so they stay legible wherever they land.
+
+  Partly a regression from 2.12.0: labels have always been drawn before the nodes, but
+  while the node fills were translucent they showed through faintly. Making the fills
+  opaque (to stop edges bleeding through) turned "faint" into "invisible".
+- **Dependency viewer: edge labels sat 8px off their edge** — `labelY` is an SVG
+  baseline, and the label was additionally nudged up by 8px, so the text ended up ~16px
+  above the point it marks. In a 24px gutter between stacked siblings that pushed it out
+  of the gap and onto the node above (measured: 5px into the box for 3 of 4 labels in
+  the "Complex Relationships" story). Labels are now centred on their edge's midpoint
+  via `dominant-baseline`, and clear the nodes without any change to the layout spacing.
+
 ## [2.12.0] - 2026-07-15
 
 ### Changed

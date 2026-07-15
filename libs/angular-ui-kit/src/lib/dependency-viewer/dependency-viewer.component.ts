@@ -337,13 +337,16 @@ function directGeometry(source: LayoutNode, target: LayoutNode, dir: DependencyD
     const p3 = { x: target.x, y: target.y + target.height / 2 };
     const mx = (p0.x + p3.x) / 2;
     const points: Cubic = [p0, { x: mx, y: p0.y }, { x: mx, y: p3.y }, p3];
-    return { path: cubicPath(points), labelX: mx, labelY: (p0.y + p3.y) / 2 - 8, points };
+    // labelY is the curve midpoint, not a baseline offset: the template centres the
+    // text on it via `dominant-baseline`. Nudging it up instead (as this did) pushes
+    // the label out of a 24px gutter and into the node above it.
+    return { path: cubicPath(points), labelX: mx, labelY: (p0.y + p3.y) / 2, points };
   }
   const p0 = { x: source.x + source.width / 2, y: source.y + source.height };
   const p3 = { x: target.x + target.width / 2, y: target.y };
   const my = (p0.y + p3.y) / 2;
   const points: Cubic = [p0, { x: p0.x, y: my }, { x: p3.x, y: my }, p3];
-  return { path: cubicPath(points), labelX: (p0.x + p3.x) / 2, labelY: my - 8, points };
+  return { path: cubicPath(points), labelX: (p0.x + p3.x) / 2, labelY: my, points };
 }
 
 type BowSide = 'below' | 'above' | 'right' | 'left';

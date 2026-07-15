@@ -573,6 +573,42 @@ describe('DependencyViewerComponent', () => {
     expect(labels).toContain('CALLS');
   });
 
+  it('should paint edge labels after the nodes so they cannot be covered', () => {
+    host.root.set({
+      id: 'root',
+      label: 'Root',
+      children: [
+        { id: 'a', label: 'A' },
+        { id: 'b', label: 'B', dependsOn: [{ id: 'a', relationLabel: 'CALLS' }] },
+      ],
+    });
+    fixture.detectChanges();
+
+    // SVG paints in document order, so the label must come after every node.
+    const svg = el.querySelector('.dep-viewer__svg') as SVGSVGElement;
+    const kids = Array.from(svg.children);
+    const lastNode = kids.map(k => k.classList.contains('dep-viewer__node')).lastIndexOf(true);
+    const firstLabel = kids.findIndex(k => k.classList.contains('dep-viewer__edge-label'));
+
+    expect(lastNode).toBeGreaterThan(-1);
+    expect(firstLabel).toBeGreaterThan(-1);
+    expect(firstLabel).toBeGreaterThan(lastNode);
+  });
+
+  it('should drop edge labels when showEdgeLabels is false', () => {
+    host.root.set({
+      id: 'root',
+      label: 'Root',
+      children: [
+        { id: 'a', label: 'A' },
+        { id: 'b', label: 'B', dependsOn: [{ id: 'a', relationLabel: 'CALLS' }] },
+      ],
+    });
+    host.showEdgeLabels.set(false);
+    fixture.detectChanges();
+    expect(el.querySelectorAll('.dep-viewer__edge-label').length).toBe(0);
+  });
+
   it('should fall back to a valid arrow marker for an unstyled relation', () => {
     host.root.set({
       id: 'root',
