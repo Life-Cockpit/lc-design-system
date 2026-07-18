@@ -174,3 +174,65 @@ export const FileTypes: Story = {
     </div>`,
   }),
 };
+
+/**
+ * Beyond file trees, the tree view renders arbitrary object hierarchies:
+ * custom `type` strings show a colored type dot (or explicit `icon`),
+ * `status: 'success' | 'busy'` adds a ✓ / pulsing indicator, and `badge`
+ * carries compact meta text such as a dependency count.
+ */
+export const ObjectTree: Story = {
+  name: 'Object Tree (custom types)',
+  render: () => ({
+    props: {
+      nodes: [
+        {
+          name: 'Collection North',
+          id: 'col-1',
+          type: 'collection',
+          color: 'var(--color-primary-500)',
+          expanded: true,
+          children: [
+            {
+              name: 'Group One',
+              id: 'grp-1',
+              type: 'group',
+              color: 'var(--color-info)',
+              expanded: true,
+              badge: '↳2',
+              children: [
+                {
+                  name: 'Entry Alpha',
+                  id: 'ent-1',
+                  type: 'entry',
+                  status: 'success',
+                },
+                {
+                  name: 'Entry Beta — currently being generated',
+                  id: 'ent-2',
+                  type: 'entry',
+                  status: 'busy',
+                },
+              ],
+            },
+            {
+              name: 'Group Two',
+              id: 'grp-2',
+              type: 'group',
+              color: 'var(--color-info)',
+              badge: '↳1',
+              children: [
+                { name: 'Entry Gamma', id: 'ent-3', type: 'entry' },
+              ],
+            },
+          ],
+        },
+      ],
+      selectedId: 'ent-1',
+    },
+    template: `
+      <div style="max-width: 380px;">
+        <lc-tree-view [nodes]="nodes" [selectedId]="selectedId" [showToolbar]="false" />
+      </div>`,
+  }),
+};

@@ -63,6 +63,16 @@
   &:active {
     color: var(--color-primary-800);
   }
+
+  // Items without url render as <button>: reset the UA button styles so they
+  // look identical to link items.
+  &--button {
+    appearance: none;
+    background: none;
+    border: none;
+    font: inherit;
+    cursor: pointer;
+  }
 }
 
 .lc-breadcrumbs__current {

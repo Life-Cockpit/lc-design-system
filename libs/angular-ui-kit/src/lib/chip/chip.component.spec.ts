@@ -187,6 +187,102 @@ describe('ChipComponent', () => {
     });
   });
 
+  describe('Clickable Functionality', () => {
+    it('should render as a span without button wrapper by default', () => {
+      const chip = chipElement.querySelector('.lc-chip');
+      expect(chip?.tagName.toLowerCase()).toBe('span');
+      expect(chipElement.querySelector('button.lc-chip')).toBeNull();
+    });
+
+    it('should render as a button when clickable', () => {
+      fixture.componentRef.setInput('clickable', true);
+      fixture.detectChanges();
+
+      const chip = chipElement.querySelector('.lc-chip');
+      expect(chip?.tagName.toLowerCase()).toBe('button');
+      expect(chip?.getAttribute('type')).toBe('button');
+    });
+
+    it('should apply clickable class when clickable', () => {
+      fixture.componentRef.setInput('clickable', true);
+      fixture.detectChanges();
+
+      expect(chipElement.querySelector('.lc-chip--clickable')).toBeTruthy();
+    });
+
+    it('should emit chipClick on click', () => {
+      const clickSpy = jest.fn();
+      component.chipClick.subscribe(clickSpy);
+
+      fixture.componentRef.setInput('clickable', true);
+      fixture.detectChanges();
+
+      (chipElement.querySelector('.lc-chip') as HTMLElement).click();
+
+      expect(clickSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('should not emit chipClick when disabled', () => {
+      const clickSpy = jest.fn();
+      component.chipClick.subscribe(clickSpy);
+
+      fixture.componentRef.setInput('clickable', true);
+      fixture.componentRef.setInput('disabled', true);
+      fixture.detectChanges();
+
+      const chip = chipElement.querySelector('.lc-chip') as HTMLButtonElement;
+      chip.click();
+
+      expect(clickSpy).not.toHaveBeenCalled();
+      expect(chip.disabled).toBe(true);
+      expect(chip.getAttribute('aria-disabled')).toBe('true');
+    });
+
+    it('should render the delete affordance as a non-button inside a clickable chip', () => {
+      fixture.componentRef.setInput('clickable', true);
+      fixture.componentRef.setInput('removable', true);
+      fixture.detectChanges();
+
+      const deleteEl = chipElement.querySelector('.lc-chip__delete');
+      expect(deleteEl?.tagName.toLowerCase()).toBe('span');
+      expect(deleteEl?.getAttribute('role')).toBe('button');
+      expect(deleteEl?.getAttribute('tabindex')).toBe('0');
+    });
+
+    it('should fire only remove (not chipClick) when the delete affordance is clicked', () => {
+      const clickSpy = jest.fn();
+      const removeSpy = jest.fn();
+      component.chipClick.subscribe(clickSpy);
+      component.remove.subscribe(removeSpy);
+
+      fixture.componentRef.setInput('clickable', true);
+      fixture.componentRef.setInput('removable', true);
+      fixture.detectChanges();
+
+      (chipElement.querySelector('.lc-chip__delete') as HTMLElement).click();
+
+      expect(removeSpy).toHaveBeenCalledTimes(1);
+      expect(clickSpy).not.toHaveBeenCalled();
+    });
+
+    it('should fire remove via keyboard on the delete affordance', () => {
+      const clickSpy = jest.fn();
+      const removeSpy = jest.fn();
+      component.chipClick.subscribe(clickSpy);
+      component.remove.subscribe(removeSpy);
+
+      fixture.componentRef.setInput('clickable', true);
+      fixture.componentRef.setInput('removable', true);
+      fixture.detectChanges();
+
+      const deleteEl = chipElement.querySelector('.lc-chip__delete') as HTMLElement;
+      deleteEl.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+
+      expect(removeSpy).toHaveBeenCalledTimes(1);
+      expect(clickSpy).not.toHaveBeenCalled();
+    });
+  });
+
   describe('Disabled State', () => {
     it('should not be disabled by default', () => {
       expect(component.disabled()).toBe(false);

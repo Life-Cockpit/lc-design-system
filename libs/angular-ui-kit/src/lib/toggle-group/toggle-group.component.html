@@ -8,6 +8,12 @@
       (click)="select(option)"
     >
       {{ option.label }}
+      @if (dotTone(option); as tone) {
+        <span
+          class="lc-toggle-group__dot lc-toggle-group__dot--{{ tone }}"
+          aria-hidden="true"
+        ></span>
+      }
     </button>
   }
 </div>

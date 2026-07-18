@@ -11,13 +11,21 @@
             <span class="lc-breadcrumbs__ellipsis" aria-hidden="true">
               {{ item.label }}
             </span>
-          } @else {
+          } @else if (item.url) {
             <a
               [routerLink]="item.url"
               class="lc-breadcrumbs__link"
             >
               {{ item.label }}
             </a>
+          } @else {
+            <button
+              type="button"
+              class="lc-breadcrumbs__link lc-breadcrumbs__link--button"
+              (click)="onItemClick(item)"
+            >
+              {{ item.label }}
+            </button>
           }
           
           @if (!isLastItem(i)) {

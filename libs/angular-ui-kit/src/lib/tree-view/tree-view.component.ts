@@ -17,17 +17,33 @@ import {
 
 // ── Public types ─────────────────────────────────────────────────────────────
 
-export type TreeNodeType = 'file' | 'folder';
+/**
+ * Node type. `'file'` and `'folder'` get the built-in file-tree treatment
+ * (extension icons, folder open/close icons). Any other string marks a custom
+ * domain type: such nodes render a colored type dot (or an explicit `icon`)
+ * instead of file icons.
+ */
+export type TreeNodeType = 'file' | 'folder' | (string & {});
+
+export type TreeNodeStatus =
+  | 'default'
+  | 'added'
+  | 'modified'
+  | 'removed'
+  | 'muted'
+  | 'success'
+  | 'busy';
 
 /**
- * A node in the file tree. Folders carry `children`; files do not.
+ * A node in the tree. Any node carrying `children` can expand — this covers
+ * file trees (folders) as well as arbitrary domain hierarchies.
  */
 export interface TreeNode {
   /** Display name, e.g. `app.component.ts` or `src`. */
   name: string;
   /**
    * Node type. Optional — inferred as `folder` when `children` is present,
-   * otherwise `file`.
+   * otherwise `file`. May be any string for domain hierarchies.
    */
   type?: TreeNodeType;
   /**
@@ -35,18 +51,26 @@ export interface TreeNode {
    * which is stable as long as names are unique among siblings.
    */
   id?: string;
-  /** Child nodes (folders only). */
+  /** Child nodes. Any node with children can expand / collapse. */
   children?: TreeNode[];
   /**
    * Explicit Tabler icon name. Overrides automatic file-type / folder
-   * icon resolution.
+   * icon resolution and the custom-type dot.
    */
   icon?: string;
+  /**
+   * Accent color for the node's icon / type dot. Any CSS color, including
+   * `var(--…)` token references.
+   */
+  color?: string;
   /** Optional badge text shown to the right of the node (e.g. git status, count). */
   badge?: string;
-  /** Tone of the badge / node accent. */
-  status?: 'default' | 'added' | 'modified' | 'removed' | 'muted';
-  /** Whether this folder starts expanded. Ignored for files. */
+  /**
+   * Tone of the badge / node accent. `success` additionally renders a ✓
+   * indicator, `busy` a pulsing dot (static under `prefers-reduced-motion`).
+   */
+  status?: TreeNodeStatus;
+  /** Whether this node starts expanded. Ignored for nodes without children. */
   expanded?: boolean;
   /** Disable selection / interaction for this node. */
   disabled?: boolean;
@@ -61,9 +85,11 @@ interface FlatNode {
   depth: number;
   hasChildren: boolean;
   expanded: boolean;
-  icon: string;
+  /** Resolved icon, or `null` for custom-type nodes that render a type dot. */
+  icon: string | null;
+  color?: string;
   badge?: string;
-  status: NonNullable<TreeNode['status']>;
+  status: TreeNodeStatus;
   disabled: boolean;
   /** Whether each ancestor level still has following siblings (for guide lines). */
   ancestorHasSibling: boolean[];
@@ -71,30 +97,40 @@ interface FlatNode {
   isLast: boolean;
 }
 
-const BADGE_STATUS_COLOR: Record<NonNullable<TreeNode['status']>, string> = {
+const BADGE_STATUS_COLOR: Record<TreeNodeStatus, string> = {
   default: 'var(--color-neutral-400)',
   added: 'var(--color-success-default, #16a34a)',
   modified: 'var(--color-warning-default, #d97706)',
   removed: 'var(--color-error-default, #dc2626)',
   muted: 'var(--color-neutral-300)',
+  success: 'var(--color-success-default, #16a34a)',
+  busy: 'var(--color-primary-500, #6366f1)',
 };
 
 function nodeType(node: TreeNode): TreeNodeType {
   return node.type ?? (node.children ? 'folder' : 'file');
 }
 
+function isExpandable(node: TreeNode): boolean {
+  return !!node.children?.length;
+}
+
 /**
- * Tree view component for visualizing file / folder hierarchies such as a
- * complete GitHub project.
+ * Tree view component for visualizing hierarchies — file / folder trees as
+ * well as arbitrary domain object trees with custom node types.
  *
  * Features:
- * - Recursive folder / file rendering from a single `nodes` input
+ * - Recursive rendering from a single `nodes` input; any node with children
+ *   can expand / collapse
  * - Automatic file-type icons by extension and well-known file name,
- *   with open / closed folder icons
- * - Expand / collapse folders, with expand-all / collapse-all helpers
+ *   with open / closed folder icons (for `file` / `folder` nodes)
+ * - Custom node types: colored type dots or explicit icons via `type`,
+ *   `color`, `icon`
+ * - Expand / collapse, with expand-all / collapse-all helpers
  * - Two-way bound selection and a `nodeClick` event
  * - Indentation guide lines for readability
- * - Optional per-node status badges (added / modified / removed)
+ * - Optional per-node status badges (added / modified / removed) and status
+ *   indicators (`success` ✓, `busy` pulse)
  * - Keyboard accessible (Enter / Space to toggle or select)
  * - Dark / light theme support via design tokens
  *
@@ -142,7 +178,7 @@ export class TreeViewComponent {
     return out;
   });
 
-  protected badgeColor(status: NonNullable<TreeNode['status']>): string {
+  protected badgeColor(status: TreeNodeStatus): string {
     return BADGE_STATUS_COLOR[status];
   }
 
@@ -206,9 +242,9 @@ export class TreeViewComponent {
     const walk = (nodes: TreeNode[], parentPath: string): void => {
       for (const node of nodes) {
         const id = node.id ?? `${parentPath}/${node.name}`;
-        if (nodeType(node) === 'folder') {
+        if (node.children?.length) {
           next.set(id, value);
-          if (node.children) walk(node.children, id);
+          walk(node.children, id);
         }
       }
     };
@@ -237,7 +273,7 @@ export class TreeViewComponent {
     nodes.forEach((node, index) => {
       const id = node.id ?? `${parentPath}/${node.name}`;
       const type = nodeType(node);
-      const hasChildren = type === 'folder' && !!node.children?.length;
+      const hasChildren = isExpandable(node);
       const expanded = hasChildren && this.isExpanded(id, node, overrides);
       const isLast = index === nodes.length - 1;
 
@@ -249,6 +285,7 @@ export class TreeViewComponent {
         hasChildren,
         expanded,
         icon: this.resolveIcon(node, type, expanded),
+        color: node.color,
         badge: node.badge,
         status: node.status ?? 'default',
         disabled: node.disabled ?? false,
@@ -273,10 +310,14 @@ export class TreeViewComponent {
     node: TreeNode,
     type: TreeNodeType,
     expanded: boolean,
-  ): string {
+  ): string | null {
     if (node.icon) return node.icon;
     if (type === 'folder') return expanded ? FOLDER_OPEN_ICON : FOLDER_ICON;
-    return node.name ? resolveFileIcon(node.name) : FILE_FALLBACK_ICON;
+    if (type === 'file') {
+      return node.name ? resolveFileIcon(node.name) : FILE_FALLBACK_ICON;
+    }
+    // Custom domain type without explicit icon: render a colored type dot.
+    return null;
   }
 
   private findNode(

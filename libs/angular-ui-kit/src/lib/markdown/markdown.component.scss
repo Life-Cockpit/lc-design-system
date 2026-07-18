@@ -328,6 +328,12 @@
     margin: 6px 0;
   }
 
+  // LLM-Antworten gliedern häufig mit `---`: ohne Override erbt hr die
+  // 1.5em-Basis-Marge und reißt im Chat ~48px Lücke.
+  hr {
+    margin: 8px 0;
+  }
+
   .lc-markdown__mermaid,
   .lc-markdown__mermaid-loading,
   .lc-markdown__mermaid-fallback {

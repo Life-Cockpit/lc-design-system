@@ -167,4 +167,50 @@ $indent-width: 18px;
     text-transform: uppercase;
     letter-spacing: 0.02em;
   }
+
+  // Type dot for custom (non file/folder) node types without explicit icon.
+  &__type-dot {
+    display: block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--color-neutral-400);
+  }
+
+  &__status {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    margin-left: 8px;
+
+    &--success {
+      color: var(--color-success-default, #16a34a);
+    }
+
+    &--busy {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--color-primary-500, #6366f1);
+      animation: lc-tree-view-pulse 1.2s ease-in-out infinite;
+    }
+  }
+}
+
+@keyframes lc-tree-view-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(0.75);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lc-tree-view__status--busy {
+    animation: none;
+  }
 }

@@ -151,3 +151,32 @@ export const ViewSwitcher: Story = {
       </div>`,
   }),
 };
+
+/**
+ * Options can carry a small status dot (`dot`) — for example an unread
+ * indicator on a tab-like option. `dot: true` uses the warning tone; pass
+ * `'warning' | 'error' | 'success'` explicitly to pick another semantic color.
+ */
+export const WithDotIndicator: Story = {
+  name: 'With Dot Indicator',
+  render: () => ({
+    props: {
+      options: [
+        { value: 'first', label: 'First view', dot: true },
+        { value: 'second', label: 'Second view' },
+      ],
+      tones: [
+        { value: 'a', label: 'Warning', dot: 'warning' },
+        { value: 'b', label: 'Error', dot: 'error' },
+        { value: 'c', label: 'Success', dot: 'success' },
+      ],
+      selected: 'second',
+      selectedTone: 'a',
+    },
+    template: `
+      <div style="display: flex; flex-direction: column; gap: 16px; align-items: flex-start;">
+        <lc-toggle-group [options]="options" [selected]="selected" />
+        <lc-toggle-group [options]="tones" [selected]="selectedTone" size="sm" />
+      </div>`,
+  }),
+};

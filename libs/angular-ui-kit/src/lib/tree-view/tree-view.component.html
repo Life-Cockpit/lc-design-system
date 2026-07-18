@@ -23,6 +23,7 @@
       [attr.aria-expanded]="node.hasChildren ? node.expanded : null"
       [attr.aria-selected]="node.id === selectedId()"
       [attr.aria-disabled]="node.disabled ? true : null"
+      [attr.aria-busy]="node.status === 'busy' ? true : null"
       [tabindex]="node.disabled ? -1 : 0"
       (click)="onNodeClick(node)"
       (keydown)="onKeydown(node, $event)"
@@ -51,14 +52,21 @@
         }
       </span>
 
-      <!-- type / file icon -->
+      <!-- type / file icon, or type dot for custom node types -->
       <span
         class="lc-tree-view__icon"
         [style.color]="
-          node.status === 'default' ? null : badgeColor(node.status)
+          node.color ?? (node.status === 'default' ? null : badgeColor(node.status))
         "
       >
-        <lc-icon [name]="node.icon" [size]="iconSize()" [decorative]="true" />
+        @if (node.icon; as icon) {
+          <lc-icon [name]="icon" [size]="iconSize()" [decorative]="true" />
+        } @else {
+          <span
+            class="lc-tree-view__type-dot"
+            [style.background-color]="node.color ?? null"
+          ></span>
+        }
       </span>
 
       <!-- label -->
@@ -72,6 +80,15 @@
           [style.border-color]="badgeColor(node.status)"
           >{{ node.badge }}</span
         >
+      }
+
+      <!-- status indicator -->
+      @if (node.status === 'success') {
+        <span class="lc-tree-view__status lc-tree-view__status--success">
+          <lc-icon name="check" size="xs" [decorative]="true" />
+        </span>
+      } @else if (node.status === 'busy') {
+        <span class="lc-tree-view__status lc-tree-view__status--busy"></span>
       }
     </li>
   }

@@ -157,3 +157,29 @@ export const InPageHeader: Story = {
     },
   }),
 };
+
+export const StateNavigation: Story = {
+  name: 'State Navigation (without URLs)',
+  render: () => ({
+    template: `
+      <div style="max-width: 600px;">
+        <lc-breadcrumbs
+          [items]="items"
+          (itemClick)="onItemClick($event)"
+        ></lc-breadcrumbs>
+        <p style="margin: 8px 0 0; font-size: 13px; color: #666;">
+          Items without <code>url</code> render as buttons and emit
+          <code>itemClick</code> — useful when a click should change in-memory
+          state instead of navigating to a route.
+        </p>
+      </div>`,
+    props: {
+      items: [
+        { label: 'Collection', id: 'collection' },
+        { label: 'Group', id: 'group' },
+        { label: 'Item Detail' },
+      ],
+      onItemClick: (item: unknown) => console.log('itemClick', item),
+    },
+  }),
+};

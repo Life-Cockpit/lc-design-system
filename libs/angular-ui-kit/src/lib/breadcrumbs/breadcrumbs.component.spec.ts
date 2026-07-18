@@ -98,6 +98,65 @@ describe('BreadcrumbsComponent', () => {
     });
   });
 
+  describe('Item Click (items without url)', () => {
+    const stateItems = [
+      { label: 'Root', id: 'root' },
+      { label: 'Level A', id: 'a' },
+      { label: 'Level B', id: 'b' },
+    ];
+
+    beforeEach(() => {
+      fixture.componentRef.setInput('items', stateItems);
+      fixture.detectChanges();
+    });
+
+    it('should render items without url as buttons', () => {
+      const buttons = fixture.debugElement.queryAll(
+        By.css('button.lc-breadcrumbs__link--button'),
+      );
+      // last item stays non-interactive
+      expect(buttons.length).toBe(2);
+      expect(buttons[0]?.nativeElement.getAttribute('type')).toBe('button');
+    });
+
+    it('should emit itemClick with the item on click', () => {
+      const clickSpy = jest.fn();
+      component.itemClick.subscribe(clickSpy);
+
+      const buttons = fixture.debugElement.queryAll(
+        By.css('button.lc-breadcrumbs__link--button'),
+      );
+      (buttons[1]?.nativeElement as HTMLElement).click();
+
+      expect(clickSpy).toHaveBeenCalledTimes(1);
+      expect(clickSpy).toHaveBeenCalledWith(stateItems[1]);
+    });
+
+    it('should keep the last item non-interactive with aria-current', () => {
+      const listItems = fixture.debugElement.queryAll(By.css('.lc-breadcrumbs__item'));
+      const lastItem = listItems[listItems.length - 1];
+      expect(lastItem?.query(By.css('button'))).toBeFalsy();
+      const current = lastItem?.query(By.css('.lc-breadcrumbs__current'));
+      expect(current?.nativeElement.getAttribute('aria-current')).toBe('page');
+    });
+
+    it('should keep rendering items with url as links', () => {
+      fixture.componentRef.setInput('items', [
+        { label: 'Home', url: '/' },
+        { label: 'State only', id: 's' },
+        { label: 'Current' },
+      ]);
+      fixture.detectChanges();
+
+      const link = fixture.debugElement.query(By.css('a.lc-breadcrumbs__link'));
+      const button = fixture.debugElement.query(
+        By.css('button.lc-breadcrumbs__link--button'),
+      );
+      expect(link?.nativeElement.textContent.trim()).toBe('Home');
+      expect(button?.nativeElement.textContent.trim()).toBe('State only');
+    });
+  });
+
   describe('Separators', () => {
     beforeEach(() => {
       fixture.componentRef.setInput('items', mockItems);

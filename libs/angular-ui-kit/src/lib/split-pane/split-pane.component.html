@@ -1,0 +1,31 @@
+<div class="lc-split-pane" [class.lc-split-pane--stacked]="stacked()">
+  <div
+    class="lc-split-pane__pane lc-split-pane__pane--start"
+    [style.flex-basis.px]="stacked() ? null : effectiveSize()"
+  >
+    <ng-content select="[slot=start]" />
+  </div>
+
+  @if (!stacked()) {
+    <div
+      class="lc-split-pane__separator"
+      role="separator"
+      tabindex="0"
+      aria-orientation="vertical"
+      [attr.aria-label]="separatorLabel()"
+      [attr.aria-valuenow]="effectiveSize()"
+      [attr.aria-valuemin]="minSize()"
+      [attr.aria-valuemax]="ariaMax()"
+      (pointerdown)="onPointerDown($event)"
+      (pointermove)="onPointerMove($event)"
+      (pointerup)="onPointerUp($event)"
+      (pointercancel)="onPointerUp($event)"
+      (dblclick)="reset()"
+      (keydown)="onKeydown($event)"
+    ></div>
+  }
+
+  <div class="lc-split-pane__pane lc-split-pane__pane--end">
+    <ng-content select="[slot=end]" />
+  </div>
+</div>

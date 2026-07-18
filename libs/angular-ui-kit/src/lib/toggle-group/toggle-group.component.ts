@@ -8,10 +8,18 @@ import {
 } from '@angular/core';
 import { NgClass } from '@angular/common';
 
+export type ToggleOptionDot = 'warning' | 'error' | 'success';
+
 export interface ToggleOption {
   readonly value: string;
   readonly label: string;
   readonly disabled?: boolean;
+  /**
+   * Small status dot rendered to the right of the label (e.g. an unread
+   * indicator). `true` uses the default tone (`warning`); pass a tone name
+   * to pick a semantic color. Does not change the option's height.
+   */
+  readonly dot?: boolean | ToggleOptionDot;
 }
 
 /**
@@ -81,5 +89,11 @@ export class ToggleGroupComponent {
     }
 
     return classes.join(' ');
+  }
+
+  /** Resolve the dot tone for an option (null when no dot is shown) */
+  dotTone(option: ToggleOption): ToggleOptionDot | null {
+    if (!option.dot) return null;
+    return option.dot === true ? 'warning' : option.dot;
   }
 }

@@ -143,6 +143,30 @@
     }
   }
 
+  // Clickable state — the chip is a real <button>, so reset the UA button
+  // styles back to the chip look and add interaction states.
+  &--clickable {
+    font: inherit;
+    font-weight: var(--typography-font-weight-medium, 500);
+    text-align: inherit;
+    appearance: none;
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      filter: brightness(1.06);
+      border-color: var(--color-border-strong, var(--color-border));
+    }
+
+    &:active:not(:disabled) {
+      filter: brightness(0.96);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--color-primary-500);
+      outline-offset: 2px;
+    }
+  }
+
   // Disabled state
   &--disabled {
     opacity: 0.5;

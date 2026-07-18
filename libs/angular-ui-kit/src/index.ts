@@ -125,6 +125,9 @@ export * from './lib/section/section.component';
 // Spacer Component
 export * from './lib/spacer/spacer.component';
 
+// Split Pane Component
+export * from './lib/split-pane/split-pane.component';
+
 // Stack Component
 export * from './lib/stack/stack.component';
 

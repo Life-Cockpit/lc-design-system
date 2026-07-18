@@ -1,25 +1,25 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ToggleGroupComponent, ToggleOption } from './toggle-group.component';
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 
 @Component({
   standalone: true,
   imports: [ToggleGroupComponent],
   template: `
     <lc-toggle-group
-      [options]="options"
+      [options]="options()"
       [(selected)]="selected"
       (selectionChange)="onSelectionChange($event)"
     ></lc-toggle-group>
   `,
 })
 class TestHostComponent {
-  options: ToggleOption[] = [
+  options = signal<ToggleOption[]>([
     { value: '1D', label: '1D' },
     { value: '1h', label: '1H' },
     { value: '15m', label: '15M' },
     { value: 'disabled', label: 'Off', disabled: true },
-  ];
+  ]);
   selected = '1D';
   lastChanged = '';
 
@@ -96,5 +96,42 @@ describe('ToggleGroupComponent', () => {
     );
     expect(buttons[0].getAttribute('aria-pressed')).toBe('true');
     expect(buttons[1].getAttribute('aria-pressed')).toBe('false');
+  });
+
+  describe('dot indicator', () => {
+    it('should not render a dot by default', () => {
+      expect(
+        fixture.nativeElement.querySelector('.lc-toggle-group__dot')
+      ).toBeNull();
+    });
+
+    it('should render a warning dot for dot: true', () => {
+      host.options.set([
+        { value: 'a', label: 'A', dot: true },
+        { value: 'b', label: 'B' },
+      ]);
+      fixture.detectChanges();
+
+      const dots = fixture.nativeElement.querySelectorAll(
+        '.lc-toggle-group__dot'
+      );
+      expect(dots.length).toBe(1);
+      expect(dots[0].classList).toContain('lc-toggle-group__dot--warning');
+      expect(dots[0].getAttribute('aria-hidden')).toBe('true');
+    });
+
+    it('should render the requested semantic tone', () => {
+      host.options.set([
+        { value: 'a', label: 'A', dot: 'error' },
+        { value: 'b', label: 'B', dot: 'success' },
+      ]);
+      fixture.detectChanges();
+
+      const dots = fixture.nativeElement.querySelectorAll(
+        '.lc-toggle-group__dot'
+      );
+      expect(dots[0].classList).toContain('lc-toggle-group__dot--error');
+      expect(dots[1].classList).toContain('lc-toggle-group__dot--success');
+    });
   });
 });

@@ -2,6 +2,62 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.13.0] - 2026-07-18
+
+Closes the six gaps found while building app views DS-first (R1–R6 of the
+2026-07-18 requirements review): one chat-rendering bug and five missing
+capabilities that previously forced app-side custom builds.
+
+### Added
+
+- **New component: `lc-split-pane`** — resizable two-pane layout container
+  (R6). Projects `slot="start"` / `slot="end"` panes side by side with a
+  draggable separator: pointer-capture drag within `minSize` / `maxSize`
+  (px or a percentage of the container, e.g. `'55%'`), double-click to restore
+  `initialSize`, and full keyboard support (focusable separator with
+  `role="separator"`, `aria-valuenow`; ←/→ resize by `step`, Home/End jump to
+  the bounds). With `storageKey` the width persists to localStorage and
+  survives a reload. Below the `stackBelow` viewport breakpoint the panes
+  stack vertically and the resizer disables. `sizeChange` reports every
+  applied width.
+- **Chip: clickable chips** (`lc-chip`) — `clickable` renders the chip as a
+  real `<button type="button">` with hover / active / `:focus-visible` states
+  and a new `chipClick` output (R2), so chips can act as navigation / action
+  elements. Combinable with `removable`: the ✕ fires only `remove`, never
+  `chipClick` (inside a clickable chip it renders as a focusable
+  `role="button"` span, since nesting native buttons is invalid HTML).
+  `disabled` suppresses `chipClick` and sets `aria-disabled`. Non-clickable
+  chips render exactly as before — no button wrapper.
+- **Breadcrumbs: click navigation without URLs** (`lc-breadcrumbs`) — items
+  without `url` now render as buttons and emit the new `itemClick` output
+  instead of navigating (R3), for breadcrumbs that switch in-memory state
+  (e.g. the parent chain of a selected node). `BreadcrumbItem` gains an
+  optional `id` for handling those clicks. Items with `url` keep their
+  router-link behavior, and the last item stays non-interactive with
+  `aria-current="page"`.
+- **Tree view: generic object trees** (`lc-tree-view`) — `TreeNode.type` is
+  no longer restricted to `'file' | 'folder'` (R4): any string marks a custom
+  domain type, rendered with a colored type dot (`color`, any CSS color or
+  token) or an explicit `icon` instead of the file-icon heuristics. Any node
+  with children can now expand regardless of type. Two new `status` values
+  complement the existing git-ish ones: `'success'` renders a ✓ indicator and
+  `'busy'` a pulsing dot (static under `prefers-reduced-motion`, with
+  `aria-busy` on the tree item). Plain file trees render exactly as before.
+- **Toggle group: per-option dot indicator** (`lc-toggle-group`) —
+  `ToggleOption.dot` renders a small status dot right of the label (R5), e.g.
+  an unread marker on a tab-like option. `dot: true` uses the `warning` tone;
+  `'warning' | 'error' | 'success'` pick a semantic color explicitly. The dot
+  never changes the option height.
+
+### Fixed
+
+- **Markdown: `---` ripped ~48px holes into chat bubbles** (`lc-markdown`) —
+  the `chat` variant condensed every block element except `hr`, which still
+  inherited the base `1.5em` margin (R1). Since LLM answers routinely use
+  `---` as a section divider, chat transcripts showed large empty gaps. An
+  `hr` in `variant="chat"` now spans 16px total; `default` and `compact` are
+  unchanged.
+
 ## [2.12.1] - 2026-07-15
 
 ### Fixed

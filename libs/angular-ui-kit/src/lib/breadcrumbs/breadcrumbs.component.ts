@@ -1,10 +1,12 @@
-import { Component, input, computed, ChangeDetectionStrategy } from '@angular/core';
+import { Component, input, output, computed, ChangeDetectionStrategy } from '@angular/core';
 import { NgClass } from '@angular/common';
 import { RouterModule } from '@angular/router';
 
 export interface BreadcrumbItem {
   label: string;
   url?: string;
+  /** Optional stable identifier, useful when handling `itemClick`. */
+  id?: string;
 }
 
 export type BreadcrumbSize = 'sm' | 'md' | 'lg';
@@ -24,11 +26,19 @@ export type BreadcrumbSize = 'sm' | 'md' | 'lg';
  * - Ellipsis collapse for long paths with maxItems
  * - Multiple size variants (sm, md, lg)
  * - Router link support for navigation items
+ * - Items without `url` render as buttons and emit `itemClick` (for in-memory
+ *   state navigation instead of routing)
  * - Accessible with ARIA breadcrumb landmark
  *
  * @example
  * ```html
  * <lc-breadcrumbs [items]="[{label: 'Home', url: '/'}, {label: 'Settings'}]" />
+ *
+ * <!-- state-based navigation without routes -->
+ * <lc-breadcrumbs
+ *   [items]="[{label: 'Root', id: 'root'}, {label: 'Child', id: 'c1'}]"
+ *   (itemClick)="activate($event)"
+ * />
  * ```
  */
 export class BreadcrumbsComponent {
@@ -37,6 +47,12 @@ export class BreadcrumbsComponent {
   readonly maxItems = input(0);
   readonly size = input<BreadcrumbSize>('md');
   readonly ariaLabel = input('Breadcrumbs');
+
+  /**
+   * Emitted when an item without `url` is activated. Items with `url` keep
+   * their link navigation and do not emit.
+   */
+  readonly itemClick = output<BreadcrumbItem>();
 
   // Computed CSS classes
   breadcrumbClasses = computed(() => {
@@ -79,5 +95,10 @@ export class BreadcrumbsComponent {
   // Helper to check if item is ellipsis
   isEllipsis(item: BreadcrumbItem): boolean {
     return item.label === '...';
+  }
+
+  // Handle activation of an item without url
+  onItemClick(item: BreadcrumbItem): void {
+    this.itemClick.emit(item);
   }
 }

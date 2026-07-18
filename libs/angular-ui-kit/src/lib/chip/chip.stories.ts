@@ -22,6 +22,7 @@ const meta: Meta<ChipComponent> = {
     },
     icon: { description: 'Icon name displayed before the label (from lc-icon set)' },
     removable: { description: 'Shows a close button to allow the user to dismiss the chip' },
+    clickable: { description: 'Renders the chip as a button that emits chipClick on activation' },
     disabled: { description: 'Visually dims the chip and prevents interaction' },
   },
 
@@ -67,6 +68,26 @@ export const Removable: Story = {
   render: (args) => ({
     props: args,
     template: `<lc-chip [variant]="variant" [removable]="removable" [size]="size">filter: active</lc-chip>`,
+  }),
+};
+
+export const Clickable: Story = {
+  args: { variant: 'default', clickable: true, size: 'md' },
+  render: (args) => ({
+    props: args,
+    template: `<lc-chip [variant]="variant" [clickable]="clickable" [size]="size">Related item</lc-chip>`,
+  }),
+};
+
+export const ClickableRemovable: Story = {
+  name: 'Clickable + Removable',
+  render: () => ({
+    template: `
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <lc-chip variant="primary" [clickable]="true" [removable]="true">Item A</lc-chip>
+        <lc-chip variant="default" [clickable]="true" [removable]="true">Item B</lc-chip>
+        <lc-chip variant="default" [clickable]="true" [disabled]="true">Item C (disabled)</lc-chip>
+      </div>`,
   }),
 };
 
