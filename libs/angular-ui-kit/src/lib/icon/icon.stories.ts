@@ -113,10 +113,20 @@ Icon component - Tabler Icons wrapper for displaying SVG icons
 
 The component serves the **Tabler** icon set and also accepts a set of documented
 **Heroicon/Material aliases**. An unknown name (a typo, or an un-aliased Heroicon
-name like \`beaker\` / \`table-cells\`) no longer disappears silently: in development
-it logs \`[lc-icon] Unknown icon "…"\` and always renders a **visible placeholder**
-(a dashed frame with a "?"). Set \`[strict]="true"\` to throw in dev instead — useful
-as a CI guard.
+name like \`beaker\` / \`table-cells\`) no longer disappears silently: it logs
+\`[lc-icon] Unknown icon "…"\` (once per name, in development **and** production)
+and always renders a **visible placeholder** (a dashed frame with a "?") — without
+issuing a network request. Set \`[strict]="true"\` to additionally throw in dev —
+useful as a CI guard (no effect in production builds).
+
+**SPA-safe loading**
+
+Icons loaded over HTTP are validated before they are rendered: the response must
+not be \`text/html\` and must parse as a standalone \`<svg>\` document. This matters
+because SPA deployments answer missing asset paths with the \`index.html\` fallback
+and status 200 — without the gate, that document would be injected into the page
+once per icon instance. Non-SVG responses are dropped with a single console
+warning per name, and the placeholder is shown instead.
 
 The canonical set of valid names is exported for static checking:
 

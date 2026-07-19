@@ -1,6 +1,5 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return */
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { IconComponent } from './icon.component';
+import { IconComponent, resetIconWarnings } from './icon.component';
 import { HttpTestingController } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
@@ -21,6 +20,7 @@ describe('IconComponent', () => {
       providers: [provideHttpClient(), provideHttpClientTesting()],
     }).compileComponents();
 
+    resetIconWarnings();
     fixture = TestBed.createComponent(IconComponent);
     component = fixture.componentInstance;
     httpMock = TestBed.inject(HttpTestingController);
@@ -246,17 +246,16 @@ describe('IconComponent', () => {
       expect(component.svgContent()).toBeTruthy();
     });
 
-    it('should handle missing icon gracefully with a visible fallback', async () => {
+    it('should handle an unknown icon name gracefully with a visible fallback and NO fetch', async () => {
       const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {
-        // silence expected dev warning
+        // silence expected warning
       });
       fixture.componentRef.setInput('name', 'non-existent-icon-xyz');
       fixture.detectChanges();
 
-      const req = httpMock.expectOne(
-        '/tabler-icons/outline/non-existent-icon-xyz.svg',
-      );
-      req.flush('Not Found', { status: 404, statusText: 'Not Found' });
+      // Unknown names must never be fetched: in SPA deployments the server
+      // would answer with the index.html fallback (status 200).
+      httpMock.expectNone('/tabler-icons/outline/non-existent-icon-xyz.svg');
 
       await waitForAsync();
       // Should not throw error, shows a visible placeholder glyph (dashed frame
@@ -489,17 +488,27 @@ describe('IconComponent', () => {
       expect(warnSpy).not.toHaveBeenCalled();
     });
 
-    it('renders a visible placeholder for an unknown name after load fails', async () => {
+    it('renders a visible placeholder for an unknown name without fetching', async () => {
       fixture.componentRef.setInput('name', 'beaker');
       fixture.detectChanges();
 
-      const req = httpMock.expectOne('/tabler-icons/outline/beaker.svg');
-      req.flush('Not Found', { status: 404, statusText: 'Not Found' });
+      httpMock.expectNone('/tabler-icons/outline/beaker.svg');
       await waitForAsync();
 
       const el = fixture.nativeElement.querySelector('.icon-container');
       expect(el?.innerHTML).toContain('stroke-dasharray');
       expect(el?.textContent).toContain('?');
+    });
+
+    it('warns only once per unknown name across instances', () => {
+      fixture.componentRef.setInput('name', 'beaker');
+      fixture.detectChanges();
+
+      const second = TestBed.createComponent(IconComponent);
+      second.componentRef.setInput('name', 'beaker');
+      second.detectChanges();
+
+      expect(warnSpy).toHaveBeenCalledTimes(1);
     });
 
     it('does not warn when the name is cleared', () => {
@@ -524,6 +533,95 @@ describe('IconComponent', () => {
 
         expect(() => fixture.detectChanges()).not.toThrow();
       });
+    });
+  });
+
+  describe('SPA index.html fallback protection', () => {
+    // What a SPA server returns for any missing path: the app shell, with
+    // status 200 and content-type text/html.
+    const INDEX_HTML =
+      '<!doctype html>\n<html lang="en"><head><base href="/"><title>App</title></head>' +
+      '<body><app-root></app-root><script src="main-abc123.js"></script></body></html>';
+
+    let warnSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {
+        // capture without printing
+      });
+    });
+
+    afterEach(() => {
+      warnSpy.mockRestore();
+    });
+
+    it('drops a text/html response for a valid name and renders the placeholder', async () => {
+      fixture.componentRef.setInput('name', 'anchor');
+      fixture.detectChanges();
+
+      httpMock
+        .expectOne('/tabler-icons/outline/anchor.svg')
+        .flush(INDEX_HTML, { headers: { 'content-type': 'text/html' } });
+      await waitForAsync();
+
+      const el = fixture.nativeElement.querySelector('.icon-container');
+      expect(el?.innerHTML).not.toContain('app-root');
+      expect(el?.querySelector('script')).toBeNull();
+      expect(el?.querySelector('base')).toBeNull();
+      expect(el?.innerHTML).toContain('stroke-dasharray');
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+      expect(warnSpy.mock.calls[0][0]).toContain('non-SVG');
+    });
+
+    it('drops a non-SVG body even when the content-type claims image/svg+xml', async () => {
+      fixture.componentRef.setInput('name', 'anchor');
+      fixture.detectChanges();
+
+      httpMock
+        .expectOne('/tabler-icons/outline/anchor.svg')
+        .flush(INDEX_HTML, { headers: { 'content-type': 'image/svg+xml' } });
+      await waitForAsync();
+
+      const el = fixture.nativeElement.querySelector('.icon-container');
+      expect(el?.querySelector('script')).toBeNull();
+      expect(el?.innerHTML).toContain('stroke-dasharray');
+    });
+
+    it('warns exactly once per name even with many affected instances', async () => {
+      const fixtures = [
+        fixture,
+        TestBed.createComponent(IconComponent),
+        TestBed.createComponent(IconComponent),
+      ];
+      for (const f of fixtures) {
+        f.componentRef.setInput('name', 'anchor');
+        f.detectChanges();
+      }
+
+      httpMock
+        .match('/tabler-icons/outline/anchor.svg')
+        .forEach((req) =>
+          req.flush(INDEX_HTML, { headers: { 'content-type': 'text/html' } })
+        );
+      await waitForAsync();
+
+      expect(warnSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('still renders a valid SVG response with a single request', async () => {
+      fixture.componentRef.setInput('name', 'anchor');
+      fixture.detectChanges();
+
+      httpMock
+        .expectOne('/tabler-icons/outline/anchor.svg')
+        .flush(MOCK_SVG, { headers: { 'content-type': 'image/svg+xml' } });
+      await waitForAsync();
+
+      httpMock.expectNone('/tabler-icons/outline/anchor.svg');
+      const svg = fixture.nativeElement.querySelector('svg');
+      expect(svg).toBeTruthy();
+      expect(fixture.nativeElement.innerHTML).not.toContain('stroke-dasharray');
+      expect(warnSpy).not.toHaveBeenCalled();
     });
   });
 });

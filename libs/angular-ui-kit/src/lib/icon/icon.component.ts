@@ -31,6 +31,29 @@ const ICON_FALLBACK_SVG =
   '</svg>';
 
 /**
+ * Icon names already reported to the console. A page with dozens of instances
+ * of the same typo must produce exactly one warning, not one per instance —
+ * and the warning fires in production too (unlike the old dev-only warning,
+ * which left prod incidents invisible in the console).
+ */
+const warnedIconNames = new Set<string>();
+
+function warnOnce(name: string, message: string): void {
+  if (warnedIconNames.has(name)) return;
+  warnedIconNames.add(name);
+  console.warn(message);
+}
+
+/**
+ * Clears the warn-once-per-name registry. Only needed by unit tests that
+ * assert on console warnings across multiple cases.
+ * @internal
+ */
+export function resetIconWarnings(): void {
+  warnedIconNames.clear();
+}
+
+/**
  * Icon component - Tabler Icons wrapper for displaying SVG icons
  *
  * Features:
@@ -40,10 +63,15 @@ const ICON_FALLBACK_SVG =
  * - Custom color support (CSS colors, variables)
  * - Accessibility attributes (ARIA labels, decorative icons)
  * - Dynamic SVG loading from Tabler Icons
- * - Fail-loud on unknown names: a dev-mode warning + a visible placeholder
- *   (never a silent empty space). See {@link ICON_NAMES} / {@link isValidIconName}
- *   for the canonical set of valid names, and {@link ICON_ALIASES} for the
- *   supported Heroicon/Material aliases.
+ * - Fail-loud on unknown names: a console warning (once per name, in dev AND
+ *   prod) + a visible placeholder (never a silent empty space) — and **no
+ *   network request**, because in SPA deployments the server answers missing
+ *   asset paths with the index.html fallback. See {@link ICON_NAMES} /
+ *   {@link isValidIconName} for the canonical set of valid names, and
+ *   {@link ICON_ALIASES} for the supported Heroicon/Material aliases.
+ * - Fetched responses are validated (content-type + parsed `<svg>` root)
+ *   before anything is trusted — a non-SVG response (e.g. the SPA index.html
+ *   fallback) is dropped and replaced by the placeholder.
  *
  * @example
  * ```html
@@ -199,18 +227,23 @@ export class IconComponent {
       }
 
       // Fail loud on names outside the canonical set (typos, un-aliased
-      // Heroicon names, …). We still attempt to load below, so anything that
-      // *is* servable keeps working — this only surfaces the problem instead of
-      // silently rendering an empty icon.
-      if (!isValidIconName(rawName) && isDevMode()) {
-        console.warn(
-          `[lc-icon] Unknown icon "${rawName}". Use a Tabler name or a documented alias (see ICON_NAMES / ICON_ALIASES).`
+      // Heroicon names, …) — in dev AND prod, once per name. Crucially, an
+      // unknown name is never fetched: in SPA deployments the server answers
+      // missing asset paths with the index.html fallback (status 200), so a
+      // fetch for a typo'd name would come back as a full HTML document. The
+      // placeholder is rendered instead.
+      if (!isValidIconName(rawName)) {
+        warnOnce(
+          rawName,
+          `[lc-icon] Unknown icon "${rawName}". Use a Tabler name or a documented alias (see ICON_NAMES / ICON_ALIASES). Rendering a placeholder instead.`
         );
-        if (this.strict()) {
+        if (isDevMode() && this.strict()) {
           throw new Error(
             `[lc-icon] Unknown icon "${rawName}" (strict mode). Use a Tabler name or a documented alias.`
           );
         }
+        this.renderFallback();
+        return;
       }
 
       // Resolve aliases (Heroicon/Material -> Tabler)
@@ -220,7 +253,11 @@ export class IconComponent {
       const inlineSvg = INLINE_ICON_SVGS[iconName]?.[iconVariant];
       if (inlineSvg) {
         const processed = this.processSvgString(inlineSvg);
-        this.svgContent.set(this.sanitizer.bypassSecurityTrustHtml(processed));
+        if (processed !== null) {
+          this.setTrustedSvg(processed);
+        } else {
+          this.renderFallback();
+        }
         return;
       }
 
@@ -237,7 +274,7 @@ export class IconComponent {
       // otherwise-valid icon stuck on the placeholder. A genuine 404 (missing
       // asset) is not retried.
       this.http
-        .get(path, { responseType: 'text' })
+        .get(path, { observe: 'response', responseType: 'text' })
         .pipe(
           retry({
             count: 2,
@@ -248,10 +285,27 @@ export class IconComponent {
           })
         )
         .subscribe({
-        next: (svgText) => {
-          // Process SVG to add our attributes
-          const processed = this.processSvgString(svgText);
-          this.svgContent.set(this.sanitizer.bypassSecurityTrustHtml(processed));
+        next: (response) => {
+          // Validate before anything touches the DOM: SPA deployments answer
+          // missing asset paths with `index.html` and status 200 — that
+          // document must be dropped, never injected. A text/html content-type
+          // is rejected outright; everything else must parse as a standalone
+          // <svg> document (see processSvgString).
+          const contentType = response.headers.get('content-type') ?? '';
+          const processed = contentType.includes('text/html')
+            ? null
+            : this.processSvgString(response.body ?? '');
+          if (processed === null) {
+            warnOnce(
+              rawName,
+              `[lc-icon] "${rawName}": ${path} returned non-SVG content` +
+                (contentType ? ` (${contentType})` : '') +
+                ' — dropped. In SPA deployments this is typically the index.html fallback for a missing asset.'
+            );
+            this.renderFallback();
+            return;
+          }
+          this.setTrustedSvg(processed);
         },
         error: () => {
           // Asset missing or unreachable: render a visible placeholder so the
@@ -259,24 +313,59 @@ export class IconComponent {
           // already reported above; a known-but-unloadable name (e.g. offline,
           // SSR, or unit tests where assets are not served) stays quiet here to
           // avoid console noise.
-          const processed = this.processSvgString(ICON_FALLBACK_SVG);
-          this.svgContent.set(this.sanitizer.bypassSecurityTrustHtml(processed));
+          this.renderFallback();
         },
       });
     });
   }
 
   /**
-   * Process SVG string to add size, color, and accessibility attributes
+   * The single funnel to `bypassSecurityTrustHtml`. The bypass is only safe
+   * because every caller passes the output of {@link processSvgString}, which
+   * guarantees the markup is a parsed and re-serialized standalone `<svg>`
+   * document — never raw fetched text. Do NOT add callers that skip that
+   * validation, and do NOT "simplify" the gates away: without them, a SPA
+   * server's index.html fallback (status 200, text/html) gets injected into
+   * the page once per icon instance.
    * @private
    */
-  private processSvgString(svgText: string): string {
+  private setTrustedSvg(processedSvg: string): void {
+    this.svgContent.set(this.sanitizer.bypassSecurityTrustHtml(processedSvg));
+  }
+
+  /**
+   * Renders the visible "?" placeholder for anything that cannot be resolved
+   * to a real icon (unknown name, failed load, non-SVG response).
+   * @private
+   */
+  private renderFallback(): void {
+    this.setTrustedSvg(this.processSvgString(ICON_FALLBACK_SVG) ?? ICON_FALLBACK_SVG);
+  }
+
+  /**
+   * Parse an SVG string and add size, color, and accessibility attributes.
+   *
+   * Returns `null` when the input is not a standalone SVG document — a parse
+   * error, or a non-`<svg>` root such as an HTML page. Callers must treat
+   * `null` as "do not render"; the raw input is never passed through.
+   * @private
+   */
+  private processSvgString(svgText: string): string | null {
     // Parse as DOM to manipulate
     const parser = new DOMParser();
     const doc = parser.parseFromString(svgText, 'image/svg+xml');
-    const svg = doc.querySelector('svg');
+    const svg = doc.documentElement;
 
-    if (!svg) return svgText;
+    // Reject anything that is not a clean, standalone <svg> document. On
+    // parse errors DOMParser yields a <parsererror> root (Firefox) or embeds
+    // a <parsererror> element in partially-parsed output (Chromium) — both
+    // must never reach the DOM.
+    if (
+      svg.nodeName.toLowerCase() !== 'svg' ||
+      doc.getElementsByTagName('parsererror').length > 0
+    ) {
+      return null;
+    }
 
     // Set size
     const size = this.sizeInPixels();

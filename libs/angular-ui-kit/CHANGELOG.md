@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.13.1] - 2026-07-19
+
+### Fixed
+
+- **Icon: SPA `index.html` fallback can no longer be injected** (`lc-icon`) —
+  P1, reported from a LC Factory prod incident (CLS 0.66 from 34 instances of
+  a typo'd icon name). In SPA deployments the server answers missing asset
+  paths with the `index.html` fallback and status 200; `lc-icon` injected that
+  document unchecked via `bypassSecurityTrustHtml`, once per instance. Three
+  layers of fixes:
+  - Unknown icon names are caught **before** any request — in production as
+    well as dev — with exactly one console warning per name and the visible
+    "?" placeholder. Note: names outside `ICON_NAMES`/`ICON_ALIASES` that
+    happened to be servable are no longer fetched.
+  - HTTP responses are validated before rendering: `text/html` content-types
+    are rejected, and the body must parse as a standalone `<svg>` document
+    (parse errors and non-SVG roots are dropped with one warning per name).
+    `processSvgString` no longer returns unparseable input verbatim — that was
+    the actual injection point.
+  - `bypassSecurityTrustHtml` is confined to a single documented funnel that
+    only ever receives parsed, re-serialized SVG.
+  `strict` is unchanged (dev/CI escalation: throw on unknown names) and
+  documented in the Storybook docs alongside the new SPA-safe loading
+  behavior.
+
 ## [2.13.0] - 2026-07-18
 
 Closes the six gaps found while building app views DS-first (R1–R6 of the
