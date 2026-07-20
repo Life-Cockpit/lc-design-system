@@ -441,6 +441,54 @@ export const CollapsedWithGroups: Story = {
   }),
 };
 
+export const CollapsedRailBadges: Story = {
+  name: 'Collapsed Rail — Badges',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Badge rendering on the 56px icon rail, across variants and value widths. ' +
+          'The badge sits on the item\'s top-right corner as a compact count bubble ' +
+          'and keeps an opaque backdrop plus a ring in the rail color, so it stays ' +
+          'readable where a wider value ("99+") reaches over the icon. Shown on both ' +
+          'themes because the ring follows `--lc-sidenav-bg`.',
+      },
+    },
+  },
+  args: {
+    isOpen: true,
+    mode: 'docked',
+    collapsed: true,
+  },
+  render: () => ({
+    props: {
+      items: [
+        { id: '1', icon: 'home', label: 'One digit', route: '/a', displayOrder: 1, badge: { value: 3, variant: 'primary' } },
+        { id: '2', icon: 'bell', label: 'Two digits', route: '/b', displayOrder: 2, badge: { value: 12, variant: 'error' } },
+        { id: '3', icon: 'mail', label: 'Overflow value', route: '/c', displayOrder: 3, badge: { value: '99+', variant: 'warning' } },
+        { id: '4', icon: 'folder', label: 'Text value', route: '/d', displayOrder: 4, badge: { value: 'New', variant: 'success' } },
+        { id: '5', icon: 'chart-bar', label: 'Default variant', route: '/e', displayOrder: 5, badge: { value: 7 } },
+        { id: '6', icon: 'settings', label: 'No badge', route: '/f', displayOrder: 6 },
+      ],
+    },
+    template: `
+      <div style="display: flex; gap: 32px; align-items: flex-start;">
+        <div>
+          <p style="margin: 0 0 8px; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #6b7280;">Dark (default)</p>
+          <div style="height: 340px; border-radius: 8px; overflow: hidden;">
+            <lc-sidenav [isOpen]="true" mode="docked" [collapsed]="true" theme="dark" [items]="items" activeRoute="/b"></lc-sidenav>
+          </div>
+        </div>
+        <div>
+          <p style="margin: 0 0 8px; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #6b7280;">Light</p>
+          <div style="height: 340px; border-radius: 8px; overflow: hidden;">
+            <lc-sidenav [isOpen]="true" mode="docked" [collapsed]="true" theme="light" [items]="items" activeRoute="/b"></lc-sidenav>
+          </div>
+        </div>
+      </div>`,
+  }),
+};
+
 export const SidebarFirstLayout: Story = {
   name: 'Sidebar-First Layout',
   parameters: {

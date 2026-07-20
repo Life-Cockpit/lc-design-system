@@ -113,7 +113,7 @@ export const WithDisabled: Story = {
   args: {
     items: [
       { label: 'Active Feature', icon: 'check-circle' },
-      { label: 'Beta Feature', icon: 'beaker' },
+      { label: 'Beta Feature', icon: 'flask' },
       { label: 'Coming Soon', icon: 'lock-closed', disabled: true },
       { label: 'Deprecated', icon: 'x-circle', disabled: true },
     ],

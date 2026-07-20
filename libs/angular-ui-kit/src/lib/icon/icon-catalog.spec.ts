@@ -20,13 +20,21 @@ describe('icon catalog', () => {
     });
 
     it('includes documented aliases and inlined icons', () => {
-      for (const name of ['x-mark', 'magnifying-glass', 'light-bulb', 'play-circle']) {
+      for (const name of [
+        'x-mark',
+        'magnifying-glass',
+        'light-bulb',
+        'play-circle',
+        'cpu-chip',
+        'clipboard-document-list',
+        'archive-box',
+      ]) {
         expect(ICON_NAMES).toContain(name);
       }
     });
 
-    it('excludes names that are not real Tabler icons', () => {
-      for (const name of ['beaker', 'table-cells', 'cpu-chip', 'code-bracket', 'question-mark-circle']) {
+    it('excludes Heroicon names that have no documented alias', () => {
+      for (const name of ['beaker', 'table-cells', 'code-bracket', 'question-mark-circle']) {
         expect(ICON_NAMES).not.toContain(name);
       }
     });

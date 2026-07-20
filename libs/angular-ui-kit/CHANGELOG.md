@@ -2,6 +2,42 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.14.0] - 2026-07-20
+
+### Fixed
+
+- **Sidenav: badge on the collapsed rail was unreadable and covered the icon**
+  (`lc-sidenav`) — the collapsed-mode overrides set `font-size` / `min-width` /
+  `padding` on `.lc-sidenav__nav-badge`, which is the `lc-badge` **host**; the
+  visible element is the inner `.lc-badge` the component renders, so none of
+  them applied and the badge stayed at full `xs` size (20px) inside a 40px
+  item. On top of that the badge variants use translucent fills, so the icon
+  glyph showed through the badge. The badge is now sized as a real count
+  bubble (16px, 10px/600 text) via `::ng-deep`, anchored to the item's
+  top-right corner and nudged outward so 1–2 digit values clear the glyph
+  entirely, and given an opaque backdrop plus a 2px ring in the rail color
+  (new `--lc-sidenav-badge-ring` token, follows `--lc-sidenav-bg`) so wider
+  values like `99+` stay legible where they do overlap. New Storybook story
+  *Collapsed Rail — Badges* covers the variants and value widths on both
+  themes.
+- **Header: the built-in Logout menu item rendered a "?" placeholder**
+  (`lc-header`) — its icon was the un-aliased Heroicon name
+  `arrow-right-start-on-rectangle`. Now resolves to Tabler `logout`.
+
+### Added
+
+- **Icon: 11 more documented Heroicon aliases** (`ICON_ALIASES`) — every
+  Heroicon name still referenced anywhere in this library now resolves instead
+  of falling back to the placeholder: `cpu-chip`, `clipboard-document-list`,
+  `archive-box`, `puzzle-piece`, `paper-airplane`, `presentation-chart-bar`,
+  `chat-bubble-left`, `chat-bubble-left-right`, `building-office`,
+  `rocket-launch`, and the logout arrow in both Heroicon spellings
+  (`arrow-right-start-on-rectangle`, `arrow-right-on-rectangle`).
+  `beaker` / `table-cells` / `code-bracket` / `question-mark-circle` stay
+  deliberately un-aliased — they are the documented "did you mean …?"
+  examples — so the stories that used them now name their Tabler icon
+  directly.
+
 ## [2.13.1] - 2026-07-19
 
 ### Fixed

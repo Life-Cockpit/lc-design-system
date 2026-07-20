@@ -51,6 +51,11 @@
   --lc-sidenav-active-bg: var(--color-surface-selected);
   --lc-sidenav-active-fg: var(--color-primary-500);
   --lc-sidenav-active-icon: var(--color-primary-500);
+  // Backdrop + ring behind the collapsed-rail count badge. Must stay opaque:
+  // it is what the badge variant's translucent tint composites over, and what
+  // separates the badge from the icon it sits on. Follows --lc-sidenav-bg, so
+  // the light/dark modifiers below carry it automatically.
+  --lc-sidenav-badge-ring: var(--lc-sidenav-bg);
 
   position: fixed;
   top: 0;
@@ -163,15 +168,25 @@
       height: 22px;
     }
 
+    // Count badge on the icon rail. A 40px-wide item has no room for a badge
+    // beside the centered icon, so it is anchored to the item's top-right
+    // corner and nudged outward — clear of the glyph for the common 1–2 digit
+    // case. Wider values ("99+") still reach over the icon, so the badge is
+    // made to read on top of it: an opaque backdrop (the variant fills are
+    // translucent and would otherwise let the glyph show through) plus a ring
+    // in the rail color that cuts the badge out of the icon.
     .lc-sidenav__nav-badge {
       position: absolute;
-      top: 2px;
-      right: 2px;
+      top: 0;
+      right: 0;
+      transform: translate(4px, -4px);
       margin-left: 0;
-      font-size: 0.625rem;
-      min-width: 0;
-      padding: 0 3px;
-      line-height: 1.2;
+      border-radius: var(--border-radius-full, 9999px);
+      background-color: var(--lc-sidenav-badge-ring);
+      box-shadow: 0 0 0 2px var(--lc-sidenav-badge-ring);
+      // Never swallow hover from the item — the collapsed rail shows its label
+      // tooltip on item hover.
+      pointer-events: none;
     }
 
     .lc-sidenav__nav-children {
@@ -428,6 +443,22 @@
 .lc-sidenav__nav-badge {
   flex-shrink: 0;
   margin-left: auto;
+}
+
+// Collapsed rail: shrink the badge to a count bubble.
+//
+// `lc-badge` renders its own inner `.lc-badge` element, so size has to be set
+// there — the previous font-size/min-width/padding on `.lc-sidenav__nav-badge`
+// targeted only the host and never applied, which is why the badge stayed at
+// full xs size (20px) and swallowed the icon. `lc-badge` uses
+// ViewEncapsulation.None, so `::ng-deep` reaches it (same pattern as lc-card).
+:host ::ng-deep .lc-sidenav--collapsed .lc-sidenav__nav-badge .lc-badge {
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
 }
 
 .lc-sidenav__nav-item--expanded .lc-sidenav__nav-chevron {

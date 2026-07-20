@@ -62,7 +62,7 @@ export const Default: Story = {
     items: [
       { id: 'profile', label: 'Profile', icon: 'user' },
       { id: 'settings', label: 'Settings', icon: 'cog-6-tooth' },
-      { id: 'help', label: 'Help & Support', icon: 'question-mark-circle', dividerAfter: true },
+      { id: 'help', label: 'Help & Support', icon: 'help-circle', dividerAfter: true },
       { id: 'logout', label: 'Sign Out', icon: 'arrow-right-on-rectangle', variant: 'danger' },
     ],
   },
@@ -110,7 +110,7 @@ export const WithDisabled: Story = {
       { id: 'view', label: 'View Details', icon: 'eye' },
       { id: 'share', label: 'Share', icon: 'share' },
       { id: 'export', label: 'Export (Pro)', icon: 'arrow-down-tray', disabled: true },
-      { id: 'api', label: 'API Access (Pro)', icon: 'code-bracket', disabled: true },
+      { id: 'api', label: 'API Access (Pro)', icon: 'code', disabled: true },
     ],
   },
   render: (args) => ({
