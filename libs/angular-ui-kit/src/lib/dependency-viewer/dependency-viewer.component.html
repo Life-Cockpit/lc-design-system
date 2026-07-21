@@ -1,17 +1,22 @@
-<!-- Toolbar -->
+<!-- Toolbar. The zoom cluster is navigation, so it goes with `interactive`; the
+     direction indicator is a read-out and stays. -->
 @if (showToolbar()) {
   <div class="dep-viewer__toolbar">
-    <button class="dep-viewer__btn" (click)="zoomIn()" title="Zoom in">+</button>
-    <span class="dep-viewer__zoom">{{ zoom() }}%</span>
-    <button class="dep-viewer__btn" (click)="zoomOut()" title="Zoom out">−</button>
-    <button class="dep-viewer__btn dep-viewer__btn--reset" (click)="resetZoom()" title="Reset">⟲</button>
+    @if (interactive()) {
+      <button class="dep-viewer__btn" (click)="zoomIn()" title="Zoom in">+</button>
+      <span class="dep-viewer__zoom">{{ zoomLabel() }}%</span>
+      <button class="dep-viewer__btn" (click)="zoomOut()" title="Zoom out">−</button>
+      <button class="dep-viewer__btn dep-viewer__btn--reset" (click)="resetZoom()" title="Reset">⟲</button>
+    }
     <span class="dep-viewer__direction-label">{{ direction() === 'horizontal' ? '→' : '↓' }}</span>
   </div>
 }
 
 <!-- Canvas -->
 <div
+  #canvas
   class="dep-viewer__canvas"
+  [class.dep-viewer__canvas--static]="!interactive()"
   (mousedown)="onMouseDown($event)"
   (wheel)="onWheel($event)"
   (click)="deselectNode()"

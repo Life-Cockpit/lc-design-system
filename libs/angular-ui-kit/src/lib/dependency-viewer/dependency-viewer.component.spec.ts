@@ -19,6 +19,8 @@ import {
     [hiddenRelations]="hiddenRelations()"
     [hiddenTypes]="hiddenTypes()"
     [anchorNodeId]="anchorNodeId()"
+    [autoFit]="autoFit()"
+    [interactive]="interactive()"
   />`,
 })
 class TestHost {
@@ -42,6 +44,8 @@ class TestHost {
   hiddenRelations = signal<DependencyRelation[]>([]);
   hiddenTypes = signal<string[]>([]);
   anchorNodeId = signal<string | null>(null);
+  autoFit = signal(false);
+  interactive = signal(true);
 }
 
 describe('DependencyViewerComponent', () => {
@@ -875,5 +879,266 @@ describe('DependencyViewerComponent', () => {
     expect(viewer.zoom()).toBe(100);
     expect(viewer.panX()).toBe(40);
     expect(viewer.panY()).toBe(40);
+  });
+
+  // ── Auto-fit ───────────────────────────────────────────────────
+  // The contract is "no scrolling, no panning": every node lands inside the
+  // canvas rectangle. These assert that in *screen* space — the same maths the
+  // browser applies to the SVG — rather than trusting the scale the code picked.
+
+  // jsdom lays nothing out, so the canvas always measures 0×0. Give it a size and
+  // auto-fit has something real to fit into.
+  const sizeCanvas = (w: number, h: number) => {
+    const canvas = el.querySelector('.dep-viewer__canvas') as HTMLElement;
+    Object.defineProperty(canvas, 'clientWidth', { value: w, configurable: true });
+    Object.defineProperty(canvas, 'clientHeight', { value: h, configurable: true });
+    return canvas;
+  };
+
+  // screen = pan + zoom * layout, applied to every node's box.
+  const screenBoxes = () => {
+    const v = viewerOf();
+    const z = v.zoom() / 100;
+    return Array.from(el.querySelectorAll('.dep-viewer__node .dep-viewer__node-fill')).map(r => {
+      const x = +(r.getAttribute('x') ?? 0);
+      const y = +(r.getAttribute('y') ?? 0);
+      return {
+        left: v.panX() + x * z,
+        top: v.panY() + y * z,
+        right: v.panX() + (x + +(r.getAttribute('width') ?? 0)) * z,
+        bottom: v.panY() + (y + +(r.getAttribute('height') ?? 0)) * z,
+      };
+    });
+  };
+
+  const expectAllInside = (w: number, h: number) => {
+    const boxes = screenBoxes();
+    expect(boxes.length).toBeGreaterThan(0);
+    for (const b of boxes) {
+      expect(b.left).toBeGreaterThanOrEqual(0);
+      expect(b.top).toBeGreaterThanOrEqual(0);
+      expect(b.right).toBeLessThanOrEqual(w);
+      expect(b.bottom).toBeLessThanOrEqual(h);
+    }
+  };
+
+  /** A `count`-node graph, fanned out `branching` wide so it grows on both axes. */
+  const wideTree = (count: number, branching = 4): DependencyNode => {
+    const nodes: DependencyNode[] = Array.from({ length: count }, (_, i) => ({
+      id: `n${i}`,
+      label: `Node ${i}`,
+    }));
+    for (let i = 1; i < count; i++) {
+      const parent = nodes[Math.floor((i - 1) / branching)];
+      (parent.children ??= []).push(nodes[i]);
+    }
+    return nodes[0];
+  };
+
+  const enableAutoFit = (w = 800, h = 400) => {
+    sizeCanvas(w, h);
+    host.autoFit.set(true);
+    fixture.detectChanges();
+  };
+
+  it.each([1, 2, 7, 23, 50])('should fit a %i-node graph entirely in the canvas', count => {
+    host.root.set(wideTree(count));
+    fixture.detectChanges();
+    enableAutoFit(800, 400);
+    expectAllInside(800, 400);
+  });
+
+  it.each([1, 7, 50])('should fit a %i-node vertical graph entirely in the canvas', count => {
+    host.direction.set('vertical');
+    host.root.set(wideTree(count));
+    fixture.detectChanges();
+    enableAutoFit(800, 400);
+    expectAllInside(800, 400);
+  });
+
+  it('should re-fit when the container is resized', () => {
+    host.root.set(wideTree(30));
+    fixture.detectChanges();
+    enableAutoFit(900, 500);
+
+    const zoomBefore = viewerOf().zoom();
+
+    // The real trigger is a ResizeObserver callback, which jsdom does not
+    // implement; fit() is what that callback calls, so drive it directly.
+    sizeCanvas(300, 200);
+    viewerOf().fit();
+    fixture.detectChanges();
+
+    expect(viewerOf().zoom()).toBeLessThan(zoomBefore); // smaller frame → smaller scale
+    expectAllInside(300, 200);
+  });
+
+  it('should re-fit when the graph grows', () => {
+    host.root.set(wideTree(4));
+    fixture.detectChanges();
+    enableAutoFit(800, 400);
+
+    host.root.set(wideTree(50));
+    fixture.detectChanges();
+
+    expectAllInside(800, 400);
+  });
+
+  it('should shrink to fit but never enlarge past 100%', () => {
+    host.root.set({ id: 'only', label: 'Only' });
+    fixture.detectChanges();
+    enableAutoFit(2000, 1200); // vastly bigger than one 160×40 node
+
+    expect(viewerOf().zoom()).toBe(100);
+  });
+
+  it('should centre the fitted graph in the canvas', () => {
+    host.root.set(wideTree(12));
+    fixture.detectChanges();
+    enableAutoFit(800, 400);
+
+    const boxes = screenBoxes();
+    const left = Math.min(...boxes.map(b => b.left));
+    const right = Math.max(...boxes.map(b => b.right));
+    const top = Math.min(...boxes.map(b => b.top));
+    const bottom = Math.max(...boxes.map(b => b.bottom));
+
+    expect(left).toBeCloseTo(800 - right, 5);
+    expect(top).toBeCloseTo(400 - bottom, 5);
+  });
+
+  it('should leave the viewport untouched when autoFit is off', () => {
+    // The no-regression guard: the fit machinery must not run unasked.
+    sizeCanvas(800, 400);
+    host.root.set(wideTree(50));
+    fixture.detectChanges();
+
+    const viewer = viewerOf();
+    expect(viewer.zoom()).toBe(100);
+    expect(viewer.panX()).toBe(40);
+    expect(viewer.panY()).toBe(40);
+  });
+
+  it('should re-fit rather than reset to 100% when resetView is called under autoFit', () => {
+    host.root.set(wideTree(50));
+    fixture.detectChanges();
+    enableAutoFit(800, 400);
+
+    const fitted = viewerOf().zoom();
+    expect(fitted).toBeLessThan(100); // precondition: this graph really is too big
+
+    viewerOf().resetView();
+    fixture.detectChanges();
+
+    expect(viewerOf().zoom()).toBeCloseTo(fitted, 5);
+    expectAllInside(800, 400);
+  });
+
+  it('should let auto-fit win over anchor compensation', () => {
+    // Both move the pan on relayout. If the anchor effect still ran, it would drag
+    // the camera off the fit and push nodes out of frame.
+    host.root.set(wideTree(4));
+    host.anchorNodeId.set('n3');
+    fixture.detectChanges();
+    enableAutoFit(800, 400);
+
+    host.root.set(wideTree(50));
+    fixture.detectChanges();
+
+    expectAllInside(800, 400);
+  });
+
+  // ── Static mode (interactive: false) ───────────────────────────
+
+  it('should not pan on drag when interactive is false', () => {
+    host.interactive.set(false);
+    fixture.detectChanges();
+
+    const canvas = el.querySelector('.dep-viewer__canvas') as HTMLElement;
+    canvas.dispatchEvent(new MouseEvent('mousedown', { button: 0, clientX: 100, clientY: 100 }));
+    document.dispatchEvent(new MouseEvent('mousemove', { clientX: 260, clientY: 190 }));
+    fixture.detectChanges();
+
+    expect(viewerOf().panX()).toBe(40);
+    expect(viewerOf().panY()).toBe(40);
+  });
+
+  it('should still pan on drag by default', () => {
+    const canvas = el.querySelector('.dep-viewer__canvas') as HTMLElement;
+    canvas.dispatchEvent(new MouseEvent('mousedown', { button: 0, clientX: 100, clientY: 100 }));
+    document.dispatchEvent(new MouseEvent('mousemove', { clientX: 260, clientY: 190 }));
+    fixture.detectChanges();
+
+    expect(viewerOf().panX()).toBe(200); // 40 + 160
+    expect(viewerOf().panY()).toBe(130); // 40 + 90
+  });
+
+  it('should not zoom on wheel — nor swallow the event — when interactive is false', () => {
+    host.interactive.set(false);
+    fixture.detectChanges();
+
+    const canvas = el.querySelector('.dep-viewer__canvas') as HTMLElement;
+    const wheel = new WheelEvent('wheel', { deltaY: -120, cancelable: true, bubbles: true });
+    canvas.dispatchEvent(wheel);
+    fixture.detectChanges();
+
+    expect(viewerOf().zoom()).toBe(100);
+    // Not prevented, so the page behind the viewer can still scroll.
+    expect(wheel.defaultPrevented).toBe(false);
+  });
+
+  it('should still zoom on wheel by default', () => {
+    const canvas = el.querySelector('.dep-viewer__canvas') as HTMLElement;
+    canvas.dispatchEvent(new WheelEvent('wheel', { deltaY: -120, cancelable: true, bubbles: true }));
+    fixture.detectChanges();
+
+    expect(viewerOf().zoom()).toBe(110);
+  });
+
+  it('should hide the zoom controls but keep the direction read-out when static', () => {
+    host.interactive.set(false);
+    fixture.detectChanges();
+
+    expect(el.querySelectorAll('.dep-viewer__btn').length).toBe(0);
+    expect(el.querySelector('.dep-viewer__zoom')).toBeFalsy();
+    expect(el.querySelector('.dep-viewer__toolbar')).toBeTruthy();
+    expect(el.querySelector('.dep-viewer__direction-label')?.textContent?.trim()).toBe('→');
+  });
+
+  it('should mark the canvas static so it stops advertising drag', () => {
+    host.interactive.set(false);
+    fixture.detectChanges();
+    expect(el.querySelector('.dep-viewer__canvas')?.classList).toContain('dep-viewer__canvas--static');
+  });
+
+  it('should still emit nodeSelect in static mode', () => {
+    const emitted: DependencyNode[] = [];
+    const viewer = fixture.debugElement.children[0].componentInstance as DependencyViewerComponent;
+    viewer.nodeSelect.subscribe((n: DependencyNode) => emitted.push(n));
+
+    host.interactive.set(false);
+    host.autoFit.set(true);
+    fixture.detectChanges();
+
+    const node = el.querySelector('.dep-viewer__node') as SVGGElement;
+    node.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    fixture.detectChanges();
+
+    expect(emitted.length).toBe(1);
+    expect(emitted[0].id).toBe('root');
+    expect(el.querySelector('.dep-viewer__detail')).toBeTruthy();
+  });
+
+  it('should still collapse sub-trees in static mode', () => {
+    // Collapsing is content interaction, not viewport navigation — `interactive`
+    // governs pan/zoom only.
+    host.interactive.set(false);
+    fixture.detectChanges();
+
+    const toggle = el.querySelectorAll('.dep-viewer__toggle')[1] as SVGElement;
+    toggle.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    fixture.detectChanges();
+
+    expect(el.querySelectorAll('.dep-viewer__node').length).toBe(3);
   });
 });

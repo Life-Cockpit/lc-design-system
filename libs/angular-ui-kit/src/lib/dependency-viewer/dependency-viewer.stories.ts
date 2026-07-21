@@ -11,6 +11,8 @@ const meta: Meta<DependencyViewerComponent> = {
     showEdgeLabels: { control: 'boolean' },
     height: { control: 'text' },
     edgeWidth: { control: { type: 'number', min: 0.5, max: 4, step: 0.5 } },
+    autoFit: { control: 'boolean' },
+    interactive: { control: 'boolean' },
   },
   parameters: {
     docs: {
@@ -19,7 +21,9 @@ const meta: Meta<DependencyViewerComponent> = {
           'Dependency viewer for visualizing hierarchical and cross-cutting relationships. ' +
           'Supports horizontal/vertical layout, bidirectional dependencies, relationship types ' +
           '(blocks, references, requires, extends, implements, uses), edge labels, pan & zoom, ' +
-          'collapsible sub-trees, and an interactive detail panel.',
+          'collapsible sub-trees, and an interactive detail panel. Set `autoFit` to scale the ' +
+          'whole graph into the frame, and `interactive: false` to turn it into a static ' +
+          'overview that is still click-through.',
       },
     },
   },
@@ -305,6 +309,117 @@ export const CyclicGraph: Story = {
           'The input is a tree, but real graphs loop. A link back to an already-placed node — a ' +
           'cycle, or a node reached from a second parent — is drawn as a cross-reference arrow ' +
           'instead of being followed, so each node is rendered exactly once.',
+      },
+    },
+  },
+};
+
+// ── Auto-fit & static mode ───────────────────────────────────────────────────
+
+// Deliberately wider and deeper than the frames below can show at 100% — the
+// point of these stories is what happens when the graph does not fit.
+const broadTree: DependencyNode = {
+  id: 'root',
+  label: 'Root',
+  status: 'active',
+  children: [
+    {
+      id: 'group-a',
+      label: 'Group A',
+      status: 'success',
+      children: [
+        { id: 'a-1', label: 'Item A1' },
+        { id: 'a-2', label: 'Item A2' },
+        { id: 'a-3', label: 'Item A3', children: [{ id: 'a-3-1', label: 'Item A3.1' }] },
+      ],
+    },
+    {
+      id: 'group-b',
+      label: 'Group B',
+      status: 'warning',
+      children: [
+        { id: 'b-1', label: 'Item B1', dependsOn: [{ id: 'a-1', relation: 'requires' }] },
+        { id: 'b-2', label: 'Item B2' },
+      ],
+    },
+    {
+      id: 'group-c',
+      label: 'Group C',
+      children: [
+        { id: 'c-1', label: 'Item C1' },
+        { id: 'c-2', label: 'Item C2', children: [{ id: 'c-2-1', label: 'Item C2.1' }] },
+        { id: 'c-3', label: 'Item C3' },
+      ],
+    },
+  ],
+};
+
+export const AutoFit: Story = {
+  args: {
+    root: broadTree,
+    direction: 'horizontal',
+    autoFit: true,
+    height: '360px',
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '`autoFit` scales and centres the graph so all of it fits the frame, and re-fits on ' +
+          'container resize (drag the preview wider) and whenever the graph changes shape. It ' +
+          'only ever shrinks — a small graph keeps its natural size rather than ballooning to ' +
+          'fill the frame. Pan and zoom still work on top of the fit; add `interactive: false` ' +
+          'to freeze it.',
+      },
+    },
+  },
+};
+
+export const AutoFitVertical: Story = {
+  args: {
+    root: broadTree,
+    direction: 'vertical',
+    autoFit: true,
+    height: '400px',
+  },
+};
+
+export const StaticOverview: Story = {
+  args: {
+    root: broadTree,
+    direction: 'horizontal',
+    autoFit: true,
+    interactive: false,
+    height: '360px',
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '`autoFit` plus `interactive: false` — the everything-at-a-glance configuration. ' +
+          'Drag-pan, wheel-zoom and the toolbar zoom buttons are gone, and the canvas no longer ' +
+          'shows a grab cursor. Content interaction is untouched: nodes still select (watch ' +
+          '`nodeSelect` in the Actions tab), collapse toggles still work, and the wheel is not ' +
+          'swallowed, so the page behind the viewer scrolls normally.',
+      },
+    },
+  },
+};
+
+export const StaticWithoutAutoFit: Story = {
+  args: {
+    root: simpleTree,
+    direction: 'horizontal',
+    interactive: false,
+    height: '320px',
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '`interactive: false` on its own pins the default viewport instead of fitting. Use it ' +
+          'for a graph already known to fit the frame; anything larger is cropped, since there ' +
+          'is no longer a way to pan to it.',
       },
     },
   },

@@ -9,6 +9,7 @@ import {
   computed,
   signal,
   untracked,
+  viewChild,
   HostListener,
 } from '@angular/core';
 
@@ -116,6 +117,15 @@ const BACK_EDGE_BOW = 36;
 const ROUTE_SAMPLES = 24;
 /** Ignore grazing the very edge of a box — only a real incursion counts. */
 const ROUTE_INSET = 3;
+/** Breathing room around the graph's bounding box when auto-fitting, in layout units. */
+const FIT_PADDING = 24;
+/**
+ * Auto-fit shrinks to fit but never enlarges: blowing a two-node graph up to fill
+ * a 600px frame reads as broken, not as "fitted".
+ */
+const MAX_FIT_SCALE = 1;
+/** Floor for the fit scale, so a huge graph in a tiny box stays a graph, not a smear. */
+const MIN_FIT_SCALE = 0.05;
 
 const RELATION_STYLES: Record<DependencyRelation, { color: string; dashed: boolean; label: string }> = {
   depends:    { color: 'var(--color-neutral-400)',  dashed: false, label: 'depends on' },
@@ -566,6 +576,7 @@ function readableInk(color: string): string {
  * - Color-coded edges per relationship type
  * - Node status colors (default, active, success, warning, error, muted)
  * - Pan and zoom controls with mouse wheel support
+ * - Auto-fit (`autoFit`) and a static, non-navigable mode (`interactive: false`)
  * - Collapsible sub-trees
  * - Interactive node selection with detail panel
  * - Legend showing active relationship types
@@ -588,6 +599,17 @@ function readableInk(color: string): string {
  * @example
  * ```html
  * <lc-dependency-viewer [root]="specTree" direction="horizontal" />
+ * ```
+ *
+ * @example Static overview — the whole graph at a glance, click-through only
+ * ```html
+ * <lc-dependency-viewer
+ *   [root]="graph()"
+ *   [autoFit]="true"
+ *   [interactive]="false"
+ *   height="360px"
+ *   (nodeSelect)="openDetail($event)"
+ * />
  * ```
  *
  * @example Incremental graph exploration
@@ -616,6 +638,25 @@ export class DependencyViewerComponent {
   readonly showToolbar = input(true);
   readonly showEdgeLabels = input(true);
   readonly edgeWidth = input(1.5);
+
+  /**
+   * Scales and centres the graph so that all of it fits the canvas, and re-fits
+   * whenever the container or the graph changes size. Turns the viewer into an
+   * overview: nothing to pan or zoom to, everything visible at once.
+   *
+   * Shrinks only — the fit never enlarges past 100%, so a two-node graph keeps its
+   * natural size instead of ballooning to fill the frame.
+   *
+   * Pair with `interactive: false` for a purely static display.
+   */
+  readonly autoFit = input(false);
+
+  /**
+   * Viewport navigation: drag-to-pan, wheel-zoom and the toolbar's zoom buttons.
+   * `false` freezes the viewport — node selection, expansion and collapse keep
+   * working, so `nodeSelect` still fires in a static viewer.
+   */
+  readonly interactive = input(true);
 
   /**
    * Node the viewport holds still across `root` updates. Defaults to the node the
@@ -650,6 +691,7 @@ export class DependencyViewerComponent {
   private lastMouseY = 0;
 
   private readonly hostEl = inject(ElementRef<HTMLElement>);
+  private readonly canvasRef = viewChild<ElementRef<HTMLElement>>('canvas');
 
   /** Last known layout position of the anchor, to compensate pan after a relayout. */
   private anchorPos: { id: string; x: number; y: number } | null = null;
@@ -718,7 +760,9 @@ export class DependencyViewerComponent {
       const nodeMap = this.layout().nodeMap;
       const anchorId = this.anchorNodeId() ?? this.selectedNodeId();
 
-      if (!anchorId) {
+      // Auto-fit recentres the whole graph on every relayout, which subsumes
+      // holding one node still. Running both would have them fight over the pan.
+      if (this.autoFit() || !anchorId) {
         this.anchorPos = null;
         return;
       }
@@ -742,6 +786,26 @@ export class DependencyViewerComponent {
       }
       this.anchorPos = { id: anchorId, x: node.x, y: node.y };
     });
+
+    // Re-fit when the graph changes shape. Reading `canvasRef` here (rather than
+    // only inside `fit`) is what gets the *first* fit to run: the view child
+    // resolves after the initial render, which re-triggers this effect at the
+    // point the canvas finally has a measurable size.
+    effect(() => {
+      if (!this.autoFit() || !this.canvasRef()) return;
+      this.layout();
+      untracked(() => this.fit());
+    });
+
+    // …and when the container changes size. ResizeObserver delivers an initial
+    // callback on observe, so this covers the first fit in a browser too.
+    effect(onCleanup => {
+      const el = this.canvasRef()?.nativeElement;
+      if (!this.autoFit() || !el || typeof ResizeObserver === 'undefined') return;
+      const observer = new ResizeObserver(() => this.fit());
+      observer.observe(el);
+      onCleanup(() => observer.disconnect());
+    });
   }
 
   protected svgWidth = computed(() => this.layout().width + 80);
@@ -751,6 +815,10 @@ export class DependencyViewerComponent {
     const z = this.zoom() / 100;
     return `translate(${this.panX()}px, ${this.panY()}px) scale(${z})`;
   });
+
+  // A fitted scale is an arbitrary fraction; the readout is not the source of
+  // truth, so it rounds rather than printing "63.41999999%".
+  protected zoomLabel = computed(() => Math.round(this.zoom()));
 
   protected selectedNode = computed<LayoutNode | null>(() => {
     const id = this.selectedNodeId();
@@ -860,7 +928,7 @@ export class DependencyViewerComponent {
     const node = this.layout().nodeMap.get(id);
     if (!node) return;
     const z = this.zoom() / 100;
-    const el = this.hostEl.nativeElement.querySelector('.dep-viewer__canvas');
+    const el = this.canvasEl();
     const viewW = el?.clientWidth ?? 0;
     const viewH = el?.clientHeight ?? 0;
     // Invert screen = pan + z * layout for the node's centre.
@@ -869,8 +937,46 @@ export class DependencyViewerComponent {
     this.anchorPos = { id, x: node.x, y: node.y };
   }
 
-  /** Restores the initial zoom and pan. */
+  /**
+   * Scales and centres the graph so all of it fits the canvas. Called for you when
+   * `autoFit` is set; public so a caller can fit on demand without it.
+   *
+   * No-op while the canvas has no size (before the first render, or in a detached
+   * / `display: none` container) — the `autoFit` observers re-run once it does.
+   */
+  fit(): void {
+    const el = this.canvasEl();
+    const viewW = el?.clientWidth ?? 0;
+    const viewH = el?.clientHeight ?? 0;
+    if (!viewW || !viewH) return;
+
+    const box = this.contentBox();
+    if (box.width <= 0 || box.height <= 0) return;
+
+    const scale = Math.min(
+      MAX_FIT_SCALE,
+      Math.max(MIN_FIT_SCALE, Math.min(viewW / box.width, viewH / box.height)),
+    );
+
+    this.zoom.set(scale * 100);
+    // Invert screen = pan + scale * layout for the box's top-left corner, so the
+    // box lands centred in the canvas.
+    this.panX.set((viewW - box.width * scale) / 2 - box.x * scale);
+    this.panY.set((viewH - box.height * scale) / 2 - box.y * scale);
+    // The camera just moved deliberately; a stale anchor baseline would have the
+    // next relayout "correct" a position this fit had already chosen.
+    this.anchorPos = null;
+  }
+
+  /**
+   * Restores the initial view — the fitted one under `autoFit`, otherwise the
+   * default zoom and pan.
+   */
   resetView(): void {
+    if (this.autoFit()) {
+      this.fit();
+      return;
+    }
     this.zoom.set(100);
     this.panX.set(40);
     this.panY.set(40);
@@ -910,8 +1016,54 @@ export class DependencyViewerComponent {
     this.collapsedIds.set(ids);
   }
 
+  // ── Viewport measurement ───────────────────────────────────────────────────
+
+  private canvasEl(): HTMLElement | null {
+    return (
+      this.canvasRef()?.nativeElement ??
+      this.hostEl.nativeElement.querySelector('.dep-viewer__canvas')
+    );
+  }
+
+  /**
+   * Bounding box of everything drawn, in layout units.
+   *
+   * Edge label points stand in for the edges themselves. A parent→child edge stays
+   * inside the node boxes anyway, and a bowed cross-reference puts its label at the
+   * apex of the bow — the only part of it that reaches outside them.
+   */
+  private contentBox(): { x: number; y: number; width: number; height: number } {
+    const { nodes, edges } = this.layout();
+    if (!nodes.length) return { x: 0, y: 0, width: 0, height: 0 };
+
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+
+    for (const n of nodes) {
+      minX = Math.min(minX, n.x);
+      minY = Math.min(minY, n.y);
+      maxX = Math.max(maxX, n.x + n.width);
+      maxY = Math.max(maxY, n.y + n.height);
+    }
+    for (const e of edges) {
+      minX = Math.min(minX, e.labelX);
+      minY = Math.min(minY, e.labelY);
+      maxX = Math.max(maxX, e.labelX);
+      maxY = Math.max(maxY, e.labelY);
+    }
+
+    return {
+      x: minX - FIT_PADDING,
+      y: minY - FIT_PADDING,
+      width: maxX - minX + FIT_PADDING * 2,
+      height: maxY - minY + FIT_PADDING * 2,
+    };
+  }
+
   protected onMouseDown(event: MouseEvent): void {
-    if (event.button !== 0) return;
+    if (!this.interactive() || event.button !== 0) return;
     this.isPanning = true;
     this.lastMouseX = event.clientX;
     this.lastMouseY = event.clientY;
@@ -930,6 +1082,9 @@ export class DependencyViewerComponent {
   protected onMouseUp(): void { this.isPanning = false; }
 
   protected onWheel(event: WheelEvent): void {
+    // Return *before* preventDefault: a static viewer must not swallow the wheel
+    // event, or the page can't be scrolled past it.
+    if (!this.interactive()) return;
     event.preventDefault();
     this.zoom.update(z => event.deltaY < 0 ? Math.min(z + 10, 300) : Math.max(z - 10, 25));
   }

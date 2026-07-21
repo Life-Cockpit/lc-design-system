@@ -2,6 +2,41 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.15.0] - 2026-07-21
+
+### Added
+
+- **Dependency viewer: `autoFit`** (`lc-dependency-viewer`) — scales and centres
+  the graph so all of it fits the canvas, re-fitting on container resize (via
+  `ResizeObserver`) and whenever the graph changes shape. The fit only ever
+  shrinks: it never enlarges past 100%, so a two-node graph keeps its natural
+  size instead of ballooning to fill the frame. Under `autoFit` the `anchorNodeId`
+  compensation stands down (both move the pan on relayout, and they would
+  otherwise fight over it) and `resetView()` re-fits rather than snapping back to
+  100%. The bounding box is taken from the node boxes plus the edge label points,
+  which is what puts a bowed cross-reference's apex inside the fit.
+- **Dependency viewer: `interactive`** (`lc-dependency-viewer`, default `true`) —
+  `false` freezes the viewport: no drag-pan, no wheel-zoom, no toolbar zoom
+  buttons, and no grab cursor. The wheel event is left un-prevented so the page
+  behind the viewer still scrolls. Content interaction is untouched — `nodeSelect`
+  and `nodeExpand` still fire and collapse toggles still work, so a static viewer
+  is still click-through. Together with `autoFit` this is the
+  everything-at-a-glance configuration: new Storybook stories *Auto Fit*,
+  *Auto Fit Vertical*, *Static Overview* and *Static Without Auto Fit*.
+- **Dependency viewer: `fit()`** (`lc-dependency-viewer`) — imperative counterpart
+  to `autoFit`, alongside the existing `focusNode()` / `resetView()`.
+
+### Fixed
+
+- **Dependency viewer: the legend was pushed out of the frame, and the canvas
+  overhung its container** (`lc-dependency-viewer`) — the host was a plain block
+  and the canvas took `height: 100%`, which resolves against the *host*, not
+  against the space left over by the toolbar and legend. The canvas therefore
+  overhung by the toolbar's height, shunting the legend past the host's
+  `overflow: hidden` edge. The host is now a column flex container and the canvas
+  takes the remaining space. This is also what makes `autoFit` correct: it now
+  measures the viewport the user can actually see.
+
 ## [2.14.0] - 2026-07-20
 
 ### Fixed
