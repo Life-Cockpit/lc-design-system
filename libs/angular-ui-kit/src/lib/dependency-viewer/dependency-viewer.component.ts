@@ -19,6 +19,26 @@ export type DependencyNodeStatus = 'default' | 'active' | 'success' | 'warning' 
 export type DependencyDirection = 'horizontal' | 'vertical';
 export type DependencyRelation = 'depends' | 'blocks' | 'references' | 'requires' | 'extends' | 'implements' | 'uses';
 
+/**
+ * How nodes are placed.
+ *
+ * - `tree` — column = depth in the `children` tree; `dependsOn` links are drawn
+ *   over the top as cross-references and don't move anything.
+ * - `layered` — column = depth in the *dependency* graph (Sugiyama). Every link is
+ *   a precedence constraint, so a node always sits past everything it depends on.
+ */
+export type DependencyLayout = 'tree' | 'layered';
+
+/**
+ * How the graph is scaled into the frame.
+ *
+ * - `none` — no fitting; the viewport is whatever the user panned/zoomed to.
+ * - `contain` — shrink until all of it fits, both axes.
+ * - `fit-width` — shrink to the frame's *width* only and let the viewer grow
+ *   taller, so the page scrolls instead of the nodes shrinking out of legibility.
+ */
+export type DependencyFitMode = 'none' | 'contain' | 'fit-width';
+
 export interface DependencyEdgeDef {
   /** Target node id */
   id: string;
@@ -100,7 +120,10 @@ interface LayoutEdge {
   labelY: number;
   color: string;
   dashed: boolean;
+  /** Draws it as a secondary link: dimmed, and out of the layout's main flow. */
   isCrossRef: boolean;
+  /** Whether to cap the edge with an arrowhead. */
+  arrow: boolean;
   /** Arrow marker id suffix — always a known relation, so the marker resolves */
   marker: DependencyRelation;
 }
@@ -231,7 +254,7 @@ function layoutTreeH(
       path: `M ${sx} ${sy} C ${mx} ${sy}, ${mx} ${ty}, ${tx} ${ty}`,
       labelX: mx, labelY: (sy + ty) / 2,
       color: 'var(--color-neutral-300)', dashed: false, isCrossRef: false,
-      marker: 'depends',
+      arrow: false, marker: 'depends',
     });
   }
 
@@ -272,7 +295,7 @@ function layoutTreeV(
       path: `M ${sx} ${sy} C ${sx} ${my}, ${tx} ${my}, ${tx} ${ty}`,
       labelX: (sx + tx) / 2, labelY: my,
       color: 'var(--color-neutral-300)', dashed: false, isCrossRef: false,
-      marker: 'depends',
+      arrow: false, marker: 'depends',
     });
   }
 
@@ -486,7 +509,8 @@ function createCrossRefEdges(
         path: geo.path, relation: dep.relation,
         label: dep.relationLabel ?? style.label,
         labelX: geo.labelX, labelY: geo.labelY,
-        color: style.color, dashed: style.dashed, isCrossRef: true, marker: relation,
+        color: style.color, dashed: style.dashed, isCrossRef: true,
+        arrow: true, marker: relation,
       });
     }
   }
@@ -505,11 +529,408 @@ function createCrossRefEdges(
     edges.push({
       id: `${back.from}↺${back.to}`, sourceId: back.from, targetId: back.to,
       path: geo.path, labelX: geo.labelX, labelY: geo.labelY,
-      color: style.color, dashed: true, isCrossRef: true, marker: 'depends',
+      color: style.color, dashed: true, isCrossRef: true,
+      arrow: true, marker: 'depends',
     });
   }
 
   return edges;
+}
+
+// ── Layered (DAG) layout ─────────────────────────────────────────────────────
+
+/** A link as the layered layout sees it: a precedence constraint plus its styling. */
+interface GraphEdge {
+  /** Predecessor — placed in an earlier layer (left / above). */
+  from: string;
+  /** Dependent — placed in a later layer. */
+  to: string;
+  relation?: DependencyRelation;
+  label?: string;
+  /** A `children` link. Keeps the tree edge's neutral styling and carries no label. */
+  structural: boolean;
+  /** Points against the topological flow. Excluded from layering, drawn bowed. */
+  back: boolean;
+}
+
+const push = <T>(map: Map<string, T[]>, key: string, value: T): void => {
+  const bucket = map.get(key);
+  if (bucket) bucket.push(value);
+  else map.set(key, [value]);
+};
+
+/**
+ * Flattens the input into the node set and the precedence links the layered
+ * layout works on.
+ *
+ * Both link kinds are precedence: `dependsOn` says "this comes after that", and a
+ * `children` link says the same of a parent and its child. Layering over their
+ * union is what keeps a `children` edge pointing *with* the flow instead of
+ * doubling back across the graph, and means nothing in the input goes undrawn.
+ * A pair joined both ways is one edge, styled by its `dependsOn` relation.
+ *
+ * A self-link is dropped: it constrains a node to sit after itself, which no
+ * layering can satisfy, and it has nowhere to be drawn.
+ */
+function collectGraph(roots: DependencyNode[]): {
+  order: string[];
+  nodes: Map<string, DependencyNode>;
+  edges: GraphEdge[];
+} {
+  const nodes = new Map<string, DependencyNode>();
+  const order: string[] = [];
+  const edges = new Map<string, GraphEdge>();
+
+  const walk = (node: DependencyNode): void => {
+    if (!nodes.has(node.id)) {
+      nodes.set(node.id, node);
+      order.push(node.id);
+    }
+    for (const child of node.children || []) {
+      const fresh = !nodes.has(child.id);
+      if (node.id !== child.id) {
+        edges.set(`${node.id}→${child.id}`, {
+          from: node.id, to: child.id, structural: true, back: false,
+        });
+      }
+      // Guards the recursion: a cycle or a second parent revisits a node that is
+      // already collected, and there is nothing left to collect from it.
+      if (fresh) walk(child);
+    }
+  };
+  for (const root of roots) walk(root);
+
+  for (const id of order) {
+    for (const dep of nodes.get(id)?.dependsOn || []) {
+      if (dep.id === id || !nodes.has(dep.id)) continue;
+      const style = RELATION_STYLES[resolveRelation(dep.relation)];
+      edges.set(`${dep.id}→${id}`, {
+        from: dep.id, to: id, relation: dep.relation,
+        label: dep.relationLabel ?? style.label,
+        structural: false, back: false,
+      });
+    }
+  }
+
+  return { order, nodes, edges: [...edges.values()] };
+}
+
+/**
+ * Longest-path layering: a node sits one layer past the deepest thing it depends
+ * on, so every forward edge points strictly onwards and a node with several
+ * predecessors clears *all* of them. Nodes with no predecessor land in layer 0.
+ *
+ * A cycle can't be layered — some link in the loop has to point backwards. A DFS
+ * picks those out (a link to a node still on the stack) and marks them `back`;
+ * the layering then runs on what's left, which is acyclic by construction. So a
+ * cyclic input lays out fine, with the loop-closing links drawn as return edges.
+ */
+function assignLayers(order: string[], edges: GraphEdge[]): Map<string, number> {
+  const out = new Map<string, GraphEdge[]>();
+  for (const edge of edges) push(out, edge.from, edge);
+
+  // Iterative DFS: a recursive one overflows the stack on a long chain, and a
+  // process-order graph is mostly chain.
+  const UNSEEN = 0, ON_STACK = 1, DONE = 2;
+  const state = new Map<string, number>();
+  for (const start of order) {
+    if (state.get(start)) continue;
+    state.set(start, ON_STACK);
+    const stack: { id: string; next: number }[] = [{ id: start, next: 0 }];
+    while (stack.length) {
+      const frame = stack[stack.length - 1];
+      const outgoing = out.get(frame.id) ?? [];
+      if (frame.next >= outgoing.length) {
+        state.set(frame.id, DONE);
+        stack.pop();
+        continue;
+      }
+      const edge = outgoing[frame.next++];
+      const seen = state.get(edge.to) ?? UNSEEN;
+      if (seen === ON_STACK) edge.back = true; // closes a loop
+      if (seen !== UNSEEN) continue;
+      state.set(edge.to, ON_STACK);
+      stack.push({ id: edge.to, next: 0 });
+    }
+  }
+
+  // Longest path over what's left, walked in topological order.
+  const indegree = new Map<string, number>(order.map(id => [id, 0]));
+  for (const edge of edges) {
+    if (!edge.back) indegree.set(edge.to, (indegree.get(edge.to) ?? 0) + 1);
+  }
+
+  const layer = new Map<string, number>(order.map(id => [id, 0]));
+  const queue = order.filter(id => !indegree.get(id));
+  for (let i = 0; i < queue.length; i++) {
+    for (const edge of out.get(queue[i]) ?? []) {
+      if (edge.back) continue;
+      layer.set(edge.to, Math.max(layer.get(edge.to) ?? 0, (layer.get(queue[i]) ?? 0) + 1));
+      const remaining = (indegree.get(edge.to) ?? 0) - 1;
+      indegree.set(edge.to, remaining);
+      if (!remaining) queue.push(edge.to);
+    }
+  }
+  return layer;
+}
+
+/** Median of the neighbour positions, or -1 when a node has no neighbours to follow. */
+function median(values: number[]): number {
+  if (!values.length) return -1;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = sorted.length >> 1;
+  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+/** Row index of every node within its own layer. */
+function positionIndex(layers: string[][]): Map<string, number> {
+  const index = new Map<string, number>();
+  for (const layer of layers) layer.forEach((id, i) => index.set(id, i));
+  return index;
+}
+
+/**
+ * Edges cross when their endpoints are ordered oppositely in the two layers they
+ * span. Counted per layer *pair* rather than per adjacent layer, so an edge
+ * skipping a layer is scored too — this layout has no dummy nodes, and in a
+ * dependency graph the long edges are exactly the ones that tangle.
+ */
+function countCrossings(layers: string[][], edges: GraphEdge[], layerOf: Map<string, number>): number {
+  const index = positionIndex(layers);
+  const groups = new Map<string, [number, number][]>();
+  for (const edge of edges) {
+    if (edge.back) continue;
+    const from = index.get(edge.from);
+    const to = index.get(edge.to);
+    if (from === undefined || to === undefined) continue;
+    push(groups, `${layerOf.get(edge.from)}:${layerOf.get(edge.to)}`, [from, to]);
+  }
+
+  let crossings = 0;
+  for (const pairs of groups.values()) {
+    for (let i = 0; i < pairs.length; i++) {
+      for (let j = i + 1; j < pairs.length; j++) {
+        if ((pairs[i][0] - pairs[j][0]) * (pairs[i][1] - pairs[j][1]) < 0) crossings++;
+      }
+    }
+  }
+  return crossings;
+}
+
+/** Sweeps to run over the layers; each one reorders against the previous result. */
+const ORDER_SWEEPS = 8;
+
+/**
+ * Crossing minimisation, median heuristic (Sugiyama's second phase): a node wants
+ * to sit level with the middle of its neighbours, and ordering every layer that
+ * way repeatedly untangles the edges between them.
+ *
+ * Sweeps alternate direction — downward passes order a layer by its predecessors,
+ * upward passes by its successors — because settling one side alone just moves the
+ * tangle to the other. The heuristic isn't monotonic, so the best ordering seen is
+ * kept rather than the last one.
+ */
+function orderLayers(layers: string[][], edges: GraphEdge[], layerOf: Map<string, number>): string[][] {
+  const predecessors = new Map<string, string[]>();
+  const successors = new Map<string, string[]>();
+  for (const edge of edges) {
+    if (edge.back) continue;
+    push(predecessors, edge.to, edge.from);
+    push(successors, edge.from, edge.to);
+  }
+
+  const current = layers.map(layer => [...layer]);
+  let best = current.map(layer => [...layer]);
+  let bestCrossings = countCrossings(current, edges, layerOf);
+
+  for (let sweep = 0; sweep < ORDER_SWEEPS && bestCrossings > 0; sweep++) {
+    const downward = sweep % 2 === 0;
+    const reference = downward ? predecessors : successors;
+    const index = positionIndex(current);
+
+    // The first layer of a downward sweep (and the last of an upward one) has no
+    // reference layer, so it stays as it is and anchors the sweep.
+    const targets = current.map((_, i) => i);
+    for (const i of downward ? targets.slice(1) : targets.slice(0, -1).reverse()) {
+      current[i] = [...current[i]]
+        .map((id, row) => {
+          const neighbours = (reference.get(id) ?? [])
+            .map(n => index.get(n))
+            .filter((p): p is number => p !== undefined);
+          const m = median(neighbours);
+          // No neighbours to follow: hold the current row, so a free node doesn't
+          // get swept to the top of the layer on every pass.
+          return { id, row, key: m < 0 ? row : m };
+        })
+        .sort((a, b) => a.key - b.key || a.row - b.row)
+        .map(entry => entry.id);
+    }
+
+    const crossings = countCrossings(current, edges, layerOf);
+    if (crossings < bestCrossings) {
+      bestCrossings = crossings;
+      best = current.map(layer => [...layer]);
+    }
+  }
+  return best;
+}
+
+/** Alignment passes run after ordering, to straighten the edges it left behind. */
+const ALIGN_PASSES = 4;
+
+/**
+ * Secondary-axis coordinates: with the row *order* fixed, slide each node towards
+ * the middle of its neighbours so chains run straight instead of stair-stepping.
+ *
+ * Order and spacing are invariants here — the ordering phase chose them, and this
+ * must not undo its work. So each layer is placed by a forward cascade that can
+ * only push nodes further along, then shifted back by the average push: a uniform
+ * shift keeps every gap and every relative position, and cancels the drift the
+ * cascade would otherwise accumulate down the layer.
+ */
+function alignSecondary(
+  layers: string[][],
+  edges: GraphEdge[],
+  step: number,
+): Map<string, number> {
+  const predecessors = new Map<string, string[]>();
+  const successors = new Map<string, string[]>();
+  for (const edge of edges) {
+    if (edge.back) continue;
+    push(predecessors, edge.to, edge.from);
+    push(successors, edge.from, edge.to);
+  }
+
+  const pos = new Map<string, number>();
+  for (const layer of layers) layer.forEach((id, i) => pos.set(id, i * step));
+
+  for (let pass = 0; pass < ALIGN_PASSES; pass++) {
+    const downward = pass % 2 === 0;
+    const reference = downward ? predecessors : successors;
+    const indices = layers.map((_, i) => i);
+
+    for (const i of downward ? indices.slice(1) : indices.slice(0, -1).reverse()) {
+      const layer = layers[i];
+      if (!layer.length) continue;
+
+      const wanted = layer.map(id => {
+        const neighbours = (reference.get(id) ?? [])
+          .map(n => pos.get(n))
+          .filter((p): p is number => p !== undefined);
+        return neighbours.length ? median(neighbours) : (pos.get(id) ?? 0);
+      });
+
+      const placed: number[] = [];
+      for (let k = 0; k < layer.length; k++) {
+        placed[k] = k === 0 ? wanted[k] : Math.max(wanted[k], placed[k - 1] + step);
+      }
+      const drift = placed.reduce((sum, p, k) => sum + (p - wanted[k]), 0) / placed.length;
+      layer.forEach((id, k) => pos.set(id, placed[k] - drift));
+    }
+  }
+
+  // Normalise so the graph starts at the origin, like the tree layout does.
+  const min = Math.min(...pos.values());
+  for (const [id, value] of pos) pos.set(id, value - min);
+  return pos;
+}
+
+/**
+ * Places the nodes of a dependency graph in layers running left→right
+ * (`horizontal`) or top→bottom (`vertical`).
+ *
+ * Unlike the tree layout, the column a node lands in is decided by the *graph*, not
+ * by the shape of the `children` nesting it happened to arrive in: layer = longest
+ * dependency path to it. Every link is drawn, including the ones a tree layout has
+ * to discard to keep a single parent per node.
+ */
+function layoutLayered(
+  roots: DependencyNode[],
+  dir: DependencyDirection,
+  allNodes: Map<string, DependencyNode>,
+): { nodes: LayoutNode[]; edges: LayoutEdge[]; nodeMap: Map<string, LayoutNode>; width: number; height: number } {
+  const { order, nodes: originals, edges } = collectGraph(roots);
+  if (!order.length) {
+    return { nodes: [], edges: [], nodeMap: new Map(), width: 0, height: 0 };
+  }
+
+  const layerOf = assignLayers(order, edges);
+  const depth = Math.max(...layerOf.values());
+  const layers: string[][] = Array.from({ length: depth + 1 }, () => []);
+  for (const id of order) layers[layerOf.get(id) ?? 0].push(id);
+
+  const ordered = orderLayers(layers, edges, layerOf);
+
+  const primarySize = dir === 'horizontal' ? NODE_WIDTH : NODE_HEIGHT;
+  const secondarySize = dir === 'horizontal' ? NODE_HEIGHT : NODE_WIDTH;
+  const secondary = alignSecondary(ordered, edges, secondarySize + V_GAP);
+
+  const nodes: LayoutNode[] = [];
+  const nodeMap = new Map<string, LayoutNode>();
+  for (const layer of ordered) {
+    for (const id of layer) {
+      const source = originals.get(id);
+      if (!source) continue;
+      const original = allNodes.get(id);
+      const primary = (layerOf.get(id) ?? 0) * (primarySize + H_GAP);
+      const across = secondary.get(id) ?? 0;
+
+      const laid: LayoutNode = {
+        id, label: source.label, description: source.description, icon: source.icon,
+        status: source.status || 'default', type: source.type, moreCount: source.moreCount,
+        x: dir === 'horizontal' ? primary : across,
+        y: dir === 'horizontal' ? across : primary,
+        width: NODE_WIDTH, height: NODE_HEIGHT,
+        depth: layerOf.get(id) ?? 0,
+        // Layers come from the whole graph, not from one parent — there is no
+        // single node this one hangs off, so nothing to report as its parent.
+        parentId: null,
+        incomingCount: original?.dependsOn?.length ?? 0,
+        outgoingCount: original?.children?.length ?? 0,
+      };
+      nodes.push(laid);
+      nodeMap.set(id, laid);
+    }
+  }
+
+  const laidOut = [...nodeMap.values()];
+  const layoutEdges: LayoutEdge[] = [];
+  for (const edge of edges) {
+    const source = nodeMap.get(edge.from);
+    const target = nodeMap.get(edge.to);
+    if (!source || !target) continue;
+
+    const relation = resolveRelation(edge.relation);
+    const style = RELATION_STYLES[relation];
+    // A back edge runs against the flow by definition, so the direct route would
+    // double back through its own layers — it always bows clear instead.
+    const geo = routeCrossRef(source, target, dir, laidOut, /* allowDirect */ !edge.back);
+
+    layoutEdges.push({
+      id: `${edge.from}${edge.back ? '↺' : '⇢'}${edge.to}`,
+      sourceId: edge.from, targetId: edge.to,
+      path: geo.path, relation: edge.relation, label: edge.label,
+      labelX: geo.labelX, labelY: geo.labelY,
+      color: edge.structural ? 'var(--color-neutral-400)' : style.color,
+      dashed: edge.back || (!edge.structural && style.dashed),
+      // Everything here is a real dependency, so nothing is dimmed as secondary
+      // except the return edges — which the layering had to break to lay out.
+      isCrossRef: edge.back,
+      arrow: true,
+      marker: relation,
+    });
+  }
+
+  const width = (depth + 1) * primarySize + depth * H_GAP;
+  const across = Math.max(...laidOut.map(n => (dir === 'horizontal' ? n.y : n.x))) + secondarySize;
+
+  return {
+    nodes,
+    edges: layoutEdges,
+    nodeMap,
+    width: dir === 'horizontal' ? width : across,
+    height: dir === 'horizontal' ? across : width,
+  };
 }
 
 // ── Status colors ────────────────────────────────────────────────────────────
@@ -568,6 +989,8 @@ function readableInk(color: string): string {
  * Dependency viewer component for visualizing hierarchical and cross-cutting relationships.
  *
  * Features:
+ * - Tree layout (depth in the `children` nesting) and layered/DAG layout (depth in
+ *   the dependency graph), via `layout`
  * - Horizontal (left-to-right) and vertical (top-to-bottom) layout directions
  * - Bidirectional dependencies: children (right/down) and dependsOn (cross-references)
  * - Relationship types: depends, blocks, references, requires, extends, implements, uses
@@ -576,7 +999,8 @@ function readableInk(color: string): string {
  * - Color-coded edges per relationship type
  * - Node status colors (default, active, success, warning, error, muted)
  * - Pan and zoom controls with mouse wheel support
- * - Auto-fit (`autoFit`) and a static, non-navigable mode (`interactive: false`)
+ * - Fitting (`fitMode` / `autoFit`, `minNodeSize`) and a static, non-navigable
+ *   mode (`interactive: false`)
  * - Collapsible sub-trees
  * - Interactive node selection with detail panel
  * - Legend showing active relationship types
@@ -585,11 +1009,24 @@ function readableInk(color: string): string {
  *
  * ## Feeding it a graph
  *
- * `root` is a *tree*, but the input is treated as a graph: a link back to a node
- * that already has a place in the layout — a cycle, or a node reached from a
- * second parent — is drawn as a cross-reference arrow instead of being followed.
- * Every node is laid out exactly once, and no input can make the layout recurse
- * forever.
+ * `root` takes a single node (a tree) or an array (a forest — the shape to use for
+ * a flat set of items related only by `dependsOn`). Either way the input is treated
+ * as a graph: a link back to a node that already has a place in the layout — a
+ * cycle, or a node reached from a second parent — is drawn as a cross-reference
+ * arrow instead of being followed. Every node is laid out exactly once, and no
+ * input can make the layout recurse forever.
+ *
+ * ## Picking a layout
+ *
+ * `tree` (default) answers "what contains what": the column is the depth in the
+ * `children` nesting, and `dependsOn` links are drawn over the top without moving
+ * anything.
+ *
+ * `layered` answers "what has to happen first": the column is the depth in the
+ * dependency graph, so a node always sits past everything it depends on. Reach for
+ * it whenever the question is about order or impact rather than containment —
+ * a tree layout can only approximate that by first reducing the graph to a
+ * spanning tree, which throws away every link that doesn't fit one parent per node.
  *
  * For incremental exploration, hand in a wider `root` per step and let
  * `nodeExpand` drive the loading. Pan, zoom, collapse state and selection all
@@ -599,6 +1036,17 @@ function readableInk(color: string): string {
  * @example
  * ```html
  * <lc-dependency-viewer [root]="specTree" direction="horizontal" />
+ * ```
+ *
+ * @example Order of work — a flat set of items, laid out by their dependencies
+ * ```html
+ * <lc-dependency-viewer
+ *   [root]="items()"
+ *   layout="layered"
+ *   direction="horizontal"
+ *   fitMode="fit-width"
+ *   (nodeSelect)="openItem($event)"
+ * />
  * ```
  *
  * @example Static overview — the whole graph at a glance, click-through only
@@ -629,12 +1077,32 @@ function readableInk(color: string): string {
   templateUrl: './dependency-viewer.component.html',
   styleUrls: ['./dependency-viewer.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { '[class]': '"dep-viewer"', '[style.height]': 'height()' },
+  host: { '[class]': '"dep-viewer"', '[style.height]': 'hostHeight()' },
 })
 export class DependencyViewerComponent {
-  readonly root = input.required<DependencyNode>();
+  /**
+   * The graph to draw. A single node is the root of a tree; an array is a forest,
+   * which is how you feed a flat set of items that has no natural root — e.g. the
+   * specs of a plan, related only by `dependsOn`.
+   */
+  readonly root = input.required<DependencyNode | DependencyNode[]>();
   readonly direction = input<DependencyDirection>('horizontal');
   readonly height = input('500px');
+
+  /**
+   * `tree` (default) places nodes by their depth in the `children` nesting, and
+   * draws `dependsOn` links over the top as cross-references.
+   *
+   * `layered` places them by their depth in the *dependency* graph: a node always
+   * sits past everything it depends on, transitively, and nodes that depend on
+   * nothing start the first layer. That makes `direction="horizontal"` read as an
+   * order of work — left to right — which a tree layout can only approximate by
+   * first throwing away every link that doesn't fit a single-parent hierarchy.
+   *
+   * Use `layered` for process, sequencing and impact views; `tree` for containment
+   * hierarchies, where the nesting *is* the structure.
+   */
+  readonly layout = input<DependencyLayout>('tree');
   readonly showToolbar = input(true);
   readonly showEdgeLabels = input(true);
   readonly edgeWidth = input(1.5);
@@ -648,8 +1116,31 @@ export class DependencyViewerComponent {
    * natural size instead of ballooning to fill the frame.
    *
    * Pair with `interactive: false` for a purely static display.
+   *
+   * Shorthand for `fitMode="contain"`, which supersedes it.
    */
   readonly autoFit = input(false);
+
+  /**
+   * How the graph is scaled into the frame. Defaults to `autoFit`'s setting —
+   * `contain` when it is on, `none` when it isn't — and overrides it when set.
+   *
+   * `contain` fits both axes, so everything is visible at once but a big graph
+   * shrinks to get there. `fit-width` fits the width only and lets the viewer grow
+   * as tall as the graph needs, so the nodes keep a readable size and the *page*
+   * scrolls; the graph itself never scrolls internally. Past roughly 20 nodes a
+   * process view generally wants `fit-width`.
+   */
+  readonly fitMode = input<DependencyFitMode | null>(null);
+
+  /**
+   * Smallest node width, in px, that fitting may shrink to. Below it the fit stops
+   * scaling down and lets the graph overflow instead — which `fit-width` turns into
+   * page scroll, and `contain` into clipping. Pair it with `fit-width`.
+   *
+   * Nodes are 160px wide unscaled, so e.g. `80` allows shrinking to half size.
+   */
+  readonly minNodeSize = input<number | null>(null);
 
   /**
    * Viewport navigation: drag-to-pan, wheel-zoom and the toolbar's zoom buttons.
@@ -696,46 +1187,47 @@ export class DependencyViewerComponent {
   /** Last known layout position of the anchor, to compensate pan after a relayout. */
   private anchorPos: { id: string; x: number; y: number } | null = null;
 
-  protected effectiveRoot = computed<DependencyNode>(() =>
-    this.pruneCollapsed(this.root(), this.collapsedIds(), new Set())
-  );
+  private roots = computed<DependencyNode[]>(() => {
+    const root = this.root();
+    return Array.isArray(root) ? root : [root];
+  });
+
+  protected effectiveRoots = computed<DependencyNode[]>(() => {
+    const collapsed = this.collapsedIds();
+    // One `visited` set across the whole forest: a node reachable from two roots
+    // is the same node, and must be pruned identically wherever it turns up.
+    const visited = new Set<string>();
+    return this.roots().map(root => this.pruneCollapsed(root, collapsed, visited));
+  });
 
   private allOriginalNodes = computed(() => {
     const map = new Map<string, DependencyNode>();
-    collectAllNodes(this.root(), map);
+    for (const root of this.roots()) collectAllNodes(root, map);
     return map;
   });
 
-  protected layout = computed(() => {
-    const root = this.effectiveRoot();
+  /**
+   * The laid-out graph. Named `graph` rather than `layout` because `layout` is the
+   * input that picks *how* it gets laid out.
+   */
+  protected graph = computed(() => {
     const dir = this.direction();
     const hiddenTypes = new Set(this.hiddenTypes());
     const hiddenRelations = new Set(this.hiddenRelations());
-
-    const backEdges: BackEdge[] = [];
-    const measured = measureTree(root, 0, dir, new Set(), backEdges);
-    const nodes: LayoutNode[] = [];
-    const nodeMap = new Map<string, LayoutNode>();
-    const treeEdges: LayoutEdge[] = [];
     const allNodes = this.allOriginalNodes();
 
-    if (dir === 'horizontal') {
-      layoutTreeH(measured, 0, 0, null, nodes, treeEdges, allNodes, nodeMap);
-    } else {
-      layoutTreeV(measured, 0, 0, null, nodes, treeEdges, allNodes, nodeMap);
-    }
+    const placed = this.layout() === 'layered'
+      ? layoutLayered(this.effectiveRoots(), dir, allNodes)
+      : this.layoutTree(dir, allNodes);
 
-    const crossEdges = createCrossRefEdges(nodeMap, allNodes, dir, backEdges);
-    const edges = [...treeEdges, ...crossEdges].filter(
-      e => !(e.relation && hiddenRelations.has(e.relation)),
-    );
+    const edges = placed.edges.filter(e => !(e.relation && hiddenRelations.has(e.relation)));
 
     // Type filtering hides nodes and anything still pointing at them. It runs
     // after layout so the remaining nodes keep the positions they'd have anyway —
     // toggling a filter must not reshuffle the whole graph.
     const visibleNodes = hiddenTypes.size
-      ? nodes.filter(n => !(n.type && hiddenTypes.has(n.type)))
-      : nodes;
+      ? placed.nodes.filter(n => !(n.type && hiddenTypes.has(n.type)))
+      : placed.nodes;
     const visibleIds = new Set(visibleNodes.map(n => n.id));
     const visibleEdges = hiddenTypes.size
       ? edges.filter(e => visibleIds.has(e.sourceId) && visibleIds.has(e.targetId))
@@ -744,10 +1236,74 @@ export class DependencyViewerComponent {
     return {
       nodes: visibleNodes,
       edges: visibleEdges,
-      nodeMap,
-      width: dir === 'horizontal' ? measured.primary : measured.secondary,
-      height: dir === 'horizontal' ? measured.secondary : measured.primary,
+      nodeMap: placed.nodeMap,
+      width: placed.width,
+      height: placed.height,
     };
+  });
+
+  /**
+   * Tree layout over the forest: each root gets its own band along the secondary
+   * axis. A `visited` set shared by all of them keeps a node that hangs off two
+   * roots from being laid out twice — the second link becomes a cross-reference,
+   * exactly as a second parent within one tree does.
+   */
+  private layoutTree(dir: DependencyDirection, allNodes: Map<string, DependencyNode>) {
+    const backEdges: BackEdge[] = [];
+    const visited = new Set<string>();
+    const measured = this.effectiveRoots().map(root => measureTree(root, 0, dir, visited, backEdges));
+
+    const nodes: LayoutNode[] = [];
+    const nodeMap = new Map<string, LayoutNode>();
+    const treeEdges: LayoutEdge[] = [];
+
+    let offset = 0;
+    for (const measure of measured) {
+      if (dir === 'horizontal') {
+        layoutTreeH(measure, 0, offset, null, nodes, treeEdges, allNodes, nodeMap);
+      } else {
+        layoutTreeV(measure, offset, 0, null, nodes, treeEdges, allNodes, nodeMap);
+      }
+      offset += measure.secondary + V_GAP;
+    }
+
+    const primary = measured.length ? Math.max(...measured.map(m => m.primary)) : 0;
+    const secondary = Math.max(0, offset - V_GAP);
+
+    return {
+      nodes,
+      edges: [...treeEdges, ...createCrossRefEdges(nodeMap, allNodes, dir, backEdges)],
+      nodeMap,
+      width: dir === 'horizontal' ? primary : secondary,
+      height: dir === 'horizontal' ? secondary : primary,
+    };
+  }
+
+  /**
+   * Height `fit-width` derived from the graph, or `null` under any other mode.
+   *
+   * `fit-width` scales to the frame's width and lets the height follow the graph,
+   * so a tall graph runs past the frame and the *page* scrolls instead of the nodes
+   * shrinking out of legibility. The height is therefore always the graph's, never
+   * the frame's — including when the graph is the shorter of the two. Deriving it
+   * unconditionally is also what keeps the fit stable: this height becomes the
+   * canvas's, so a fit that consulted the canvas height would be reading back its
+   * own last output and could flip between two answers forever.
+   */
+  protected contentHeight = signal<number | null>(null);
+
+  protected effectiveFitMode = computed<DependencyFitMode>(() =>
+    this.fitMode() ?? (this.autoFit() ? 'contain' : 'none'),
+  );
+
+  /** The host only gives up its configured height when the fit made it grow. */
+  protected hostHeight = computed(() => (this.contentHeight() === null ? this.height() : 'auto'));
+
+  /** `minNodeSize` expressed as the scale it forbids fitting to go below. */
+  private minFitScale = computed(() => {
+    const min = this.minNodeSize();
+    if (!min || min <= 0) return MIN_FIT_SCALE;
+    return Math.min(MAX_FIT_SCALE, Math.max(MIN_FIT_SCALE, min / NODE_WIDTH));
   });
 
   constructor() {
@@ -757,12 +1313,12 @@ export class DependencyViewerComponent {
     // graph slides underneath it. Compensating the pan by the anchor's own delta is
     // what makes incremental expansion feel stable.
     effect(() => {
-      const nodeMap = this.layout().nodeMap;
+      const nodeMap = this.graph().nodeMap;
       const anchorId = this.anchorNodeId() ?? this.selectedNodeId();
 
-      // Auto-fit recentres the whole graph on every relayout, which subsumes
+      // Fitting recentres the whole graph on every relayout, which subsumes
       // holding one node still. Running both would have them fight over the pan.
-      if (this.autoFit() || !anchorId) {
+      if (this.effectiveFitMode() !== 'none' || !anchorId) {
         this.anchorPos = null;
         return;
       }
@@ -792,8 +1348,15 @@ export class DependencyViewerComponent {
     // resolves after the initial render, which re-triggers this effect at the
     // point the canvas finally has a measurable size.
     effect(() => {
-      if (!this.autoFit() || !this.canvasRef()) return;
-      this.layout();
+      if (this.effectiveFitMode() === 'none') {
+        // Leaving fit-width behind: the grown height was this fit's doing, so it
+        // goes with it, or the host keeps a size nothing is maintaining any more.
+        untracked(() => this.contentHeight.set(null));
+        return;
+      }
+      if (!this.canvasRef()) return;
+      this.graph();
+      this.minFitScale();
       untracked(() => this.fit());
     });
 
@@ -801,15 +1364,15 @@ export class DependencyViewerComponent {
     // callback on observe, so this covers the first fit in a browser too.
     effect(onCleanup => {
       const el = this.canvasRef()?.nativeElement;
-      if (!this.autoFit() || !el || typeof ResizeObserver === 'undefined') return;
+      if (this.effectiveFitMode() === 'none' || !el || typeof ResizeObserver === 'undefined') return;
       const observer = new ResizeObserver(() => this.fit());
       observer.observe(el);
       onCleanup(() => observer.disconnect());
     });
   }
 
-  protected svgWidth = computed(() => this.layout().width + 80);
-  protected svgHeight = computed(() => this.layout().height + 80);
+  protected svgWidth = computed(() => this.graph().width + 80);
+  protected svgHeight = computed(() => this.graph().height + 80);
   protected viewBox = computed(() => `0 0 ${this.svgWidth()} ${this.svgHeight()}`);
   protected transform = computed(() => {
     const z = this.zoom() / 100;
@@ -823,7 +1386,7 @@ export class DependencyViewerComponent {
   protected selectedNode = computed<LayoutNode | null>(() => {
     const id = this.selectedNodeId();
     if (!id) return null;
-    return this.layout().nodes.find(n => n.id === id) ?? null;
+    return this.graph().nodes.find(n => n.id === id) ?? null;
   });
 
   protected selectedDependsOn = computed<DependencyEdgeDef[]>(() => {
@@ -837,8 +1400,10 @@ export class DependencyViewerComponent {
   // of built-in relation types they borrow their colour from.
   protected legendItems = computed(() => {
     const seen = new Map<string, { label: string; color: string; dashed: boolean }>();
-    for (const edge of this.layout().edges) {
-      if (!edge.isCrossRef || !edge.label || seen.has(edge.label)) continue;
+    for (const edge of this.graph().edges) {
+      // Keyed off the label, not `isCrossRef`: in the layered layout the labelled
+      // dependency edges are the main flow, not cross-references.
+      if (!edge.label || seen.has(edge.label)) continue;
       seen.set(edge.label, { label: edge.label, color: edge.color, dashed: edge.dashed });
     }
     return Array.from(seen.values());
@@ -847,7 +1412,7 @@ export class DependencyViewerComponent {
   protected typeLegendItems = computed(() => {
     const colors = this.typeColors();
     const seen = new Map<string, { type: string; color: string }>();
-    for (const node of this.layout().nodes) {
+    for (const node of this.graph().nodes) {
       if (!node.type || seen.has(node.type) || !colors[node.type]) continue;
       seen.set(node.type, { type: node.type, color: colors[node.type] });
     }
@@ -925,7 +1490,7 @@ export class DependencyViewerComponent {
 
   /** Centres the viewport on a node. No-op for an id that isn't laid out. */
   focusNode(id: string): void {
-    const node = this.layout().nodeMap.get(id);
+    const node = this.graph().nodeMap.get(id);
     if (!node) return;
     const z = this.zoom() / 100;
     const el = this.canvasEl();
@@ -938,13 +1503,16 @@ export class DependencyViewerComponent {
   }
 
   /**
-   * Scales and centres the graph so all of it fits the canvas. Called for you when
-   * `autoFit` is set; public so a caller can fit on demand without it.
+   * Scales and centres the graph to fit the canvas, per `fitMode`. Called for you
+   * when fitting is on; public so a caller can fit on demand without it.
    *
    * No-op while the canvas has no size (before the first render, or in a detached
-   * / `display: none` container) — the `autoFit` observers re-run once it does.
+   * / `display: none` container) — the fit observers re-run once it does.
    */
   fit(): void {
+    const mode = this.effectiveFitMode();
+    if (mode === 'none') return;
+
     const el = this.canvasEl();
     const viewW = el?.clientWidth ?? 0;
     const viewH = el?.clientHeight ?? 0;
@@ -953,16 +1521,31 @@ export class DependencyViewerComponent {
     const box = this.contentBox();
     if (box.width <= 0 || box.height <= 0) return;
 
-    const scale = Math.min(
-      MAX_FIT_SCALE,
-      Math.max(MIN_FIT_SCALE, Math.min(viewW / box.width, viewH / box.height)),
-    );
+    // `fit-width` deliberately ignores the height: it is the mode that lets the
+    // graph be taller than the frame. That is also what keeps it stable — the
+    // height it produces feeds back in as the canvas's own height, and a scale
+    // derived from that height would chase itself.
+    const natural = mode === 'fit-width'
+      ? viewW / box.width
+      : Math.min(viewW / box.width, viewH / box.height);
+    const scale = Math.min(MAX_FIT_SCALE, Math.max(this.minFitScale(), natural));
 
     this.zoom.set(scale * 100);
     // Invert screen = pan + scale * layout for the box's top-left corner, so the
     // box lands centred in the canvas.
     this.panX.set((viewW - box.width * scale) / 2 - box.x * scale);
-    this.panY.set((viewH - box.height * scale) / 2 - box.y * scale);
+
+    const scaledHeight = box.height * scale;
+    if (mode === 'fit-width') {
+      // The viewer takes the graph's height and pins it to the top. Past the frame
+      // that means the page scrolls through a readable graph rather than the frame
+      // clipping one that was shrunk to fit.
+      this.contentHeight.set(Math.ceil(scaledHeight));
+      this.panY.set(-box.y * scale);
+    } else {
+      this.contentHeight.set(null);
+      this.panY.set((viewH - scaledHeight) / 2 - box.y * scale);
+    }
     // The camera just moved deliberately; a stale anchor baseline would have the
     // next relayout "correct" a position this fit had already chosen.
     this.anchorPos = null;
@@ -973,7 +1556,7 @@ export class DependencyViewerComponent {
    * default zoom and pan.
    */
   resetView(): void {
-    if (this.autoFit()) {
+    if (this.effectiveFitMode() !== 'none') {
       this.fit();
       return;
     }
@@ -1033,7 +1616,7 @@ export class DependencyViewerComponent {
    * apex of the bow — the only part of it that reaches outside them.
    */
   private contentBox(): { x: number; y: number; width: number; height: number } {
-    const { nodes, edges } = this.layout();
+    const { nodes, edges } = this.graph();
     if (!nodes.length) return { x: 0, y: 0, width: 0, height: 0 };
 
     let minX = Infinity;

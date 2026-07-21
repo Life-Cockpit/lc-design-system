@@ -5,6 +5,8 @@ import {
   DependencyNode,
   DependencyDirection,
   DependencyRelation,
+  DependencyLayout,
+  DependencyFitMode,
 } from './dependency-viewer.component';
 
 @Component({
@@ -12,6 +14,9 @@ import {
   imports: [DependencyViewerComponent],
   template: `<lc-dependency-viewer
     [root]="root()"
+    [layout]="layout()"
+    [fitMode]="fitMode()"
+    [minNodeSize]="minNodeSize()"
     [direction]="direction()"
     [showToolbar]="showToolbar()"
     [showEdgeLabels]="showEdgeLabels()"
@@ -24,7 +29,7 @@ import {
   />`,
 })
 class TestHost {
-  root = signal<DependencyNode>({
+  root = signal<DependencyNode | DependencyNode[]>({
     id: 'root',
     label: 'Root',
     children: [
@@ -37,6 +42,9 @@ class TestHost {
       },
     ],
   });
+  layout = signal<DependencyLayout>('tree');
+  fitMode = signal<DependencyFitMode | null>(null);
+  minNodeSize = signal<number | null>(null);
   direction = signal<DependencyDirection>('horizontal');
   showToolbar = signal(true);
   showEdgeLabels = signal(true);
@@ -769,14 +777,18 @@ describe('DependencyViewerComponent', () => {
     panX: WritableSignal<number>;
     panY: WritableSignal<number>;
     selectedNodeId: WritableSignal<string | null>;
-    layout: Signal<{ nodeMap: Map<string, { x: number; y: number }> }>;
+    contentHeight: Signal<number | null>;
+    graph: Signal<{
+      nodeMap: Map<string, { x: number; y: number; depth: number }>;
+      edges: { sourceId: string; targetId: string; isCrossRef: boolean; dashed: boolean }[];
+    }>;
   }
   const viewerOf = () =>
     fixture.debugElement.children[0].componentInstance as unknown as DependencyViewerComponent &
       ViewerInternals;
 
   const nodeIn = (id: string) => {
-    const n = viewerOf().layout().nodeMap.get(id);
+    const n = viewerOf().graph().nodeMap.get(id);
     if (!n) throw new Error(`node ${id} is not laid out`);
     return n;
   };
@@ -1140,5 +1152,418 @@ describe('DependencyViewerComponent', () => {
     fixture.detectChanges();
 
     expect(el.querySelectorAll('.dep-viewer__node').length).toBe(3);
+  });
+
+  // ── Layered layout ─────────────────────────────────────────────
+  // The point of `layered` is that a node's column comes from the dependency
+  // graph, not from the `children` nesting it arrived in. These assert the
+  // topology in layout space: column index, and which links got drawn.
+
+  /** Column (horizontal) or row (vertical) index each node was placed in. */
+  const layerOf = (id: string) => nodeIn(id).depth;
+
+  /** `a` must come strictly before `b` along the flow axis. */
+  const expectBefore = (a: string, b: string) => {
+    const [pa, pb] = host.direction() === 'horizontal'
+      ? [nodeIn(a).x, nodeIn(b).x]
+      : [nodeIn(a).y, nodeIn(b).y];
+    expect(pa).toBeLessThan(pb);
+  };
+
+  const edgeIds = () =>
+    new Set(viewerOf().graph().edges.map(e => `${e.sourceId}→${e.targetId}`));
+
+  /** A flat set of specs wired only by `dependsOn` — the process-order shape. */
+  const specs = (deps: Record<string, string[]>): DependencyNode[] =>
+    Object.entries(deps).map(([id, on]) => ({
+      id,
+      label: id.toUpperCase(),
+      dependsOn: on.map(d => ({ id: d })),
+    }));
+
+  const useLayered = (root: DependencyNode | DependencyNode[]) => {
+    host.root.set(root);
+    host.layout.set('layered');
+    fixture.detectChanges();
+  };
+
+  it('should put nodes that depend on nothing in the first layer', () => {
+    useLayered(specs({ a: [], b: [], c: ['a', 'b'] }));
+
+    expect(layerOf('a')).toBe(0);
+    expect(layerOf('b')).toBe(0);
+    expect(layerOf('c')).toBe(1);
+  });
+
+  it('should place a node past everything it transitively depends on', () => {
+    useLayered(specs({ a: [], b: ['a'], c: ['b'], d: ['c'] }));
+
+    expect([layerOf('a'), layerOf('b'), layerOf('c'), layerOf('d')]).toEqual([0, 1, 2, 3]);
+    expectBefore('a', 'b');
+    expectBefore('b', 'c');
+    expectBefore('c', 'd');
+  });
+
+  it('should clear the *deepest* predecessor when a node has several', () => {
+    // `d` depends on `a` (layer 0) and on `c` (layer 2). Following either one
+    // alone would put it at layer 1 — on top of, or left of, `c`.
+    useLayered(specs({ a: [], b: ['a'], c: ['b'], d: ['a', 'c'] }));
+
+    expect(layerOf('d')).toBe(3);
+    expectBefore('c', 'd');
+    expectBefore('a', 'd');
+  });
+
+  it('should draw every dependency edge, including the ones a tree layout drops', () => {
+    // `d` has two predecessors: a spanning tree can only keep one of them.
+    useLayered(specs({ a: [], b: ['a'], c: ['a'], d: ['b', 'c'] }));
+
+    expect(edgeIds()).toEqual(new Set(['a→b', 'a→c', 'b→d', 'c→d']));
+    expect(el.querySelectorAll('.dep-viewer__edge').length).toBe(4);
+  });
+
+  it('should lay out a cycle instead of hanging or dropping nodes', () => {
+    useLayered(specs({ a: ['c'], b: ['a'], c: ['b'] }));
+
+    expect(el.querySelectorAll('.dep-viewer__node').length).toBe(3);
+    // Every link survives — the one that closes the loop is drawn as a return
+    // edge rather than being layered.
+    expect(edgeIds()).toEqual(new Set(['c→a', 'a→b', 'b→c']));
+  });
+
+  it('should mark the loop-closing edge as a return edge', () => {
+    useLayered(specs({ a: ['c'], b: ['a'], c: ['b'] }));
+
+    const back = viewerOf().graph().edges.filter(e => e.isCrossRef);
+    expect(back.length).toBe(1);
+    expect(back[0].dashed).toBe(true);
+  });
+
+  it('should treat a children link as precedence too, so it never points backwards', () => {
+    // `parent` also depends on `late`, which is three layers deep — the child must
+    // follow its parent there rather than staying at layer 1.
+    useLayered([
+      { id: 'x', label: 'X' },
+      { id: 'y', label: 'Y', dependsOn: [{ id: 'x' }] },
+      { id: 'late', label: 'Late', dependsOn: [{ id: 'y' }] },
+      {
+        id: 'parent',
+        label: 'Parent',
+        dependsOn: [{ id: 'late' }],
+        children: [{ id: 'child', label: 'Child' }],
+      },
+    ]);
+
+    expectBefore('parent', 'child');
+    expect(layerOf('child')).toBe(layerOf('parent') + 1);
+  });
+
+  // A plan-shaped graph — parallel starts, fan-in, fan-out, a long pole — handed
+  // over in an order that has nothing to do with its dependencies, which is how a
+  // query result arrives.
+  const PLAN: Record<string, string[]> = {
+    s01: [], s02: [], s03: [],
+    s04: ['s01'], s05: ['s01', 's02'], s06: ['s02'], s07: ['s03'],
+    s08: ['s04'], s09: ['s05', 's07'], s10: ['s06'],
+    s11: ['s08', 's09'], s12: ['s09'], s13: ['s10'],
+    s14: ['s11'], s15: ['s12', 's13'], s16: ['s11', 's13'],
+    s17: ['s14', 's15'], s18: ['s16'], s19: ['s17', 's18'],
+    s20: ['s19'],
+  };
+
+  const shuffled = <T,>(items: T[]): T[] => {
+    const out = [...items];
+    let seed = 12345; // fixed, so the test is not a dice roll
+    for (let i = out.length - 1; i > 0; i--) {
+      seed = (seed * 1103515245 + 12345) % 2147483648;
+      const j = seed % (i + 1);
+      [out[i], out[j]] = [out[j], out[i]];
+    }
+    return out;
+  };
+
+  /**
+   * Edge crossings, given each node's row within its layer. Two edges spanning the
+   * same pair of layers cross when their endpoints are ordered oppositely.
+   */
+  const crossingsGiven = (row: (id: string) => number) => {
+    const { edges } = viewerOf().graph();
+    let count = 0;
+    for (let i = 0; i < edges.length; i++) {
+      for (let j = i + 1; j < edges.length; j++) {
+        const [a, b] = [edges[i], edges[j]];
+        if (layerOf(a.sourceId) !== layerOf(b.sourceId)) continue;
+        if (layerOf(a.targetId) !== layerOf(b.targetId)) continue;
+        const spread = (row(a.sourceId) - row(b.sourceId)) * (row(a.targetId) - row(b.targetId));
+        if (spread < 0) count++;
+      }
+    }
+    return count;
+  };
+
+  it('should cut crossings well below the order the graph arrived in', () => {
+    const entries = shuffled(Object.entries(PLAN));
+    useLayered(entries.map(([id, on]) => ({
+      id, label: id.toUpperCase(), dependsOn: on.map(d => ({ id: d })),
+    })));
+
+    // What you'd get by stacking each layer in arrival order — the do-nothing
+    // baseline the ordering phase has to beat.
+    const arrival = new Map(entries.map(([id], i) => [id, i]));
+    const baseline = crossingsGiven(id => arrival.get(id) ?? 0);
+    const actual = crossingsGiven(id => nodeIn(id).y);
+
+    expect(baseline).toBeGreaterThan(8); // precondition: this input really is tangled
+    expect(actual).toBeLessThanOrEqual(baseline / 2);
+  });
+
+  it('should keep every edge pointing forwards in a plan-shaped graph', () => {
+    useLayered(shuffled(Object.entries(PLAN)).map(([id, on]) => ({
+      id, label: id.toUpperCase(), dependsOn: on.map(d => ({ id: d })),
+    })));
+
+    for (const edge of viewerOf().graph().edges) {
+      expect(nodeIn(edge.sourceId).x).toBeLessThan(nodeIn(edge.targetId).x);
+    }
+  });
+
+  it('should reduce crossings by reordering within a layer', () => {
+    // Fed deliberately crossed: the first layer's order is a, b but their
+    // successors arrive as (b→p, a→q). Ordering the second layer by the median of
+    // its predecessors has to put q above p to untangle it.
+    useLayered(specs({ a: [], b: [], p: ['b'], q: ['a'] }));
+
+    expect(nodeIn('q').y).toBeLessThan(nodeIn('p').y);
+  });
+
+  it('should lay layers out as rows when vertical', () => {
+    host.direction.set('vertical');
+    useLayered(specs({ a: [], b: ['a'], c: ['b'] }));
+
+    expect(nodeIn('a').y).toBeLessThan(nodeIn('b').y);
+    expect(nodeIn('b').y).toBeLessThan(nodeIn('c').y);
+    // Same layer index drives the *row*, so the columns are free to differ.
+    expect(layerOf('c')).toBe(2);
+  });
+
+  it('should keep node selection working in layered mode', () => {
+    const emitted: DependencyNode[] = [];
+    viewerOf().nodeSelect.subscribe((n: DependencyNode) => emitted.push(n));
+    useLayered(specs({ a: [], b: ['a'] }));
+
+    (el.querySelector('.dep-viewer__node') as SVGGElement)
+      .dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    fixture.detectChanges();
+
+    expect(emitted.map(n => n.id)).toEqual(['a']);
+  });
+
+  it('should keep type colours working in layered mode', () => {
+    host.typeColors.set({ Spec: '#c1e3e9' });
+    useLayered([{ id: 'a', label: 'A', type: 'Spec' }]);
+
+    const fill = el.querySelector('.dep-viewer__node-fill')?.getAttribute('fill');
+    expect(fill).toBe('#c1e3e9');
+  });
+
+  it('should ignore a dependency on a node that is not in the graph', () => {
+    useLayered(specs({ a: ['ghost'], b: ['a'] }));
+
+    expect(layerOf('a')).toBe(0);
+    expect(edgeIds()).toEqual(new Set(['a→b']));
+  });
+
+  it('should ignore a self-dependency rather than deadlocking the layering', () => {
+    useLayered(specs({ a: ['a'], b: ['a'] }));
+
+    expect(layerOf('a')).toBe(0);
+    expect(layerOf('b')).toBe(1);
+  });
+
+  it('should leave the tree layout alone by default', () => {
+    // Same input, default layout: columns come from the `children` depth, and the
+    // dependsOn link stays a cross-reference that moves nothing.
+    host.root.set({
+      id: 'r',
+      label: 'R',
+      children: [
+        { id: 'a', label: 'A' },
+        { id: 'b', label: 'B', dependsOn: [{ id: 'a' }] },
+      ],
+    });
+    fixture.detectChanges();
+
+    expect(nodeIn('a').x).toBe(nodeIn('b').x); // siblings, so same column
+    expect(nodeIn('a').depth).toBe(1);
+  });
+
+  // ── Forest input ───────────────────────────────────────────────
+
+  it('should lay out an array of roots as a forest', () => {
+    host.root.set([
+      { id: 'r1', label: 'R1', children: [{ id: 'a', label: 'A' }] },
+      { id: 'r2', label: 'R2', children: [{ id: 'b', label: 'B' }] },
+    ]);
+    fixture.detectChanges();
+
+    expect(el.querySelectorAll('.dep-viewer__node').length).toBe(4);
+    // Both roots start the flow; they're stacked, not nested.
+    expect(nodeIn('r1').x).toBe(nodeIn('r2').x);
+    expect(nodeIn('r2').y).toBeGreaterThan(nodeIn('r1').y);
+  });
+
+  it('should lay out a node reachable from two roots exactly once', () => {
+    const shared: DependencyNode = { id: 'shared', label: 'Shared' };
+    host.root.set([
+      { id: 'r1', label: 'R1', children: [shared] },
+      { id: 'r2', label: 'R2', children: [shared] },
+    ]);
+    fixture.detectChanges();
+
+    expect(el.querySelectorAll('.dep-viewer__node').length).toBe(3);
+  });
+
+  // ── Fit modes ──────────────────────────────────────────────────
+
+  it('should treat fitMode="contain" as autoFit', () => {
+    host.root.set(wideTree(30));
+    fixture.detectChanges();
+    sizeCanvas(800, 400);
+    host.fitMode.set('contain');
+    fixture.detectChanges();
+
+    expectAllInside(800, 400);
+  });
+
+  it('should let fitMode override autoFit', () => {
+    host.root.set(wideTree(30));
+    host.autoFit.set(true);
+    host.fitMode.set('none');
+    fixture.detectChanges();
+    sizeCanvas(800, 400);
+    viewerOf().fit();
+
+    expect(viewerOf().zoom()).toBe(100); // never fitted
+  });
+
+  const fitWidth = (w: number, h: number) => {
+    sizeCanvas(w, h);
+    host.fitMode.set('fit-width');
+    fixture.detectChanges();
+    viewerOf().fit();
+    fixture.detectChanges();
+  };
+
+  it('should scale to the width only, ignoring a frame too short for the graph', () => {
+    host.root.set(wideTree(50));
+    fixture.detectChanges();
+    fitWidth(800, 120);
+
+    const boxes = screenBoxes();
+    // Everything is inside horizontally…
+    for (const b of boxes) {
+      expect(b.left).toBeGreaterThanOrEqual(-0.5);
+      expect(b.right).toBeLessThanOrEqual(800.5);
+    }
+    // …and the graph is allowed to run past the frame's height instead of
+    // shrinking to meet it.
+    expect(Math.max(...boxes.map(b => b.bottom))).toBeGreaterThan(120);
+  });
+
+  it('should keep nodes bigger under fit-width than under contain', () => {
+    host.root.set(wideTree(50));
+    fixture.detectChanges();
+
+    sizeCanvas(800, 120);
+    host.fitMode.set('contain');
+    fixture.detectChanges();
+    viewerOf().fit();
+    const contained = viewerOf().zoom();
+
+    fitWidth(800, 120);
+    expect(viewerOf().zoom()).toBeGreaterThan(contained);
+  });
+
+  it('should grow the viewer to the graph height so the page scrolls, not the graph', () => {
+    host.root.set(wideTree(50));
+    fixture.detectChanges();
+    fitWidth(800, 120);
+
+    const canvas = el.querySelector('.dep-viewer__canvas') as HTMLElement;
+    expect(canvas.classList).toContain('dep-viewer__canvas--sized');
+    expect(parseFloat(canvas.style.height)).toBeGreaterThan(120);
+    // The host gives up its fixed height so the grown canvas is actually visible.
+    expect((el.querySelector('lc-dependency-viewer') as HTMLElement).style.height).toBe('auto');
+  });
+
+  it('should size the viewer down to a graph shorter than the frame', () => {
+    // fit-width hands the height to the graph in *both* directions — a three-node
+    // graph gets a compact viewer, not a 500px box with a strip of content in it.
+    host.root.set(wideTree(3));
+    fixture.detectChanges();
+    fitWidth(800, 400);
+
+    const canvas = el.querySelector('.dep-viewer__canvas') as HTMLElement;
+    expect(canvas.classList).toContain('dep-viewer__canvas--sized');
+    expect(parseFloat(canvas.style.height)).toBeLessThan(400);
+  });
+
+  it('should settle rather than oscillate when re-fitting at the grown height', () => {
+    host.root.set(wideTree(50));
+    fixture.detectChanges();
+    fitWidth(800, 120);
+
+    const { zoom, height } = { zoom: viewerOf().zoom(), height: viewerOf().contentHeight() };
+
+    // What the ResizeObserver does after the canvas grows: measure again and re-fit.
+    // The scale must not depend on the height this very fit produced.
+    sizeCanvas(800, height ?? 0);
+    viewerOf().fit();
+
+    expect(viewerOf().zoom()).toBeCloseTo(zoom, 5);
+    expect(viewerOf().contentHeight()).toBe(height);
+  });
+
+  it('should release the grown height when fitting is turned off', () => {
+    host.root.set(wideTree(50));
+    fixture.detectChanges();
+    fitWidth(800, 120);
+    expect(viewerOf().contentHeight()).not.toBeNull();
+
+    host.fitMode.set('none');
+    fixture.detectChanges();
+
+    expect(viewerOf().contentHeight()).toBeNull();
+    expect((el.querySelector('lc-dependency-viewer') as HTMLElement).style.height).toBe('500px');
+  });
+
+  it('should stop shrinking at minNodeSize', () => {
+    host.root.set(wideTree(80));
+    fixture.detectChanges();
+
+    sizeCanvas(400, 200);
+    host.fitMode.set('contain');
+    fixture.detectChanges();
+    viewerOf().fit();
+    expect(viewerOf().zoom()).toBeLessThan(50); // precondition: it really did shrink past half
+
+    host.minNodeSize.set(80); // half of the 160px node width
+    fixture.detectChanges();
+    viewerOf().fit();
+
+    expect(viewerOf().zoom()).toBeCloseTo(50, 5);
+  });
+
+  it('should not let minNodeSize enlarge a graph that already fits', () => {
+    host.root.set({ id: 'only', label: 'Only' });
+    fixture.detectChanges();
+
+    sizeCanvas(2000, 1200);
+    host.fitMode.set('contain');
+    host.minNodeSize.set(160);
+    fixture.detectChanges();
+    viewerOf().fit();
+
+    expect(viewerOf().zoom()).toBe(100);
   });
 });

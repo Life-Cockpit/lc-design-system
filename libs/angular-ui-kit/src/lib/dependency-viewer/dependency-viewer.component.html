@@ -17,6 +17,8 @@
   #canvas
   class="dep-viewer__canvas"
   [class.dep-viewer__canvas--static]="!interactive()"
+  [class.dep-viewer__canvas--sized]="contentHeight() !== null"
+  [style.height.px]="contentHeight()"
   (mousedown)="onMouseDown($event)"
   (wheel)="onWheel($event)"
   (click)="deselectNode()"
@@ -41,13 +43,13 @@
     </defs>
 
     <!-- Edges. Their labels are deliberately NOT drawn here — see below. -->
-    @for (edge of layout().edges; track edge.id) {
+    @for (edge of graph().edges; track edge.id) {
       <path
         [attr.d]="edge.path"
         [attr.stroke]="edge.color"
         [attr.stroke-width]="edgeWidth()"
         [attr.stroke-dasharray]="edge.dashed ? '6 3' : 'none'"
-        [attr.marker-end]="edge.isCrossRef ? 'url(#arrow-' + edge.marker + ')' : ''"
+        [attr.marker-end]="edge.arrow ? 'url(#arrow-' + edge.marker + ')' : ''"
         fill="none"
         class="dep-viewer__edge"
         [class.dep-viewer__edge--cross-ref]="edge.isCrossRef"
@@ -55,7 +57,7 @@
     }
 
     <!-- Nodes -->
-    @for (node of layout().nodes; track node.id) {
+    @for (node of graph().nodes; track node.id) {
       <g
         class="dep-viewer__node"
         [class.dep-viewer__node--selected]="selectedNodeId() === node.id"
@@ -153,8 +155,8 @@
          which frequently lands on a node — it has to come after. The halo (see
          the stylesheet) keeps it legible over whatever it lands on. -->
     @if (showEdgeLabels()) {
-      @for (edge of layout().edges; track edge.id) {
-        @if (edge.isCrossRef && edge.label) {
+      @for (edge of graph().edges; track edge.id) {
+        @if (edge.label) {
           <text
             [attr.x]="edge.labelX"
             [attr.y]="edge.labelY"

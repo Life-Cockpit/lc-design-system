@@ -79,6 +79,14 @@
     &--static:active {
       cursor: default;
     }
+
+    // `fit-width` sized the canvas to the graph's full height and the host went to
+    // `height: auto` to follow it. The flex grow/shrink has to stand down or it
+    // would fight that explicit height back to the frame's. Still `overflow:
+    // hidden` above: the height is exact, and the page — not the graph — scrolls.
+    &--sized {
+      flex: 0 0 auto;
+    }
   }
 
   &__svg {

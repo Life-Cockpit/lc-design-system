@@ -2,6 +2,57 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.16.0] - 2026-07-21
+
+### Added
+
+- **Dependency viewer: `layout="layered"`** (`lc-dependency-viewer`, default
+  `tree` — no change to existing usage) — a layered/DAG layout that places nodes
+  by their depth in the *dependency* graph instead of by their depth in the
+  `children` nesting. A node always sits past everything it depends on
+  (longest-path layering), so `direction="horizontal"` reads as an order of work
+  left→right and nodes that depend on nothing start the first layer; a node with
+  several predecessors clears the deepest of them rather than sitting beside it.
+  Crossings are minimised with Sugiyama's median heuristic (alternating sweeps,
+  best result kept), then a coordinate pass slides nodes toward the middle of
+  their neighbours so chains run straight instead of stair-stepping — on a
+  20-node plan-shaped graph handed over in arbitrary order that is a ~55%
+  reduction in crossings versus arrival order. `direction="vertical"` turns the
+  layers into rows.
+
+  Both link kinds are treated as precedence: `dependsOn` says "this comes after
+  that", and a `children` link says the same of a parent and its child. Layering
+  over their union is what keeps a `children` edge pointing with the flow instead
+  of doubling back, and means **every** link is drawn — including the
+  multi-predecessor ones a tree layout has to discard to keep one parent per
+  node. Cycles are tolerated: a DFS picks the links that close each loop, the
+  rest is layered as a DAG, and the loop-closers are drawn as dashed return
+  edges, so a graph that turns out to be cyclic still renders.
+
+- **Dependency viewer: `root` accepts an array** (`lc-dependency-viewer`) — a
+  forest, which is how you feed a flat set of items that has no natural root
+  (specs related only by `dependsOn`). Previously such a set had to be wrapped in
+  a synthetic root, which then occupied the first layer on its own. In `tree`
+  mode each root gets its own band along the secondary axis; a node reachable
+  from two roots is still laid out exactly once.
+
+- **Dependency viewer: `fitMode`** (`lc-dependency-viewer`) — `contain` (fit both
+  axes; what `autoFit` does, which it now supersedes), `fit-width` (fit the
+  width, let the height follow the graph) or `none`. Defaults to `autoFit`'s
+  setting and overrides it when set. `fit-width` is the answer to "everything
+  fits but nothing is readable": nodes keep a legible size and the *page*
+  scrolls, while the graph itself never scrolls internally. Past roughly 20 nodes
+  a process view generally wants it.
+
+- **Dependency viewer: `minNodeSize`** (`lc-dependency-viewer`) — a floor, in px
+  of node width (160px unscaled), on how far fitting may shrink the nodes. Below
+  it the fit stops scaling down and lets the graph overflow, which `fit-width`
+  turns into page scroll. Never enlarges a graph that already fits.
+
+  New Storybook stories *Layered — Order of Work*, *Layered — Vertical*,
+  *Layered — Fit Width*, *Layered — Minimum Node Size*, *Layered — Relation
+  Types* and *Layered — Cycle Tolerance*.
+
 ## [2.15.0] - 2026-07-21
 
 ### Added

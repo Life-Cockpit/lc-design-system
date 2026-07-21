@@ -6,7 +6,10 @@ const meta: Meta<DependencyViewerComponent> = {
   component: DependencyViewerComponent,
   tags: ['autodocs'],
   argTypes: {
+    layout: { control: 'radio', options: ['tree', 'layered'] },
     direction: { control: 'radio', options: ['horizontal', 'vertical'] },
+    fitMode: { control: 'radio', options: [null, 'none', 'contain', 'fit-width'] },
+    minNodeSize: { control: { type: 'number', min: 20, max: 160, step: 10 } },
     showToolbar: { control: 'boolean' },
     showEdgeLabels: { control: 'boolean' },
     height: { control: 'text' },
@@ -23,7 +26,11 @@ const meta: Meta<DependencyViewerComponent> = {
           '(blocks, references, requires, extends, implements, uses), edge labels, pan & zoom, ' +
           'collapsible sub-trees, and an interactive detail panel. Set `autoFit` to scale the ' +
           'whole graph into the frame, and `interactive: false` to turn it into a static ' +
-          'overview that is still click-through.',
+          'overview that is still click-through.\n\n' +
+          'Two layouts: `tree` (default) places nodes by their depth in the `children` nesting, ' +
+          '`layered` by their depth in the *dependency* graph — use it for order-of-work, ' +
+          'sequencing and impact views. `fitMode` controls the trade between fitting everything ' +
+          'in (`contain`) and keeping nodes readable (`fit-width`).',
       },
     },
   },
@@ -420,6 +427,168 @@ export const StaticWithoutAutoFit: Story = {
           '`interactive: false` on its own pins the default viewport instead of fitting. Use it ' +
           'for a graph already known to fit the frame; anything larger is cropped, since there ' +
           'is no longer a way to pan to it.',
+      },
+    },
+  },
+};
+
+// ── Layered (DAG) layout ─────────────────────────────────────────────────────
+
+// A flat set wired only by `dependsOn`, handed over as an array: parallel starts,
+// fan-in, fan-out and a long pole, which is the shape a real ordering problem has.
+// Deliberately *not* in dependency order — a query result never is.
+const stageGraph: DependencyNode[] = [
+  { id: 'i', label: 'Item I', status: 'default', dependsOn: [{ id: 'f' }, { id: 'g' }] },
+  { id: 'c', label: 'Item C', status: 'success' },
+  { id: 'g', label: 'Item G', status: 'default', dependsOn: [{ id: 'd' }] },
+  { id: 'a', label: 'Item A', status: 'success' },
+  { id: 'f', label: 'Item F', status: 'active', dependsOn: [{ id: 'd' }, { id: 'e' }] },
+  { id: 'j', label: 'Item J', status: 'default', dependsOn: [{ id: 'h' }, { id: 'i' }] },
+  { id: 'd', label: 'Item D', status: 'success', dependsOn: [{ id: 'a' }, { id: 'b' }] },
+  { id: 'h', label: 'Item H', status: 'warning', dependsOn: [{ id: 'e' }] },
+  { id: 'b', label: 'Item B', status: 'success' },
+  { id: 'e', label: 'Item E', status: 'active', dependsOn: [{ id: 'c' }] },
+];
+
+export const LayeredLayout: Story = {
+  name: 'Layered — Order of Work',
+  args: {
+    root: stageGraph,
+    layout: 'layered',
+    direction: 'horizontal',
+    showEdgeLabels: false,
+    height: '360px',
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '`layout="layered"` places each node past everything it depends on, transitively, so ' +
+          'left-to-right reads as an order of work. Items A, B and C depend on nothing and start ' +
+          'the first layer; an item with several predecessors clears the deepest of them rather ' +
+          'than sitting beside it. Every `dependsOn` link is drawn — nothing is discarded to fit ' +
+          'a single-parent hierarchy — and the layers are reordered to untangle the edges ' +
+          'between them. Note the input array is in arbitrary order: the layout comes from the ' +
+          'graph, not from the order it arrived in.',
+      },
+    },
+  },
+};
+
+export const LayeredVertical: Story = {
+  name: 'Layered — Vertical',
+  args: {
+    root: stageGraph,
+    layout: 'layered',
+    direction: 'vertical',
+    showEdgeLabels: false,
+    height: '520px',
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: '`direction="vertical"` turns the layers into rows, running top to bottom.',
+      },
+    },
+  },
+};
+
+export const LayeredFitWidth: Story = {
+  name: 'Layered — Fit Width',
+  args: {
+    root: stageGraph,
+    layout: 'layered',
+    direction: 'horizontal',
+    fitMode: 'fit-width',
+    showEdgeLabels: false,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '`fitMode="fit-width"` scales to the frame\'s width and lets the height follow the ' +
+          'graph, so nodes keep a readable size and the *page* scrolls — the graph itself never ' +
+          'scrolls internally. `height` is not used in this mode. Compare with ' +
+          '`fitMode="contain"`, which fits both axes and therefore shrinks a large graph until ' +
+          'it fits vertically too; past roughly 20 nodes that is usually too small to read.',
+      },
+    },
+  },
+};
+
+export const LayeredMinNodeSize: Story = {
+  name: 'Layered — Minimum Node Size',
+  args: {
+    root: stageGraph,
+    layout: 'layered',
+    direction: 'horizontal',
+    fitMode: 'contain',
+    minNodeSize: 120,
+    showEdgeLabels: false,
+    height: '260px',
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '`minNodeSize` is a floor on how far fitting may shrink the nodes, in px of node width ' +
+          '(160px unscaled). Below it the fit stops scaling down and lets the graph overflow — ' +
+          'which `fit-width` turns into page scroll, and `contain` (shown here) into clipping. ' +
+          'Pair it with `fit-width`.',
+      },
+    },
+  },
+};
+
+export const LayeredWithRelations: Story = {
+  name: 'Layered — Relation Types',
+  args: {
+    root: [
+      { id: 'p', label: 'Item P', status: 'success' },
+      { id: 'q', label: 'Item Q', status: 'active', dependsOn: [{ id: 'p', relation: 'requires' }] },
+      { id: 'r', label: 'Item R', status: 'warning', dependsOn: [{ id: 'p', relation: 'blocks' }] },
+      {
+        id: 's',
+        label: 'Item S',
+        dependsOn: [{ id: 'q', relation: 'references' }, { id: 'r', relation: 'requires' }],
+      },
+    ],
+    layout: 'layered',
+    direction: 'horizontal',
+    height: '320px',
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Relation colours, dash styles, edge labels and the legend work the same in the layered ' +
+          'layout as in the tree one — the difference is only where the nodes land.',
+      },
+    },
+  },
+};
+
+export const LayeredCycle: Story = {
+  name: 'Layered — Cycle Tolerance',
+  args: {
+    root: [
+      { id: 'u', label: 'Item U', status: 'active', dependsOn: [{ id: 'w' }] },
+      { id: 'v', label: 'Item V', dependsOn: [{ id: 'u' }] },
+      { id: 'w', label: 'Item W', dependsOn: [{ id: 'v' }] },
+    ],
+    layout: 'layered',
+    direction: 'horizontal',
+    showEdgeLabels: false,
+    height: '260px',
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'A cycle has no layering — some link in the loop has to point backwards. The layout ' +
+          'picks those links, lays out everything else as a DAG, and draws the loop-closing one ' +
+          'as a dashed return edge. Nothing is dropped and nothing hangs, so a graph that turns ' +
+          'out to be cyclic still renders.',
       },
     },
   },
