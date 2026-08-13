@@ -129,10 +129,15 @@
     word-break: break-word;
   }
 
+  // Public theming hooks (stable API — set them on the host or any ancestor):
+  //   --lc-page-header-subtitle-display    e.g. `none` to collapse the subtitle
+  //   --lc-page-header-subtitle-fg         subtitle text color
+  //   --lc-page-header-subtitle-font-size  overrides the size variant's font-size
   &__subtitle {
     margin: 0;
+    display: var(--lc-page-header-subtitle-display, block);
     font-family: var(--font-family-sans, inherit);
-    color: var(--color-text-secondary, var(--color-neutral-600, #666));
+    color: var(--lc-page-header-subtitle-fg, var(--color-text-secondary, var(--color-neutral-600, #666)));
     line-height: var(--line-height-normal, 1.5);
   }
 
@@ -187,7 +192,7 @@
       font-size: var(--font-size-lg, 1.125rem);
     }
     .lc-page-header__subtitle {
-      font-size: var(--font-size-sm, 0.875rem);
+      font-size: var(--lc-page-header-subtitle-font-size, var(--font-size-sm, 0.875rem));
     }
   }
 
@@ -196,7 +201,7 @@
       font-size: var(--font-size-2xl, 1.5rem);
     }
     .lc-page-header__subtitle {
-      font-size: var(--font-size-base, 1rem);
+      font-size: var(--lc-page-header-subtitle-font-size, var(--font-size-base, 1rem));
     }
   }
 
@@ -208,7 +213,7 @@
       font-size: var(--font-size-3xl, 1.875rem);
     }
     .lc-page-header__subtitle {
-      font-size: var(--font-size-lg, 1.125rem);
+      font-size: var(--lc-page-header-subtitle-font-size, var(--font-size-lg, 1.125rem));
     }
   }
 

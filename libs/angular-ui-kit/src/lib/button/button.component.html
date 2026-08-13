@@ -2,6 +2,7 @@
   #buttonElement
   [type]="type()"
   [disabled]="isDisabled()"
+  [attr.title]="effectiveTitle()"
   [attr.aria-label]="ariaLabel() || null"
   [attr.aria-disabled]="isDisabled() ? 'true' : 'false'"
   [attr.aria-busy]="loading() ? 'true' : 'false'"
@@ -20,7 +21,8 @@
     'btn-md': size() === 'md',
     'btn-lg': size() === 'lg',
     'btn-icon-only': iconOnly(),
-    'btn-full-width': fullWidth()
+    'btn-full-width': fullWidth(),
+    'btn-inline': inline()
   }"
   (click)="handleClick()"
   (focus)="handleFocus()"

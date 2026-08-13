@@ -1,5 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/angular';
+import { moduleMetadata } from '@storybook/angular';
 import { AlertComponent } from './alert.component';
+import { ButtonComponent } from '../button/button.component';
 
 const meta: Meta<AlertComponent> = {
   title: 'Feedback/Alert',
@@ -15,6 +17,7 @@ Use it to inform users about important state changes, errors, warnings, or confi
 - 4 semantic variants (success, error, warning, info)
 - Optional title and icon
 - Dismissible option with close button
+- Action slot (\`slot="action"\`) for a button right of the body, e.g. retry
 - Accessible with ARIA role="alert"
         `,
       },
@@ -58,6 +61,24 @@ export const Dismissible: Story = {
     docs: { description: { story: 'Dismissible alerts show a close button. The `dismissed` event fires when clicked.' } },
   },
   args: { variant: 'info', title: 'Cookie Consent', message: 'We use cookies to improve your experience. By continuing, you agree to our privacy policy.', dismissible: true },
+};
+
+export const WithAction: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Project a button with `slot="action"` to render it right of the alert body — the standard "error state with retry" pattern.',
+      },
+    },
+  },
+  decorators: [moduleMetadata({ imports: [ButtonComponent] })],
+  render: () => ({
+    template: `
+      <lc-alert variant="error" title="Laden fehlgeschlagen" message="Die Vorhaben-Liste konnte nicht geladen werden.">
+        <lc-button slot="action" variant="outline" size="sm">Erneut versuchen</lc-button>
+      </lc-alert>`,
+  }),
 };
 
 export const WithoutTitle: Story = {

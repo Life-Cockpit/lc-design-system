@@ -110,6 +110,28 @@ export const LinkButton: Story = {
   }),
 };
 
+export const InlineLink: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '`inline` makes the button flow with the surrounding text and inherit its typography — for links inside copy, linked counters and clickable row titles. Pair with `variant="link"`.',
+      },
+    },
+  },
+  render: () => ({
+    template: `
+      <p style="max-width: 48ch; font-size: 14px; line-height: 1.6;">
+        Im aktuellen Sprint sind
+        <lc-button variant="link" [inline]="true">3 Vorhaben blockiert</lc-button>
+        und <lc-button variant="link" [inline]="true">2 warten auf Review</lc-button>.
+      </p>
+      <h4 style="margin: 16px 0 0; font-size: 16px; font-weight: 600;">
+        <lc-button variant="link" [inline]="true" style="--lc-button-link-fg: inherit;">Clickable row title</lc-button>
+      </h4>`,
+  }),
+};
+
 export const Danger: Story = {
   args: { variant: 'danger', size: 'md' },
   render: (args) => ({
@@ -167,6 +189,28 @@ export const Disabled: Story = {
     await expect(button).toBeDisabled();
     await userEvent.click(button);
     await expect(args['clicked']).not.toHaveBeenCalled();
+  },
+};
+
+export const DisabledWithReason: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '`disabledReason` shows a tooltip explaining *why* the button is disabled — it appears on hover even in the disabled state.',
+      },
+    },
+  },
+  args: { variant: 'primary', disabled: true },
+  render: (args) => ({
+    props: args,
+    template: `<lc-button [variant]="variant" [disabled]="disabled" disabledReason="Erst alle Pflichtfelder ausfüllen" (clicked)="clicked($event)">Freigeben</lc-button>`,
+  }),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const button = canvas.getByRole('button');
+    await expect(button).toBeDisabled();
+    await expect(button).toHaveAttribute('title', 'Erst alle Pflichtfelder ausfüllen');
   },
 };
 

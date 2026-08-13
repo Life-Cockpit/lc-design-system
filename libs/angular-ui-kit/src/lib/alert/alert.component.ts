@@ -20,12 +20,18 @@ export type AlertVariant = 'success' | 'error' | 'warning' | 'info';
  * - Auto-mapped variant icons
  * - Dismissible with close button
  * - Content projection for custom body
+ * - Action slot for a button rendered right of the body (e.g. retry)
  * - Accessible with ARIA alert role
  *
  * @example
  * ```html
  * <lc-alert variant="success" title="Success!" [dismissible]="true">
  *   Your changes have been saved.
+ * </lc-alert>
+ *
+ * <lc-alert variant="error" title="Laden fehlgeschlagen">
+ *   Die Liste konnte nicht geladen werden.
+ *   <lc-button slot="action" variant="outline" size="sm">Erneut versuchen</lc-button>
  * </lc-alert>
  * ```
  */

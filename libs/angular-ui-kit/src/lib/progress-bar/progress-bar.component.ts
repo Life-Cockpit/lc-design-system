@@ -23,6 +23,10 @@ export type ProgressBarVariant = 'linear' | 'circular';
  * ```html
  * <lc-progress-bar [value]="75" color="primary" size="md"></lc-progress-bar>
  * <lc-progress-bar [value]="50" variant="circular" color="success"></lc-progress-bar>
+ *
+ * <!-- thin bar inside a list row: fixed width, flows with the line -->
+ * <lc-progress-bar [value]="60" size="sm" [inline]="true"
+ *                  style="--lc-progress-bar-height: 6px"></lc-progress-bar>
  * ```
  */
 @Component({
@@ -31,6 +35,9 @@ export type ProgressBarVariant = 'linear' | 'circular';
   templateUrl: './progress-bar.component.html',
   styleUrls: ['./progress-bar.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    '[class.lc-progress-bar--inline]': 'inline()',
+  },
 })
 export class ProgressBarComponent {
   /**
@@ -62,6 +69,15 @@ export class ProgressBarComponent {
    * @default false
    */
   showLabel = input<boolean>(false);
+
+  /**
+   * Inline mode for list rows: the bar flows with the surrounding line at a
+   * fixed width instead of filling its container. Width is settable via
+   * `--lc-progress-bar-inline-width` (default 5rem), the track height via
+   * `--lc-progress-bar-height` (e.g. 6px), which also works in block mode.
+   * @default false
+   */
+  inline = input<boolean>(false);
 
   /**
    * Whether the progress is indeterminate (animated, no fixed value).

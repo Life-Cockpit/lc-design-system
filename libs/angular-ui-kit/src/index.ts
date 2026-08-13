@@ -180,6 +180,9 @@ export * from './lib/avatar/avatar.component';
 // Badge Component
 export * from './lib/badge/badge.component';
 
+// Status Dot Component
+export * from './lib/status-dot/status-dot.component';
+
 // ToggleGroup Component
 export * from './lib/toggle-group/toggle-group.component';
 

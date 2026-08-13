@@ -59,6 +59,27 @@ export class ButtonComponent {
   readonly ariaLabel = input('');
   readonly type = input<ButtonType>('button');
 
+  /**
+   * Native tooltip (title attribute) on the button.
+   */
+  readonly title = input('');
+
+  /**
+   * Reason shown as tooltip while the button is disabled (or loading).
+   * Takes precedence over `title` in that state. The tooltip also appears
+   * over the disabled button — the component guarantees the inner button
+   * never gets `pointer-events: none`.
+   */
+  readonly disabledReason = input('');
+
+  /**
+   * Render as an inline text button that inherits font size, weight and
+   * line-height from the surrounding text (for links inside copy, clickable
+   * row titles, linked counters). Pair with `variant="link"`.
+   * @default false
+   */
+  readonly inline = input(false);
+
   readonly clicked = output<void>();
   readonly focused = output<void>();
   readonly blurred = output<void>();
@@ -66,6 +87,17 @@ export class ButtonComponent {
   @ViewChild('buttonElement') buttonElement!: ElementRef<HTMLButtonElement>;
 
   readonly isDisabled = computed(() => this.disabled() || this.loading());
+
+  /**
+   * Tooltip actually applied to the button: `disabledReason` while disabled,
+   * `title` otherwise.
+   */
+  readonly effectiveTitle = computed(() => {
+    if (this.isDisabled() && this.disabledReason()) {
+      return this.disabledReason();
+    }
+    return this.title() || null;
+  });
 
   handleClick(): void {
     if (!this.isDisabled()) {

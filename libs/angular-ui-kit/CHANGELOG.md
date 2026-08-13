@@ -2,6 +2,71 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.18.0] - 2026-08-14
+
+Closes the seven gaps from the Factory-consolidation requirements review
+(2026-08-14): missing tint tokens, tooltip and inline-link support on the
+button, an alert action slot, four theming hooks that previously forced
+`::ng-deep`, a status-dot atom and an inline progress bar.
+
+### Added
+
+- **Subtle tint tokens** — `--color-primary-subtle`, `--color-success-subtle`,
+  `--color-warning-subtle`, `--color-error-subtle`, `--color-info-subtle`:
+  barely-there washes of the semantic palette for tinted section backgrounds,
+  chips and highlighted rows (the teal "current" accordion section, amber
+  wait chips, red escalation surfaces). Light theme uses solid hexes so
+  stacked elements don't accumulate opacity; dark theme uses translucent
+  washes of the raw scale (the badge-fill recipe), so they tint whatever
+  surface they sit on. Pair with the matching `--color-*` for the ink on top.
+- **Button: `disabledReason` and `title`** (`lc-button`) — first-class tooltip
+  inputs. `title` renders as the native tooltip; `disabledReason` takes over
+  while the button is disabled or loading, so "disabled ⇒ why" is expressible
+  without an `[attr.title]` workaround. Contractual: the tooltip appears over
+  the *disabled* button too — the inner button now explicitly keeps
+  `pointer-events: auto` in the disabled state, with a test pinning it.
+- **Button: `inline` mode** (`lc-button`) — renders the button as inline text
+  that flows with the surrounding copy and inherits its font size, weight and
+  line-height. Pair with the (existing) `variant="link"` for links inside
+  copy, linked rollup counters and clickable row titles; the focus ring
+  drops to a small radius so it hugs the text. New hooks
+  `--lc-button-link-fg/-hover-fg/-active-fg` recolor the link ink (e.g.
+  `inherit` for a row title that only underlines on hover).
+- **Alert: action slot** (`lc-alert`) — project a button with `slot="action"`
+  to render it right of the body, vertically centered: the standard "error
+  state with retry" pattern without sibling-layout workarounds. Nothing
+  projected ⇒ nothing rendered (no stray gap).
+- **New component: `lc-status-dot`** — the traffic-light atom for list rows,
+  rails and boards. Five semantic tones (`done`, `run`, `wait`, `blocked`,
+  `open`), optional `pulse` for in-progress states (an expanding ring in the
+  tone's color; static under `prefers-reduced-motion`), sizes `md` (8px) and
+  `sm` (6px) for dense rows. Decorative by default (`aria-hidden`); pass
+  `label` to expose the state via `role="img"`.
+- **Progress bar: `inline` mode** (`lc-progress-bar`) — the bar flows with a
+  list row at a fixed width (`--lc-progress-bar-inline-width`, default 5rem)
+  instead of filling its container. The new `--lc-progress-bar-height` hook
+  sets an exact track height over any size — the canvases' 6px rollup bar is
+  `size="sm" [inline]="true"` with `--lc-progress-bar-height: 6px`. (Thin
+  tracks already existed: `size="xs"` is 2px, `sm` 4px.)
+- **Theming hooks instead of `::ng-deep`** — stable CSS custom properties for
+  the four spots apps were piercing:
+  - `lc-accordion`: `--lc-accordion-header-bg`, `--lc-accordion-header-fg`,
+    `--lc-accordion-header-border`, `--lc-accordion-header-hover-bg` (the
+    tinted "current" section: set bg to `var(--color-primary-subtle)`).
+  - `lc-select`: `--lc-select-clear-display` (e.g. `none`),
+    `--lc-select-clear-fg`, `--lc-select-clear-hover-fg`,
+    `--lc-select-clear-hover-bg`.
+  - `lc-page-header`: `--lc-page-header-subtitle-display` (e.g. `none` for
+    the collapsed header), `--lc-page-header-subtitle-fg`,
+    `--lc-page-header-subtitle-font-size` (wins over all size variants).
+  - `lc-pipeline`: `--lc-pipeline-node-bg`, `--lc-pipeline-node-fg`,
+    `--lc-pipeline-node-border` (joining the existing `--lc-pipeline-*`
+    hooks).
+
+  New Storybook stories *Inline Link*, *Disabled With Reason* (Button),
+  *With Action* (Alert), *All Tones* / *In List Rows* (Status Dot) and
+  *Inline In List Rows* (Progress Bar).
+
 ## [2.17.0] - 2026-08-13
 
 ### Added

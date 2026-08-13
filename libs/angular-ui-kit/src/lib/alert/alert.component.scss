@@ -44,6 +44,18 @@
   line-height: var(--line-height-normal);
 }
 
+// Action slot (e.g. a retry button) — rendered right of the body, vertically
+// centered against the alert. The wrapper is always in the template; hiding it
+// when nothing is projected keeps the container's gap from leaving a hole.
+.lc-alert__action {
+  flex-shrink: 0;
+  align-self: center;
+
+  &:empty {
+    display: none;
+  }
+}
+
 .lc-alert__close {
   flex-shrink: 0;
   background: transparent;

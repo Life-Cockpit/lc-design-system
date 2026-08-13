@@ -131,6 +131,64 @@ describe('ButtonComponent', () => {
     });
   });
 
+  describe('Tooltip (title / disabledReason)', () => {
+    it('should have no title attribute by default', () => {
+      expect(buttonElement.hasAttribute('title')).toBe(false);
+    });
+
+    it('should apply title input as title attribute', () => {
+      fixture.componentRef.setInput('title', 'Save the record');
+      fixture.detectChanges();
+      expect(buttonElement.getAttribute('title')).toBe('Save the record');
+    });
+
+    it('should show disabledReason as title while disabled', () => {
+      fixture.componentRef.setInput('disabled', true);
+      fixture.componentRef.setInput('disabledReason', 'Missing permissions');
+      fixture.detectChanges();
+      expect(buttonElement.getAttribute('title')).toBe('Missing permissions');
+    });
+
+    it('should prefer disabledReason over title while disabled', () => {
+      fixture.componentRef.setInput('title', 'Save the record');
+      fixture.componentRef.setInput('disabled', true);
+      fixture.componentRef.setInput('disabledReason', 'Missing permissions');
+      fixture.detectChanges();
+      expect(buttonElement.getAttribute('title')).toBe('Missing permissions');
+    });
+
+    it('should not show disabledReason while enabled', () => {
+      fixture.componentRef.setInput('disabledReason', 'Missing permissions');
+      fixture.detectChanges();
+      expect(buttonElement.hasAttribute('title')).toBe(false);
+    });
+
+    it('should show disabledReason while loading', () => {
+      fixture.componentRef.setInput('loading', true);
+      fixture.componentRef.setInput('disabledReason', 'Request in flight');
+      fixture.detectChanges();
+      expect(buttonElement.getAttribute('title')).toBe('Request in flight');
+    });
+
+    it('should keep pointer events on the disabled button so the tooltip can appear', () => {
+      fixture.componentRef.setInput('disabled', true);
+      fixture.detectChanges();
+      expect(getComputedStyle(buttonElement).pointerEvents).not.toBe('none');
+    });
+  });
+
+  describe('Inline', () => {
+    it('should not be inline by default', () => {
+      expect(buttonElement.classList.contains('btn-inline')).toBe(false);
+    });
+
+    it('should apply btn-inline class when inline', () => {
+      fixture.componentRef.setInput('inline', true);
+      fixture.detectChanges();
+      expect(buttonElement.classList.contains('btn-inline')).toBe(true);
+    });
+  });
+
   describe('Full Width', () => {
     it('should not be full width by default', () => {
       expect(buttonElement.classList).not.toContain('btn-full-width');

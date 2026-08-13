@@ -17,6 +17,15 @@ $progress-colors: (
   width: 100%;
 }
 
+// Inline mode — a thin bar that flows with a list row instead of filling it.
+// Width via --lc-progress-bar-inline-width, track height via
+// --lc-progress-bar-height (the 6px list-row bar: size="sm" + height 6px).
+:host(.lc-progress-bar--inline) {
+  display: inline-flex;
+  width: var(--lc-progress-bar-inline-width, 5rem);
+  vertical-align: middle;
+}
+
 // ---------------------------------------------------------------------------
 // Linear variant
 // ---------------------------------------------------------------------------
@@ -47,11 +56,11 @@ $progress-colors: (
     text-align: right;
   }
 
-  // Size variants
-  &--xs .progress-bar__track { height: 0.125rem; }
-  &--sm .progress-bar__track { height: 0.25rem; }
-  &--md .progress-bar__track { height: 0.5rem; }
-  &--lg .progress-bar__track { height: 0.75rem; }
+  // Size variants — --lc-progress-bar-height overrides any size (e.g. 6px)
+  &--xs .progress-bar__track { height: var(--lc-progress-bar-height, 0.125rem); }
+  &--sm .progress-bar__track { height: var(--lc-progress-bar-height, 0.25rem); }
+  &--md .progress-bar__track { height: var(--lc-progress-bar-height, 0.5rem); }
+  &--lg .progress-bar__track { height: var(--lc-progress-bar-height, 0.75rem); }
 
   // Color variants
   @each $name, $clr in $progress-colors {

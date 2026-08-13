@@ -186,6 +186,41 @@ describe('AlertComponent', () => {
     });
   });
 
+  describe('Action Slot', () => {
+    it('should project slot="action" content into the action area', () => {
+      @Component({
+        standalone: true,
+        imports: [AlertComponent],
+        template: `<lc-alert variant="error" message="Loading failed">
+          <button slot="action" type="button">Retry</button>
+        </lc-alert>`,
+        changeDetection: ChangeDetectionStrategy.OnPush,
+      })
+      class TestComponent {}
+
+      const testFixture = TestBed.createComponent(TestComponent);
+      testFixture.detectChanges();
+      const action = testFixture.debugElement.query(By.css('.lc-alert__action button'));
+      expect(action).toBeTruthy();
+      expect(action.nativeElement.textContent.trim()).toBe('Retry');
+    });
+
+    it('should leave the action area empty when nothing is projected', () => {
+      @Component({
+        standalone: true,
+        imports: [AlertComponent],
+        template: `<lc-alert message="No action here" />`,
+        changeDetection: ChangeDetectionStrategy.OnPush,
+      })
+      class TestComponent {}
+
+      const testFixture = TestBed.createComponent(TestComponent);
+      testFixture.detectChanges();
+      const action = testFixture.debugElement.query(By.css('.lc-alert__action'));
+      expect(action.nativeElement.childNodes.length).toBe(0);
+    });
+  });
+
   describe('Accessibility', () => {
     it('should have role="alert"', () => {
       expect(alertElement.getAttribute('role')).toBe('alert');

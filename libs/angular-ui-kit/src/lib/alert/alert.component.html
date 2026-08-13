@@ -19,7 +19,11 @@
         }
       </div>
     </div>
-    
+
+    <div class="lc-alert__action">
+      <ng-content select="[slot='action']" />
+    </div>
+
     @if (dismissible()) {
       <button
         type="button"

@@ -24,6 +24,10 @@
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+    // Contract: the disabled button keeps receiving pointer events so the
+    // `disabledReason` tooltip (title attribute) can appear over it.
+    // Never set pointer-events: none here.
+    pointer-events: auto;
   }
 }
 
@@ -87,17 +91,17 @@
 
 .btn-link {
   background-color: transparent;
-  color: var(--color-primary-600);
+  color: var(--lc-button-link-fg, var(--color-primary-600));
   padding: 0;
   border: none;
 
   &:hover:not(:disabled) {
-    color: var(--color-primary-700);
+    color: var(--lc-button-link-hover-fg, var(--color-primary-700));
     text-decoration: underline;
   }
 
   &:active:not(:disabled) {
-    color: var(--color-primary-800);
+    color: var(--lc-button-link-active-fg, var(--color-primary-800));
   }
 }
 
@@ -193,6 +197,23 @@
 // Full Width
 .btn-full-width {
   width: 100%;
+}
+
+// Inline text button — flows with the surrounding copy instead of forming a
+// pill. Typography is inherited so a clickable row title or a linked counter
+// reads exactly like its non-interactive siblings; the focus ring gets a small
+// radius so it hugs the text instead of the pill shape. Declared after the
+// size classes on purpose: it must win their padding/font-size.
+.btn-inline {
+  display: inline;
+  padding: 0;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  vertical-align: baseline;
+  white-space: normal;
+  text-align: inherit;
+  border-radius: var(--border-radius-sm);
 }
 
 // Loading Spinner

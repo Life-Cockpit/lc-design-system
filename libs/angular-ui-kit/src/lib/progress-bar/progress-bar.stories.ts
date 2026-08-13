@@ -76,6 +76,37 @@ export const Colors: Story = {
   }),
 };
 
+export const InlineInListRows: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '`inline` lets the bar flow with a list row at a fixed width (`--lc-progress-bar-inline-width`); `--lc-progress-bar-height` sets the exact track height, e.g. the 6px rollup bar.',
+      },
+    },
+  },
+  render: () => ({
+    template: `
+      <div style="display: flex; flex-direction: column; max-width: 420px; font-size: 13px;">
+        <div style="display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--color-divider);">
+          <span style="flex: 1;">Wave 1 — Fundament</span>
+          <lc-progress-bar [value]="100" size="sm" color="success" [inline]="true" style="--lc-progress-bar-height: 6px;"></lc-progress-bar>
+          <span style="color: var(--color-text-tertiary); min-width: 3ch; text-align: right;">8/8</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--color-divider);">
+          <span style="flex: 1;">Wave 2 — Abrechnung</span>
+          <lc-progress-bar [value]="45" size="sm" [inline]="true" style="--lc-progress-bar-height: 6px;"></lc-progress-bar>
+          <span style="color: var(--color-text-tertiary); min-width: 3ch; text-align: right;">5/11</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; padding: 8px 0;">
+          <span style="flex: 1;">Wave 3 — Rollout</span>
+          <lc-progress-bar [value]="10" size="sm" [inline]="true" style="--lc-progress-bar-height: 6px;"></lc-progress-bar>
+          <span style="color: var(--color-text-tertiary); min-width: 3ch; text-align: right;">1/9</span>
+        </div>
+      </div>`,
+  }),
+};
+
 export const Indeterminate: Story = {
   args: { indeterminate: true, color: 'primary', size: 'md' },
 };

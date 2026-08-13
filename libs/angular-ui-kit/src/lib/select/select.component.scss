@@ -144,8 +144,11 @@
   }
 }
 
+// Public theming hooks (stable API — set them on the host or any ancestor):
+//   --lc-select-clear-display   e.g. `none` to hide the clear button
+//   --lc-select-clear-fg / --lc-select-clear-hover-fg / --lc-select-clear-hover-bg
 .lc-select__clear {
-  display: flex;
+  display: var(--lc-select-clear-display, flex);
   align-items: center;
   justify-content: center;
   width: 1.25rem;
@@ -154,13 +157,13 @@
   background: none;
   border: none;
   border-radius: var(--border-radius-sm);
-  color: var(--color-text-secondary);
+  color: var(--lc-select-clear-fg, var(--color-text-secondary));
   cursor: pointer;
   transition: all var(--animation-duration-fast) var(--animation-timing-ease);
 
   &:hover {
-    color: var(--color-text-primary);
-    background-color: var(--color-neutral-100);
+    color: var(--lc-select-clear-hover-fg, var(--color-text-primary));
+    background-color: var(--lc-select-clear-hover-bg, var(--color-neutral-100));
   }
 
   svg {

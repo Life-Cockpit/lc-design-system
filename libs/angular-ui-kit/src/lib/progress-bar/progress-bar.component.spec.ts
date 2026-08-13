@@ -114,6 +114,28 @@ describe('ProgressBarComponent', () => {
     });
   });
 
+  describe('Inline mode', () => {
+    it('should not be inline by default', () => {
+      fixture.detectChanges();
+      const hostEl = fixture.debugElement.query(By.directive(ProgressBarComponent));
+      expect(hostEl.nativeElement.classList.contains('lc-progress-bar--inline')).toBe(false);
+    });
+
+    it('should apply the inline host class', () => {
+      @Component({
+        standalone: true,
+        imports: [ProgressBarComponent],
+        template: `<lc-progress-bar [value]="60" size="sm" [inline]="true"></lc-progress-bar>`,
+      })
+      class InlineHostComponent {}
+
+      const inlineFixture = TestBed.createComponent(InlineHostComponent);
+      inlineFixture.detectChanges();
+      const hostEl = inlineFixture.debugElement.query(By.directive(ProgressBarComponent));
+      expect(hostEl.nativeElement.classList.contains('lc-progress-bar--inline')).toBe(true);
+    });
+  });
+
   describe('Circular variant', () => {
     beforeEach(() => {
       host.variant = 'circular';

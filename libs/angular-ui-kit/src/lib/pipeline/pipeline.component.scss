@@ -8,6 +8,11 @@
   --lc-pipeline-gap: var(--spacing-2);
   --lc-pipeline-line: var(--color-border-strong);
   --lc-pipeline-line-done: var(--color-primary-500);
+  // Public theming hooks for the marker node (stable API — override from the
+  // outside instead of piercing .lc-pipeline__marker/__node):
+  --lc-pipeline-node-bg: var(--color-surface);
+  --lc-pipeline-node-fg: var(--color-text-tertiary);
+  --lc-pipeline-node-border: var(--lc-pipeline-line);
 
   // Compact spine: smaller nodes, thinner connectors, tighter grid. The label
   // and caption drop a step so the whole chain reads as a dense status strip.
@@ -73,9 +78,9 @@
     width: var(--lc-pipeline-node-size);
     height: var(--lc-pipeline-node-size);
     border-radius: var(--border-radius-full);
-    background-color: var(--color-surface);
-    border: var(--lc-pipeline-line-weight) solid var(--lc-pipeline-line);
-    color: var(--color-text-tertiary);
+    background-color: var(--lc-pipeline-node-bg);
+    border: var(--lc-pipeline-line-weight) solid var(--lc-pipeline-node-border);
+    color: var(--lc-pipeline-node-fg);
     box-sizing: border-box;
   }
 

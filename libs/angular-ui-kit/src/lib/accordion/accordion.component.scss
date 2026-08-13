@@ -32,6 +32,12 @@
   }
 
   // Header
+  // Public theming hooks (stable API — set them on the host or any ancestor):
+  //   --lc-accordion-header-bg        header background (e.g. a subtle tint
+  //                                   for the "current" section)
+  //   --lc-accordion-header-fg        header text color
+  //   --lc-accordion-header-border    border shorthand (e.g. inset accent)
+  //   --lc-accordion-header-hover-bg  hover background
   &__header {
     display: flex;
     width: 100%;
@@ -41,15 +47,15 @@
     padding: 0.875rem 1.125rem;
     font-weight: 600;
     letter-spacing: -0.01em;
-    color: var(--color-text-primary);
-    background: transparent;
-    border: none;
+    color: var(--lc-accordion-header-fg, var(--color-text-primary));
+    background: var(--lc-accordion-header-bg, transparent);
+    border: var(--lc-accordion-header-border, none);
     border-radius: 0;
     cursor: pointer;
     transition: background-color 150ms ease, color 150ms ease;
 
     &:hover {
-      background-color: var(--color-surface-hover);
+      background-color: var(--lc-accordion-header-hover-bg, var(--color-surface-hover));
     }
 
     &:focus-visible {

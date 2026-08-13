@@ -266,6 +266,15 @@
   --color-warning: #{$color-warning-default};
   --color-info: #{$color-info-default};
 
+  // Subtle tinted surfaces — translucent washes of the RAW semantic scale
+  // (same recipe as the badge fills), so they tint whatever dark surface they
+  // sit on instead of fighting it. Pair with the matching --color-* on top.
+  --color-primary-subtle: rgba(32, 132, 151, 0.16);
+  --color-success-subtle: rgba(142, 164, 117, 0.18);
+  --color-warning-subtle: rgba(225, 160, 64, 0.18);
+  --color-error-subtle: rgba(157, 14, 14, 0.18);
+  --color-info-subtle: rgba(59, 101, 136, 0.2);
+
   // ============================================================================
   // DS2.0 Visual Primitives (the pitch signature)
   // ============================================================================

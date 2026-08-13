@@ -257,6 +257,16 @@
   --color-warning: #{$color-warning-default};
   --color-info: #{$color-info-default};
 
+  // Subtle tinted surfaces — barely-there washes of the semantic colors for
+  // section backgrounds, chips and highlighted rows (pair with the matching
+  // --color-* for text/icons on top). Solid hexes in light so stacked
+  // elements don't accumulate opacity.
+  --color-primary-subtle: #f0f8fa;
+  --color-success-subtle: #f3f6ee;
+  --color-warning-subtle: #fdf4e4;
+  --color-error-subtle: #fbecec;
+  --color-info-subtle: #edf3f8;
+
   // ============================================================================
   // DS2.0 Visual Primitives (light-tuned values of the dark primitives)
   // ============================================================================
