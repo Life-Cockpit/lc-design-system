@@ -18,6 +18,7 @@ Use it for settings pages, multi-section views, and content categorization.
 **Key Features:**
 - Horizontal and vertical orientation
 - Icon support per tab
+- Badge support per tab (counts or status labels)
 - Disabled tabs
 - Lazy content rendering
 - Keyboard navigation (arrow keys)
@@ -115,6 +116,42 @@ export const WithIcons: Story = {
         </lc-tab>
       </lc-tabs>`,
   }),
+};
+
+export const WithBadges: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Tabs with badges for counts or status. Set content via `badge` and the color via `badgeVariant` (`default`, `primary`, `success`, `warning`, `error`, `info`).',
+      },
+    },
+  },
+  render: () => ({
+    template: `
+      <lc-tabs>
+        <lc-tab label="Inbox" [badge]="12" badgeVariant="primary">
+          <p style="padding: 16px; margin: 0; color: #4b5563;">12 unread messages.</p>
+        </lc-tab>
+        <lc-tab label="Drafts" [badge]="3">
+          <p style="padding: 16px; margin: 0; color: #4b5563;">3 drafts pending.</p>
+        </lc-tab>
+        <lc-tab label="Errors" [badge]="2" badgeVariant="error">
+          <p style="padding: 16px; margin: 0; color: #4b5563;">2 failed deliveries.</p>
+        </lc-tab>
+        <lc-tab label="Updates" badge="New" badgeVariant="success">
+          <p style="padding: 16px; margin: 0; color: #4b5563;">Fresh product updates.</p>
+        </lc-tab>
+        <lc-tab label="Archive">
+          <p style="padding: 16px; margin: 0; color: #4b5563;">Archived conversations.</p>
+        </lc-tab>
+      </lc-tabs>`,
+  }),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const inboxTab = canvas.getByRole('tab', { name: /inbox/i });
+    await expect(inboxTab).toHaveTextContent('12');
+  },
 };
 
 export const Vertical: Story = {

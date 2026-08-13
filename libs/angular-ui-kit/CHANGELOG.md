@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.17.0] - 2026-08-13
+
+### Added
+
+- **Tabs: per-tab badges** (`lc-tab`) — a `badge` input (string or number)
+  renders a count or status label after the tab label, and `badgeVariant`
+  picks its color (`default` | `primary` | `success` | `warning` | `error` |
+  `info`, default `default`). The badge is the existing `lc-badge` (size
+  `xs`, pill), so colors track the DS2.0 semantic palette automatically in
+  both themes. `0` renders as a badge; `undefined`, `null` and `''` hide it,
+  so a count can be cleared without restructuring the tab. In vertical
+  (sidebar-style) tabs the badge sits at the trailing edge of the tab button.
+  The badge keeps a constant font-weight, so selecting a tab (semibold label)
+  doesn't reflow it. Tab buttons are now `inline-flex` with the density gap;
+  tabs without a badge render exactly as before. New Storybook story
+  *With Badges*.
+
 ## [2.16.0] - 2026-07-21
 
 ### Added

@@ -14,6 +14,7 @@ import {
   TemplateRef,
 } from '@angular/core';
 import { NgClass, NgTemplateOutlet } from '@angular/common';
+import { BadgeComponent, BadgeVariant } from '../badge/badge.component';
 
 let nextUniqueId = 0;
 
@@ -51,6 +52,26 @@ export class TabComponent {
   readonly icon = input<string | undefined>();
 
   /**
+   * Optional badge content shown after the label (e.g. a count or "New").
+   * `0` is rendered; `undefined`, `null`, and `''` hide the badge.
+   */
+  readonly badge = input<string | number | undefined | null>();
+
+  /**
+   * Badge color variant
+   * @default 'default'
+   */
+  readonly badgeVariant = input<BadgeVariant>('default');
+
+  /**
+   * Whether the badge should be rendered
+   */
+  readonly hasBadge = computed(() => {
+    const badge = this.badge();
+    return badge !== undefined && badge !== null && badge !== '';
+  });
+
+  /**
    * Unique ID for accessibility
    */
   readonly id = `lc-tab-${nextUniqueId++}`;
@@ -75,12 +96,13 @@ export class TabComponent {
  * - Accessible with ARIA tablist/tab/tabpanel roles
  * - Keyboard navigation between tabs
  * - Lazy content rendering per tab
+ * - Optional badge per tab (counts or status labels)
  *
  * @example
  * ```html
  * <lc-tabs>
  *   <lc-tab label="Account">Account settings</lc-tab>
- *   <lc-tab label="Privacy">Privacy settings</lc-tab>
+ *   <lc-tab label="Inbox" [badge]="12" badgeVariant="primary">Messages</lc-tab>
  *   <lc-tab label="Security">Security settings</lc-tab>
  * </lc-tabs>
  * ```
@@ -88,7 +110,7 @@ export class TabComponent {
 @Component({
   selector: 'lc-tabs',
   standalone: true,
-  imports: [NgClass, NgTemplateOutlet],
+  imports: [NgClass, NgTemplateOutlet, BadgeComponent],
   templateUrl: './tabs.component.html',
   styleUrl: './tabs.component.scss',
   // eslint-disable-next-line @angular-eslint/use-component-view-encapsulation

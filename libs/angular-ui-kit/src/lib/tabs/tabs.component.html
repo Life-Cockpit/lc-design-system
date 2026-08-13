@@ -24,6 +24,15 @@
         (click)="selectTab(i)"
       >
         {{ tab.label() }}
+        @if (tab.hasBadge()) {
+          <lc-badge
+            class="lc-tabs__badge"
+            [variant]="tab.badgeVariant()"
+            size="xs"
+            [rounded]="true"
+            >{{ tab.badge() }}</lc-badge
+          >
+        }
       </button>
     }
   </div>

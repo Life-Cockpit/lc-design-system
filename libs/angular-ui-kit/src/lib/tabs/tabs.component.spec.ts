@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { TabsComponent, TabComponent } from './tabs.component';
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { By } from '@angular/platform-browser';
 
 @Component({
@@ -259,6 +259,66 @@ describe('TabComponent', () => {
     expect(buttons[2]?.nativeElement.getAttribute('aria-selected')).toBe('true');
     expect(panels[2]?.nativeElement.hasAttribute('hidden')).toBe(false);
     expect(panels[0]?.nativeElement.hasAttribute('hidden')).toBe(true);
+  });
+});
+
+describe('TabsComponent - Badges', () => {
+  @Component({
+    selector: 'lc-test-tabs-badges',
+    standalone: true,
+    imports: [TabsComponent, TabComponent],
+    template: `
+      <lc-tabs>
+        <lc-tab label="Inbox" [badge]="inboxCount()" badgeVariant="primary">Content 1</lc-tab>
+        <lc-tab label="Spam" [badge]="0" badgeVariant="error">Content 2</lc-tab>
+        <lc-tab label="Archive">Content 3</lc-tab>
+      </lc-tabs>
+    `,
+  })
+  class TestTabsBadgesComponent {
+    inboxCount = signal<number | undefined>(12);
+  }
+
+  let fixture: ComponentFixture<TestTabsBadgesComponent>;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [TestTabsBadgesComponent],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(TestTabsBadgesComponent);
+    fixture.detectChanges();
+  });
+
+  it('should render badge content inside the tab button', () => {
+    const buttons = fixture.debugElement.queryAll(By.css('button[role="tab"]'));
+    const badge = buttons[0]?.query(By.css('.lc-tabs__badge'));
+    expect(badge).toBeTruthy();
+    expect(badge?.nativeElement.textContent.trim()).toBe('12');
+  });
+
+  it('should apply the badge variant class', () => {
+    const badge = fixture.debugElement.query(By.css('.lc-tabs__badge .lc-badge'));
+    expect(badge.nativeElement.classList.contains('lc-badge--primary')).toBe(true);
+  });
+
+  it('should render a badge for the value 0', () => {
+    const buttons = fixture.debugElement.queryAll(By.css('button[role="tab"]'));
+    const badge = buttons[1]?.query(By.css('.lc-tabs__badge'));
+    expect(badge).toBeTruthy();
+    expect(badge?.nativeElement.textContent.trim()).toBe('0');
+  });
+
+  it('should not render a badge when none is set', () => {
+    const buttons = fixture.debugElement.queryAll(By.css('button[role="tab"]'));
+    expect(buttons[2]?.query(By.css('.lc-tabs__badge'))).toBeNull();
+  });
+
+  it('should remove the badge when it becomes undefined', () => {
+    fixture.componentInstance.inboxCount.set(undefined);
+    fixture.detectChanges();
+    const buttons = fixture.debugElement.queryAll(By.css('button[role="tab"]'));
+    expect(buttons[0]?.query(By.css('.lc-tabs__badge'))).toBeNull();
   });
 });
 
