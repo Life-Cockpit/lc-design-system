@@ -130,12 +130,19 @@
   }
 
   // Public theming hooks (stable API — set them on the host or any ancestor):
-  //   --lc-page-header-subtitle-display    e.g. `none` to collapse the subtitle
-  //   --lc-page-header-subtitle-fg         subtitle text color
-  //   --lc-page-header-subtitle-font-size  overrides the size variant's font-size
+  //   --lc-page-header-subtitle-display     e.g. `none` to collapse the subtitle
+  //   --lc-page-header-subtitle-fg          subtitle text color
+  //   --lc-page-header-subtitle-font-size   overrides the size variant's font-size
+  //   --lc-page-header-subtitle-line-clamp  max line count, e.g. 2 (needs the
+  //                                         default display; `none` = no clamp)
+  // The default display is -webkit-box (which renders plain text identically
+  // to block) so that setting only the line-clamp hook is enough to clamp.
   &__subtitle {
     margin: 0;
-    display: var(--lc-page-header-subtitle-display, block);
+    display: var(--lc-page-header-subtitle-display, -webkit-box);
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: var(--lc-page-header-subtitle-line-clamp, none);
+    overflow: hidden;
     font-family: var(--font-family-sans, inherit);
     color: var(--lc-page-header-subtitle-fg, var(--color-text-secondary, var(--color-neutral-600, #666)));
     line-height: var(--line-height-normal, 1.5);

@@ -65,7 +65,12 @@
   }
 
   &__marker {
-    position: relative;
+    // Deliberately NOT position: relative — the connector inside is
+    // absolutely positioned and must resolve its width/height against the
+    // full-size .lc-pipeline__step (the nearest positioned ancestor), not
+    // against this marker-sized box. With the marker as containing block the
+    // horizontal connector's `width: calc(100% + gap)` collapses to a stub
+    // that never reaches the next node.
     flex-shrink: 0;
   }
 

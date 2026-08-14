@@ -2,6 +2,42 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.19.0] - 2026-08-14
+
+Follow-up to the Factory ::ng-deep removal: fixes the last remaining
+app-side kit override (a bug, not theming) and adds the three hooks the
+2.18.0 set didn't cover.
+
+### Fixed
+
+- **Pipeline: horizontal connector length** (`lc-pipeline`) — the connector
+  is absolutely positioned inside the marker, and the marker was
+  `position: relative`, so the connector's `width: calc(100% + gap)`
+  resolved against the marker-sized box instead of the full-width step: the
+  line collapsed to a stub that never reached the next node. The marker no
+  longer establishes a containing block; the connector now resolves against
+  `.lc-pipeline__step` and spans node-center to node-center as designed.
+  The same change repairs the vertical connector's height calculation
+  (previously 0 against the marker). Apps that patched this with a
+  positioning override on `.lc-pipeline__marker` can drop it.
+
+### Added
+
+- **Accordion: padding and container-border hooks** (`lc-accordion`) —
+  `--lc-accordion-header-padding` and `--lc-accordion-body-padding`
+  (shorthands that win over the size variants; the body hook sets the
+  *expanded* padding — the collapsed state keeps zero vertical padding,
+  which the collapse animation depends on), and `--lc-accordion-border`
+  recolors the outlined container's border (e.g. a tinted frame for the
+  "current" section).
+- **Page header: subtitle line clamp** (`lc-page-header`) —
+  `--lc-page-header-subtitle-line-clamp` caps the subtitle at N lines
+  (e.g. `2` for the collapsible project-detail header). The subtitle's
+  default display is now `-webkit-box` — rendering plain text identically
+  to the previous `block` — so setting only the clamp hook is enough;
+  `--lc-page-header-subtitle-display` still overrides (and `none` still
+  hides).
+
 ## [2.18.0] - 2026-08-14
 
 Closes the seven gaps from the Factory-consolidation requirements review

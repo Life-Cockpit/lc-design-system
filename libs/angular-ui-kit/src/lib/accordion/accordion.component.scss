@@ -10,8 +10,10 @@
   transition: box-shadow 200ms ease, border-color 200ms ease;
 
   // Variants
+  // Public theming hook: --lc-accordion-border recolors the container border
+  // (e.g. a tinted frame for the "current" section).
   &--outlined {
-    border: 1px solid var(--color-border);
+    border: 1px solid var(--lc-accordion-border, var(--color-border));
     background: var(--color-surface);
     box-shadow: var(--elevation-1);
 
@@ -38,13 +40,14 @@
   //   --lc-accordion-header-fg        header text color
   //   --lc-accordion-header-border    border shorthand (e.g. inset accent)
   //   --lc-accordion-header-hover-bg  hover background
+  //   --lc-accordion-header-padding   padding shorthand (wins over sizes)
   &__header {
     display: flex;
     width: 100%;
     align-items: center;
     justify-content: space-between;
     gap: 0.75rem;
-    padding: 0.875rem 1.125rem;
+    padding: var(--lc-accordion-header-padding, 0.875rem 1.125rem);
     font-weight: 600;
     letter-spacing: -0.01em;
     color: var(--lc-accordion-header-fg, var(--color-text-primary));
@@ -71,17 +74,17 @@
 
   // Size variants
   &--sm &__header {
-    padding: 0.625rem 0.875rem;
+    padding: var(--lc-accordion-header-padding, 0.625rem 0.875rem);
     font-size: 0.8125rem;
   }
 
   &--md &__header {
-    padding: 0.875rem 1.125rem;
+    padding: var(--lc-accordion-header-padding, 0.875rem 1.125rem);
     font-size: 0.9375rem;
   }
 
   &--lg &__header {
-    padding: 1.125rem 1.375rem;
+    padding: var(--lc-accordion-header-padding, 1.125rem 1.375rem);
     font-size: 1.0625rem;
   }
 
@@ -150,8 +153,11 @@
     transition: opacity 200ms ease 50ms, transform 200ms ease 50ms, padding 300ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
   }
 
+  // Public theming hook: --lc-accordion-body-padding sets the *expanded*
+  // body padding (wins over sizes). The collapsed state keeps zero vertical
+  // padding on purpose — the grid-row collapse animation depends on it.
   &--expanded &__body {
-    padding: 0.875rem 1.125rem 1rem;
+    padding: var(--lc-accordion-body-padding, 0.875rem 1.125rem 1rem);
     opacity: 1;
     transform: translateY(0);
     transition: opacity 250ms ease 80ms, transform 250ms ease 80ms, padding 300ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
@@ -163,7 +169,7 @@
   }
 
   &--sm#{&}--expanded &__body {
-    padding: 0.625rem 0.875rem 0.75rem;
+    padding: var(--lc-accordion-body-padding, 0.625rem 0.875rem 0.75rem);
   }
 
   &--lg &__body {
@@ -172,6 +178,6 @@
   }
 
   &--lg#{&}--expanded &__body {
-    padding: 1rem 1.375rem 1.25rem;
+    padding: var(--lc-accordion-body-padding, 1rem 1.375rem 1.25rem);
   }
 }
