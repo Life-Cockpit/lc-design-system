@@ -3,7 +3,7 @@
 .lc-rich-text-editor {
   border: 1px solid var(--color-border);
   border-radius: var(--border-radius-md);
-  background-color: var(--color-background);
+  background-color: var(--color-surface);
   overflow: hidden;
   font-family: var(--typography-font-family);
 
@@ -189,7 +189,7 @@
     font-size: var(--typography-font-size-sm);
     line-height: var(--typography-line-height-relaxed, 1.7);
     color: var(--color-text-primary);
-    background-color: var(--color-background);
+    background-color: var(--color-surface);
     tab-size: 2;
   }
 

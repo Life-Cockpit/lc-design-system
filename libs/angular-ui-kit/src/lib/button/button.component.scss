@@ -118,17 +118,20 @@
   }
 }
 
+// Amber carries dark ink, not white (white on #e1a040 is 2.26:1, dark is
+// ~7.9:1). Hover/active shift brightness rather than swapping in a darker
+// amber: darkening the fill under dark ink would walk the contrast back down,
+// and flipping the ink colour on hover reads as a different button.
 .btn-warning {
   background-color: $color-warning-default;
-  color: var(--color-neutral-white);
+  color: var(--color-on-warning);
 
   &:hover:not(:disabled) {
-    background-color: $color-warning-dark;
+    filter: brightness(1.05);
   }
 
   &:active:not(:disabled) {
-    background-color: $color-warning-dark;
-    filter: brightness(0.85);
+    filter: brightness(0.94);
   }
 }
 

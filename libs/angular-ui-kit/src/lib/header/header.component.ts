@@ -68,6 +68,12 @@ import { ThemeService } from '../theme/theme.service';
 export class HeaderComponent {
   readonly theme = input<'light' | 'dark' | 'auto'>('auto');
   readonly logo = input('');
+  /**
+   * Render the brand block. On its own this shows the emblem; with `logo` set
+   * it shows the full lockup. (It used to additionally require `logo` or
+   * `title`, so `showLogo` alone rendered an empty 0px-wide brand area with no
+   * error — an app could end up with no branding at all and no clue why.)
+   */
   readonly showLogo = input(true);
   /** Custom URL for the full brand logo (forwarded to inner `<lc-logo>`). */
   readonly logoSrc = input('');

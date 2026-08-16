@@ -66,7 +66,10 @@
     }
 
     &--selected {
-      color: var(--color-primary-500);
+      // Ink, not fill: --color-primary-500 measures 4.37:1 on a light surface,
+      // just under the text threshold. The -subtle ink is the same hue a step
+      // darker in light, and stays the bright teal in dark.
+      color: var(--color-on-primary-subtle);
       border-bottom-color: var(--color-primary-500);
       font-weight: var(--font-weight-semibold);
 

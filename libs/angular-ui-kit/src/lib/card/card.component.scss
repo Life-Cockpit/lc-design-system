@@ -183,10 +183,13 @@
     }
   }
 
+  // Title size goes through a hook (and now names its scale step instead of a
+  // loose 1.125rem) so an app can put card titles on its own scale with a
+  // plain rule instead of out-specifying `.card__title`.
   &__title {
     margin: 0;
     font-weight: 600;
-    font-size: 1.125rem;
+    font-size: var(--lc-card-title-size, var(--font-size-lg, 1.125rem));
     line-height: 1.3;
     color: var(--color-text-primary);
   }

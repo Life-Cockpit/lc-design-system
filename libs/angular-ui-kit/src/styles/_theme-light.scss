@@ -146,12 +146,16 @@
   --typography-line-height-relaxed: #{$typography-line-height-relaxed};
 
   // ============================================================================
-  // Elevation (Box Shadows)
+  // Elevation (Box Shadows) — light-tuned
   // ============================================================================
-  --elevation-1: #{$elevation-1};
-  --elevation-2: #{$elevation-2};
-  --elevation-3: #{$elevation-3};
-  --elevation-4: #{$elevation-4};
+  // The raw $elevation-* scale is built for dark surfaces (wide, 35–48% black
+  // blurs). On white that renders as a grey cloud instead of an edge, so light
+  // gets its own scale: tighter, harder, and tinted with the ink color rather
+  // than pure black. Two layers each — a contact shadow plus a soft ambient one.
+  --elevation-1: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.10);
+  --elevation-2: 0 2px 4px -2px rgba(16, 24, 40, 0.06), 0 4px 8px -2px rgba(16, 24, 40, 0.10);
+  --elevation-3: 0 4px 6px -2px rgba(16, 24, 40, 0.05), 0 12px 16px -4px rgba(16, 24, 40, 0.10);
+  --elevation-4: 0 8px 8px -4px rgba(16, 24, 40, 0.04), 0 20px 24px -4px rgba(16, 24, 40, 0.10);
 
   // ============================================================================
   // Border Radius
@@ -208,12 +212,21 @@
   // ============================================================================
   // Semantic Color Mappings for Light Theme (DS2.0 — mirrors dark token names)
   // ============================================================================
-  // Surfaces
-  --color-background: #ffffff;
+  // Surfaces — three levels, so a card can lift off the page without needing a
+  // border to do the work. Page sits BELOW the card (this used to be #ffffff,
+  // i.e. the same level as a card, which is why light surfaces read as one
+  // undifferentiated white mass and every panel needed a hairline).
+  //   background       page canvas, under everything
+  //   surface          card / panel
+  //   surface-raised   menus, popovers (white + elevation in light)
+  //   surface-sunken   recessed strips inside a card: table heads, meta, code
+  --color-background: #{$color-neutral-100};
   --app-background-image: none;
   --color-surface: #ffffff;
+  --color-surface-raised: #ffffff;
   --color-surface-2: #{$color-neutral-50};
   --color-surface-sunken: #{$color-neutral-100};
+  --color-surface-secondary: var(--color-surface-sunken);
   // Sidebar reads as a subtle off-white rail against the white content area.
   --color-sidebar: #{$color-neutral-50};
   --color-surface-hover: #{$color-neutral-100};
@@ -228,18 +241,26 @@
   --color-text-disabled: #{$color-neutral-400};
   --color-neutral-white: #ffffff;
 
-  // Borders
+  // Borders — three weights: border (outer edge) > divider (between rows) >
+  // subtle (inner hairlines that should barely register).
   --color-border: #{$color-neutral-300};
   --color-border-strong: #{$color-primary-300};
   --color-divider: #{$color-neutral-200};
+  --color-border-subtle: #{$color-neutral-100};
 
   // Brand alias (some components reference bare --color-primary)
   --color-primary: var(--color-primary-500);
   // Solid brand-teal fill for primary actions (literal brand teal in both themes).
-  --color-primary-fill: #{$color-primary-500};
-  --color-primary-fill-hover: #{$color-primary-600};
-  --color-primary-fill-active: #{$color-primary-700};
+  // Brand teal one step down from -500: white on #208497 measures 4.37:1, just
+  // under the 4.5:1 text threshold, so the primary action failed contrast in
+  // both palettes. On -600 white measures 6.2:1.
+  --color-primary-fill: #{$color-primary-600};
+  --color-primary-fill-hover: #{$color-primary-700};
+  --color-primary-fill-active: #{$color-primary-800};
   --color-on-primary: #ffffff;
+  // Ink for the amber fill. White on #e1a040 is 2.26:1 — amber carries dark
+  // text, not white.
+  --color-on-warning: #{$color-neutral-900};
   // Solid secondary fill (literal brand secondary in both themes).
   --color-secondary-fill: #{$color-secondary-600};
   --color-secondary-fill-hover: #{$color-secondary-700};
@@ -267,6 +288,25 @@
   --color-error-subtle: #fbecec;
   --color-info-subtle: #edf3f8;
 
+  // Ink for text/icons ON those tints (and on any light surface). The plain
+  // --color-{success,warning,…} values are FILL colors: as text on a light
+  // tint they measure around 2:1, far below the 4.5:1 threshold. Anything
+  // that renders a semantic as *text* must use these instead.
+  --color-on-primary-subtle: #{$color-primary-700};
+  --color-on-success-subtle: #{$color-success-dark};
+  --color-on-warning-subtle: #{$color-warning-dark};
+  --color-on-error-subtle: #{$color-error-dark};
+  --color-on-info-subtle: #{$color-info-dark};
+
+  // Aliases for names apps reach for. Kept as aliases so there is still one
+  // source of truth per value.
+  --color-danger: var(--color-error);
+  --color-warning-strong: var(--color-on-warning-subtle);
+  --color-text-warning: var(--color-on-warning-subtle);
+  --color-text-success: var(--color-on-success-subtle);
+  --color-text-error: var(--color-on-error-subtle);
+  --color-background-primary: var(--color-surface);
+
   // ============================================================================
   // DS2.0 Visual Primitives (light-tuned values of the dark primitives)
   // ============================================================================
@@ -281,6 +321,14 @@
   // ============================================================================
   --font-family-sans: var(--typography-font-family-base);
   --font-family-mono: var(--typography-font-family-mono);
+  // The size scale carries two jobs, which is why "base" can look wrong:
+  //   UI CHROME  xs 12 · sm 14 · lg 18   — labels/meta, control and body text
+  //              in dense product surfaces, component titles (card, panel).
+  //              `sm` is the working body size for application chrome.
+  //   CONTENT    base 16 · xl 20 · 2xl 24+ — long-form prose and page titles,
+  //              where `base` is the body size.
+  // `--font-size-base` being 16 does NOT mean components should render at 16;
+  // component text is chrome and sits on the chrome steps.
   --font-size-xs: var(--typography-font-size-xs);
   --font-size-sm: var(--typography-font-size-sm);
   --font-size-base: var(--typography-font-size-base);

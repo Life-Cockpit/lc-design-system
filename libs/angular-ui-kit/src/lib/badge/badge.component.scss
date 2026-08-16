@@ -43,51 +43,58 @@
     height: 2rem;
   }
 
-  // DS2.0: translucent tinted fills with a hairline border. The same recipe
-  // reads correctly on both light and dark surfaces, so no per-theme override
-  // is needed. Light mode keeps stronger ink for contrast via the variant color.
-  border: 1px solid transparent;
+  // DS2.0: tinted fill + hairline border. Each variant only sets the three
+  // theming hooks, which the base rule below consumes — so an app can restyle
+  // any badge by setting --lc-badge-bg / -fg / -border on it or an ancestor,
+  // without reaching into the variant classes.
+  //
+  // The fill comes from --color-*-subtle and the INK from --color-on-*-subtle,
+  // never from the plain --color-* fill value: as text on a light tint those
+  // measure around 2:1, well under the 4.5:1 text threshold.
+  background-color: var(--lc-badge-bg);
+  color: var(--lc-badge-fg);
+  border: 1px solid var(--lc-badge-border, transparent);
 
   // Variant styles - default (neutral)
   &--default {
-    background-color: var(--color-surface-hover);
-    color: var(--color-text-secondary);
-    border-color: var(--color-border);
+    --lc-badge-bg: var(--color-surface-hover);
+    --lc-badge-fg: var(--color-text-secondary);
+    --lc-badge-border: var(--color-border);
   }
 
   // Variant styles - primary
   &--primary {
-    background-color: rgba(32, 132, 151, 0.16);
-    color: var(--color-primary-500);
-    border-color: var(--color-border-strong);
+    --lc-badge-bg: var(--color-primary-subtle);
+    --lc-badge-fg: var(--color-on-primary-subtle);
+    --lc-badge-border: var(--color-border-strong);
   }
 
   // Variant styles - success
   &--success {
-    background-color: rgba(142, 164, 117, 0.18);
-    color: var(--color-success);
-    border-color: rgba(142, 164, 117, 0.4);
+    --lc-badge-bg: var(--color-success-subtle);
+    --lc-badge-fg: var(--color-on-success-subtle);
+    --lc-badge-border: rgba(142, 164, 117, 0.4);
   }
 
   // Variant styles - warning
   &--warning {
-    background-color: rgba(225, 160, 64, 0.18);
-    color: var(--color-warning);
-    border-color: rgba(225, 160, 64, 0.4);
+    --lc-badge-bg: var(--color-warning-subtle);
+    --lc-badge-fg: var(--color-on-warning-subtle);
+    --lc-badge-border: rgba(225, 160, 64, 0.4);
   }
 
   // Variant styles - error
   &--error {
-    background-color: rgba(157, 14, 14, 0.18);
-    color: var(--color-error);
-    border-color: rgba(157, 14, 14, 0.4);
+    --lc-badge-bg: var(--color-error-subtle);
+    --lc-badge-fg: var(--color-on-error-subtle);
+    --lc-badge-border: rgba(157, 14, 14, 0.4);
   }
 
   // Variant styles - info
   &--info {
-    background-color: rgba(59, 101, 136, 0.2);
-    color: var(--color-info);
-    border-color: rgba(59, 101, 136, 0.42);
+    --lc-badge-bg: var(--color-info-subtle);
+    --lc-badge-fg: var(--color-on-info-subtle);
+    --lc-badge-border: rgba(59, 101, 136, 0.42);
   }
 
   // Rounded (pill shape)

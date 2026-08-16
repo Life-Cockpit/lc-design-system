@@ -38,10 +38,15 @@
   }
 }
 
-// Sidenav drawer/panel
-.lc-sidenav {
+// Theming hooks live on the HOST, not on the inner .lc-sidenav element, so an
+// app can retheme the rail with an ordinary rule on `lc-sidenav` (qualified by
+// anything — `.light lc-sidenav`, `[data-shell] lc-sidenav`). While these sat
+// on the inner element, an app had to target `lc-sidenav .lc-sidenav` to reach
+// past the component's own specificity.
+:host {
   // DS2.0 dark-first: default sidenav tokens are the brand dark surface. The
-  // `.lc-sidenav--light` modifier opts back into the light treatment.
+  // `.lc-sidenav--light` modifier opts back into the light treatment, and
+  // `--dark` forces the dark rail even under a light root.
   --lc-sidenav-bg: var(--color-sidebar, var(--color-surface));
   --lc-sidenav-fg: var(--color-text-secondary);
   --lc-sidenav-fg-active: var(--color-text-primary);
@@ -57,6 +62,22 @@
   // the light/dark modifiers below carry it automatically.
   --lc-sidenav-badge-ring: var(--lc-sidenav-bg);
 
+  // ── Icon-column geometry ───────────────────────────────────────────────
+  // Expanded and collapsed deliberately SHARE these gutters, so the nav icons
+  // sit at one x-position in both states and do not shift when the sidenav
+  // toggles. That fixed column is also what a header hamburger aligns to
+  // (see --lc-header-hamburger-slot), which is why the toggle can stay put.
+  //
+  // Invariant to keep when overriding:
+  //   nav-padding-x + item-padding-x + icon-size/2 == rail-width / 2
+  //   (8px + 10px + 10px == 56px / 2 == 28px)
+  --lc-sidenav-rail-width: 56px;
+  --lc-sidenav-nav-padding-x: 0.5rem; // 8px
+  --lc-sidenav-item-padding-x: 0.625rem; // 10px
+}
+
+// Sidenav drawer/panel
+.lc-sidenav {
   position: fixed;
   top: 0;
   bottom: 0;
@@ -111,7 +132,7 @@
 
   // Collapsed icon-rail mode
   &--collapsed {
-    width: 56px !important;
+    width: var(--lc-sidenav-rail-width, 56px) !important;
     overflow: visible;
 
     .lc-sidenav__nav-label,
@@ -127,7 +148,7 @@
     }
 
     .lc-sidenav__nav {
-      padding: 0.5rem;
+      padding: 0.5rem var(--lc-sidenav-nav-padding-x);
       gap: 0.125rem;
     }
 
@@ -140,7 +161,7 @@
 
     .lc-sidenav__nav-item {
       justify-content: center;
-      padding: 0.625rem;
+      padding: 0.625rem var(--lc-sidenav-item-padding-x);
       gap: 0;
       border-radius: var(--border-radius-md, 0.375rem);
       position: relative;
@@ -326,7 +347,10 @@
   display: flex;
   flex-direction: column;
   gap: var(--lc-density-gap-xs, var(--spacing-1, 0.25rem));
-  padding: var(--lc-density-padding-md, 1rem);
+  // Horizontal gutter is shared with the collapsed rail (see the geometry
+  // block on .lc-sidenav) so the icon column never moves; vertical padding
+  // stays on the density scale.
+  padding: var(--lc-density-padding-md, 1rem) var(--lc-sidenav-nav-padding-x);
   padding-top: 4rem; // Space for close button in drawer mode
 
   // Docked mode: no close button, start from top
@@ -353,7 +377,9 @@
 }
 
 .lc-sidenav__section-title {
-  padding: 0 var(--spacing-3, 0.75rem);
+  // Same inset as a nav item's content, so the headline shares its left edge
+  // with the item icons below it (the relationship the old fixed 12px had).
+  padding: 0 var(--lc-sidenav-item-padding-x);
   margin-bottom: 0;
   font-size: var(--font-size-xs, 0.75rem);
   font-weight: 600;
@@ -376,7 +402,7 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-3, 0.75rem);
-  padding: var(--lc-density-padding-xs, var(--spacing-2, 0.5rem)) var(--spacing-3, 0.75rem);
+  padding: var(--lc-density-padding-xs, var(--spacing-2, 0.5rem)) var(--lc-sidenav-item-padding-x);
   text-decoration: none;
   color: var(--lc-sidenav-fg);
   border-radius: var(--border-radius-md, 0.375rem);
@@ -644,17 +670,22 @@
   --lc-sidenav-active-icon: #1a6a79; // primary-600
 }
 
-// ── Explicit dark variant (alias of the default, kept for API stability) ──
+// ── Explicit dark variant ──────────────────────────────────────────────────
+// LITERAL dark values, not the semantic tokens. Those flip with the root
+// theme, so under a light root `theme="dark"` used to render a *light* rail —
+// the values were identical to the default block. Hard-coding them is what
+// makes the two-tone shell (light content area, dark navigation) reachable
+// through the documented input instead of an app-side override.
 .lc-sidenav--dark {
-  --lc-sidenav-bg: var(--color-sidebar, var(--color-surface));
-  --lc-sidenav-fg: var(--color-text-secondary);
-  --lc-sidenav-fg-active: var(--color-text-primary);
-  --lc-sidenav-border: var(--color-border);
-  --lc-sidenav-hover-bg: var(--color-surface-hover);
-  --lc-sidenav-section-fg: var(--color-text-tertiary);
-  --lc-sidenav-active-bg: var(--color-surface-selected);
-  --lc-sidenav-active-fg: var(--color-primary-500);
-  --lc-sidenav-active-icon: var(--color-primary-500);
+  --lc-sidenav-bg: #070e15; // $color-sidebar-dark
+  --lc-sidenav-fg: #c4d2d9; // dark --color-text-secondary
+  --lc-sidenav-fg-active: #f1f6f8; // dark --color-text-primary
+  --lc-sidenav-border: rgba(255, 255, 255, 0.08);
+  --lc-sidenav-hover-bg: rgba(132, 199, 212, 0.06);
+  --lc-sidenav-section-fg: #93a4ad; // dark --color-text-tertiary
+  --lc-sidenav-active-bg: rgba(32, 132, 151, 0.12);
+  --lc-sidenav-active-fg: #84c7d4; // $color-primary-400
+  --lc-sidenav-active-icon: #84c7d4;
 }
 
 // Print styles

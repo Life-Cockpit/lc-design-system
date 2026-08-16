@@ -2,6 +2,146 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.21.0] - 2026-08-16
+
+Completes 2.20.0's hamburger alignment: that release aligned the toggle per
+state, which meant the toggle (and the header content beside it) shifted 10px
+whenever the sidenav opened or closed. The shift is gone — because its cause,
+a moving icon column in the sidenav itself, is fixed.
+
+### Fixed
+
+- **Sidenav: the icon column no longer moves when toggling** (`lc-sidenav`) —
+  expanded and collapsed used different horizontal gutters (16px nav + 12px
+  item padding vs. 8px + 10px), so the nav icons sat at 38px expanded but at
+  28px on the collapsed rail and jumped 10px sideways on every toggle. Both
+  states now share one gutter and the icons stay at 28px throughout. The
+  expanded nav's gutter is the visible change: items sit 8px from the sidebar
+  edge instead of 16px (section headlines keep their existing alignment with
+  the item labels). Vertical padding, the rail width and the expanded width
+  are unchanged.
+- **Header: the hamburger no longer shifts with the sidenav** (`lc-header`) —
+  with one fixed icon column to align to, `--lc-header-hamburger-slot` is
+  a constant again (56px → icon at 28px, correct in both states). Apps that
+  bound the var to their collapse state per 2.20.0 should drop that binding;
+  the slot's width transition is gone with it.
+- **Header: the hamburger and the brand read as one group again**
+  (`lc-header`) — the toggle used to sit in a rail-wide (56px) box that
+  centered a 24px glyph, so 16px of dead box separated it from the logo and
+  the row's flex gap landed on top of that: 32px of clear space beside the
+  brand's own 12px, which read as a hole rather than a group. The box is now
+  the glyph, and the alignment is done by a negative left margin instead — the
+  glyph's center still lands on the sidenav icon column. The distance to the
+  brand is a single explicit value, `--lc-header-hamburger-gap` (default 8px).
+
+### Added
+
+- **Sidenav: icon-column geometry hooks** (`lc-sidenav`) —
+  `--lc-sidenav-rail-width` (56px), `--lc-sidenav-nav-padding-x` (8px) and
+  `--lc-sidenav-item-padding-x` (10px). Keep the invariant
+  `nav-padding-x + item-padding-x + icon-size / 2 == rail-width / 2` when
+  overriding, and set the header's `--lc-header-hamburger-slot` to the same
+  rail width, so the alignment survives a custom rail.
+
+---
+
+Also in this release: the nine findings from the Factory app's move to the
+light palette (measured in the running app, 15.–16.08.2026). Seven of them
+were being worked around app-side.
+
+### Fixed
+
+- **Light palette: a card could not lift off the page** — `--color-background`
+  and `--color-surface` were both `#ffffff`, so the page and the card sat on
+  the same level and a panel could only separate itself with a line. That is
+  the shared cause behind both "too many lines" and "one white mass". The page
+  now sits below the card (`--color-background` → neutral-100), giving light
+  the layering dark already had. Six components that used `--color-background`
+  for a *card-level* fill (combobox input and panel, sticky table cell, rich
+  text editor) now use `--color-surface`, so they stay white; radio and
+  checkbox were reading `--color-background-primary`, which was never defined
+  in any palette — their box was transparent, and is now `--color-surface`.
+- **Badge and chip used a fill color as text color** (`lc-badge`, `lc-chip`) —
+  `color: var(--color-warning)` and friends are fills; as text on a light tint
+  they measure ~1.9–2.3:1 against a 4.5:1 requirement. Both now take their ink
+  from the new `--color-on-*-subtle` tokens, which clear 4.5:1 in both
+  palettes. The same substitution fixes the selected tab label
+  (`--color-primary-500` was 4.37:1 on light).
+- **Dark palette had the same defect, unmeasured** — `--color-error` and
+  `--color-info` resolve to the raw `#9d0e0e` / `#3b6588` fills, which as text
+  on a dark surface measure ~1.9:1 and ~2.4:1. The dark `--color-on-*-subtle`
+  set uses the light end of each ramp instead.
+- **`theme="dark"` did nothing to the colors** (`lc-sidenav`, `lc-header`) —
+  `.lc-sidenav--dark` and `.lc-header--dark` declared the same semantic tokens
+  as their default blocks, and those flip with the root theme: under a light
+  root, a bar marked "dark" rendered light. Both now carry literal dark
+  values, so a two-tone shell (light content, dark navigation) is reachable
+  through the documented input instead of an app-side override.
+- **`showLogo` alone rendered nothing** (`lc-header`) — the brand block also
+  required `logo` or `title`, so `showLogo` on its own produced an empty,
+  0px-wide brand area with no error and no warning. It now renders the emblem.
+- **Solid buttons failed contrast** (`lc-button`) — three separate defects, all
+  in the fill/ink pairing rather than in any component:
+  - *Primary*: white on the brand teal `-500` is 4.37:1. The fill is one step
+    down the ramp now (`-600`, white 6.2:1), hover `-700`, active `-800`.
+    **This darkens the primary button in both palettes** — the same ramp on
+    purpose, since white contrast does not depend on the surrounding palette
+    and the two themes are meant to share one brand fill. In dark the button
+    now separates from the page at 2.9:1 instead of 3.7:1; still readable as a
+    shape, but that is the trade this makes.
+  - *Primary hover in dark*: went **lighter** (`-400`), where white measures
+    1.91:1 — the hover was the least legible state of the button. It now
+    darkens like everywhere else.
+  - *Warning*: white on amber `#e1a040` is 2.26:1. Amber carries dark ink, so
+    `.btn-warning` uses the new `--color-on-warning` (~7.9:1) and its
+    hover/active shift brightness instead of swapping in a darker amber, which
+    would walk the contrast back down under dark ink.
+
+  Secondary (4.6:1), info (6.2:1) and danger (8.4:1) were already passing and
+  are unchanged.
+
+### Added
+
+- **`--color-on-{primary,success,warning,error,info}-subtle`** — the legible
+  ink for a semantic color as *text*, per palette (light: the `-700`/dark end
+  of the ramp; dark: the light end). Pairs with the `--color-*-subtle` fills
+  from 2.18.0: fill from one, ink from the other.
+- **Badge and chip theming hooks** — `--lc-badge-bg` / `-fg` / `-border` and
+  `--lc-chip-bg` / `-fg` / `-border`. Variants now only set these, so an app
+  restyles a badge from the outside instead of overriding variant classes.
+- **`--color-surface-raised` and `--color-surface-sunken` in both palettes** —
+  the level above the card (menus, popovers) and the recessed level inside it
+  (table heads, meta strips, code). `--color-surface-sunken` already existed;
+  `-raised` is new, and `--color-surface-secondary` is an alias of `-sunken`.
+- **`--color-border-subtle`** — a third border weight below `--color-divider`,
+  for inner hairlines that should barely register. It was not defined at all
+  before (apps that referenced it got nothing).
+- **Light-tuned elevations** — `--elevation-1…4` in the light palette are no
+  longer the dark scale's wide 35–48% black blurs, which render as a grey
+  cloud on white. Light now has its own two-layer, ink-tinted scale.
+- **Markdown and card title size hooks** — `--lc-markdown-h1…h6` and
+  `--lc-card-title-size`. The bare `.lc-markdown h2` / `.card__title` rules
+  outranked any single-class app selector, forcing apps into
+  `lc-markdown .lc-markdown h2` just to change a font size.
+- **Aliases for names apps kept reaching for** — `--color-danger`,
+  `--color-warning-strong`, `--color-text-warning` / `-success` / `-error`,
+  `--color-background-primary`. Defined as aliases, so there is still one
+  source of truth per value. Deliberately *not* added: `--space-*` and
+  `--radius-*` — the canonical names are `--spacing-*` and `--border-radius-*`,
+  and blessing a second geometry vocabulary would make the ambiguity worse.
+
+### Changed
+
+- **Sidenav theming hooks moved to the host** (`lc-sidenav`) — the default
+  `--lc-sidenav-*` block sat on the inner `.lc-sidenav` element, so an app had
+  to write `lc-sidenav .lc-sidenav { … }` to out-specify it. The defaults are
+  on `:host` now; an ordinary qualified rule on `lc-sidenav` wins.
+- **The type scale is documented as two scales** — `--font-size-*` carries UI
+  chrome (`xs`/`sm`/`lg`: labels, control and component text) and content
+  (`base`/`xl`/`2xl`+: prose and page titles). `--font-size-base` being 16 does
+  not mean components render at 16; component text is chrome. Card titles now
+  name their step (`--font-size-lg`) instead of a loose `1.125rem`.
+
 ## [2.20.0] - 2026-08-16
 
 ### Changed

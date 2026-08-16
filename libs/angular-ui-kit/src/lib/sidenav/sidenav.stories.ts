@@ -121,6 +121,13 @@ interface NavigationItem {
 **Theming tokens:** \`--lc-sidenav-bg\`, \`--lc-sidenav-fg\`, \`--lc-sidenav-fg-active\`, \`--lc-sidenav-border\`, \`--lc-sidenav-hover-bg\`, \`--lc-sidenav-section-fg\`
 
 Dark mode adds: \`--lc-sidenav-active-bg\`, \`--lc-sidenav-active-fg\`, \`--lc-sidenav-active-icon\`
+
+**Icon-column geometry:** \`--lc-sidenav-rail-width\` (56px), \`--lc-sidenav-nav-padding-x\` (8px),
+\`--lc-sidenav-item-padding-x\` (10px). Expanded and collapsed share the gutters, so the icon
+column sits at 28px in both states and the icons do not shift when toggling — which is what an
+\`lc-header\` hamburger aligns to. When overriding, keep
+\`nav-padding-x + item-padding-x + icon-size / 2 == rail-width / 2\` and set the header's
+\`--lc-header-hamburger-slot\` to the same rail width.
 `,
       },
     },

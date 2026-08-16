@@ -46,15 +46,20 @@
   }
 }
 
-// ── Dark theme variant (explicit; alias of the default) ──
+// ── Dark theme variant ─────────────────────────────────────────────────────
+// LITERAL dark values, not the semantic tokens: those flip with the root
+// theme, so under a light root `theme="dark"` rendered a *light* bar (the
+// values were identical to the default block). Hard-coded, `theme="dark"`
+// gives a dark header on a light page — the two-tone shell — without an
+// app-side override.
 .lc-header--dark {
-  --lc-header-bg: var(--color-surface);
-  --lc-header-fg: var(--color-text-primary);
-  --lc-header-fg-secondary: var(--color-text-secondary);
-  --lc-header-border: var(--color-border);
-  --lc-header-hover-bg: var(--color-surface-hover);
-  --lc-header-trigger-border: var(--color-border);
-  --lc-header-trigger-fg: var(--color-text-secondary);
+  --lc-header-bg: #070e15; // $color-sidebar-dark
+  --lc-header-fg: #f1f6f8;
+  --lc-header-fg-secondary: #c4d2d9;
+  --lc-header-border: rgba(255, 255, 255, 0.08);
+  --lc-header-hover-bg: rgba(132, 199, 212, 0.06);
+  --lc-header-trigger-border: rgba(255, 255, 255, 0.08);
+  --lc-header-trigger-fg: #c4d2d9;
 }
 
 // ── Light theme variant (explicit) ──
@@ -76,26 +81,45 @@
 // lc-sidenav, the toggle should sit ON the sidenav's icon column, not float in
 // the header's padding. The host is therefore a fixed-width slot that starts
 // at the header's left edge (the negative margin cancels the header padding)
-// and centers the button, so the icon center lands at slot-width / 2:
-//   --lc-header-hamburger-slot: 56px (default) → icon at 28px, the center of
-//     the collapsed 56px lc-sidenav rail;
-//   76px → icon at 38px, the expanded sidenav's icon column (16px nav padding
-//     + 12px item padding + half of the 20px icon).
-// Apps that toggle the sidenav can bind the var to the collapse state — the
-// slot width transitions in step with the sidenav's own width transition.
+// and centers the button, so the icon center lands at slot-width / 2 = 28px —
+// which is where lc-sidenav puts its icons in BOTH the expanded nav and the
+// collapsed rail. The slot is a constant on purpose: neither the toggle nor
+// the header content beside it may shift when the sidenav opens or closes.
+// Override --lc-header-hamburger-slot only to match a sidenav running a custom
+// --lc-sidenav-rail-width (slot width == rail width).
+// Hamburger glyph size — also the width of its box, see below.
+$hamburger-glyph: 24px;
+
 .lc-header__hamburger {
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  width: var(--lc-header-hamburger-slot, 56px);
-  margin-left: calc(-1 * var(--lc-header-padding-x));
-  transition: width 0.3s ease;
+
+  // The box is exactly the glyph, NOT the full rail-wide slot. A slot-wide box
+  // would carry half the slot (16px) as dead space on each side, and the right
+  // half pushes the brand away from the toggle — the two read as unrelated
+  // instead of as one group. With the box on the glyph, the distance to the
+  // brand is honestly --lc-header-hamburger-gap and nothing else.
+  //
+  // The negative left margin does the alignment: it cancels the header padding
+  // and offsets by half the slot, putting the glyph's CENTER at
+  // --lc-header-hamburger-slot / 2 = 28px — the sidenav icon column, in both
+  // the expanded and the collapsed state.
+  width: $hamburger-glyph;
+  margin-left: calc(
+    var(--lc-header-hamburger-slot, 56px) / 2 - var(--lc-header-padding-x) - #{$hamburger-glyph * 0.5}
+  );
+  // Trade the row's flex gap for the (smaller) toggle-to-brand gap.
+  margin-right: calc(var(--lc-header-hamburger-gap, 0.5rem) - var(--lc-density-gap-md, var(--spacing-4)));
   color: var(--lc-header-trigger-fg);
 
+  // The inner ghost button is a little wider than the glyph; it overflows the
+  // box symmetrically, so its hover pill stays centered on the glyph without
+  // taking part in the layout.
   .lc-icon {
-    width: 24px;
-    height: 24px;
+    width: $hamburger-glyph;
+    height: $hamburger-glyph;
   }
 }
 

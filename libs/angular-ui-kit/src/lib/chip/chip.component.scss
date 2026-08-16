@@ -83,50 +83,56 @@
     }
   }
 
-  // DS2.0: translucent tinted fills + hairline borders that read on both themes
-  // from a single definition (no per-theme override needed).
-  border: 1px solid transparent;
+  // DS2.0: tinted fill + hairline border. Variants only set the theming hooks,
+  // which the base rule consumes — set --lc-chip-bg / -fg / -border on a chip
+  // or an ancestor to restyle it without touching the variant classes.
+  //
+  // Ink comes from --color-on-*-subtle, never from the plain --color-* fill:
+  // as text on a light tint those measure around 2:1, under the 4.5:1 minimum.
+  background-color: var(--lc-chip-bg);
+  color: var(--lc-chip-fg);
+  border: 1px solid var(--lc-chip-border, transparent);
 
   // Variant styles - default (neutral)
   &--default {
-    background-color: var(--color-surface-hover);
-    color: var(--color-text-secondary);
-    border-color: var(--color-border);
+    --lc-chip-bg: var(--color-surface-hover);
+    --lc-chip-fg: var(--color-text-secondary);
+    --lc-chip-border: var(--color-border);
   }
 
   // Variant styles - primary
   &--primary {
-    background-color: rgba(32, 132, 151, 0.16);
-    color: var(--color-primary-500);
-    border-color: var(--color-border-strong);
+    --lc-chip-bg: var(--color-primary-subtle);
+    --lc-chip-fg: var(--color-on-primary-subtle);
+    --lc-chip-border: var(--color-border-strong);
   }
 
   // Variant styles - success
   &--success {
-    background-color: rgba(142, 164, 117, 0.18);
-    color: var(--color-success);
-    border-color: rgba(142, 164, 117, 0.4);
+    --lc-chip-bg: var(--color-success-subtle);
+    --lc-chip-fg: var(--color-on-success-subtle);
+    --lc-chip-border: rgba(142, 164, 117, 0.4);
   }
 
   // Variant styles - warning
   &--warning {
-    background-color: rgba(225, 160, 64, 0.18);
-    color: var(--color-warning);
-    border-color: rgba(225, 160, 64, 0.4);
+    --lc-chip-bg: var(--color-warning-subtle);
+    --lc-chip-fg: var(--color-on-warning-subtle);
+    --lc-chip-border: rgba(225, 160, 64, 0.4);
   }
 
   // Variant styles - error
   &--error {
-    background-color: rgba(157, 14, 14, 0.18);
-    color: var(--color-error);
-    border-color: rgba(157, 14, 14, 0.4);
+    --lc-chip-bg: var(--color-error-subtle);
+    --lc-chip-fg: var(--color-on-error-subtle);
+    --lc-chip-border: rgba(157, 14, 14, 0.4);
   }
 
   // Variant styles - info
   &--info {
-    background-color: rgba(59, 101, 136, 0.2);
-    color: var(--color-info);
-    border-color: rgba(59, 101, 136, 0.42);
+    --lc-chip-bg: var(--color-info-subtle);
+    --lc-chip-fg: var(--color-on-info-subtle);
+    --lc-chip-border: rgba(59, 101, 136, 0.42);
   }
 
   // Removable state

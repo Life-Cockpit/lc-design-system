@@ -76,10 +76,11 @@ AppHeaderComponent - Global application header for Life-Cockpit shell
 - Optional title and subtitle display
 - User profile dropdown with avatar, name, email, optional Profile link, and Logout
 - Optional theme toggle button in header
-- Hamburger menu toggle for mobile sidebar — rendered in a fixed-width slot
-  flush with the header's left edge so the icon centers over the sidenav icon
-  column (\`--lc-header-hamburger-slot\`, default 56px = the collapsed rail;
-  76px = the expanded nav's icon column)
+- Hamburger menu toggle for the sidebar — rendered in a fixed-width slot flush
+  with the header's left edge so the icon centers on the sidenav icon column
+  (28px) in both the expanded and the collapsed state. The slot is constant,
+  so nothing shifts when the sidenav toggles; override
+  \`--lc-header-hamburger-slot\` only to match a custom \`--lc-sidenav-rail-width\`
 - \`theme\` input (\`auto\` | \`light\` | \`dark\`) with internal CSS tokens
 - Logo auto-adapts color to the header's theme
 - OnPush change detection for performance
@@ -109,7 +110,7 @@ export const AboveSidenav: Story = {
     docs: {
       description: {
         story:
-          'Header spanning above a docked sidenav: the hamburger sits in a fixed slot at the very left, centered over the sidenav icon column. The story binds `--lc-header-hamburger-slot` to the collapse state (56px collapsed rail, 76px expanded column), so the toggle glides with the sidenav. Click the hamburger to toggle.',
+          'Header spanning above a docked sidenav. The hamburger sits in a fixed slot at the header\'s left edge, centered on the sidenav icon column (28px) — the same column in both the expanded nav and the collapsed rail. Toggle it: the sidenav changes width, but the hamburger, the header content beside it and the nav icons all stay exactly where they are.',
       },
     },
   },
@@ -130,7 +131,6 @@ export const AboveSidenav: Story = {
           title="Life-Cockpit"
           [showHamburger]="true"
           userName="Sarah Connor"
-          [style]="'--lc-header-hamburger-slot: ' + (collapsed ? '56px' : '76px')"
           (hamburgerClick)="collapsed = !collapsed"
         ></lc-header>
         <div style="display: flex; flex: 1; min-height: 0;">

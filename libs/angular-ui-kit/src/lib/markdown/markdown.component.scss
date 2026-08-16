@@ -15,12 +15,17 @@
     }
   }
 
-  h1 { font-size: 2rem; }
-  h2 { font-size: 1.5rem; }
-  h3 { font-size: 1.25rem; }
-  h4 { font-size: 1.125rem; }
-  h5 { font-size: 1rem; }
-  h6 { font-size: 0.875rem; }
+  // Heading sizes go through hooks so an app can put rendered prose on its own
+  // scale with a plain `lc-markdown { --lc-markdown-h2: 1.25rem }` rule. The
+  // bare `.lc-markdown h2` rule that used to set these outranks any
+  // single-class app selector, which forced apps into `lc-markdown
+  // .lc-markdown h2` just to change a font size.
+  h1 { font-size: var(--lc-markdown-h1, 2rem); }
+  h2 { font-size: var(--lc-markdown-h2, 1.5rem); }
+  h3 { font-size: var(--lc-markdown-h3, 1.25rem); }
+  h4 { font-size: var(--lc-markdown-h4, 1.125rem); }
+  h5 { font-size: var(--lc-markdown-h5, 1rem); }
+  h6 { font-size: var(--lc-markdown-h6, 0.875rem); }
 
   p {
     margin: 0 0 1em;

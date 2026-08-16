@@ -215,8 +215,10 @@
     radial-gradient(1200px 800px at 12% -10%, rgba(32, 132, 151, 0.20), transparent 60%),
     radial-gradient(900px 700px at 110% 120%, rgba(78, 63, 132, 0.18), transparent 55%);
   --color-surface: #{$color-surface-dark-base};
+  --color-surface-raised: #{$color-surface-dark-raised};
   --color-surface-2: #{$color-surface-dark-raised};
   --color-surface-sunken: #{$color-surface-dark-sunken};
+  --color-surface-secondary: var(--color-surface-sunken);
   // Darkest shell layer — the nav rail / sidebar sits below the app background,
   // giving the two-tone shell (dark sidebar, slightly lighter content area).
   --color-sidebar: #{$color-sidebar-dark};
@@ -238,16 +240,23 @@
   --color-border: rgba(255, 255, 255, 0.08);
   --color-border-strong: rgba(132, 199, 212, 0.28);
   --color-divider: rgba(255, 255, 255, 0.06);
+  --color-border-subtle: rgba(255, 255, 255, 0.035);
 
   // Brand alias (some components reference bare --color-primary)
   --color-primary: var(--color-primary-500);
   // Solid brand-teal fill for primary actions — uses the LITERAL brand teal in
   // both themes (not the inverted scale) so primary buttons are always the
   // recognizable, high-contrast brand color with white ink.
-  --color-primary-fill: #{$color-primary-500};
-  --color-primary-fill-hover: #{$color-primary-400};
-  --color-primary-fill-active: #{$color-primary-600};
+  // Same ramp as light, deliberately: the fill carries white text, and white
+  // contrast does not depend on the surrounding palette (-500 was 4.37:1 in
+  // both). The old dark hover went *lighter* to -400, where white measured
+  // 1.91:1 — the hover state was the least legible state of the button.
+  --color-primary-fill: #{$color-primary-600};
+  --color-primary-fill-hover: #{$color-primary-700};
+  --color-primary-fill-active: #{$color-primary-800};
   --color-on-primary: #ffffff;
+  // Ink for the amber fill (white on #e1a040 is 2.26:1).
+  --color-on-warning: #{$color-neutral-900};
   // Solid secondary fill (literal brand secondary in both themes; dark enough
   // for white ink so it never washes out under dark-mode inversion).
   --color-secondary-fill: #{$color-secondary-600};
@@ -274,6 +283,25 @@
   --color-warning-subtle: rgba(225, 160, 64, 0.18);
   --color-error-subtle: rgba(157, 14, 14, 0.18);
   --color-info-subtle: rgba(59, 101, 136, 0.2);
+
+  // Ink for text/icons ON those tints. Dark needs its own set for the same
+  // reason light does — and here `--color-error` / `--color-info` are the
+  // acute cases: they resolve to the raw #9d0e0e / #3b6588 fills, which as
+  // text on a dark surface measure ~1.9:1 and ~2.4:1. These use the light end
+  // of each ramp instead and clear 4.5:1 comfortably.
+  --color-on-primary-subtle: var(--color-primary-500);
+  --color-on-success-subtle: #{$color-success-default};
+  --color-on-warning-subtle: #{$color-warning-default};
+  --color-on-error-subtle: #{$color-error-light};
+  --color-on-info-subtle: #{$color-info-light};
+
+  // Aliases for names apps reach for (see the light theme for the rationale).
+  --color-danger: var(--color-error);
+  --color-warning-strong: var(--color-on-warning-subtle);
+  --color-text-warning: var(--color-on-warning-subtle);
+  --color-text-success: var(--color-on-success-subtle);
+  --color-text-error: var(--color-on-error-subtle);
+  --color-background-primary: var(--color-surface);
 
   // ============================================================================
   // DS2.0 Visual Primitives (the pitch signature)
