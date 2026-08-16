@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/angular';
+import { moduleMetadata } from '@storybook/angular';
 import { fn, expect, userEvent, within } from 'storybook/test';
 import { HeaderComponent } from './header.component';
+import { SidenavComponent } from '../sidenav/sidenav.component';
 
 /**
  * The application header provides top-level navigation, branding, user info,
@@ -74,7 +76,10 @@ AppHeaderComponent - Global application header for Life-Cockpit shell
 - Optional title and subtitle display
 - User profile dropdown with avatar, name, email, optional Profile link, and Logout
 - Optional theme toggle button in header
-- Hamburger menu toggle for mobile sidebar
+- Hamburger menu toggle for mobile sidebar — rendered in a fixed-width slot
+  flush with the header's left edge so the icon centers over the sidenav icon
+  column (\`--lc-header-hamburger-slot\`, default 56px = the collapsed rail;
+  76px = the expanded nav's icon column)
 - \`theme\` input (\`auto\` | \`light\` | \`dark\`) with internal CSS tokens
 - Logo auto-adapts color to the header's theme
 - OnPush change detection for performance
@@ -96,6 +101,52 @@ export const Default: Story = {
 export const WithHamburger: Story = {
   name: 'With Hamburger Menu',
   args: { title: 'Life-Cockpit', subtitle: 'Dashboard', userName: 'Sarah Connor', userEmail: 'sarah@example.com', showHamburger: true },
+};
+
+export const AboveSidenav: Story = {
+  name: 'Above a Sidenav (Aligned Hamburger)',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Header spanning above a docked sidenav: the hamburger sits in a fixed slot at the very left, centered over the sidenav icon column. The story binds `--lc-header-hamburger-slot` to the collapse state (56px collapsed rail, 76px expanded column), so the toggle glides with the sidenav. Click the hamburger to toggle.',
+      },
+    },
+  },
+  decorators: [moduleMetadata({ imports: [SidenavComponent] })],
+  render: () => ({
+    props: {
+      collapsed: true,
+      items: [
+        { id: '1', icon: 'chart-bar', label: 'Cockpit', route: '/cockpit', displayOrder: 1 },
+        { id: '2', icon: 'home', label: 'Factory', route: '/factory', displayOrder: 2 },
+        { id: '3', icon: 'bell', label: 'Benachrichtigungen', route: '/notifications', displayOrder: 3 },
+        { id: '4', icon: 'currency-dollar', label: 'Kosten', route: '/costs', displayOrder: 4 },
+      ],
+    },
+    template: `
+      <div style="display: flex; flex-direction: column; height: 480px; border: 1px solid var(--color-border);">
+        <lc-header
+          title="Life-Cockpit"
+          [showHamburger]="true"
+          userName="Sarah Connor"
+          [style]="'--lc-header-hamburger-slot: ' + (collapsed ? '56px' : '76px')"
+          (hamburgerClick)="collapsed = !collapsed"
+        ></lc-header>
+        <div style="display: flex; flex: 1; min-height: 0;">
+          <lc-sidenav
+            mode="docked"
+            [isOpen]="true"
+            [collapsed]="collapsed"
+            (collapsedChange)="collapsed = $event"
+            [items]="items"
+            activeRoute="/factory"
+            width="280px"
+          ></lc-sidenav>
+          <div style="flex: 1; background: var(--color-background);"></div>
+        </div>
+      </div>`,
+  }),
 };
 
 export const WithThemeToggle: Story = {

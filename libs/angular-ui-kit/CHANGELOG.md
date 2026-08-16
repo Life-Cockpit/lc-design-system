@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.20.0] - 2026-08-16
+
+### Changed
+
+- **Header: hamburger aligns with the sidenav icon column** (`lc-header`) —
+  the sidebar toggle no longer floats inside the header's left padding
+  (previously ~47px in, while the collapsed rail centers its icons at 28px).
+  It now renders in a fixed-width slot flush with the header's left edge,
+  centering the icon at half the slot width. The slot is
+  `--lc-header-hamburger-slot` (default `56px` → icon at 28px, the center of
+  the collapsed 56px rail; `76px` → 38px, the expanded nav's icon column).
+  Apps toggling the sidenav can bind the var to the collapse state and the
+  slot width transitions in step with the sidenav's width animation — see the
+  new *Above a Sidenav (Aligned Hamburger)* story. The toggle also lost its
+  redundant host-level padding/hover box (the inner ghost button already
+  provides hover and focus states), which had doubled up the hit-area visuals.
+
 ## [2.19.0] - 2026-08-14
 
 Follow-up to the Factory ::ng-deep removal: fixes the last remaining

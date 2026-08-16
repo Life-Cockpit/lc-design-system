@@ -20,10 +20,14 @@
   --lc-header-trigger-border: var(--color-border);
   --lc-header-trigger-fg: var(--color-text-secondary);
 
+  // Horizontal padding lives in a var so the hamburger slot below can
+  // compensate it exactly (including the responsive value).
+  --lc-header-padding-x: var(--lc-density-padding-lg, var(--spacing-6));
+
   display: flex;
   align-items: center;
   gap: var(--lc-density-gap-md, var(--spacing-4));
-  padding: 0 var(--lc-density-padding-lg, var(--spacing-6));
+  padding: 0 var(--lc-header-padding-x);
   background-color: var(--lc-header-bg);
   border-bottom: 1px solid var(--lc-header-border);
   min-height: 64px;
@@ -38,7 +42,7 @@
   &.lc-header--size-xl { min-height: 112px; }
 
   @media (max-width: 768px) {
-    padding: 0 var(--lc-density-padding-md, var(--spacing-4));
+    --lc-header-padding-x: var(--lc-density-padding-md, var(--spacing-4));
   }
 }
 
@@ -68,28 +72,26 @@
 // tokens), so no global-context override is needed — only .lc-header--light
 // opts out.
 
-// Hamburger menu button
+// Hamburger menu button — the sidebar toggle. When the header spans above an
+// lc-sidenav, the toggle should sit ON the sidenav's icon column, not float in
+// the header's padding. The host is therefore a fixed-width slot that starts
+// at the header's left edge (the negative margin cancels the header padding)
+// and centers the button, so the icon center lands at slot-width / 2:
+//   --lc-header-hamburger-slot: 56px (default) → icon at 28px, the center of
+//     the collapsed 56px lc-sidenav rail;
+//   76px → icon at 38px, the expanded sidenav's icon column (16px nav padding
+//     + 12px item padding + half of the 20px icon).
+// Apps that toggle the sidenav can bind the var to the collapse state — the
+// slot width transitions in step with the sidenav's own width transition.
 .lc-header__hamburger {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--lc-density-padding-xs, var(--spacing-2));
-  background: transparent;
-  border: none;
-  cursor: pointer;
+  flex-shrink: 0;
+  width: var(--lc-header-hamburger-slot, 56px);
+  margin-left: calc(-1 * var(--lc-header-padding-x));
+  transition: width 0.3s ease;
   color: var(--lc-header-trigger-fg);
-  border-radius: var(--border-radius-md);
-  transition: background-color 0.2s ease, color 0.2s ease;
-
-  &:hover {
-    background-color: var(--lc-header-hover-bg);
-    color: var(--lc-header-fg);
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--color-primary-500);
-    outline-offset: 2px;
-  }
 
   .lc-icon {
     width: 24px;
