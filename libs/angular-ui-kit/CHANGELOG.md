@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.21.1] - 2026-08-17
+
+### Fixed
+
+- **Sidenav: the collapsed rail's count badge sits on its icon again**
+  (`lc-sidenav`) — three defects stacked into one badge that read as a sticker
+  floating beside the item rather than a count on the glyph:
+  - It was anchored to the item's top-right corner and pushed a further
+    `translate(4px, -4px)` outward, so with its ring it ended up ~6px above and
+    ~8px right of the 40×42 item — inside the 8px rail gutter, detached from
+    the icon. It is now tucked at `top: 4px; right: 4px`, fully inside the item
+    box and overlapping the glyph's top-right corner.
+  - The ring and backdrop rendered as an oval sitting low behind a round
+    badge: the `lc-badge` host is a block box around an `inline-flex` child and
+    picked up the line box's descender space. The host is `display: flex` now
+    and hugs the badge exactly.
+  - The variant's own 1px hairline read as a second outline on top of the
+    rail-colored ring, and its 1px per axis inflated the single-digit bubble to
+    18×18. The border is off in the collapsed rail (the ring alone separates
+    badge from glyph) and the padding is 3px, so one- and two-digit counts stay
+    circular.
+  Badge colors are unchanged — the rail still renders whatever
+  `NavigationItem.badge.variant` asks for. Expanded sidenavs are untouched:
+  every change is scoped to `.lc-sidenav--collapsed`.
+
 ## [2.21.0] - 2026-08-16
 
 Completes 2.20.0's hamburger alignment: that release aligned the toggle per

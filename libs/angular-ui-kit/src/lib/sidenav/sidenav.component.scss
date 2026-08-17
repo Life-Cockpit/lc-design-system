@@ -190,17 +190,24 @@
     }
 
     // Count badge on the icon rail. A 40px-wide item has no room for a badge
-    // beside the centered icon, so it is anchored to the item's top-right
-    // corner and nudged outward — clear of the glyph for the common 1–2 digit
-    // case. Wider values ("99+") still reach over the icon, so the badge is
-    // made to read on top of it: an opaque backdrop (the variant fills are
-    // translucent and would otherwise let the glyph show through) plus a ring
-    // in the rail color that cuts the badge out of the icon.
+    // beside the centered icon, so it is tucked into the glyph's top-right
+    // corner — INSIDE the item box. It used to be anchored to the item corner
+    // and pushed a further 4px out; with the ring that put it ~6px above and
+    // ~8px right of the item, floating in the 8px rail gutter instead of
+    // reading as a count on the icon. Wider values ("99+") still reach over the
+    // icon, so the badge is made to read on top of it: an opaque backdrop (the
+    // variant fills are translucent and would otherwise let the glyph show
+    // through) plus a ring in the rail color that cuts the badge out of the
+    // icon.
     .lc-sidenav__nav-badge {
       position: absolute;
-      top: 0;
-      right: 0;
-      transform: translate(4px, -4px);
+      top: 4px;
+      right: 4px;
+      // Hug the inner .lc-badge exactly. As a block box around an inline-flex
+      // child the host also picks up the line box's descender space, so the
+      // backdrop and ring below rendered as an oval sitting low behind a round
+      // badge.
+      display: flex;
       margin-left: 0;
       border-radius: var(--border-radius-full, 9999px);
       background-color: var(--lc-sidenav-badge-ring);
@@ -481,10 +488,15 @@
 :host ::ng-deep .lc-sidenav--collapsed .lc-sidenav__nav-badge .lc-badge {
   min-width: 16px;
   height: 16px;
-  padding: 0 4px;
+  padding: 0 3px;
   font-size: 10px;
   font-weight: 600;
   line-height: 1;
+  // The rail-colored ring above is what separates the badge from the glyph;
+  // the variant's own hairline border on top of it read as a second outline at
+  // this size, and its 1px on each axis made the single-digit bubble 18px wide
+  // by 18px tall — an egg, not the circle the pill radius promises.
+  border: 0;
 }
 
 .lc-sidenav__nav-item--expanded .lc-sidenav__nav-chevron {
