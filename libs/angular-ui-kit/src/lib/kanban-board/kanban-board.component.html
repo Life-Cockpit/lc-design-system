@@ -27,16 +27,22 @@
         @for (card of col.cards; track card.id) {
           <div
             class="lc-kanban__card"
+            role="button"
+            tabindex="0"
+            [attr.data-card-id]="card.id"
+            [attr.aria-keyshortcuts]="readonly() ? null : 'Alt+ArrowLeft Alt+ArrowRight Alt+ArrowUp Alt+ArrowDown'"
             [class.lc-kanban__card--dragging]="draggedCard()?.card?.id === card.id"
+            [class.lc-kanban__card--readonly]="readonly()"
             [attr.draggable]="!readonly()"
             (dragstart)="onDragStart($event, card, col.id)"
             (dragover)="onDragOver($event, col.id, $index)"
             (drop)="onDrop($event, col.id, $index)"
             (dragend)="onDragEnd()"
             (click)="onCardClick(card, col.id)"
+            (keydown)="onCardKeydown($event, card, col.id)"
           >
             @if (card.priority) {
-              <lc-icon [name]="getPriorityIcon(card.priority)" size="xs" [color]="getPriorityColor(card.priority)" class="lc-kanban__card-priority"></lc-icon>
+              <lc-icon [name]="getPriorityIcon(card.priority)" size="xs" [color]="getPriorityColor(card.priority)" class="lc-kanban__card-priority" [ariaLabel]="'Priority: ' + card.priority"></lc-icon>
             }
             <span class="lc-kanban__card-title">{{ card.title }}</span>
 

@@ -1,9 +1,9 @@
 <div class="lc-textarea-wrapper">
-  @if (label) {
-    <label class="lc-textarea-label" [class.lc-textarea-label--required]="required">
-      {{ label }}
-      @if (required) {
-        <span class="lc-textarea-required-indicator">*</span>
+  @if (label()) {
+    <label [for]="textareaId" class="lc-textarea-label">
+      {{ label() }}
+      @if (required()) {
+        <span class="lc-textarea-required-indicator" aria-hidden="true">*</span>
       }
     </label>
   }
@@ -11,17 +11,19 @@
   <div class="lc-textarea-input-wrapper">
     <textarea
       #textarea
-      [class]="textareaClasses"
+      [id]="textareaId"
+      [class]="textareaClasses()"
       [value]="value()"
-      [placeholder]="placeholder"
-      [disabled]="disabled"
-      [readonly]="readonly"
-      [required]="required"
-      [rows]="autoResize ? undefined : rows"
-      [attr.maxlength]="maxLength"
-      [attr.aria-label]="ariaLabel"
-      [attr.aria-required]="required"
-      [attr.aria-invalid]="error"
+      [placeholder]="placeholder()"
+      [disabled]="isDisabled()"
+      [readonly]="readonly()"
+      [required]="required()"
+      [attr.rows]="autoResize() ? null : rows()"
+      [attr.maxlength]="maxLength() ?? null"
+      [attr.aria-label]="ariaLabel() || null"
+      [attr.aria-required]="required() || null"
+      [attr.aria-invalid]="error() || null"
+      [attr.aria-describedby]="describedBy()"
       (input)="onInput(getInputValue($event))"
       (blur)="onBlur()"
     ></textarea>
@@ -29,17 +31,18 @@
 
   <div class="lc-textarea-footer">
     <div class="lc-textarea-messages">
-      @if (error && errorMessage) {
-        <span class="lc-textarea-error-message">{{ errorMessage }}</span>
-      } @else if (helperText) {
-        <span class="lc-textarea-helper-text">{{ helperText }}</span>
+      @if (showsError()) {
+        <span [id]="errorId" class="lc-textarea-error-message" role="alert">{{ errorMessage() }}</span>
+      } @else if (showsHelper()) {
+        <span [id]="helperId" class="lc-textarea-helper-text">{{ helperText() }}</span>
       }
     </div>
 
-    @if (showCharacterCount) {
-      <span 
-        class="lc-textarea-character-count" 
+    @if (showCharacterCount()) {
+      <span
+        class="lc-textarea-character-count"
         [class.lc-textarea-character-count--over-limit]="isOverLimit()"
+        aria-live="polite"
       >
         {{ characterCountText() }}
       </span>

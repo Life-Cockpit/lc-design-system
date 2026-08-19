@@ -81,7 +81,7 @@ export const InListRows: Story = {
         </div>
         <div style="display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--color-divider);">
           <lc-status-dot tone="blocked" size="sm" label="Blockiert" />
-          <span style="flex: 1;">Abrechnung: SEPA-Mandate</span>
+          <span style="flex: 1;">Billing: mandates</span>
           <span style="color: var(--color-text-tertiary);">Wave 2</span>
         </div>
         <div style="display: flex; align-items: center; gap: 8px; padding: 6px 0;">

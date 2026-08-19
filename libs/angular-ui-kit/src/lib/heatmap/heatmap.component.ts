@@ -4,6 +4,12 @@ import {
   input,
   computed,
 } from '@angular/core';
+import {
+  ChartValueFormatter,
+  cleanNumber,
+  formatChartValue,
+  toFinite,
+} from '../shared/chart-scale';
 
 export interface HeatmapCell {
   row: number;
@@ -22,11 +28,11 @@ export interface HeatmapCell {
  * Heatmap component for visualizing 2D data density.
  *
  * Features:
- * - Color-interpolated cells from min to max value
+ * - Cells blended from `colorMin` (lowest value) to `colorMax` (highest value)
  * - Configurable cell size, gap, and corner radius
  * - Custom min/max color range
  * - Optional row and column labels
- * - Optional value display within cells
+ * - Optional value display within cells, ink chosen per cell for contrast
  * - Responsive SVG rendering
  *
  * @example
@@ -50,10 +56,10 @@ export class HeatmapComponent {
   /** Gap between cells in pixels. */
   cellGap = input<number>(2);
 
-  /** Low-value color. */
+  /** Low-value color (the fill of the minimum value). */
   colorMin = input<string>('var(--color-primary-50)');
 
-  /** High-value color. */
+  /** High-value color (the fill of the maximum value). */
   colorMax = input<string>('var(--color-primary-500)');
 
   /** Show values inside cells. */
@@ -62,22 +68,36 @@ export class HeatmapComponent {
   /** Corner radius of cells. */
   cellRadius = input<number>(3);
 
+  /** Formats cell values. Defaults to a float-safe `String(value)`. */
+  formatValue = input<ChartValueFormatter>(formatChartValue);
+
+  /**
+   * Accessible name of the chart. Defaults to a generated summary of the grid
+   * shape and value range, e.g. "Heatmap: 5 rows by 7 columns, values from 0 to 15".
+   */
+  ariaLabel = input<string>('');
+
   private readonly LABEL_W = 60;
   private readonly LABEL_H = 20;
 
+  /** Rows with every value coerced to a finite number (holes → 0). */
+  private readonly cleanData = computed(() =>
+    (this.data() ?? []).map((row) => (row ?? []).map((v) => toFinite(v)))
+  );
+
   protected readonly minVal = computed(() => {
-    const flat = this.data().flat();
+    const flat = this.cleanData().flat();
     return flat.length ? Math.min(...flat) : 0;
   });
 
   protected readonly maxVal = computed(() => {
-    const flat = this.data().flat();
+    const flat = this.cleanData().flat();
     return flat.length ? Math.max(...flat) : 0;
   });
 
-  protected readonly rows = computed(() => this.data().length);
+  protected readonly rows = computed(() => this.cleanData().length);
   protected readonly cols = computed(() => {
-    const d = this.data();
+    const d = this.cleanData();
     return d.length ? Math.max(...d.map(r => r.length)) : 0;
   });
 
@@ -95,7 +115,7 @@ export class HeatmapComponent {
   protected readonly offsetY = computed(() => this.colLabels().length ? this.LABEL_H : 0);
 
   protected readonly cells = computed(() => {
-    const d = this.data();
+    const d = this.cleanData();
     const cs = this.cellSize();
     const cg = this.cellGap();
     const ox = this.offsetX();
@@ -103,10 +123,13 @@ export class HeatmapComponent {
     const min = this.minVal();
     const max = this.maxVal();
     const range = max - min || 1;
+    const lo = this.colorMin();
+    const hi = this.colorMax();
+    const fmt = this.formatValue();
 
     const result: {
       x: number; y: number; w: number; h: number;
-      value: number; opacity: number;
+      value: number; valueText: string; fill: string; ink: string;
     }[] = [];
 
     for (let r = 0; r < d.length; r++) {
@@ -119,7 +142,12 @@ export class HeatmapComponent {
           w: cs,
           h: cs,
           value: val,
-          opacity: 0.1 + t * 0.9,
+          valueText: fmt(val),
+          fill: `color-mix(in srgb, ${hi} ${cleanNumber(t * 100)}%, ${lo})`,
+          // Strong cells sit near colorMax (a mid/light brand shade depending on
+          // theme) and read best in the surface colour; weak cells sit near
+          // colorMin (close to the surface) and take primary text.
+          ink: t > 0.5 ? 'var(--color-surface)' : 'var(--color-text-primary)',
         });
       }
     }
@@ -150,5 +178,15 @@ export class HeatmapComponent {
       y: this.LABEL_H - 4,
       label: l,
     }));
+  });
+
+  protected readonly effectiveAriaLabel = computed(() => {
+    const explicit = this.ariaLabel();
+    if (explicit) return explicit;
+    const rows = this.rows();
+    const cols = this.cols();
+    if (!rows || !cols) return 'Heatmap: no data';
+    const fmt = this.formatValue();
+    return `Heatmap: ${rows} ${rows === 1 ? 'row' : 'rows'} by ${cols} ${cols === 1 ? 'column' : 'columns'}, values from ${fmt(this.minVal())} to ${fmt(this.maxVal())}`;
   });
 }

@@ -1,0 +1,59 @@
+@use '../../styles/tokens/spacing' as *;
+
+:host {
+  display: contents;
+}
+
+// One fixed stack per position. Empty stacks must never block the page, so
+// only the toasts themselves (`.lc-toast { pointer-events: auto }`) are hit-testable.
+.lc-toast-outlet__stack {
+  position: fixed;
+  z-index: 1200; // above lc-modal (1000) and lc-drawer (1100)
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: calc(400px + 2 * var(--spacing-4));
+  padding: var(--spacing-4);
+  box-sizing: border-box;
+  pointer-events: none;
+
+  &--top-left,
+  &--top-center,
+  &--top-right {
+    top: 0;
+  }
+
+  // Bottom stacks grow upwards: the newest toast sits nearest the edge
+  &--bottom-left,
+  &--bottom-center,
+  &--bottom-right {
+    bottom: 0;
+    flex-direction: column-reverse;
+  }
+
+  &--top-left,
+  &--bottom-left {
+    left: 0;
+    align-items: flex-start;
+  }
+
+  &--top-right,
+  &--bottom-right {
+    right: 0;
+    align-items: flex-end;
+  }
+
+  &--top-center,
+  &--bottom-center {
+    left: 50%;
+    transform: translateX(-50%);
+    align-items: center;
+  }
+}
+
+.lc-toast-outlet__region {
+  display: flex;
+  flex-direction: inherit;
+  align-items: inherit;
+  width: 100%;
+}

@@ -1,10 +1,12 @@
 :host {
   display: block;
-  border: 1px solid var(--color-neutral-200);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   background: var(--color-surface);
   overflow: hidden;
-  font-size: 13px;
+  // Public theming hooks: the tree is deliberately denser than the base
+  // typography scale (13px rows), override these to match another density.
+  font-size: var(--lc-tree-view-font-size, 13px);
   color: var(--color-text-primary);
 }
 
@@ -16,8 +18,8 @@ $indent-width: 18px;
     align-items: center;
     gap: 4px;
     padding: 6px 8px;
-    border-bottom: 1px solid var(--color-neutral-200);
-    background: var(--color-neutral-50);
+    border-bottom: 1px solid var(--color-divider);
+    background: var(--color-surface-2);
     user-select: none;
   }
 
@@ -30,13 +32,18 @@ $indent-width: 18px;
     border-radius: 4px;
     background: transparent;
     color: var(--color-text-secondary);
-    font-size: 12px;
+    font-size: var(--typography-font-size-xs, 0.75rem);
     cursor: pointer;
     line-height: 1;
 
     &:hover {
-      background: var(--color-neutral-100);
+      background: var(--color-surface-hover);
       color: var(--color-text-primary);
+    }
+
+    &:focus-visible {
+      outline: none;
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary-500) 20%, transparent);
     }
   }
 
@@ -49,7 +56,7 @@ $indent-width: 18px;
   &__item {
     display: flex;
     align-items: center;
-    height: 26px;
+    height: var(--lc-tree-view-row-height, 26px);
     padding-right: 8px;
     cursor: pointer;
     user-select: none;
@@ -57,7 +64,7 @@ $indent-width: 18px;
     outline: none;
 
     &:hover {
-      background: var(--color-neutral-100);
+      background: var(--color-surface-hover);
     }
 
     &:focus-visible {
@@ -100,7 +107,7 @@ $indent-width: 18px;
       top: 0;
       bottom: 0;
       width: 1px;
-      background: var(--color-neutral-200);
+      background: var(--color-divider);
     }
   }
 
@@ -128,7 +135,7 @@ $indent-width: 18px;
     transition: transform 0.12s ease;
 
     &:hover {
-      background: var(--color-neutral-200);
+      background: var(--color-surface-sunken);
     }
 
     &--expanded {
@@ -174,7 +181,7 @@ $indent-width: 18px;
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: var(--color-neutral-400);
+    background: var(--color-text-tertiary);
   }
 
   &__status {

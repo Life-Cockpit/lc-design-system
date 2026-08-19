@@ -1,18 +1,18 @@
 import {
   Component,
-  Input,
-  Output,
-  EventEmitter,
+  input,
+  output,
   signal,
   computed,
+  linkedSignal,
   ChangeDetectionStrategy,
   forwardRef,
   ElementRef,
-  ViewChild,
+  viewChild,
   inject,
+  DOCUMENT,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { ControlValueAccessor, NG_VALUE_ACCESSOR, FormsModule } from '@angular/forms';
+import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { OverlayModule } from '@angular/cdk/overlay';
 
 export type DateValue = Date | string | null;
@@ -22,6 +22,7 @@ export type DateValue = Date | string | null;
  *
  * Features:
  * - Calendar popup with month and year navigation
+ * - Manual date entry in the configured format
  * - Min/max date constraints
  * - Disabled specific dates and weekends
  * - Configurable date format string
@@ -35,11 +36,10 @@ export type DateValue = Date | string | null;
  * <lc-datepicker placeholder="Select date" [(ngModel)]="selectedDate" />
  * ```
  */
-/* eslint-disable @typescript-eslint/member-ordering */
 @Component({
   selector: 'lc-datepicker',
   standalone: true,
-  imports: [CommonModule, FormsModule, OverlayModule],
+  imports: [OverlayModule],
   templateUrl: './datepicker.component.html',
   styleUrl: './datepicker.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -52,112 +52,128 @@ export type DateValue = Date | string | null;
   ],
 })
 export class DatepickerComponent implements ControlValueAccessor {
-  @ViewChild('datepickerInput', { static: false, read: ElementRef })
-  datepickerInput!: ElementRef;
+  private static nextId = 0;
+
+  /** Per-instance id for the input; helper/error text ids derive from it. */
+  readonly inputId = `lc-datepicker-${++DatepickerComponent.nextId}`;
+
+  private readonly datepickerInput = viewChild<ElementRef<HTMLInputElement>>('datepickerInput');
+  private readonly calendarPanel = viewChild<ElementRef<HTMLElement>>('calendarPanel');
 
   /**
    * Visual variant of the datepicker
    */
-  @Input() variant: 'outline' | 'filled' = 'outline';
+  readonly variant = input<'outline' | 'filled'>('outline');
 
   /**
    * Size of the datepicker
    */
-  @Input() size: 'xs' | 'sm' | 'md' | 'lg' = 'md';
+  readonly size = input<'xs' | 'sm' | 'md' | 'lg'>('md');
 
   /**
    * Whether the datepicker is disabled
    */
-  @Input() disabled = false;
+  readonly disabled = input<boolean>(false);
 
   /**
    * Whether the datepicker is in error state
    */
-  @Input() error = false;
+  readonly error = input<boolean>(false);
 
   /**
    * Whether the datepicker is required
    */
-  @Input() required = false;
+  readonly required = input<boolean>(false);
 
   /**
    * Whether the datepicker is readonly
    */
-  @Input() readonly = false;
+  readonly readonly = input<boolean>(false);
 
   /**
    * Placeholder text
    */
-  @Input() placeholder = 'Select a date';
+  readonly placeholder = input<string>('Select a date');
 
   /**
    * Helper text displayed below the datepicker
    */
-  @Input() helperText = '';
+  readonly helperText = input<string>('');
 
   /**
    * Error message displayed when error is true
    */
-  @Input() errorMessage = '';
+  readonly errorMessage = input<string>('');
 
   /**
    * ARIA label for accessibility
    */
-  @Input() ariaLabel: string | undefined = undefined;
+  readonly ariaLabel = input<string | undefined>(undefined);
 
   /**
    * Date format string (e.g., 'YYYY-MM-DD', 'MM/DD/YYYY')
    */
-  @Input() format = 'YYYY-MM-DD';
+  readonly format = input<string>('YYYY-MM-DD');
 
   /**
-   * Minimum selectable date
+   * Minimum selectable date (compared by calendar day, time of day is ignored)
    */
-  @Input() minDate: Date | undefined = undefined;
+  readonly minDate = input<Date | undefined>(undefined);
 
   /**
-   * Maximum selectable date
+   * Maximum selectable date (compared by calendar day, time of day is ignored)
    */
-  @Input() maxDate: Date | undefined = undefined;
+  readonly maxDate = input<Date | undefined>(undefined);
 
   /**
    * Array of disabled dates
    */
-  @Input() disabledDates: Date[] = [];
+  readonly disabledDates = input<Date[]>([]);
 
   /**
    * Whether to disable weekends
    */
-  @Input() disableWeekends = false;
+  readonly disableWeekends = input<boolean>(false);
 
   /**
    * Emitted when date selection changes
    */
-  @Output() readonly dateChange = new EventEmitter<Date | null>();
+  readonly dateChange = output<Date | null>();
 
   /**
    * Emitted when calendar opens
    */
-  @Output() readonly opened = new EventEmitter<void>();
+  readonly opened = output<void>();
 
   /**
    * Emitted when calendar closes
    */
-  @Output() readonly closed = new EventEmitter<void>();
+  readonly closed = output<void>();
 
   // Internal state
-  selectedDate = signal<Date | null>(null);
-  isOpen = signal<boolean>(false);
-  currentMonth = signal<number>(new Date().getMonth());
-  currentYear = signal<number>(new Date().getFullYear());
-  inputValue = signal<string>('');
+  readonly selectedDate = signal<Date | null>(null);
+  readonly isOpen = signal<boolean>(false);
+  readonly currentMonth = signal<number>(new Date().getMonth());
+  readonly currentYear = signal<number>(new Date().getFullYear());
+
+  /** Disabled state pushed in by the forms API (setDisabledState). */
+  private readonly formDisabled = signal<boolean>(false);
+
+  /** Effective disabled state: the `disabled` input OR the form control's disabled state. */
+  readonly isDisabled = computed(() => this.disabled() || this.formDisabled());
 
   // Computed values
-  formattedDate = computed(() => {
+  readonly formattedDate = computed(() => {
     const date = this.selectedDate();
     if (!date) return '';
-    return this.formatDate(date, this.format);
+    return this.formatDate(date, this.format());
   });
+
+  /**
+   * Text currently shown in the input. Follows the selected date, but the user
+   * can type freely; only a complete, valid date is committed to the model.
+   */
+  readonly inputValue = linkedSignal(() => this.formattedDate());
 
   weekDays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
@@ -176,15 +192,52 @@ export class DatepickerComponent implements ControlValueAccessor {
     'December',
   ];
 
-  currentMonthName = computed(() => {
+  readonly currentMonthName = computed(() => {
     return this.monthNames[this.currentMonth()];
   });
 
+  /** id of the helper/error text the input is described by (aria-describedby) */
+  readonly describedBy = computed(() => {
+    if (this.error() && this.errorMessage()) {
+      return `${this.inputId}-error`;
+    }
+    return this.helperText() ? `${this.inputId}-helper` : null;
+  });
+
+  /**
+   * Computed classes for the datepicker input element
+   */
+  readonly datepickerClasses = computed(() => {
+    const classes = [
+      'lc-datepicker',
+      `lc-datepicker--${this.variant()}`,
+      `lc-datepicker--${this.size()}`,
+    ];
+
+    if (this.isDisabled()) {
+      classes.push('lc-datepicker--disabled');
+    }
+
+    if (this.error()) {
+      classes.push('lc-datepicker--error');
+    }
+
+    if (this.readonly()) {
+      classes.push('lc-datepicker--readonly');
+    }
+
+    if (this.isOpen()) {
+      classes.push('lc-datepicker--open');
+    }
+
+    return classes.join(' ');
+  });
+
   // Private properties
-  private elementRef = inject(ElementRef);
-  // eslint-disable-next-line @typescript-eslint/member-ordering
+  private readonly document = inject(DOCUMENT);
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
   private onChange: (value: Date | null) => void = () => {};
-  // eslint-disable-next-line @typescript-eslint/member-ordering
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
   private onTouched: () => void = () => {};
 
   // Public methods
@@ -192,7 +245,7 @@ export class DatepickerComponent implements ControlValueAccessor {
    * Toggle calendar open/closed
    */
   toggle(): void {
-    if (this.disabled || this.readonly) {
+    if (this.isDisabled() || this.readonly()) {
       return;
     }
     if (this.isOpen()) {
@@ -206,25 +259,31 @@ export class DatepickerComponent implements ControlValueAccessor {
    * Open calendar
    */
   open(): void {
-    if (this.disabled || this.readonly) {
+    if (this.isDisabled() || this.readonly() || this.isOpen()) {
       return;
     }
     this.isOpen.set(true);
 
     // Set calendar to selected date's month/year or current
-    if (this.selectedDate()) {
-      const date = this.selectedDate()!;
-      this.currentMonth.set(date.getMonth());
-      this.currentYear.set(date.getFullYear());
+    const date = this.selectedDate();
+    if (date) {
+      this.showMonthOf(date);
     }
 
     this.opened.emit();
   }
 
   /**
-   * Close calendar
+   * Close calendar. Idempotent: the overlay's `detach` re-enters here after
+   * `isOpen` flips, and that second call must not emit `closed` again.
    */
   close(): void {
+    if (!this.isOpen()) {
+      return;
+    }
+    // A day button inside the panel may hold focus; it is about to be removed,
+    // so hand focus back to the input instead of letting it drop to <body>.
+    this.restoreFocusFromPanel();
     this.isOpen.set(false);
     this.closed.emit();
   }
@@ -233,14 +292,11 @@ export class DatepickerComponent implements ControlValueAccessor {
    * Select a date
    */
   selectDate(date: Date): void {
-    if (this.disabled || this.readonly || this.isDateDisabled(date)) {
+    if (this.isDisabled() || this.readonly() || this.isDateDisabled(date)) {
       return;
     }
 
-    this.selectedDate.set(date);
-    this.inputValue.set(this.formatDate(date, this.format));
-    this.onChange(date);
-    this.dateChange.emit(date);
+    this.commitDate(date);
     this.close();
   }
 
@@ -258,25 +314,29 @@ export class DatepickerComponent implements ControlValueAccessor {
    * Check if a date is disabled
    */
   isDateDisabled(date: Date): boolean {
-    // Check min date
-    if (this.minDate && date < this.minDate) {
+    // min/max are compared by calendar day: consumers typically pass `new Date()`
+    // (which carries the current time) while calendar cells sit at midnight.
+    const day = this.startOfDay(date);
+
+    const min = this.minDate();
+    if (min && day < this.startOfDay(min)) {
       return true;
     }
 
-    // Check max date
-    if (this.maxDate && date > this.maxDate) {
+    const max = this.maxDate();
+    if (max && day > this.startOfDay(max)) {
       return true;
     }
 
     // Check disabled dates
-    if (this.disabledDates.some((d) => this.isSameDate(d, date))) {
+    if (this.disabledDates().some((d) => this.isSameDate(d, date))) {
       return true;
     }
 
     // Check weekends
-    if (this.disableWeekends) {
-      const day = date.getDay();
-      if (day === 0 || day === 6) {
+    if (this.disableWeekends()) {
+      const weekday = date.getDay();
+      if (weekday === 0 || weekday === 6) {
         return true;
       }
     }
@@ -361,26 +421,27 @@ export class DatepickerComponent implements ControlValueAccessor {
    * Navigate to today
    */
   goToToday(): void {
-    const today = new Date();
-    this.currentMonth.set(today.getMonth());
-    this.currentYear.set(today.getFullYear());
+    this.showMonthOf(new Date());
   }
 
   /**
-   * Handle input change (manual date entry)
+   * Handle input change (manual date entry). Partial input is kept as text
+   * only; the model changes once the text is a complete, valid, selectable date.
    */
   onInputChange(value: string): void {
     this.inputValue.set(value);
 
-    try {
-      const date = this.parseDate(value, this.format);
-      if (date && !isNaN(date.getTime()) && !this.isDateDisabled(date)) {
-        this.selectedDate.set(date);
-        this.onChange(date);
-        this.dateChange.emit(date);
+    if (value.trim() === '') {
+      if (this.selectedDate() !== null) {
+        this.clear();
       }
-    } catch {
-      // Invalid date format, ignore
+      return;
+    }
+
+    const date = this.parseDate(value, this.format());
+    if (date && !this.isDateDisabled(date) && !this.isSelectedDate(date)) {
+      this.commitDate(date);
+      this.showMonthOf(date);
     }
   }
 
@@ -388,7 +449,7 @@ export class DatepickerComponent implements ControlValueAccessor {
    * Handle keyboard navigation
    */
   onKeyDown(event: KeyboardEvent): void {
-    if (this.disabled || this.readonly) {
+    if (this.isDisabled() || this.readonly()) {
       return;
     }
 
@@ -403,6 +464,9 @@ export class DatepickerComponent implements ControlValueAccessor {
 
     if (!this.isOpen()) return;
 
+    // While the text differs from the model the user is mid-edit: arrows must
+    // move the caret, not the calendar selection.
+    const editing = this.inputValue() !== this.formattedDate();
     const currentDate = this.selectedDate() || new Date();
     let newDate: Date | null = null;
 
@@ -410,83 +474,79 @@ export class DatepickerComponent implements ControlValueAccessor {
       case 'Escape':
         this.close();
         event.preventDefault();
+        // Only this datepicker should react; keep the key from reaching enclosing overlays.
+        event.stopPropagation();
         break;
 
       case 'ArrowRight':
+        if (editing) break;
         newDate = new Date(currentDate);
         newDate.setDate(currentDate.getDate() + 1);
         event.preventDefault();
         break;
 
       case 'ArrowLeft':
+        if (editing) break;
         newDate = new Date(currentDate);
         newDate.setDate(currentDate.getDate() - 1);
         event.preventDefault();
         break;
 
       case 'ArrowDown':
+        if (editing) break;
         newDate = new Date(currentDate);
         newDate.setDate(currentDate.getDate() + 7);
         event.preventDefault();
         break;
 
       case 'ArrowUp':
+        if (editing) break;
         newDate = new Date(currentDate);
         newDate.setDate(currentDate.getDate() - 7);
         event.preventDefault();
         break;
 
-      case 'Enter':
-        if (this.selectedDate()) {
-          this.selectDate(this.selectedDate()!);
+      case 'Enter': {
+        const selected = this.selectedDate();
+        if (selected) {
+          this.selectDate(selected);
         }
         event.preventDefault();
         break;
+      }
     }
 
     if (newDate && !this.isDateDisabled(newDate)) {
       this.selectedDate.set(newDate);
-      this.currentMonth.set(newDate.getMonth());
-      this.currentYear.set(newDate.getFullYear());
+      this.showMonthOf(newDate);
     }
   }
 
   /**
-   * Handle blur event
+   * Handle blur event: mark touched and drop any partial text that never became a date.
    */
   onBlur(): void {
     this.onTouched();
+    this.inputValue.set(this.formattedDate());
   }
 
   /**
    * Handle click outside
    */
   onClickOutside(): void {
-    if (this.isOpen()) {
-      this.close();
-    }
+    this.close();
   }
 
   // ControlValueAccessor implementation
   writeValue(value: DateValue): void {
-    if (value === null || value === undefined) {
-      this.selectedDate.set(null);
-      this.inputValue.set('');
-    } else if (value instanceof Date) {
-      this.selectedDate.set(value);
-      this.inputValue.set(this.formatDate(value, this.format));
+    let date: Date | null = null;
+    if (value instanceof Date) {
+      date = isNaN(value.getTime()) ? null : value;
     } else if (typeof value === 'string') {
-      try {
-        const date = this.parseDate(value, this.format);
-        if (date && !isNaN(date.getTime())) {
-          this.selectedDate.set(date);
-          this.inputValue.set(this.formatDate(date, this.format));
-        }
-      } catch {
-        this.selectedDate.set(null);
-        this.inputValue.set('');
-      }
+      date = this.parseDate(value, this.format());
     }
+    this.selectedDate.set(date);
+    this.inputValue.set(this.formattedDate());
   }
 
   registerOnChange(fn: (value: Date | null) => void): void {
@@ -498,35 +558,7 @@ export class DatepickerComponent implements ControlValueAccessor {
   }
 
   setDisabledState(isDisabled: boolean): void {
-    this.disabled = isDisabled;
-  }
-
-  /**
-   * Get computed classes for the datepicker element
-   */
-  get datepickerClasses(): string {
-    const classes = ['lc-datepicker'];
-
-    classes.push(`lc-datepicker--${this.variant}`);
-    classes.push(`lc-datepicker--${this.size}`);
-
-    if (this.disabled) {
-      classes.push('lc-datepicker--disabled');
-    }
-
-    if (this.error) {
-      classes.push('lc-datepicker--error');
-    }
-
-    if (this.readonly) {
-      classes.push('lc-datepicker--readonly');
-    }
-
-    if (this.isOpen()) {
-      classes.push('lc-datepicker--open');
-    }
-
-    return classes.join(' ');
+    this.formDisabled.set(isDisabled);
   }
 
   /**
@@ -537,6 +569,30 @@ export class DatepickerComponent implements ControlValueAccessor {
   }
 
   // Private helper methods
+  private commitDate(date: Date): void {
+    this.selectedDate.set(date);
+    this.inputValue.set(this.formatDate(date, this.format()));
+    this.onChange(date);
+    this.dateChange.emit(date);
+  }
+
+  private showMonthOf(date: Date): void {
+    this.currentMonth.set(date.getMonth());
+    this.currentYear.set(date.getFullYear());
+  }
+
+  private restoreFocusFromPanel(): void {
+    const panel = this.calendarPanel()?.nativeElement;
+    const active = this.document.activeElement;
+    if (panel && active && panel.contains(active)) {
+      this.datepickerInput()?.nativeElement.focus();
+    }
+  }
+
+  private startOfDay(date: Date): number {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+  }
+
   /**
    * Check if two dates are the same day
    */
@@ -556,16 +612,33 @@ export class DatepickerComponent implements ControlValueAccessor {
     return format.replace('YYYY', String(year)).replace('MM', month).replace('DD', day);
   }
 
-  private parseDate(value: string, format: string): Date {
+  /**
+   * Strict parse: the text must match the format's length, carry digits at the
+   * YYYY/MM/DD positions and round-trip through formatDate (which rejects
+   * things like month 13 or Feb 31 that `new Date` would silently roll over).
+   * Returns null for partial or invalid input.
+   */
+  private parseDate(value: string, format: string): Date | null {
+    if (value.length !== format.length) {
+      return null;
+    }
+
     const yearIndex = format.indexOf('YYYY');
     const monthIndex = format.indexOf('MM');
     const dayIndex = format.indexOf('DD');
+    if (yearIndex < 0 || monthIndex < 0 || dayIndex < 0) {
+      return null;
+    }
 
-    const year = parseInt(value.substring(yearIndex, yearIndex + 4));
-    const month = parseInt(value.substring(monthIndex, monthIndex + 2)) - 1;
-    const day = parseInt(value.substring(dayIndex, dayIndex + 2));
+    const yearText = value.substring(yearIndex, yearIndex + 4);
+    const monthText = value.substring(monthIndex, monthIndex + 2);
+    const dayText = value.substring(dayIndex, dayIndex + 2);
+    if (!/^\d{4}$/.test(yearText) || !/^\d{2}$/.test(monthText) || !/^\d{2}$/.test(dayText)) {
+      return null;
+    }
 
-    return new Date(year, month, day);
+    const date = new Date(Number(yearText), Number(monthText) - 1, Number(dayText));
+    return this.formatDate(date, format) === value ? date : null;
   }
 
   protected getInputValue(event: Event): string {

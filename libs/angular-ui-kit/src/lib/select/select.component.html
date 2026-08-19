@@ -1,14 +1,18 @@
 <div class="lc-select-wrapper">
   <div
     #selectTrigger
-    [class]="selectClasses"
-    [attr.role]="'combobox'"
+    [class]="selectClasses()"
+    role="combobox"
+    aria-haspopup="listbox"
     [attr.aria-expanded]="isOpen() ? 'true' : 'false'"
-    [attr.aria-label]="ariaLabel || null"
-    [attr.aria-required]="required ? 'true' : null"
-    [attr.aria-disabled]="disabled ? 'true' : null"
-    [attr.aria-invalid]="error ? 'true' : null"
-    [attr.tabindex]="disabled ? -1 : 0"
+    [attr.aria-controls]="isOpen() ? listboxId : null"
+    [attr.aria-activedescendant]="activeDescendantId()"
+    [attr.aria-label]="ariaLabel() || null"
+    [attr.aria-required]="required() ? 'true' : null"
+    [attr.aria-disabled]="isDisabled() ? 'true' : null"
+    [attr.aria-invalid]="error() ? 'true' : null"
+    [attr.aria-describedby]="describedBy()"
+    [attr.tabindex]="isDisabled() ? -1 : 0"
     (click)="toggle()"
     (keydown)="onKeyDown($event)"
     (blur)="onBlur()"
@@ -20,12 +24,13 @@
     </div>
 
     <div class="lc-select__icons">
-      @if (loading) {
+      @if (loading()) {
         <svg
           class="lc-select__spinner"
           xmlns="http://www.w3.org/2000/svg"
           fill="none"
           viewBox="0 0 24 24"
+          aria-hidden="true"
         >
           <circle
             class="opacity-25"
@@ -41,7 +46,7 @@
             d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
           ></path>
         </svg>
-      } @else if (value() && !disabled && !multiple) {
+      } @else if (value() && !isDisabled() && !multiple()) {
         <button
           type="button"
           class="lc-select__clear"
@@ -52,6 +57,7 @@
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 20 20"
             fill="currentColor"
+            aria-hidden="true"
           >
             <path
               d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z"
@@ -66,6 +72,7 @@
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 20 20"
         fill="currentColor"
+        aria-hidden="true"
       >
         <path
           fill-rule="evenodd"
@@ -86,50 +93,74 @@
     (backdropClick)="onClickOutside()"
     (detach)="close()"
   >
-    <div class="lc-select__dropdown" [class.lc-select__dropdown--open]="isOpen()">
-      @if (searchable) {
+    <div #dropdownPanel class="lc-select__dropdown" [class.lc-select__dropdown--open]="isOpen()">
+      @if (searchable()) {
         <div class="lc-select__search">
           <input
             type="text"
             class="lc-select__search-input"
             placeholder="Search..."
+            aria-autocomplete="list"
+            [attr.aria-controls]="listboxId"
+            [attr.aria-activedescendant]="activeDescendantId()"
+            [attr.aria-label]="ariaLabel() ? 'Search ' + ariaLabel() : 'Search options'"
             [(ngModel)]="searchQuery"
+            (keydown)="onKeyDown($event)"
             (click)="$event.stopPropagation()"
           />
         </div>
       }
 
-      <div class="lc-select__options">
+      <div
+        class="lc-select__options"
+        role="listbox"
+        [id]="listboxId"
+        [attr.aria-label]="ariaLabel() || null"
+        [attr.aria-multiselectable]="multiple() ? 'true' : null"
+      >
         @if (filteredOptions().length === 0) {
-          <div class="lc-select__option lc-select__option--no-results">
+          <div
+            class="lc-select__option lc-select__option--no-results"
+            role="option"
+            aria-disabled="true"
+            aria-selected="false"
+          >
             No options found
           </div>
         } @else {
           @for (option of filteredOptions(); track option.value; let i = $index) {
             <div
               class="lc-select__option"
+              role="option"
+              [id]="optionId(i)"
+              [attr.aria-selected]="isSelected(option) ? 'true' : 'false'"
+              [attr.aria-disabled]="option.disabled ? 'true' : null"
               [class.lc-select__option--selected]="isSelected(option)"
               [class.lc-select__option--highlighted]="highlightedIndex() === i"
               [class.lc-select__option--disabled]="option.disabled"
               (click)="selectOption(option)"
               (mouseenter)="highlightedIndex.set(i)"
             >
-              @if (multiple) {
+              @if (multiple()) {
+                <!-- Purely visual: the option itself carries the selected state (role=option
+                     + aria-selected); the checkbox is inert so clicks land on the option. -->
                 <input
                   type="checkbox"
                   [checked]="isSelected(option)"
                   [disabled]="option.disabled"
                   class="lc-select__checkbox"
-                  (click)="$event.stopPropagation()"
+                  tabindex="-1"
+                  aria-hidden="true"
                 />
               }
               <span class="lc-select__option-label">{{ option.label }}</span>
-              @if (isSelected(option) && !multiple) {
+              @if (isSelected(option) && !multiple()) {
                 <svg
                   class="lc-select__check"
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 20 20"
                   fill="currentColor"
+                  aria-hidden="true"
                 >
                   <path
                     fill-rule="evenodd"
@@ -146,13 +177,13 @@
   </ng-template>
 
   <!-- Helper/Error Text -->
-  @if (error && errorMessage) {
-    <div class="lc-select__error" role="alert">
-      {{ errorMessage }}
+  @if (error() && errorMessage()) {
+    <div class="lc-select__error" [id]="selectId + '-error'" role="alert">
+      {{ errorMessage() }}
     </div>
-  } @else if (helperText) {
-    <div class="lc-select__helper">
-      {{ helperText }}
+  } @else if (helperText()) {
+    <div class="lc-select__helper" [id]="selectId + '-helper'">
+      {{ helperText() }}
     </div>
   }
 </div>

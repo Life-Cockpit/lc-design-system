@@ -44,7 +44,9 @@
 .lc-breadcrumbs__link {
   color: var(--color-primary-600);
   text-decoration: none;
-  transition: all var(--transition-normal);
+  transition:
+    color var(--animation-duration-base) var(--animation-timing-ease),
+    background-color var(--animation-duration-base) var(--animation-timing-ease);
   border-radius: var(--border-radius-sm);
   padding: var(--spacing-1) var(--spacing-2);
   margin: calc(var(--spacing-1) * -1) calc(var(--spacing-2) * -1);
@@ -121,8 +123,8 @@
   .lc-breadcrumbs__link,
   .lc-breadcrumbs__current,
   .lc-breadcrumbs__ellipsis {
-    padding: var(--spacing-0\.5) var(--spacing-1);
-    margin: calc(var(--spacing-0\.5) * -1) calc(var(--spacing-1) * -1);
+    padding: var(--spacing-0-5) var(--spacing-1);
+    margin: calc(var(--spacing-0-5) * -1) calc(var(--spacing-1) * -1);
   }
 }
 

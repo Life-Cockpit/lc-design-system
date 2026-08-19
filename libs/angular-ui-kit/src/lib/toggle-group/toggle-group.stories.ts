@@ -15,6 +15,7 @@ const meta: Meta<ToggleGroupComponent> = {
       options: ['sm', 'md', 'lg'],
       description: 'Controls button height and font size',
     },
+    ariaLabel: { control: 'text', description: 'Accessible name of the radiogroup' },
   },
 
   parameters: {
@@ -29,6 +30,7 @@ Toggle group component for single-option selection from a set.
 - Size variants (sm, md, lg)
 - Two-way selected value binding
 - Per-option disabled state
+- Exposed as a radiogroup: Arrow/Home/End keys move the selection
 - Dark mode support via CSS custom properties
 `,
       },
@@ -48,6 +50,7 @@ export const Default: Story = {
     ],
     selected: 'list',
     size: 'md',
+    ariaLabel: 'View',
   },
 };
 
@@ -140,11 +143,11 @@ export const ViewSwitcher: Story = {
         </div>
         <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
           <div style="border: 1px solid #eee; border-radius: 8px; padding: 16px;">
-            <div style="font-weight: 500;">Life-Cockpit</div>
+            <div style="font-weight: 500;">Project Alpha</div>
             <div style="font-size: 12px; color: #666; margin-top: 4px;">3 tasks remaining</div>
           </div>
           <div style="border: 1px solid #eee; border-radius: 8px; padding: 16px;">
-            <div style="font-weight: 500;">Mobile App</div>
+            <div style="font-weight: 500;">Project Beta</div>
             <div style="font-size: 12px; color: #666; margin-top: 4px;">7 tasks remaining</div>
           </div>
         </div>

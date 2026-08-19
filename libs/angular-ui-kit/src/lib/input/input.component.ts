@@ -2,6 +2,7 @@
 import {
   Component,
   input,
+  model,
   output,
   signal,
   viewChild,
@@ -125,12 +126,14 @@ export class InputComponent implements ControlValueAccessor {
    */
   readonly ariaLabel = input<string>();
 
-  // Output Events
   /**
-   * Emitted when input value changes
+   * Current value (two-way bindable: `[value]` / `[(value)]`). Emits
+   * `valueChange` whenever it changes — once per user keystroke, on `clear()`
+   * and when a bound form control writes a value.
    */
-  readonly valueChange = output<string>();
+  readonly value = model<string>('');
 
+  // Output Events
   /**
    * Emitted when input receives focus
    */
@@ -147,7 +150,6 @@ export class InputComponent implements ControlValueAccessor {
   readonly enterPressed = output<void>();
 
   // Internal state
-  readonly value = signal<string>('');
   readonly inputId = `lc-input-${Math.random().toString(36).substr(2, 9)}`;
 
   // ViewChild reference
@@ -157,8 +159,8 @@ export class InputComponent implements ControlValueAccessor {
   private readonly _formDisabled = signal<boolean>(false);
 
   // ControlValueAccessor callbacks
-  private onChange: (value: string) => void = () => {};
-  private onTouched: () => void = () => {};
+  private onChange: (value: string) => void = () => { /* set by registerOnChange */ };
+  private onTouched: () => void = () => { /* set by registerOnTouched */ };
 
   /**
    * Computed disabled state from both input and form control
@@ -201,11 +203,10 @@ export class InputComponent implements ControlValueAccessor {
   public clear(): void {
     this.value.set('');
     this.onChange('');
-    this.valueChange.emit('');
   }
 
   // ControlValueAccessor implementation
-  writeValue(value: string): void {
+  writeValue(value: string | null): void {
     this.value.set(value || '');
   }
 
@@ -227,9 +228,9 @@ export class InputComponent implements ControlValueAccessor {
   protected onInput(event: Event): void {
     const target = event.target as HTMLInputElement;
     const newValue = target.value;
+    // model.set() emits `valueChange` exactly once per actual change
     this.value.set(newValue);
     this.onChange(newValue);
-    this.valueChange.emit(newValue);
   }
 
   /**

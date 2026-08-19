@@ -26,7 +26,7 @@
   border: 1px solid var(--color-border);
   border-radius: var(--border-radius-md);
   transition: all var(--animation-duration-base) var(--animation-timing-ease);
-  cursor: pointer;
+  cursor: text;
 
   &::placeholder {
     color: var(--color-text-secondary);
@@ -43,14 +43,14 @@
   }
 
   &:disabled {
-    background-color: var(--color-neutral-100);
+    background-color: var(--color-surface-muted);
     border-color: var(--color-border);
     cursor: not-allowed;
     opacity: 0.6;
   }
 
   &[readonly] {
-    background-color: var(--color-neutral-50);
+    background-color: var(--color-surface-muted);
     border-color: var(--color-border);
     cursor: default;
   }
@@ -96,11 +96,12 @@
 
   // Variant styles
   &.lc-datepicker--filled {
-    background-color: var(--color-neutral-100);
+    background-color: var(--color-surface-sunken);
     border-color: transparent;
 
     &:hover:not(:disabled):not([readonly]) {
-      background-color: var(--color-neutral-200);
+      background-color: var(--color-surface-hover);
+      border-color: var(--color-border);
     }
 
     &:focus {
@@ -109,7 +110,7 @@
     }
 
     &:disabled {
-      background-color: var(--color-neutral-200);
+      background-color: var(--color-surface-muted);
     }
   }
 }
@@ -149,7 +150,12 @@
 
   &:hover {
     color: var(--color-text-primary);
-    background-color: var(--color-neutral-100);
+    background-color: var(--color-surface-hover);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: 1px;
   }
 
   svg {
@@ -210,12 +216,17 @@
   transition: all var(--animation-duration-fast) var(--animation-timing-ease);
 
   &:hover {
-    background-color: var(--color-neutral-100);
+    background-color: var(--color-surface-hover);
     color: var(--color-text-primary);
   }
 
   &:active {
-    background-color: var(--color-neutral-200);
+    background-color: var(--color-surface-sunken);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: 1px;
   }
 
   svg {
@@ -249,6 +260,11 @@
 
   &:active {
     background-color: var(--color-primary-100);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: 1px;
   }
 }
 
@@ -292,7 +308,7 @@
   transition: all var(--animation-duration-fast) var(--animation-timing-ease);
 
   &:hover:not(:disabled) {
-    background-color: var(--color-neutral-100);
+    background-color: var(--color-surface-hover);
   }
 
   &.lc-datepicker-day--other-month {
@@ -307,11 +323,11 @@
 
   &.lc-datepicker-day--selected {
     font-weight: var(--font-weight-semibold);
-    color: var(--color-surface);
-    background-color: var(--color-primary-600);
+    color: var(--color-on-primary);
+    background-color: var(--color-primary-fill);
 
     &:hover {
-      background-color: var(--color-primary-700);
+      background-color: var(--color-primary-fill-hover);
     }
   }
 

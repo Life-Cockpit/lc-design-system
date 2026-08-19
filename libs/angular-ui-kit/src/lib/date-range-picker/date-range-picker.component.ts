@@ -1,11 +1,17 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  input,
-  signal,
+  ElementRef,
+  HostListener,
+  afterRenderEffect,
   computed,
-  output,
   forwardRef,
+  inject,
+  input,
+  output,
+  signal,
+  untracked,
+  viewChild,
 } from '@angular/core';
 import { NG_VALUE_ACCESSOR, ControlValueAccessor } from '@angular/forms';
 import { IconComponent } from '../icon/icon.component';
@@ -14,6 +20,9 @@ export interface DateRange {
   start: Date | null;
   end: Date | null;
 }
+
+/** Monday..Sunday of a known week — only used to derive localised weekday names */
+const REFERENCE_WEEK = Array.from({ length: 7 }, (_, i) => new Date(2024, 0, 1 + i));
 
 @Component({
   selector: 'lc-date-range-picker',
@@ -31,11 +40,25 @@ export interface DateRange {
   ],
 })
 export class DateRangePickerComponent implements ControlValueAccessor {
+  private static nextId = 0;
+
+  /** Per-instance ids for label ↔ trigger ↔ panel ARIA wiring */
+  readonly triggerId = `lc-drp-${++DateRangePickerComponent.nextId}`;
+  readonly labelId = `${this.triggerId}-label`;
+  readonly valueId = `${this.triggerId}-value`;
+  readonly panelId = `${this.triggerId}-panel`;
+
+  private readonly elRef = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly triggerEl = viewChild<ElementRef<HTMLButtonElement>>('triggerEl');
+  private readonly panelEl = viewChild<ElementRef<HTMLElement>>('panelEl');
+
   readonly label = input('');
   readonly placeholder = input('Select date range');
   readonly disabled = input(false);
   readonly minDate = input<Date | null>(null);
   readonly maxDate = input<Date | null>(null);
+  /** BCP 47 locale for the displayed dates, month title and weekday headers */
+  readonly locale = input('de-DE');
 
   readonly rangeChange = output<DateRange>();
 
@@ -45,26 +68,39 @@ export class DateRangePickerComponent implements ControlValueAccessor {
   protected hoveredDate = signal<Date | null>(null);
   protected viewingMonth = signal(new Date());
 
-  private onChange: (val: DateRange) => void = () => {};
-  private onTouched: () => void = () => {};
+  /** Disabled via `setDisabledState` (reactive forms) */
+  private readonly formDisabled = signal(false);
+
+  /** Effective disabled state: `disabled` input OR form control disabled */
+  protected readonly isDisabled = computed(() => this.disabled() || this.formDisabled());
+
+  private onChange: (val: DateRange) => void = () => { /* set by registerOnChange */ };
+  private onTouched: () => void = () => { /* set by registerOnTouched */ };
 
   protected readonly displayValue = computed(() => {
     const r = this.range();
     if (!r.start) return '';
-    const fmt = (d: Date) => d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const locale = this.locale();
+    const fmt = (d: Date) => d.toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric' });
     if (!r.end) return fmt(r.start) + ' – …';
     return `${fmt(r.start)} – ${fmt(r.end)}`;
   });
 
   protected readonly monthLabel = computed(() => {
     const d = this.viewingMonth();
-    return d.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+    return d.toLocaleDateString(this.locale(), { month: 'long', year: 'numeric' });
   });
 
-  protected readonly weekdays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+  /** Monday-first weekday headers in the configured locale (e.g. Mo…So / Mon…Sun) */
+  protected readonly weekdays = computed(() => {
+    const locale = this.locale();
+    // some ICU builds abbreviate with a trailing period ("Mo.") — keep the compact form
+    return REFERENCE_WEEK.map((d) => d.toLocaleDateString(locale, { weekday: 'short' }).replace(/\.$/, ''));
+  });
 
   protected readonly calendarDays = computed(() => {
     const viewing = this.viewingMonth();
+    const locale = this.locale();
     const year = viewing.getFullYear();
     const month = viewing.getMonth();
     const firstDay = new Date(year, month, 1);
@@ -74,26 +110,47 @@ export class DateRangePickerComponent implements ControlValueAccessor {
     if (startDow === 0) startDow = 7; // Monday = 1
     const prefixDays = startDow - 1;
 
-    const days: { date: Date; inMonth: boolean; disabled: boolean }[] = [];
+    const days: { date: Date; inMonth: boolean; disabled: boolean; ariaLabel: string }[] = [];
+    const push = (date: Date, inMonth: boolean) =>
+      days.push({
+        date,
+        inMonth,
+        disabled: this.isDateDisabled(date),
+        ariaLabel: date.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
+      });
 
     for (let i = prefixDays; i > 0; i--) {
-      const d = new Date(year, month, 1 - i);
-      days.push({ date: d, inMonth: false, disabled: this.isDateDisabled(d) });
+      push(new Date(year, month, 1 - i), false);
     }
 
     for (let d = 1; d <= lastDay.getDate(); d++) {
-      const date = new Date(year, month, d);
-      days.push({ date, inMonth: true, disabled: this.isDateDisabled(date) });
+      push(new Date(year, month, d), true);
     }
 
     const remaining = 42 - days.length;
     for (let i = 1; i <= remaining; i++) {
-      const d = new Date(year, month + 1, i);
-      days.push({ date: d, inMonth: false, disabled: this.isDateDisabled(d) });
+      push(new Date(year, month + 1, i), false);
     }
 
     return days;
   });
+
+  constructor() {
+    // Move focus into the panel once it is rendered so keyboard users land on
+    // the calendar instead of having to tab through the trigger's siblings.
+    afterRenderEffect(() => {
+      if (!this.isOpen()) return;
+      untracked(() => {
+        const panel = this.panelEl()?.nativeElement;
+        if (!panel || panel.contains(document.activeElement)) return;
+        const target =
+          panel.querySelector<HTMLButtonElement>('.lc-drp__day--start:not(:disabled)') ??
+          panel.querySelector<HTMLButtonElement>('.lc-drp__day--today:not(:disabled)') ??
+          panel.querySelector<HTMLButtonElement>('.lc-drp__day:not(.lc-drp__day--outside):not(:disabled)');
+        target?.focus();
+      });
+    });
+  }
 
   writeValue(value: DateRange | null): void {
     this.range.set(value ?? { start: null, end: null });
@@ -105,15 +162,48 @@ export class DateRangePickerComponent implements ControlValueAccessor {
   registerOnChange(fn: (val: DateRange) => void): void { this.onChange = fn; }
   registerOnTouched(fn: () => void): void { this.onTouched = fn; }
 
+  setDisabledState(isDisabled: boolean): void {
+    this.formDisabled.set(isDisabled);
+    if (isDisabled) this.isOpen.set(false);
+  }
+
   protected toggle(): void {
-    if (this.disabled()) return;
-    this.isOpen.update(v => !v);
-    if (this.isOpen()) this.selecting.set('start');
+    if (this.isDisabled()) return;
+    if (this.isOpen()) {
+      this.close();
+      return;
+    }
+    this.selecting.set('start');
+    this.hoveredDate.set(null);
+    this.isOpen.set(true);
   }
 
   protected close(): void {
+    if (!this.isOpen()) return;
     this.isOpen.set(false);
     this.onTouched();
+    // Return focus to the trigger when it was inside the (now removed) panel
+    if (this.elRef.nativeElement.contains(document.activeElement)) {
+      this.triggerEl()?.nativeElement.focus();
+    }
+  }
+
+  /** Escape (from the trigger or anywhere in the panel) closes the picker */
+  @HostListener('keydown', ['$event'])
+  protected onKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Escape' && this.isOpen()) {
+      this.close();
+      // consumed here — an enclosing modal/drawer must not close as well
+      event.stopPropagation();
+      event.preventDefault();
+    }
+  }
+
+  @HostListener('document:click', ['$event'])
+  protected onDocumentClick(event: MouseEvent): void {
+    if (this.isOpen() && !this.elRef.nativeElement.contains(event.target as Node)) {
+      this.close();
+    }
   }
 
   protected prevMonth(): void {
@@ -174,18 +264,25 @@ export class DateRangePickerComponent implements ControlValueAccessor {
 
   protected clearRange(event: Event): void {
     event.stopPropagation();
+    if (this.isDisabled()) return;
     this.range.set({ start: null, end: null });
     const r = { start: null, end: null };
     this.onChange(r);
     this.rangeChange.emit(r);
   }
 
+  /** min/max are compared by calendar day — `minDate = new Date()` keeps today selectable */
   private isDateDisabled(date: Date): boolean {
     const min = this.minDate();
     const max = this.maxDate();
-    if (min && date < min) return true;
-    if (max && date > max) return true;
+    const day = this.dayStamp(date);
+    if (min && day < this.dayStamp(min)) return true;
+    if (max && day > this.dayStamp(max)) return true;
     return false;
+  }
+
+  private dayStamp(d: Date): number {
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
   }
 
   private sameDay(a: Date | null, b: Date | null): boolean {

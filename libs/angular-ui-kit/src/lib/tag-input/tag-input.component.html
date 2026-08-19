@@ -1,47 +1,59 @@
 @if (label()) {
-  <label class="lc-tag-input__label">{{ label() }}</label>
+  <label class="lc-tag-input__label" [for]="inputId">{{ label() }}</label>
 }
 
 <div
   class="lc-tag-input__container"
   [class.lc-tag-input__container--focused]="focused()"
-  [class.lc-tag-input__container--disabled]="disabled()"
+  [class.lc-tag-input__container--disabled]="isDisabled()"
   (click)="focusInput()"
 >
-  @for (tag of tags(); track tag) {
+  @for (tag of tags(); track $index) {
     <span class="lc-tag-input__tag">
       <span class="lc-tag-input__tag-text">{{ tag }}</span>
-      @if (removable() && !disabled()) {
+      @if (removable() && !isDisabled()) {
         <button
           type="button"
           class="lc-tag-input__tag-remove"
           (click)="removeTag($index); $event.stopPropagation()"
-          aria-label="Remove tag"
+          [attr.aria-label]="'Remove ' + tag"
         >×</button>
       }
     </span>
   }
 
-  @if (canAdd() && !disabled()) {
-    <input
-      #inputEl
-      type="text"
-      class="lc-tag-input__input"
-      [placeholder]="tags().length ? '' : placeholder()"
-      [value]="inputValue()"
-      (input)="onInput($event)"
-      (keydown)="onKeydown($event)"
-      (focus)="onFocus()"
-      (blur)="onBlur()"
-    />
-  }
+  <input
+    #inputEl
+    type="text"
+    [id]="inputId"
+    class="lc-tag-input__input"
+    [attr.role]="hasSuggestions() ? 'combobox' : null"
+    [attr.aria-autocomplete]="hasSuggestions() ? 'list' : null"
+    [attr.aria-expanded]="hasSuggestions() ? showSuggestions() : null"
+    [attr.aria-controls]="showSuggestions() ? listboxId : null"
+    [attr.aria-activedescendant]="showSuggestions() && activeIndex() >= 0 ? optionId(activeIndex()) : null"
+    [placeholder]="inputPlaceholder()"
+    [value]="inputValue()"
+    [disabled]="isDisabled()"
+    [readonly]="!canAdd()"
+    [attr.aria-readonly]="!canAdd() ? true : null"
+    (input)="onInput($event)"
+    (keydown)="onKeydown($event)"
+    (focus)="onFocus()"
+    (blur)="onBlur()"
+  />
 </div>
 
-@if (filteredSuggestions().length && focused()) {
-  <ul class="lc-tag-input__suggestions">
-    @for (sug of filteredSuggestions(); track sug) {
+@if (showSuggestions()) {
+  <ul class="lc-tag-input__suggestions" role="listbox" [id]="listboxId" [attr.aria-label]="label() || 'Suggestions'">
+    @for (sug of filteredSuggestions(); track sug; let i = $index) {
       <li
         class="lc-tag-input__suggestion"
+        [class.lc-tag-input__suggestion--active]="i === activeIndex()"
+        role="option"
+        [id]="optionId(i)"
+        [attr.aria-selected]="i === activeIndex()"
+        (mouseenter)="activeIndex.set(i)"
         (mousedown)="selectSuggestion(sug); $event.preventDefault()"
       >{{ sug }}</li>
     }

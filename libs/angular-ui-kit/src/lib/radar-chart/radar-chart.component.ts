@@ -4,9 +4,11 @@ import {
   input,
   computed,
 } from '@angular/core';
+import { ChartValueFormatter, formatChartValue, toFinite } from '../shared/chart-scale';
 
 export interface RadarChartSeries {
   label: string;
+  /** One value per axis; drawn clamped to [0, max]. */
   data: number[];
   color?: string;
 }
@@ -50,13 +52,27 @@ export class RadarChartComponent {
   fillOpacity = input<number>(0.15);
   /** Show legend. */
   showLegend = input<boolean>(false);
+  /** Formats values in the generated accessible summary. Defaults to a float-safe `String(value)`. */
+  formatValue = input<ChartValueFormatter>(formatChartValue);
+  /**
+   * Accessible name of the chart. Defaults to a generated summary listing each
+   * series with its per-axis values.
+   */
+  ariaLabel = input<string>('');
 
   protected readonly viewBox = computed(() => `0 0 ${this.size()} ${this.size()}`);
   protected readonly center = computed(() => this.size() / 2);
   protected readonly radius = computed(() => this.size() / 2 - 30);
 
+  private readonly cleanSeries = computed(() =>
+    (this.series() ?? []).map((ser) => ({
+      ...ser,
+      data: (ser.data ?? []).map((v) => toFinite(v)),
+    }))
+  );
+
   protected readonly axisCount = computed(() => {
-    const s = this.series();
+    const s = this.cleanSeries();
     return s.length ? Math.max(...s.map(ser => ser.data.length)) : 0;
   });
 
@@ -114,18 +130,18 @@ export class RadarChartComponent {
   });
 
   protected readonly seriesPolygons = computed(() => {
-    const allSeries = this.series();
+    const allSeries = this.cleanSeries();
     const cx = this.center();
     const cy = this.center();
     const r = this.radius();
-    const m = this.max() || 1;
+    const m = toFinite(this.max()) || 1;
     const ac = this.axisCount();
     if (!ac) return [];
 
     return allSeries.map((ser, si) => {
       const points = ser.data.map((v, i) => {
         const angle = (i / ac) * Math.PI * 2 - Math.PI / 2;
-        const vr = (Math.min(v, m) / m) * r;
+        const vr = (Math.min(Math.max(v, 0), m) / m) * r;
         return `${cx + vr * Math.cos(angle)},${cy + vr * Math.sin(angle)}`;
       });
       return { points: points.join(' '), colorIndex: si % 8, customColor: ser.color || null, label: ser.label };
@@ -135,5 +151,19 @@ export class RadarChartComponent {
   protected readonly legendItems = computed(() => {
     if (!this.showLegend()) return [];
     return this.seriesPolygons().map(s => ({ label: s.label, colorIndex: s.colorIndex, customColor: s.customColor }));
+  });
+
+  protected readonly effectiveAriaLabel = computed(() => {
+    const explicit = this.ariaLabel();
+    if (explicit) return explicit;
+    const series = this.cleanSeries();
+    if (!series.length || !this.axisCount()) return 'Radar chart: no data';
+    const fmt = this.formatValue();
+    const axes = this.axes();
+    const parts = series.map((s, si) => {
+      const values = s.data.map((v, i) => `${axes[i] || `Axis ${i + 1}`} ${fmt(v)}`).join(', ');
+      return `${s.label || `Series ${si + 1}`} (${values})`;
+    });
+    return `Radar chart: ${parts.join('; ')}`;
   });
 }

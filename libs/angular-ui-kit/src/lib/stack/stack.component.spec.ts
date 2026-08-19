@@ -27,8 +27,8 @@ class TestHostComponent {
   gap: 'none' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' = 'md';
   align: 'start' | 'center' | 'end' | 'stretch' | 'baseline' = 'start';
   justify: 'start' | 'center' | 'end' | 'between' | 'around' | 'evenly' = 'start';
-  wrap: boolean = false;
-  fullWidth: boolean = false;
+  wrap = false;
+  fullWidth = false;
 }
 
 describe('StackComponent', () => {

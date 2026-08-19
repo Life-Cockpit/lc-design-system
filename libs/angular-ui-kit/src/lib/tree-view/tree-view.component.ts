@@ -1,7 +1,9 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
   computed,
+  inject,
   input,
   model,
   output,
@@ -95,14 +97,20 @@ interface FlatNode {
   ancestorHasSibling: boolean[];
   /** Whether this node is the last among its siblings. */
   isLast: boolean;
+  /** 1-based position among its siblings (aria-posinset). */
+  posInSet: number;
+  /** Number of siblings including itself (aria-setsize). */
+  setSize: number;
+  /** Id of the parent node, `null` for root nodes. */
+  parentId: string | null;
 }
 
 const BADGE_STATUS_COLOR: Record<TreeNodeStatus, string> = {
-  default: 'var(--color-neutral-400)',
+  default: 'var(--color-text-tertiary)',
   added: 'var(--color-success-default, #16a34a)',
   modified: 'var(--color-warning-default, #d97706)',
   removed: 'var(--color-error-default, #dc2626)',
-  muted: 'var(--color-neutral-300)',
+  muted: 'var(--color-text-disabled)',
   success: 'var(--color-success-default, #16a34a)',
   busy: 'var(--color-primary-500, #6366f1)',
 };
@@ -131,7 +139,9 @@ function isExpandable(node: TreeNode): boolean {
  * - Indentation guide lines for readability
  * - Optional per-node status badges (added / modified / removed) and status
  *   indicators (`success` ✓, `busy` pulse)
- * - Keyboard accessible (Enter / Space to toggle or select)
+ * - Keyboard accessible: roving tabindex (one tab stop), Arrow keys / Home /
+ *   End move focus, Enter / Space toggle or select, Left / Right collapse /
+ *   expand or move to parent / first child
  * - Dark / light theme support via design tokens
  *
  * @example
@@ -167,15 +177,35 @@ export class TreeViewComponent {
   /** Emitted when a node is clicked / activated. */
   readonly nodeClick = output<TreeNode>();
 
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+
   /** Set of node ids the user has explicitly expanded / collapsed. */
   private readonly expandOverrides = signal<Map<string, boolean>>(new Map());
+
+  /** Id of the node that last had keyboard focus (roving tabindex). */
+  private readonly focusedId = signal<string | null>(null);
 
   /** Flattened, render-ready list of visible nodes. */
   protected readonly visibleNodes = computed<FlatNode[]>(() => {
     const out: FlatNode[] = [];
     const overrides = this.expandOverrides();
-    this.flatten(this.nodes(), 0, '', [], overrides, out);
+    this.flatten(this.nodes(), 0, '', [], overrides, out, null);
     return out;
+  });
+
+  /**
+   * The single tab stop of the tree: the last focused node if it is still
+   * visible, else the selected node, else the first enabled node.
+   */
+  protected readonly tabStopId = computed<string | null>(() => {
+    const nodes = this.visibleNodes();
+    const focusable = (id: string | null) =>
+      id !== null && nodes.some((n) => n.id === id && !n.disabled);
+    const focused = this.focusedId();
+    if (focusable(focused)) return focused;
+    const selected = this.selectedId();
+    if (focusable(selected)) return selected;
+    return nodes.find((n) => !n.disabled)?.id ?? null;
   });
 
   protected badgeColor(status: TreeNodeStatus): string {
@@ -197,17 +227,56 @@ export class TreeViewComponent {
     if (!flat.disabled) this.toggle(flat);
   }
 
+  protected onFocus(flat: FlatNode): void {
+    this.focusedId.set(flat.id);
+  }
+
   protected onKeydown(flat: FlatNode, event: KeyboardEvent): void {
     if (flat.disabled) return;
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      this.onNodeClick(flat);
-    } else if (event.key === 'ArrowRight' && flat.hasChildren && !flat.expanded) {
-      event.preventDefault();
-      this.setExpanded(flat.id, true);
-    } else if (event.key === 'ArrowLeft' && flat.hasChildren && flat.expanded) {
-      event.preventDefault();
-      this.setExpanded(flat.id, false);
+    const nodes = this.visibleNodes();
+    const index = nodes.findIndex((n) => n.id === flat.id);
+
+    switch (event.key) {
+      case 'Enter':
+      case ' ':
+        event.preventDefault();
+        this.onNodeClick(flat);
+        break;
+      case 'ArrowRight':
+        event.preventDefault();
+        if (!flat.hasChildren) return;
+        if (!flat.expanded) {
+          this.setExpanded(flat.id, true);
+        } else {
+          // Expanded: move to the first child.
+          this.focusIndex(index + 1);
+        }
+        break;
+      case 'ArrowLeft':
+        event.preventDefault();
+        if (flat.hasChildren && flat.expanded) {
+          this.setExpanded(flat.id, false);
+        } else if (flat.parentId !== null) {
+          // Leaf or collapsed node: move to the parent.
+          this.focusIndex(nodes.findIndex((n) => n.id === flat.parentId));
+        }
+        break;
+      case 'ArrowDown':
+        event.preventDefault();
+        this.focusIndex(this.nextEnabled(nodes, index, 1));
+        break;
+      case 'ArrowUp':
+        event.preventDefault();
+        this.focusIndex(this.nextEnabled(nodes, index, -1));
+        break;
+      case 'Home':
+        event.preventDefault();
+        this.focusIndex(this.nextEnabled(nodes, -1, 1));
+        break;
+      case 'End':
+        event.preventDefault();
+        this.focusIndex(this.nextEnabled(nodes, nodes.length, -1));
+        break;
     }
   }
 
@@ -224,6 +293,26 @@ export class TreeViewComponent {
   protected trackById = (_: number, n: FlatNode): string => n.id;
 
   // ── internals ──────────────────────────────────────────────────────────────
+
+  /** Index of the next enabled node from `from` in direction `dir`, or -1. */
+  private nextEnabled(nodes: FlatNode[], from: number, dir: 1 | -1): number {
+    for (let i = from + dir; i >= 0 && i < nodes.length; i += dir) {
+      if (!nodes[i].disabled) return i;
+    }
+    return -1;
+  }
+
+  /**
+   * Moves keyboard focus to the visible node at `index`. The rows are
+   * rendered in `visibleNodes()` order, so the index maps 1:1 to the DOM.
+   */
+  private focusIndex(index: number): void {
+    const nodes = this.visibleNodes();
+    if (index < 0 || index >= nodes.length || nodes[index].disabled) return;
+    this.focusedId.set(nodes[index].id);
+    const items = this.host.nativeElement.querySelectorAll<HTMLElement>('.lc-tree-view__item');
+    items[index]?.focus();
+  }
 
   private toggle(flat: FlatNode): void {
     this.setExpanded(flat.id, !flat.expanded);
@@ -269,6 +358,7 @@ export class TreeViewComponent {
     ancestorHasSibling: boolean[],
     overrides: Map<string, boolean>,
     out: FlatNode[],
+    parentId: string | null,
   ): void {
     nodes.forEach((node, index) => {
       const id = node.id ?? `${parentPath}/${node.name}`;
@@ -291,6 +381,9 @@ export class TreeViewComponent {
         disabled: node.disabled ?? false,
         ancestorHasSibling,
         isLast,
+        posInSet: index + 1,
+        setSize: nodes.length,
+        parentId,
       });
 
       if (expanded && node.children) {
@@ -301,6 +394,7 @@ export class TreeViewComponent {
           [...ancestorHasSibling, !isLast],
           overrides,
           out,
+          id,
         );
       }
     });

@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, input, computed, HostBinding } from '@angular/core';
+import { Component, ChangeDetectionStrategy, input, computed } from '@angular/core';
 
 export type SkeletonVariant = 'line' | 'circle' | 'rect';
 
@@ -25,6 +25,12 @@ export type SkeletonVariant = 'line' | 'circle' | 'rect';
   templateUrl: './skeleton.component.html',
   styleUrl: './skeleton.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    // The host mirrors the box width so the skeleton sizes correctly inside
+    // flex layouts, and never shrinks below it.
+    '[style.width]': 'hostWidth()',
+    '[style.flex-shrink]': '"0"',
+  },
 })
 export class SkeletonComponent {
   /** Shape variant. */
@@ -56,15 +62,5 @@ export class SkeletonComponent {
     };
   });
 
-  @HostBinding('style.width')
-  get hostWidth(): string {
-    const v = this.variant();
-    const defaults: Record<SkeletonVariant, string> = { line: '100%', circle: '40px', rect: '100%' };
-    return this.width() ?? defaults[v];
-  }
-
-  @HostBinding('style.flex-shrink')
-  get hostFlexShrink(): string {
-    return '0';
-  }
+  protected readonly hostWidth = computed(() => this.styles().width);
 }

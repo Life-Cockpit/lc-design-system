@@ -35,26 +35,42 @@
 
 .lc-scatter-plot__dot {
   opacity: 0.8;
-  cursor: pointer;
   transition: opacity 0.15s, r 0.15s;
+
+  &--interactive {
+    cursor: pointer;
+  }
 
   &:hover {
     opacity: 1;
     r: 6;
   }
+
+  // SVG shapes take no box-shadow/outline reliably; a ring in the primary ink
+  // is visible on the pastel/mid fills of both themes.
+  &:focus-visible {
+    outline: none;
+    opacity: 1;
+    stroke: var(--color-text-primary);
+    stroke-width: 2;
+  }
+}
+
+// Surface pair rather than inverted ink: `--color-text-primary` as a background
+// with white text disappears in the dark theme.
+.lc-scatter-plot__tooltip {
+  pointer-events: none;
 }
 
 .lc-scatter-plot__tooltip-bg {
-  fill: var(--color-text-primary);
-  opacity: 0.9;
-
+  fill: var(--color-surface-raised);
+  stroke: var(--color-border-strong);
+  stroke-width: 1;
 }
 
 .lc-scatter-plot__tooltip-text {
   font-size: 0.625rem;
-  fill: white;
-  pointer-events: none;
-
+  fill: var(--color-text-primary);
 }
 
 .lc-scatter-plot__legend {

@@ -1,17 +1,17 @@
 import {
   Component,
-  Input,
-  Output,
-  EventEmitter,
+  input,
+  output,
   signal,
   computed,
+  linkedSignal,
   ChangeDetectionStrategy,
   forwardRef,
   ElementRef,
-  ViewChild,
+  viewChild,
   inject,
+  DOCUMENT,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR, FormsModule } from '@angular/forms';
 import { OverlayModule } from '@angular/cdk/overlay';
 
@@ -47,11 +47,10 @@ export type SelectValue = string | number | string[] | number[] | null;
  * <lc-select [options]="options" placeholder="Choose" [(ngModel)]="selected" />
  * ```
  */
-/* eslint-disable @typescript-eslint/member-ordering */
 @Component({
   selector: 'lc-select',
   standalone: true,
-  imports: [CommonModule, FormsModule, OverlayModule],
+  imports: [FormsModule, OverlayModule],
   templateUrl: './select.component.html',
   styleUrl: './select.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -64,112 +63,138 @@ export type SelectValue = string | number | string[] | number[] | null;
   ],
 })
 export class SelectComponent implements ControlValueAccessor {
-  @ViewChild('selectTrigger', { static: false, read: ElementRef })
-  selectTrigger!: ElementRef;
+  private static nextId = 0;
+
+  /** Per-instance id base; the listbox and its options derive their ids from it. */
+  readonly selectId = `lc-select-${++SelectComponent.nextId}`;
+  readonly listboxId = `${this.selectId}-listbox`;
+
+  private readonly selectTrigger = viewChild<ElementRef<HTMLElement>>('selectTrigger');
+  private readonly dropdownPanel = viewChild<ElementRef<HTMLElement>>('dropdownPanel');
 
   /**
    * Visual variant of the select
    */
-  @Input() variant: 'outline' | 'filled' = 'outline';
+  readonly variant = input<'outline' | 'filled'>('outline');
 
   /**
    * Size of the select
    */
-  @Input() size: 'xs' | 'sm' | 'md' | 'lg' = 'md';
+  readonly size = input<'xs' | 'sm' | 'md' | 'lg'>('md');
 
   /**
    * Whether the select is disabled
    */
-  @Input() disabled = false;
+  readonly disabled = input<boolean>(false);
 
   /**
    * Whether the select is in error state
    */
-  @Input() error = false;
+  readonly error = input<boolean>(false);
 
   /**
    * Whether the select is required
    */
-  @Input() required = false;
+  readonly required = input<boolean>(false);
 
   /**
    * Whether the select is in loading state
    */
-  @Input() loading = false;
+  readonly loading = input<boolean>(false);
 
   /**
    * Whether the select allows searching
    */
-  @Input() searchable = false;
+  readonly searchable = input<boolean>(false);
 
   /**
    * Whether multiple options can be selected
    */
-  @Input() multiple = false;
+  readonly multiple = input<boolean>(false);
 
   /**
    * Placeholder text when no option is selected
    */
-  @Input() placeholder = 'Select an option';
+  readonly placeholder = input<string>('Select an option');
 
   /**
    * Helper text displayed below the select
    */
-  @Input() helperText = '';
+  readonly helperText = input<string>('');
 
   /**
    * Error message displayed when error is true
    */
-  @Input() errorMessage = '';
+  readonly errorMessage = input<string>('');
 
   /**
    * ARIA label for accessibility
    */
-  @Input() ariaLabel: string | undefined = undefined;
+  readonly ariaLabel = input<string | undefined>(undefined);
 
   /**
-   * Select options (flat list)
+   * Select options (flat list or groups)
    */
-  @Input()
-  get options(): SelectOption[] | SelectOptionGroup[] {
-    return this._options();
-  }
-  set options(v: SelectOption[] | SelectOptionGroup[]) {
-    this._options.set(v);
-  }
-  private _options = signal<SelectOption[] | SelectOptionGroup[]>([]);
+  readonly options = input<SelectOption[] | SelectOptionGroup[]>([]);
 
   /**
    * Emitted when selection changes
    */
-  @Output() readonly selectionChange = new EventEmitter<SelectValue>();
+  readonly selectionChange = output<SelectValue>();
 
   /**
    * Emitted when dropdown opens
    */
-  @Output() readonly opened = new EventEmitter<void>();
+  readonly opened = output<void>();
 
   /**
    * Emitted when dropdown closes
    */
-  @Output() readonly closed = new EventEmitter<void>();
+  readonly closed = output<void>();
 
   // Internal state
-  value = signal<SelectValue>(null);
-  isOpen = signal<boolean>(false);
-  searchQuery = signal<string>('');
-  highlightedIndex = signal<number>(-1);
+  readonly value = signal<SelectValue>(null);
+  readonly isOpen = signal<boolean>(false);
+  readonly searchQuery = signal<string>('');
+
+  /** Disabled state pushed in by the forms API (setDisabledState). */
+  private readonly formDisabled = signal<boolean>(false);
+
+  /** Effective disabled state: the `disabled` input OR the form control's disabled state. */
+  readonly isDisabled = computed(() => this.disabled() || this.formDisabled());
 
   // Computed values
-  selectedLabel = computed(() => {
+  readonly filteredOptions = computed(() => {
+    const query = this.searchQuery().toLowerCase();
+    const opts = this.options();
+
+    if (!query || !this.searchable()) {
+      return this.flattenOptions(opts);
+    }
+
+    return this.flattenOptions(opts).filter((opt) => opt.label.toLowerCase().includes(query));
+  });
+
+  /** Keyboard highlight; resets whenever the visible option list changes so it never points at a stale row. */
+  readonly highlightedIndex = linkedSignal<SelectOption[], number>({
+    source: this.filteredOptions,
+    computation: () => -1,
+  });
+
+  readonly activeDescendantId = computed(() => {
+    const index = this.highlightedIndex();
+    return this.isOpen() && index >= 0 ? this.optionId(index) : null;
+  });
+
+  readonly selectedLabel = computed(() => {
     const currentValue = this.value();
-    const opts = this._options();
+    const opts = this.options();
 
     if (currentValue === null) {
       return '';
     }
 
-    if (this.multiple) {
+    if (this.multiple()) {
       const values = Array.isArray(currentValue) ? currentValue : [currentValue];
       return values
         .map((val) => this.findOptionByValue(val, opts)?.label)
@@ -181,42 +206,72 @@ export class SelectComponent implements ControlValueAccessor {
     return this.findOptionByValue(val ?? '', opts)?.label || '';
   });
 
-  displayValue = computed(() => {
+  readonly displayValue = computed(() => {
     const label = this.selectedLabel();
     if (label) {
-      if (this.multiple && Array.isArray(this.value())) {
-        const count = (this.value() as (string | number)[]).length;
+      const currentValue = this.value();
+      if (this.multiple() && Array.isArray(currentValue)) {
+        const count = currentValue.length;
         return count > 1 ? `${count} selected` : label;
       }
       return label;
     }
-    return this.placeholder;
+    return this.placeholder();
   });
 
-  filteredOptions = computed(() => {
-    const query = this.searchQuery().toLowerCase();
-    const opts = this._options();
+  /** id of the helper/error text the trigger is described by (aria-describedby) */
+  readonly describedBy = computed(() => {
+    if (this.error() && this.errorMessage()) {
+      return `${this.selectId}-error`;
+    }
+    return this.helperText() ? `${this.selectId}-helper` : null;
+  });
 
-    if (!query || !this.searchable) {
-      return this.flattenOptions(opts);
+  /**
+   * Computed classes for the select trigger element
+   */
+  readonly selectClasses = computed(() => {
+    const classes = ['lc-select', `lc-select--${this.variant()}`, `lc-select--${this.size()}`];
+
+    if (this.isDisabled()) {
+      classes.push('lc-select--disabled');
     }
 
-    return this.flattenOptions(opts).filter((opt) => opt.label.toLowerCase().includes(query));
+    if (this.error()) {
+      classes.push('lc-select--error');
+    }
+
+    if (this.loading()) {
+      classes.push('lc-select--loading');
+    }
+
+    if (this.isOpen()) {
+      classes.push('lc-select--open');
+    }
+
+    return classes.join(' ');
   });
 
   // Private properties
-  private elementRef = inject(ElementRef);
-  // eslint-disable-next-line @typescript-eslint/member-ordering
+  private readonly document = inject(DOCUMENT);
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
   private onChange: (value: SelectValue) => void = () => {};
-  // eslint-disable-next-line @typescript-eslint/member-ordering
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
   private onTouched: () => void = () => {};
 
   // Public methods
   /**
+   * Id of the option at `index` in the filtered list (used for aria-activedescendant)
+   */
+  optionId(index: number): string {
+    return `${this.selectId}-option-${index}`;
+  }
+
+  /**
    * Toggle dropdown open/closed
    */
   toggle(): void {
-    if (this.disabled || this.loading) {
+    if (this.isDisabled() || this.loading()) {
       return;
     }
     if (this.isOpen()) {
@@ -230,7 +285,7 @@ export class SelectComponent implements ControlValueAccessor {
    * Open dropdown
    */
   open(): void {
-    if (this.disabled || this.loading) {
+    if (this.isDisabled() || this.loading() || this.isOpen()) {
       return;
     }
     this.isOpen.set(true);
@@ -238,9 +293,16 @@ export class SelectComponent implements ControlValueAccessor {
   }
 
   /**
-   * Close dropdown
+   * Close dropdown. Idempotent: the overlay's `detach` re-enters here after
+   * `isOpen` flips, and that second call must not emit `closed` again.
    */
   close(): void {
+    if (!this.isOpen()) {
+      return;
+    }
+    // If focus is inside the panel (search input) it would fall to <body> when the
+    // overlay is torn down; hand it back to the trigger first.
+    this.restoreFocusFromPanel();
     this.isOpen.set(false);
     this.searchQuery.set('');
     this.highlightedIndex.set(-1);
@@ -255,23 +317,19 @@ export class SelectComponent implements ControlValueAccessor {
       return;
     }
 
-    if (this.multiple) {
+    if (this.multiple()) {
       const currentValue = this.value() || [];
       const currentArray = (Array.isArray(currentValue) ? currentValue : []) as (string | number)[];
       const index = currentArray.indexOf(option.value);
 
-      if (index > -1) {
-        // Deselect
-        const newValue = currentArray.filter((v) => v !== option.value);
-        this.value.set(newValue as SelectValue);
-        this.onChange(newValue as SelectValue);
-      } else {
-        // Select
-        const newValue = [...currentArray, option.value];
-        this.value.set(newValue as SelectValue);
-        this.onChange(newValue as SelectValue);
-      }
-      this.selectionChange.emit(this.value());
+      const newValue = (
+        index > -1
+          ? currentArray.filter((v) => v !== option.value) // Deselect
+          : [...currentArray, option.value] // Select
+      ) as SelectValue;
+      this.value.set(newValue);
+      this.onChange(newValue);
+      this.selectionChange.emit(newValue);
     } else {
       this.value.set(option.value);
       this.onChange(option.value);
@@ -285,7 +343,7 @@ export class SelectComponent implements ControlValueAccessor {
    */
   isSelected(option: SelectOption): boolean {
     const currentValue = this.value();
-    if (this.multiple) {
+    if (this.multiple()) {
       const values = Array.isArray(currentValue) ? currentValue : [];
       return values.some((v) => v === option.value);
     }
@@ -296,7 +354,7 @@ export class SelectComponent implements ControlValueAccessor {
    * Clear selection
    */
   clear(): void {
-    if (this.multiple) {
+    if (this.multiple()) {
       this.value.set([]);
       this.onChange([]);
     } else {
@@ -307,33 +365,37 @@ export class SelectComponent implements ControlValueAccessor {
   }
 
   /**
-   * Handle keyboard navigation
+   * Handle keyboard navigation (trigger and search input share this handler)
    */
   onKeyDown(event: KeyboardEvent): void {
-    if (this.disabled || this.loading) {
+    if (this.isDisabled() || this.loading()) {
       return;
     }
 
     switch (event.key) {
-      case 'Enter':
       case ' ':
+      case 'Enter':
+        // Space must keep typing into the search box.
+        if (event.key === ' ' && this.isSearchInput(event.target)) {
+          return;
+        }
         if (!this.isOpen()) {
           this.open();
-          event.preventDefault();
-        } else if (this.highlightedIndex() >= 0) {
-          const options = this.filteredOptions();
-          const option = options[this.highlightedIndex()];
+        } else {
+          const option = this.filteredOptions()[this.highlightedIndex()];
           if (option) {
             this.selectOption(option);
           }
-          event.preventDefault();
         }
+        event.preventDefault();
         break;
 
       case 'Escape':
         if (this.isOpen()) {
           this.close();
           event.preventDefault();
+          // Only this select should react; keep the key from reaching enclosing overlays.
+          event.stopPropagation();
         }
         break;
 
@@ -341,9 +403,10 @@ export class SelectComponent implements ControlValueAccessor {
         if (!this.isOpen()) {
           this.open();
         } else {
-          const options = this.filteredOptions();
-          const nextIndex = (this.highlightedIndex() + 1) % options.length;
-          this.highlightedIndex.set(nextIndex);
+          const count = this.filteredOptions().length;
+          if (count > 0) {
+            this.highlightedIndex.set((this.highlightedIndex() + 1) % count);
+          }
         }
         event.preventDefault();
         break;
@@ -352,12 +415,27 @@ export class SelectComponent implements ControlValueAccessor {
         if (!this.isOpen()) {
           this.open();
         } else {
-          const options = this.filteredOptions();
-          const prevIndex =
-            this.highlightedIndex() <= 0 ? options.length - 1 : this.highlightedIndex() - 1;
-          this.highlightedIndex.set(prevIndex);
+          const count = this.filteredOptions().length;
+          if (count > 0) {
+            const current = this.highlightedIndex();
+            this.highlightedIndex.set(current <= 0 ? count - 1 : current - 1);
+          }
         }
         event.preventDefault();
+        break;
+
+      case 'Home':
+        if (this.isOpen() && this.filteredOptions().length > 0) {
+          this.highlightedIndex.set(0);
+          event.preventDefault();
+        }
+        break;
+
+      case 'End':
+        if (this.isOpen() && this.filteredOptions().length > 0) {
+          this.highlightedIndex.set(this.filteredOptions().length - 1);
+          event.preventDefault();
+        }
         break;
     }
   }
@@ -373,9 +451,7 @@ export class SelectComponent implements ControlValueAccessor {
    * Handle click outside
    */
   onClickOutside(): void {
-    if (this.isOpen()) {
-      this.close();
-    }
+    this.close();
   }
 
   // ControlValueAccessor implementation
@@ -392,38 +468,22 @@ export class SelectComponent implements ControlValueAccessor {
   }
 
   setDisabledState(isDisabled: boolean): void {
-    this.disabled = isDisabled;
-  }
-
-  /**
-   * Get computed classes for the select element
-   */
-  get selectClasses(): string {
-    const classes = ['lc-select'];
-
-    classes.push(`lc-select--${this.variant}`);
-    classes.push(`lc-select--${this.size}`);
-
-    if (this.disabled) {
-      classes.push('lc-select--disabled');
-    }
-
-    if (this.error) {
-      classes.push('lc-select--error');
-    }
-
-    if (this.loading) {
-      classes.push('lc-select--loading');
-    }
-
-    if (this.isOpen()) {
-      classes.push('lc-select--open');
-    }
-
-    return classes.join(' ');
+    this.formDisabled.set(isDisabled);
   }
 
   // Private helper methods
+  private isSearchInput(target: EventTarget | null): boolean {
+    return target instanceof HTMLInputElement;
+  }
+
+  private restoreFocusFromPanel(): void {
+    const panel = this.dropdownPanel()?.nativeElement;
+    const active = this.document.activeElement;
+    if (panel && active && panel.contains(active)) {
+      this.selectTrigger()?.nativeElement.focus();
+    }
+  }
+
   private findOptionByValue(
     value: string | number,
     options: SelectOption[] | SelectOptionGroup[],

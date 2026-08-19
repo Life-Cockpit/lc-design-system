@@ -7,7 +7,7 @@
     <ng-content select="[popover-trigger]"></ng-content>
   </div>
   @if (isOpen()) {
-    <div [class]="panelClasses()" role="dialog" aria-modal="false">
+    <div [id]="panelId" [class]="panelClasses()" role="dialog" aria-modal="false">
       <ng-content select="[popover-content]"></ng-content>
     </div>
   }

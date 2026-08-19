@@ -50,11 +50,11 @@ export const Default: Story = {
 export const Horizontal: Story = {
   args: {
     data: [
-      { value: 120, label: 'React' },
-      { value: 95, label: 'Angular' },
-      { value: 78, label: 'Vue' },
-      { value: 45, label: 'Svelte' },
-      { value: 30, label: 'Ember' },
+      { value: 120, label: 'Series A' },
+      { value: 95, label: 'Series B' },
+      { value: 78, label: 'Series C' },
+      { value: 45, label: 'Series D' },
+      { value: 30, label: 'Series E' },
     ],
     orientation: 'horizontal',
     height: 250,
@@ -77,13 +77,45 @@ export const SingleColor: Story = {
 export const CustomColors: Story = {
   args: {
     data: [
-      { value: 85, label: 'Q1', color: '#22c55e' },
-      { value: 60, label: 'Q2', color: '#f59e0b' },
-      { value: 95, label: 'Q3', color: '#3b82f6' },
-      { value: 45, label: 'Q4', color: '#ef4444' },
+      { value: 85, label: 'Q1', color: 'var(--color-success-default)' },
+      { value: 60, label: 'Q2', color: 'var(--color-warning-default)' },
+      { value: 95, label: 'Q3', color: 'var(--color-info-default)' },
+      { value: 45, label: 'Q4', color: 'var(--color-error-default)' },
     ],
     width: 300,
     height: 180,
+  },
+};
+
+export const NegativeValues: Story = {
+  parameters: {
+    docs: { description: { story: 'Negative values hang below the zero baseline; the grid extends to cover them.' } },
+  },
+  args: {
+    data: [
+      { value: 42, label: 'Q1' },
+      { value: -18, label: 'Q2' },
+      { value: 25, label: 'Q3' },
+      { value: -30, label: 'Q4' },
+      { value: 12, label: 'Q5' },
+    ],
+    height: 220,
+  },
+};
+
+export const CustomFormat: Story = {
+  parameters: {
+    docs: { description: { story: '`formatValue` formats both the value labels and the axis ticks.' } },
+  },
+  args: {
+    data: [
+      { value: 0.42, label: 'A' },
+      { value: 0.8, label: 'B' },
+      { value: 0.15, label: 'C' },
+      { value: 1, label: 'D' },
+    ],
+    formatValue: (v: number) => `${Math.round(v * 100)}%`,
+    height: 200,
   },
 };
 

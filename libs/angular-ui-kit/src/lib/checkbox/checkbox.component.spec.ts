@@ -1,7 +1,38 @@
+import { Component, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { FormsModule, ReactiveFormsModule, FormControl } from '@angular/forms';
 import { CheckboxComponent } from './checkbox.component';
+
+@Component({
+  standalone: true,
+  imports: [CheckboxComponent, ReactiveFormsModule],
+  template: `
+    <lc-checkbox
+      label="Bound"
+      [(checked)]="checked"
+      [indeterminate]="indeterminate()"
+      [disabled]="disabled()"
+      helpText="Some help"
+      [error]="error()"
+      errorMessage="Some error"
+      (checkedChange)="onCheckedChange($event)"
+    />
+    <lc-checkbox label="Form" [formControl]="control" />
+  `,
+})
+class HostComponent {
+  readonly checked = signal(false);
+  readonly indeterminate = signal(false);
+  readonly disabled = signal(false);
+  readonly error = signal(false);
+  readonly control = new FormControl(false);
+  readonly changes: boolean[] = [];
+
+  onCheckedChange(value: boolean): void {
+    this.changes.push(value);
+  }
+}
 
 describe('CheckboxComponent', () => {
   let component: CheckboxComponent;
@@ -74,7 +105,7 @@ describe('CheckboxComponent', () => {
 
     it('should emit checkedChange event', () => {
       const spy = jest.fn();
-      component.checkedChange.subscribe(spy);
+      component.checked.subscribe(spy);
 
       inputElement.click();
       fixture.detectChanges();
@@ -91,14 +122,14 @@ describe('CheckboxComponent', () => {
     });
 
     it('should apply disabled attribute', () => {
-      component.disabled.set(true);
+      fixture.componentRef.setInput('disabled', true);
       fixture.detectChanges();
       expect(inputElement.disabled).toBe(true);
       expect(component.disabled()).toBe(true);
     });
 
     it('should not toggle when disabled', () => {
-      component.disabled.set(true);
+      fixture.componentRef.setInput('disabled', true);
       fixture.detectChanges();
 
       const initialState = component.checked();
@@ -109,11 +140,11 @@ describe('CheckboxComponent', () => {
     });
 
     it('should not emit checkedChange when disabled', () => {
-      component.disabled.set(true);
+      fixture.componentRef.setInput('disabled', true);
       fixture.detectChanges();
 
       const spy = jest.fn();
-      component.checkedChange.subscribe(spy);
+      component.checked.subscribe(spy);
 
       inputElement.click();
       fixture.detectChanges();
@@ -122,7 +153,7 @@ describe('CheckboxComponent', () => {
     });
 
     it('should have disabled CSS class', () => {
-      component.disabled.set(true);
+      fixture.componentRef.setInput('disabled', true);
       fixture.detectChanges();
       expect(labelElement.classList).toContain('checkbox-disabled');
     });
@@ -286,7 +317,7 @@ describe('CheckboxComponent', () => {
     });
 
     it('should set aria-disabled when disabled', () => {
-      component.disabled.set(true);
+      fixture.componentRef.setInput('disabled', true);
       fixture.detectChanges();
       expect(inputElement.getAttribute('aria-disabled')).toBe('true');
     });
@@ -336,7 +367,7 @@ describe('CheckboxComponent', () => {
     it('should disable via CVA', () => {
       component.setDisabledState(true);
       fixture.detectChanges();
-      expect(component.disabled()).toBe(true);
+      expect(component.isDisabled()).toBe(true);
       expect(inputElement.disabled).toBe(true);
     });
   });
@@ -368,7 +399,7 @@ describe('CheckboxComponent', () => {
       component.setDisabledState(control.disabled);
       fixture.detectChanges();
 
-      expect(component.disabled()).toBe(true);
+      expect(component.isDisabled()).toBe(true);
     });
   });
 
@@ -388,7 +419,7 @@ describe('CheckboxComponent', () => {
     });
 
     it('should not be focusable when disabled', () => {
-      component.disabled.set(true);
+      fixture.componentRef.setInput('disabled', true);
       fixture.detectChanges();
       expect(inputElement.tabIndex).toBe(-1);
     });
@@ -449,5 +480,144 @@ describe('CheckboxComponent', () => {
       fixture.detectChanges();
       expect(labelElement.classList).toContain('checkbox-required');
     });
+  });
+
+  describe('Declarative inputs', () => {
+    it('should accept checked as an input', () => {
+      fixture.componentRef.setInput('checked', true);
+      fixture.detectChanges();
+      expect(inputElement.checked).toBe(true);
+      expect(labelElement.classList).toContain('checkbox-checked');
+    });
+
+    it('should accept indeterminate as an input', () => {
+      fixture.componentRef.setInput('indeterminate', true);
+      fixture.detectChanges();
+      expect(inputElement.indeterminate).toBe(true);
+    });
+
+    it('should accept disabled as an input', () => {
+      fixture.componentRef.setInput('disabled', true);
+      fixture.detectChanges();
+      expect(inputElement.disabled).toBe(true);
+      expect(component.isDisabled()).toBe(true);
+    });
+
+    it('should stay disabled while either the input or the form disables it', () => {
+      fixture.componentRef.setInput('disabled', true);
+      component.setDisabledState(true);
+      fixture.detectChanges();
+      expect(inputElement.disabled).toBe(true);
+
+      component.setDisabledState(false);
+      fixture.detectChanges();
+      expect(inputElement.disabled).toBe(true);
+
+      fixture.componentRef.setInput('disabled', false);
+      fixture.detectChanges();
+      expect(inputElement.disabled).toBe(false);
+    });
+
+    it('should not emit checkedChange when checked is set from outside', () => {
+      const spy = jest.fn();
+      component.checked.subscribe(spy);
+      fixture.componentRef.setInput('checked', true);
+      fixture.detectChanges();
+      expect(spy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Described-by wiring', () => {
+    it('should link help text via aria-describedby', () => {
+      fixture.componentRef.setInput('helpText', 'Some help');
+      fixture.detectChanges();
+      const help = fixture.nativeElement.querySelector('.checkbox-help-text');
+      expect(help.id).toBe(`${component.id()}-help`);
+      expect(inputElement.getAttribute('aria-describedby')).toBe(help.id);
+    });
+
+    it('should link error message via aria-describedby and set aria-invalid', () => {
+      fixture.componentRef.setInput('helpText', 'Some help');
+      fixture.componentRef.setInput('error', true);
+      fixture.componentRef.setInput('errorMessage', 'Nope');
+      fixture.detectChanges();
+      const err = fixture.nativeElement.querySelector('.checkbox-error-message');
+      expect(err.id).toBe(`${component.id()}-error`);
+      expect(inputElement.getAttribute('aria-describedby')).toBe(err.id);
+      expect(inputElement.getAttribute('aria-invalid')).toBe('true');
+    });
+
+    it('should keep consumer-supplied aria-describedby ids', () => {
+      fixture.componentRef.setInput('ariaDescribedBy', 'ext');
+      fixture.componentRef.setInput('helpText', 'Some help');
+      fixture.detectChanges();
+      expect(inputElement.getAttribute('aria-describedby')).toBe(`ext ${component.id()}-help`);
+    });
+
+    it('should omit aria-describedby when nothing describes the checkbox', () => {
+      expect(inputElement.hasAttribute('aria-describedby')).toBe(false);
+    });
+  });
+});
+
+describe('CheckboxComponent in a host', () => {
+  let fixture: ComponentFixture<HostComponent>;
+  let host: HostComponent;
+  let inputs: HTMLInputElement[];
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({ imports: [HostComponent] }).compileComponents();
+    fixture = TestBed.createComponent(HostComponent);
+    host = fixture.componentInstance;
+    fixture.detectChanges();
+    inputs = Array.from(fixture.nativeElement.querySelectorAll('input[type="checkbox"]'));
+  });
+
+  it('should reflect [(checked)] two-way binding in both directions', () => {
+    host.checked.set(true);
+    fixture.detectChanges();
+    expect(inputs[0].checked).toBe(true);
+
+    inputs[0].click();
+    fixture.detectChanges();
+    expect(host.checked()).toBe(false);
+  });
+
+  it('should emit checkedChange exactly once per user toggle', () => {
+    inputs[0].click();
+    fixture.detectChanges();
+    inputs[0].click();
+    fixture.detectChanges();
+    expect(host.changes).toEqual([true, false]);
+  });
+
+  it('should honour [disabled] and [indeterminate] bindings', () => {
+    host.disabled.set(true);
+    host.indeterminate.set(true);
+    fixture.detectChanges();
+    expect(inputs[0].disabled).toBe(true);
+    expect(inputs[0].indeterminate).toBe(true);
+  });
+
+  it('should render the form control value and disabled state into the DOM', () => {
+    expect(inputs[1].checked).toBe(false);
+
+    host.control.setValue(true);
+    fixture.detectChanges();
+    expect(inputs[1].checked).toBe(true);
+
+    host.control.disable();
+    fixture.detectChanges();
+    expect(inputs[1].disabled).toBe(true);
+
+    host.control.enable();
+    fixture.detectChanges();
+    expect(inputs[1].disabled).toBe(false);
+  });
+
+  it('should push user toggles into the form control', () => {
+    inputs[1].click();
+    fixture.detectChanges();
+    expect(host.control.value).toBe(true);
   });
 });

@@ -4,25 +4,34 @@ import {
   input,
   output,
   signal,
+  computed,
   effect,
+  untracked,
+  inject,
   HostListener,
+  OnDestroy,
 } from '@angular/core';
+import { A11yModule } from '@angular/cdk/a11y';
 import { IconComponent } from '../icon/icon.component';
+import { OverlayStackService } from '../shared/overlay-stack.service';
 
 export type DrawerPosition = 'left' | 'right';
 export type DrawerSize = 'sm' | 'md' | 'lg' | 'xl';
+
+/** Duration of the slide-out transition (see drawer.component.scss). */
+const CLOSE_ANIMATION_MS = 250;
 
 /**
  * Drawer component for slide-out overlay panels.
  *
  * Features:
- * - Slide-in from left, right, top, or bottom
- * - Size presets (sm, md, lg, xl, full)
+ * - Slide-in from left or right
+ * - Size presets (sm, md, lg, xl)
  * - Optional backdrop overlay with click-to-close
  * - Close on Escape key support
  * - Heading text display
  * - Content projection for arbitrary body content
- * - Accessible with ARIA dialog role
+ * - Accessible with ARIA dialog role, focus trap and focus restore
  *
  * @example
  * ```html
@@ -35,12 +44,14 @@ export type DrawerSize = 'sm' | 'md' | 'lg' | 'xl';
 @Component({
   selector: 'lc-drawer',
   standalone: true,
-  imports: [IconComponent],
+  imports: [A11yModule, IconComponent],
   templateUrl: './drawer.component.html',
   styleUrl: './drawer.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class DrawerComponent {
+export class DrawerComponent implements OnDestroy {
+  private static nextId = 0;
+
   /** Whether the drawer is open. */
   readonly open = input<boolean>(false);
 
@@ -68,31 +79,11 @@ export class DrawerComponent {
   /** Emitted when the drawer should close. */
   readonly closed = output<void>();
 
-  /** Internal visibility — drives the animation lifecycle. */
+  /** Internal visibility — stays true during the slide-out animation. */
   protected _visible = signal(false);
-  protected _animating = signal(false);
-
-  constructor() {
-    effect(() => {
-      const isOpen = this.open();
-      if (isOpen) {
-        this._visible.set(true);
-        this._animating.set(true);
-        // Lock body scroll
-        document.body.style.overflow = 'hidden';
-      } else if (this._visible()) {
-        this._animating.set(false);
-        // Restore scroll after animation
-        setTimeout(() => {
-          this._visible.set(false);
-          document.body.style.overflow = '';
-        }, 250);
-      }
-    });
-  }
 
   /** Width token → CSS. */
-  protected get widthValue(): string {
+  protected readonly widthValue = computed(() => {
     const map: Record<DrawerSize, string> = {
       sm: '320px',
       md: '400px',
@@ -100,16 +91,58 @@ export class DrawerComponent {
       xl: '640px',
     };
     return map[this.size()];
-  }
+  });
 
-  protected get panelClasses(): string {
+  protected readonly panelClasses = computed(() => {
     const cls = ['lc-drawer__panel', `lc-drawer__panel--${this.position()}`];
     if (this.open()) cls.push('lc-drawer__panel--open');
     return cls.join(' ');
+  });
+
+  private readonly overlayStack = inject(OverlayStackService);
+  /** Identifies this instance in the overlay stack. */
+  private readonly drawerId = `lc-drawer-${++DrawerComponent.nextId}`;
+  private closeTimer?: ReturnType<typeof setTimeout>;
+  private originalOverflow?: string;
+
+  constructor() {
+    effect(() => {
+      const isOpen = this.open();
+      untracked(() => {
+        if (isOpen) {
+          // Re-opening within the close animation must cancel the pending hide,
+          // otherwise the stale timer hides the drawer and unlocks scroll while
+          // `open()` is still true.
+          this.clearCloseTimer();
+          this._visible.set(true);
+          this.lockScroll();
+          this.overlayStack.push(this.drawerId);
+        } else if (this._visible()) {
+          this.overlayStack.remove(this.drawerId);
+          // Keep the panel mounted until the slide-out transition has finished
+          this.closeTimer = setTimeout(() => {
+            this.closeTimer = undefined;
+            this._visible.set(false);
+            this.unlockScroll();
+          }, CLOSE_ANIMATION_MS);
+        }
+      });
+    });
   }
 
-  /** Handle backdrop click. */
-  protected onOverlayClick(): void {
+  ngOnDestroy(): void {
+    // Navigating away while open must not leave the page scroll-locked
+    this.clearCloseTimer();
+    this.overlayStack.remove(this.drawerId);
+    this.unlockScroll();
+  }
+
+  /**
+   * Handle backdrop click. Ignored while another overlay (menu, popover, …)
+   * sits above this drawer — the click belongs to that layer.
+   */
+  protected onOverlayClick(event: MouseEvent): void {
+    if (!this.overlayStack.claim(this.drawerId, event)) return;
     if (this.closeOnOverlayClick()) {
       this.close();
     }
@@ -117,14 +150,39 @@ export class DrawerComponent {
 
   /** Handle close action. */
   protected close(): void {
-    document.body.style.overflow = '';
     this.closed.emit();
   }
 
+  /**
+   * Escape closes the drawer only while it is the top-most overlay; the event
+   * is consumed either way so overlays underneath stay open.
+   */
   @HostListener('document:keydown', ['$event'])
   protected onKeydown(event: KeyboardEvent): void {
-    if (event.key === 'Escape' && this.open() && this.closeOnEscape()) {
+    if (event.key !== 'Escape' || !this.open()) return;
+    if (!this.overlayStack.claim(this.drawerId, event)) return;
+    event.stopPropagation();
+    if (this.closeOnEscape()) {
       this.close();
+    }
+  }
+
+  private lockScroll(): void {
+    if (typeof document === 'undefined' || this.originalOverflow !== undefined) return;
+    this.originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+  }
+
+  private unlockScroll(): void {
+    if (typeof document === 'undefined' || this.originalOverflow === undefined) return;
+    document.body.style.overflow = this.originalOverflow;
+    this.originalOverflow = undefined;
+  }
+
+  private clearCloseTimer(): void {
+    if (this.closeTimer !== undefined) {
+      clearTimeout(this.closeTimer);
+      this.closeTimer = undefined;
     }
   }
 }

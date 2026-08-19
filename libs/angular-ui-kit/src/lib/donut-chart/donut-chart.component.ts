@@ -4,27 +4,17 @@ import {
   input,
   computed,
 } from '@angular/core';
+import { chartColor } from '../shared/chart-palette';
+import { toFinite } from '../shared/chart-scale';
 
 export interface DonutSegment {
+  /** Share of the whole. Non-finite and negative values count as 0. */
   value: number;
   label?: string;
   color?: string;
 }
 
 export type DonutChartSize = 'sm' | 'md' | 'lg';
-
-const DEFAULT_COLORS = [
-  'var(--color-primary-500)',
-  'var(--color-secondary-500)',
-  'var(--color-success-default)',
-  'var(--color-warning-default)',
-  'var(--color-error-default)',
-  'var(--color-info-default)',
-  'var(--color-primary-300)',
-  'var(--color-secondary-300)',
-  'var(--color-success-light)',
-  'var(--color-warning-light)',
-];
 
 @Component({
   selector: 'lc-donut-chart',
@@ -71,6 +61,12 @@ export class DonutChartComponent {
   /** Show legend below the chart. */
   showLegend = input<boolean>(false);
 
+  /**
+   * Accessible name of the chart. Defaults to a generated summary listing
+   * every segment's label and share, e.g. "Donut chart: A 40%, B 60%".
+   */
+  ariaLabel = input<string>('');
+
   protected readonly sizeMap: Record<DonutChartSize, number> = {
     sm: 96,
     md: 140,
@@ -93,7 +89,8 @@ export class DonutChartComponent {
     const segs = this.segments();
     if (!segs || segs.length === 0) return [];
 
-    const total = segs.reduce((sum, s) => sum + s.value, 0);
+    const values = segs.map((s) => Math.max(0, toFinite(s.value)));
+    const total = values.reduce((sum, v) => sum + v, 0);
     if (total === 0) return [];
 
     const cx = this.center();
@@ -105,37 +102,52 @@ export class DonutChartComponent {
     const gap = segs.length > 1 ? 0.02 : 0; // small gap between segments
 
     return segs.map((seg, i) => {
-      const fraction = seg.value / total;
+      const fraction = values[i] / total;
       const sweepAngle = fraction * Math.PI * 2 - gap;
       const endAngle = startAngle + sweepAngle;
 
-      const largeArc = sweepAngle > Math.PI ? 1 : 0;
+      let d: string;
+      if (sweepAngle >= Math.PI * 2 - 1e-9) {
+        // A full ring: an arc whose start and end coincide collapses to nothing,
+        // so draw it as two half-circles, the inner ring wound the other way.
+        d = [
+          `M${cx},${cy - r}`,
+          `A${r},${r} 0 1 1 ${cx},${cy + r}`,
+          `A${r},${r} 0 1 1 ${cx},${cy - r}`,
+          `M${cx},${cy - ir}`,
+          `A${ir},${ir} 0 1 0 ${cx},${cy + ir}`,
+          `A${ir},${ir} 0 1 0 ${cx},${cy - ir}`,
+          'Z',
+        ].join(' ');
+      } else {
+        const largeArc = sweepAngle > Math.PI ? 1 : 0;
 
-      const x1 = cx + r * Math.cos(startAngle);
-      const y1 = cy + r * Math.sin(startAngle);
-      const x2 = cx + r * Math.cos(endAngle);
-      const y2 = cy + r * Math.sin(endAngle);
+        const x1 = cx + r * Math.cos(startAngle);
+        const y1 = cy + r * Math.sin(startAngle);
+        const x2 = cx + r * Math.cos(endAngle);
+        const y2 = cy + r * Math.sin(endAngle);
 
-      const ix1 = cx + ir * Math.cos(endAngle);
-      const iy1 = cy + ir * Math.sin(endAngle);
-      const ix2 = cx + ir * Math.cos(startAngle);
-      const iy2 = cy + ir * Math.sin(startAngle);
+        const ix1 = cx + ir * Math.cos(endAngle);
+        const iy1 = cy + ir * Math.sin(endAngle);
+        const ix2 = cx + ir * Math.cos(startAngle);
+        const iy2 = cy + ir * Math.sin(startAngle);
 
-      const d = [
-        `M${x1},${y1}`,
-        `A${r},${r} 0 ${largeArc} 1 ${x2},${y2}`,
-        `L${ix1},${iy1}`,
-        `A${ir},${ir} 0 ${largeArc} 0 ${ix2},${iy2}`,
-        'Z',
-      ].join(' ');
+        d = [
+          `M${x1},${y1}`,
+          `A${r},${r} 0 ${largeArc} 1 ${x2},${y2}`,
+          `L${ix1},${iy1}`,
+          `A${ir},${ir} 0 ${largeArc} 0 ${ix2},${iy2}`,
+          'Z',
+        ].join(' ');
+      }
 
       startAngle = endAngle + gap;
 
       return {
         d,
-        color: seg.color || DEFAULT_COLORS[i % DEFAULT_COLORS.length],
+        color: seg.color || chartColor(i),
         label: seg.label || '',
-        value: seg.value,
+        value: values[i],
         percentage: Math.round(fraction * 100),
       };
     });
@@ -149,4 +161,14 @@ export class DonutChartComponent {
       percentage: arc.percentage,
     }))
   );
+
+  protected readonly effectiveAriaLabel = computed(() => {
+    const explicit = this.ariaLabel();
+    if (explicit) return explicit;
+    const arcs = this.arcs();
+    if (!arcs.length) return 'Donut chart: no data';
+    return `Donut chart: ${arcs
+      .map((a, i) => `${a.label || `Segment ${i + 1}`} ${a.percentage}%`)
+      .join(', ')}`;
+  });
 }

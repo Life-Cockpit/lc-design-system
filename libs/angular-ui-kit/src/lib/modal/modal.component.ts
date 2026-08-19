@@ -4,16 +4,16 @@ import {
   ViewEncapsulation,
   input,
   output,
-  signal,
   computed,
   effect,
+  linkedSignal,
+  HostListener,
   OnDestroy,
-  ElementRef,
-  ViewChild,
   inject,
 } from '@angular/core';
-import { A11yModule, FocusTrap, ConfigurableFocusTrapFactory } from '@angular/cdk/a11y';
+import { A11yModule } from '@angular/cdk/a11y';
 import { IconComponent } from '../icon/icon.component';
+import { OverlayStackService } from '../shared/overlay-stack.service';
 
 export type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | 'full';
 
@@ -45,11 +45,10 @@ export type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | 'full';
   templateUrl: './modal.component.html',
   styleUrls: ['./modal.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  // eslint-disable-next-line @angular-eslint/use-component-view-encapsulation
   encapsulation: ViewEncapsulation.None, // Required for dynamic size class styling
 })
 export class ModalComponent implements OnDestroy {
-  @ViewChild('modalContent') modalContent?: ElementRef<HTMLElement>;
+  private static nextId = 0;
 
   /**
    * Whether the modal is open (input from parent)
@@ -117,9 +116,10 @@ export class ModalComponent implements OnDestroy {
   readonly backdropClicked = output<MouseEvent>();
 
   /**
-   * Internal open state signal (protected for AOT)
+   * Internal open state (protected for AOT); follows the `open` input and is
+   * also set by the programmatic open/close methods.
    */
-  protected _open = signal<boolean>(false);
+  protected _open = linkedSignal(() => this.open());
 
   /**
    * Computed modal classes
@@ -128,40 +128,24 @@ export class ModalComponent implements OnDestroy {
     return `lc-modal lc-modal--${this.size()}`;
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-  private readonly focusTrapFactory = inject(ConfigurableFocusTrapFactory);
-  private focusTrap?: FocusTrap;
+  private readonly overlayStack = inject(OverlayStackService);
+  /** Identifies this instance in the overlay stack. */
+  private readonly modalId = `lc-modal-${++ModalComponent.nextId}`;
   private originalOverflow?: string;
-  private escapeListener?: (event: KeyboardEvent) => void;
 
   constructor() {
-    // Sync input with internal state
-    effect(() => {
-      this._open.set(this.open());
-    });
-
     // Watch for open state changes
     effect(() => {
-      const isOpen = this._open();
-      if (isOpen) {
-        void this.showModal();
+      if (this._open()) {
+        this.showModal();
       } else {
         this.hideModal();
       }
     });
-
-    // Listen for Escape key
-    if (typeof window !== 'undefined') {
-      this.escapeListener = this.handleEscapeKey.bind(this);
-      document.addEventListener('keydown', this.escapeListener);
-    }
   }
 
   ngOnDestroy(): void {
     this.hideModal();
-    if (this.escapeListener) {
-      document.removeEventListener('keydown', this.escapeListener);
-    }
   }
 
   /**
@@ -183,9 +167,11 @@ export class ModalComponent implements OnDestroy {
   }
 
   /**
-   * Handle backdrop click
+   * Handle backdrop click. Ignored while another overlay (popover, menu,
+   * confirm dialog, …) sits above this modal — the click belongs to that layer.
    */
   protected onBackdropClick(event: MouseEvent): void {
+    if (!this.overlayStack.claim(this.modalId, event)) return;
     this.backdropClicked.emit(event);
     if (this.closeOnBackdropClick()) {
       this.closeModal();
@@ -202,32 +188,30 @@ export class ModalComponent implements OnDestroy {
   }
 
   /**
-   * Handle Escape key press
+   * Escape closes the modal only while it is the top-most overlay; the event
+   * is consumed either way so overlays underneath stay open.
    */
-  private handleEscapeKey(event: KeyboardEvent): void {
-    if (event.key === 'Escape' && this._open() && this.closeOnEscape()) {
+  @HostListener('document:keydown', ['$event'])
+  protected onDocumentKeydown(event: KeyboardEvent): void {
+    if (event.key !== 'Escape' || !this._open()) return;
+    if (!this.overlayStack.claim(this.modalId, event)) return;
+    event.stopPropagation();
+    if (this.closeOnEscape()) {
       this.closeModal();
     }
   }
 
   /**
-   * Show the modal
+   * Show the modal. Focus is moved inside and restored on close by the
+   * template's `cdkTrapFocus` / `cdkTrapFocusAutoCapture`.
    */
-  private async showModal(): Promise<void> {
+  private showModal(): void {
+    this.overlayStack.push(this.modalId);
+
     // Lock body scroll
-    if (typeof document !== 'undefined') {
+    if (typeof document !== 'undefined' && this.originalOverflow === undefined) {
       this.originalOverflow = document.body.style.overflow;
       document.body.style.overflow = 'hidden';
-    }
-
-    // Setup focus trap after view is ready
-    await Promise.resolve();
-    if (this.modalContent && this._open()) {
-      const element = this.modalContent.nativeElement;
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
-      this.focusTrap = this.focusTrapFactory.create(element);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-      this.focusTrap.focusInitialElement();
     }
   }
 
@@ -235,17 +219,12 @@ export class ModalComponent implements OnDestroy {
    * Hide the modal
    */
   private hideModal(): void {
+    this.overlayStack.remove(this.modalId);
+
     // Restore body scroll
     if (typeof document !== 'undefined' && this.originalOverflow !== undefined) {
       document.body.style.overflow = this.originalOverflow;
       this.originalOverflow = undefined;
-    }
-
-    // Destroy focus trap
-    if (this.focusTrap) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-      this.focusTrap.destroy();
-      this.focusTrap = undefined;
     }
   }
 }

@@ -24,6 +24,15 @@ const meta: Meta<PaginationComponent> = {
       description: 'Controls button dimensions and spacing',
     },
     showInfo: { description: 'Show "Showing X-Y of Z items" text' },
+    previousLabel: { description: 'Visible text of the previous button', table: { defaultValue: { summary: 'Previous' } } },
+    nextLabel: { description: 'Visible text of the next button', table: { defaultValue: { summary: 'Next' } } },
+    previousAriaLabel: { description: 'Accessible name of the previous button', table: { defaultValue: { summary: 'Previous page' } } },
+    nextAriaLabel: { description: 'Accessible name of the next button', table: { defaultValue: { summary: 'Next page' } } },
+    pageAriaLabel: { description: 'Accessible name of a page button; `{page}` is replaced', table: { defaultValue: { summary: 'Page {page}' } } },
+    infoText: {
+      description: 'Info line template; `{first}`, `{last}`, `{total}` are replaced',
+      table: { defaultValue: { summary: 'Showing {first} to {last} of {total} items' } },
+    },
   },
 
   parameters: {
@@ -40,6 +49,7 @@ Pagination component for navigating through pages of content.
 - Size variants (sm, md, lg)
 - Accessible with ARIA attributes
 - Optional item count display
+- All UI strings overridable via inputs (\`previousLabel\`, \`nextLabel\`, \`infoText\`, …)
 `,
       },
     },
@@ -77,6 +87,22 @@ export const WithInfo: Story = {
 export const FewPages: Story = {
   name: 'Few Pages (No Ellipsis)',
   args: { currentPage: 2, totalItems: 30, pageSize: 10, size: 'md' },
+};
+
+export const Localized: Story = {
+  name: 'Localized Labels',
+  args: {
+    currentPage: 2,
+    totalItems: 120,
+    pageSize: 10,
+    showInfo: true,
+    previousLabel: 'Zurück',
+    nextLabel: 'Weiter',
+    previousAriaLabel: 'Vorherige Seite',
+    nextAriaLabel: 'Nächste Seite',
+    pageAriaLabel: 'Seite {page}',
+    infoText: 'Einträge {first}–{last} von {total}',
+  },
 };
 
 export const ManyPages: Story = {

@@ -6,7 +6,7 @@ setupZonelessTestEnv({
 });
 
 global.ResizeObserver = class ResizeObserver {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
+  observe() { /* jsdom has no layout — nothing to observe */ }
+  unobserve() { /* noop */ }
+  disconnect() { /* noop */ }
 };

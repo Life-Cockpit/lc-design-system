@@ -1,4 +1,4 @@
-<div class="lc-rich-text-editor" [class.lc-rich-text-editor--disabled]="disabled()">
+<div class="lc-rich-text-editor" [class.lc-rich-text-editor--disabled]="isDisabled()">
   <!-- Toolbar -->
   <div class="lc-rich-text-editor__toolbar">
     <div class="lc-rich-text-editor__toolbar-actions">
@@ -7,7 +7,8 @@
           type="button"
           class="lc-rich-text-editor__toolbar-btn"
           [title]="getActionTitle(action)"
-          [disabled]="disabled() || readonly()"
+          [attr.aria-label]="getActionTitle(action)"
+          [disabled]="!editable()"
           (click)="onToolbarAction(action)"
         >
           {{ getActionLabel(action) }}
@@ -47,10 +48,16 @@
   >
     @switch (activeMode()) {
       @case ('rich') {
+        <!-- The rich area is filled from the markdown by the component (see the
+             constructor effect); it must never receive markup Angular hasn't
+             sanitised. `contenteditable` follows the disabled/readonly state —
+             a greyed-out toolbar alone would still let the user type. -->
         <div
           #richArea
           class="lc-rich-text-editor__rich"
-          contenteditable="true"
+          [attr.contenteditable]="editable() ? 'true' : 'false'"
+          [attr.aria-disabled]="isDisabled() ? 'true' : null"
+          [attr.aria-readonly]="readonly() && !isDisabled() ? 'true' : null"
           [attr.data-placeholder]="placeholder()"
           [class.lc-rich-text-editor__rich--empty]="!markdown()"
           (input)="onRichInput()"
@@ -66,7 +73,7 @@
           class="lc-rich-text-editor__textarea"
           [placeholder]="placeholder()"
           [value]="markdown()"
-          [disabled]="disabled()"
+          [disabled]="isDisabled()"
           [readOnly]="readonly()"
           (input)="onMarkdownInput($event)"
           (blur)="onBlur()"
@@ -81,7 +88,7 @@
             class="lc-rich-text-editor__textarea lc-rich-text-editor__split-editor"
             [placeholder]="placeholder()"
             [value]="markdown()"
-            [disabled]="disabled()"
+            [disabled]="isDisabled()"
             [readOnly]="readonly()"
             (input)="onMarkdownInput($event)"
             (blur)="onBlur()"

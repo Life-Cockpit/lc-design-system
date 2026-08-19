@@ -11,6 +11,8 @@
   >
     @for (tab of tabList(); track tab.id; let i = $index) {
       <button
+        #tabButton
+        type="button"
         class="lc-tabs__tab"
         [class.lc-tabs__tab--selected]="isSelected(i)"
         [class.lc-tabs__tab--disabled]="tab.disabled()"
@@ -48,7 +50,7 @@
         [attr.hidden]="!isSelected(i) || null"
         [tabindex]="0"
       >
-        <ng-container *ngTemplateOutlet="tab.template"></ng-container>
+        <ng-container [ngTemplateOutlet]="tab.template()"></ng-container>
       </div>
     }
   </div>

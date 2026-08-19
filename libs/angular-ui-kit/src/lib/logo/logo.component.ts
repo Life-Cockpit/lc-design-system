@@ -38,7 +38,9 @@ export const LC_LOGO_BASE_PATH = new InjectionToken<string>('LC_LOGO_BASE_PATH',
  * Features:
  * - Full logo and emblem-only variants
  * - Multiple size options (xs, sm, md, lg, xl)
- * - Optional theme-aware dark-variant sources via `<picture>`
+ * - Optional dark-variant sources that follow the APP theme (`:root.light`
+ *   opt-in, dark otherwise) — not the OS `prefers-color-scheme`, which the
+ *   app theme may well contradict. `colorMode="light|dark"` pins one source.
  * - Falls back to a CSS `invert` filter only for the built-in Life-Cockpit
  *   assets (custom logos are never auto-inverted to avoid color distortion)
  *
@@ -115,8 +117,9 @@ export class LogoComponent {
   readonly emblemSrc = input<string>('');
 
   /**
-   * Optional dark-theme URL for the full logo. When provided, the logo
-   * automatically swaps in dark mode (via `prefers-color-scheme: dark`).
+   * Optional dark-theme URL for the full logo. When provided, the logo swaps
+   * with the app theme: shown under the dark-first default and `:root.dark`,
+   * the light `src` under `:root.light` (or force one via `colorMode`).
    */
   readonly darkSrc = input<string>('');
 
@@ -145,6 +148,17 @@ export class LogoComponent {
   readonly logoDarkSrc = computed(() => {
     return this.variant() === 'emblem' ? this.darkEmblemSrc() : this.darkSrc();
   });
+
+  /**
+   * Which sources are in the DOM. Without a dark source there is only the one
+   * image. With one, an explicit `colorMode` renders that side alone; `auto`
+   * renders BOTH and lets the stylesheet show the one matching the root theme
+   * class — that way the swap follows the app theme (also when it is toggled
+   * without `ThemeService`, e.g. Storybook), needs no JS, and is right on the
+   * first paint.
+   */
+  readonly showLightSrc = computed(() => !this.logoDarkSrc() || this.colorMode() !== 'dark');
+  readonly showDarkSrc = computed(() => !!this.logoDarkSrc() && this.colorMode() !== 'light');
 
   readonly logoClasses = computed(() => {
     const classes = [`size-${this.size()}`];

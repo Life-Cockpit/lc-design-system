@@ -1,18 +1,23 @@
 import {
   Component,
   ChangeDetectionStrategy,
+  ElementRef,
+  SecurityContext,
+  computed,
+  effect,
+  forwardRef,
+  inject,
   input,
+  linkedSignal,
   output,
   signal,
-  computed,
-  ElementRef,
-  ViewChild,
-  AfterViewInit,
-  OnDestroy,
-  forwardRef,
+  untracked,
+  viewChild,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
+import { DomSanitizer } from '@angular/platform-browser';
+import { isSafeImageUrl, isSafeLinkUrl } from '../shared/safe-url';
 
 export type RichTextEditorMode = 'rich' | 'markdown' | 'split';
 export type ToolbarAction =
@@ -34,6 +39,30 @@ export type ToolbarAction =
 
 export interface ToolbarConfig {
   actions: ToolbarAction[];
+}
+
+const HTML_ESCAPES: Record<string, string> = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;',
+};
+
+/** Escapes text for HTML — every character that could open a tag or an attribute. */
+function escapeHtml(text: string): string {
+  return text.replace(/[&<>"']/g, (c) => HTML_ESCAPES[c]);
+}
+
+/**
+ * The URL as it may go into `href`/`src`, or null if it must not: only relative
+ * URLs and the allow-listed schemes pass (see `safe-url.ts`), so a link in
+ * user-supplied markdown can never run script when clicked.
+ */
+function safeUrl(url: string, image = false): string | null {
+  const value = url.trim();
+  if (!value) return null;
+  return (image ? isSafeImageUrl(value) : isSafeLinkUrl(value)) ? value : null;
 }
 
 const DEFAULT_TOOLBAR: ToolbarConfig = {
@@ -66,6 +95,12 @@ const DEFAULT_TOOLBAR: ToolbarConfig = {
  * Implements ControlValueAccessor for reactive form integration.
  * The value is always stored as Markdown.
  *
+ * The built-in markdown → HTML conversion escapes the source before it applies
+ * any markup and only lets http(s)/mailto/tel and relative URLs through as
+ * links, so markdown that arrives from a server or another user cannot inject
+ * markup or script. The result is additionally run through Angular's HTML
+ * sanitizer before it reaches the DOM.
+ *
  * @example
  * ```html
  * <lc-rich-text-editor
@@ -89,7 +124,7 @@ const DEFAULT_TOOLBAR: ToolbarConfig = {
     },
   ],
 })
-export class RichTextEditorComponent implements ControlValueAccessor, AfterViewInit, OnDestroy {
+export class RichTextEditorComponent implements ControlValueAccessor {
   /** Editor mode */
   mode = input<RichTextEditorMode>('rich');
 
@@ -117,14 +152,24 @@ export class RichTextEditorComponent implements ControlValueAccessor, AfterViewI
   /** Emitted on every content change */
   readonly contentChange = output<string>();
 
-  @ViewChild('editorArea') editorArea!: ElementRef<HTMLTextAreaElement>;
-  @ViewChild('richArea') richArea!: ElementRef<HTMLDivElement>;
+  private readonly editorArea = viewChild<ElementRef<HTMLTextAreaElement>>('editorArea');
+  private readonly richArea = viewChild<ElementRef<HTMLDivElement>>('richArea');
+  private readonly sanitizer = inject(DomSanitizer);
 
   /** Internal markdown value */
   protected markdown = signal('');
 
-  /** Current active mode (can be toggled by user) */
-  protected activeMode = signal<RichTextEditorMode>('rich');
+  /** Current active mode: follows the `mode` input until the user toggles it. */
+  protected activeMode = linkedSignal<RichTextEditorMode>(() => this.mode());
+
+  /** Disabled through the form control (`setDisabledState`), as opposed to the input. */
+  private readonly formDisabled = signal(false);
+
+  /** Disabled by either route — the one flag the template consults. */
+  protected readonly isDisabled = computed(() => this.disabled() || this.formDisabled());
+
+  /** Whether the content can currently be edited at all. */
+  protected readonly editable = computed(() => !this.isDisabled() && !this.readonly());
 
   /** Word count */
   protected wordCount = computed(() => {
@@ -136,27 +181,35 @@ export class RichTextEditorComponent implements ControlValueAccessor, AfterViewI
   /** Character count */
   protected charCount = computed(() => this.markdown().length);
 
-  /** Rendered HTML from markdown */
-  protected renderedHtml = computed(() => this.markdownToHtml(this.markdown()));
+  /**
+   * Rendered HTML from markdown — escaped by the converter and, on top of that,
+   * passed through Angular's HTML sanitizer, so it is safe to assign to
+   * `innerHTML` directly.
+   */
+  protected renderedHtml = computed(() => this.sanitizeHtml(this.markdownToHtml(this.markdown())));
 
   // CVA
-  private onChange: (value: string) => void = () => {};
-  private onTouched: () => void = () => {};
+  private onChange: (value: string) => void = () => { /* set by registerOnChange */ };
+  private onTouched: () => void = () => { /* set by registerOnTouched */ };
 
-  ngAfterViewInit(): void {
-    this.activeMode.set(this.mode());
-  }
-
-  ngOnDestroy(): void {
-    // cleanup if needed
+  constructor() {
+    // The rich area lives inside an `@switch`, so it comes and goes with the
+    // mode. Whenever it (re)appears, it starts empty and has to be filled from
+    // the markdown — including the very first time, which is after any
+    // `writeValue` a form control performs before the view exists. Only the
+    // element's presence is tracked: re-rendering on every markdown change would
+    // wipe the caret while the user types in it.
+    effect(() => {
+      const el = this.richArea()?.nativeElement;
+      if (el) untracked(() => this.renderRich(el));
+    });
   }
 
   // -- ControlValueAccessor --
-  writeValue(value: string): void {
+  writeValue(value: string | null | undefined): void {
     this.markdown.set(value || '');
-    if (this.richArea?.nativeElement) {
-      this.richArea.nativeElement.innerHTML = this.renderedHtml();
-    }
+    const el = this.richArea()?.nativeElement;
+    if (el) this.renderRich(el);
   }
 
   registerOnChange(fn: (value: string) => void): void {
@@ -168,30 +221,24 @@ export class RichTextEditorComponent implements ControlValueAccessor, AfterViewI
   }
 
   setDisabledState(isDisabled: boolean): void {
-    // handled by input
+    this.formDisabled.set(isDisabled);
   }
 
   // -- Mode switching --
   protected switchMode(mode: RichTextEditorMode): void {
     if (this.activeMode() === 'rich' && mode !== 'rich') {
-      // Sync rich content to markdown
-      if (this.richArea?.nativeElement) {
-        this.markdown.set(this.htmlToMarkdown(this.richArea.nativeElement.innerHTML));
-      }
-    } else if (this.activeMode() !== 'rich' && mode === 'rich') {
-      // Will render from markdown when view updates
-      setTimeout(() => {
-        if (this.richArea?.nativeElement) {
-          this.richArea.nativeElement.innerHTML = this.renderedHtml();
-        }
-      });
+      // Sync rich content to markdown before the rich area is torn down.
+      const el = this.richArea()?.nativeElement;
+      if (el) this.markdown.set(this.htmlToMarkdown(el.innerHTML));
     }
+    // Entering rich mode: the effect in the constructor renders the markdown
+    // into the freshly created rich area.
     this.activeMode.set(mode);
   }
 
   // -- Toolbar actions --
   protected onToolbarAction(action: ToolbarAction): void {
-    if (this.disabled() || this.readonly()) return;
+    if (!this.editable()) return;
 
     if (this.activeMode() === 'rich') {
       this.execRichCommand(action);
@@ -251,7 +298,7 @@ export class RichTextEditorComponent implements ControlValueAccessor, AfterViewI
   }
 
   private insertMarkdownSyntax(action: ToolbarAction): void {
-    const textarea = this.editorArea?.nativeElement;
+    const textarea = this.editorArea()?.nativeElement;
     if (!textarea) return;
 
     const start = textarea.selectionStart;
@@ -351,11 +398,24 @@ export class RichTextEditorComponent implements ControlValueAccessor, AfterViewI
   }
 
   private syncFromRich(): void {
-    if (this.richArea?.nativeElement) {
-      const md = this.htmlToMarkdown(this.richArea.nativeElement.innerHTML);
-      this.markdown.set(md);
-      this.emitChange(md);
-    }
+    const el = this.richArea()?.nativeElement;
+    if (!el) return;
+    const md = this.htmlToMarkdown(el.innerHTML);
+    this.markdown.set(md);
+    this.emitChange(md);
+  }
+
+  /** Puts the current markdown into the rich area, as sanitised HTML. */
+  private renderRich(el: HTMLDivElement): void {
+    el.innerHTML = this.renderedHtml();
+  }
+
+  /**
+   * Angular's HTML sanitizer, as the last line of defence behind the escaping
+   * `markdownToHtml` does itself: whatever it might miss, this strips.
+   */
+  private sanitizeHtml(html: string): string {
+    return this.sanitizer.sanitize(SecurityContext.HTML, html) ?? '';
   }
 
   private emitChange(value: string): void {
@@ -411,10 +471,18 @@ export class RichTextEditorComponent implements ControlValueAccessor, AfterViewI
   }
 
   // -- Markdown <-> HTML conversion (simple built-in) --
+  /**
+   * Converts the editor's markdown subset to HTML. The source is HTML-escaped
+   * *first*, so nothing in it can open a tag or an attribute; the conversions
+   * below then only ever add markup of their own. Raw HTML in the markdown is
+   * therefore shown as text — with one exception, `<u>`, which the toolbar's
+   * underline action emits (markdown has no underline) and which is let back
+   * through in escaped form only.
+   */
   protected markdownToHtml(md: string): string {
     if (!md) return '';
 
-    let html = md;
+    let html = escapeHtml(md);
 
     // Code blocks (must be first)
     html = html.replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code class="language-$1">$2</code></pre>');
@@ -433,15 +501,27 @@ export class RichTextEditorComponent implements ControlValueAccessor, AfterViewI
     html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
     html = html.replace(/~~(.+?)~~/g, '<del>$1</del>');
 
+    // Underline: the one raw tag the editor itself writes into the markdown.
+    html = html.replace(/&lt;u&gt;(.+?)&lt;\/u&gt;/g, '<u>$1</u>');
+
     // Inline code
     html = html.replace(/`(.+?)`/g, '<code>$1</code>');
 
-    // Links and images
-    html = html.replace(/!\[(.+?)\]\((.+?)\)/g, '<img alt="$1" src="$2" />');
-    html = html.replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2">$1</a>');
+    // Links and images. Only safe URLs become attributes; anything else is
+    // shown as its text — a `javascript:` link that just isn't a link is far
+    // better than one that runs. Quotes are already escaped (see above), so
+    // the URL cannot break out of the attribute either.
+    html = html.replace(/!\[(.+?)\]\((.+?)\)/g, (_m, alt: string, src: string) => {
+      const url = safeUrl(src, true);
+      return url ? `<img alt="${alt}" src="${url}" />` : alt;
+    });
+    html = html.replace(/\[(.+?)\]\((.+?)\)/g, (_m, text: string, href: string) => {
+      const url = safeUrl(href);
+      return url ? `<a href="${url}">${text}</a>` : text;
+    });
 
-    // Blockquotes
-    html = html.replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>');
+    // Blockquotes — the marker is `&gt;` by now, the source having been escaped.
+    html = html.replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>');
 
     // Unordered lists
     html = html.replace(/^- (.+)$/gm, '<li>$1</li>');

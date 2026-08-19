@@ -1,11 +1,13 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
   input,
   output,
   computed,
   signal,
   forwardRef,
+  viewChildren,
 } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 
@@ -34,7 +36,7 @@ const DEFAULT_SWATCHES = [
  * Color picker component for selecting colors from swatches or custom input.
  *
  * Features:
- * - Predefined color swatch palette
+ * - Predefined color swatch palette (a radiogroup: arrow keys move between swatches)
  * - Native browser color picker integration
  * - Hex color text input with validation
  * - Disabled state support
@@ -46,6 +48,8 @@ const DEFAULT_SWATCHES = [
  * ```
  */
 export class ColorPickerComponent implements ControlValueAccessor {
+  private static nextId = 0;
+
   /** Label text */
   label = input<string>();
 
@@ -61,12 +65,31 @@ export class ColorPickerComponent implements ControlValueAccessor {
   /** Emits the selected color hex value */
   colorChange = output<string>();
 
+  /** Per-instance id wiring the label to the native colour input. */
+  readonly inputId = `lc-color-picker-${++ColorPickerComponent.nextId}`;
+
   protected value = signal('#3b82f6');
-  protected isDisabled = signal(false);
+
+  /** Disabled through the form control (`setDisabledState`), as opposed to the input. */
+  private readonly formDisabled = signal(false);
+
+  /** Disabled by either route — the one flag the template consults. */
+  protected readonly isDisabled = computed(() => this.disabled() || this.formDisabled());
+
+  private readonly swatchButtons = viewChildren<ElementRef<HTMLButtonElement>>('swatchBtn');
+
+  /**
+   * The swatch carrying the group's single tab stop (roving tabindex): the
+   * selected one, or the first when the current colour is not in the palette.
+   */
+  protected readonly focusableSwatchIndex = computed(() => {
+    const index = this.swatches().indexOf(this.value());
+    return index >= 0 ? index : 0;
+  });
 
   protected pickerClasses = computed(() => {
     const classes = ['color-picker'];
-    if (this.disabled() || this.isDisabled()) classes.push('color-picker--disabled');
+    if (this.isDisabled()) classes.push('color-picker--disabled');
     return classes.join(' ');
   });
 
@@ -76,8 +99,36 @@ export class ColorPickerComponent implements ControlValueAccessor {
   private onTouched: () => void = () => {};
 
   protected selectSwatch(color: string): void {
-    if (this.disabled() || this.isDisabled()) return;
+    if (this.isDisabled()) return;
     this.setValue(color);
+  }
+
+  /** Arrow keys / Home / End move selection (and focus) through the palette like a radiogroup. */
+  protected onSwatchKeydown(event: KeyboardEvent, index: number): void {
+    if (this.isDisabled()) return;
+    const count = this.swatches().length;
+    let next: number;
+    switch (event.key) {
+      case 'ArrowRight':
+      case 'ArrowDown':
+        next = (index + 1) % count;
+        break;
+      case 'ArrowLeft':
+      case 'ArrowUp':
+        next = (index - 1 + count) % count;
+        break;
+      case 'Home':
+        next = 0;
+        break;
+      case 'End':
+        next = count - 1;
+        break;
+      default:
+        return;
+    }
+    event.preventDefault();
+    this.selectSwatch(this.swatches()[next]);
+    this.swatchButtons()[next]?.nativeElement.focus();
   }
 
   protected onNativeInput(event: Event): void {
@@ -118,6 +169,6 @@ export class ColorPickerComponent implements ControlValueAccessor {
   }
 
   setDisabledState(isDisabled: boolean): void {
-    this.isDisabled.set(isDisabled);
+    this.formDisabled.set(isDisabled);
   }
 }

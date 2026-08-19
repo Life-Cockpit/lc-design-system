@@ -19,7 +19,8 @@ Callout component for contextual information banners.
 - Semantic variants (info, success, warning, error, neutral)
 - Auto-mapped variant icons
 - Optional title text
-- Dismissible with close button
+- Dismissible with close button (\`visible\` is two-way bindable to show it again)
+- role="alert" for error / warning, role="status" otherwise
 - Content projection for custom body content
 `,
       },

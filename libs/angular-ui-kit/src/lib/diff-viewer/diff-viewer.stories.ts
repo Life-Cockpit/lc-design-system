@@ -13,7 +13,8 @@ const meta: Meta<DiffViewerComponent> = {
       table: { defaultValue: { summary: 'side-by-side' } },
     },
     showLineNumbers: { control: 'boolean', description: 'Show line numbers alongside the diff', table: { defaultValue: { summary: 'true' } } },
-    contextLines: { control: 'number', description: 'Number of surrounding unchanged lines to show (0 = all)', table: { defaultValue: { summary: '0' } } },
+    contextLines: { control: 'number', description: 'Number of surrounding unchanged lines to show (Infinity = all)', table: { defaultValue: { summary: 'Infinity' } } },
+    maxLines: { control: 'number', description: 'Per-side line cap; above it a "diff too large" notice is shown instead of a diff', table: { defaultValue: { summary: '20000' } } },
     oldLabel: { control: 'text', description: 'Label for the old/before panel' },
     newLabel: { control: 'text', description: 'Label for the new/after panel' },
   },
@@ -25,7 +26,7 @@ Diff viewer for comparing two texts, highlighting additions and removals.
 
 **Key Features:**
 - Side-by-side and inline display modes
-- LCS-based diff algorithm for accurate change detection
+- Minimal line diff (Myers, linear space) — large inputs stay responsive; a per-side \`maxLines\` cap (default 20 000) degrades to a "too large" notice
 - Line numbers with synchronized scrolling
 - Change statistics (+additions / −deletions)
 - Configurable context lines (collapse unchanged regions)

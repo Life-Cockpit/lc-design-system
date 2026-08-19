@@ -163,8 +163,9 @@ export const CustomBrand: Story = {
 \`\`\`
 
 \`darkSrc\` / \`darkEmblemSrc\` are optional. When provided, the logo
-swaps automatically via \`prefers-color-scheme: dark\` (rendered through
-a native \`<picture>\` element — no JavaScript needed).
+swaps with the **app theme** (the \`:root.light\` opt-in vs. the dark-first
+default / \`:root.dark\`), not with the OS \`prefers-color-scheme\` — pure
+CSS, no JavaScript needed. \`colorMode="light|dark"\` pins one source.
 `,
       },
     },

@@ -4,10 +4,12 @@
     [attr.height]="svgSize()"
     [attr.viewBox]="viewBox()"
     role="img"
-    aria-label="Donut chart"
+    [attr.aria-label]="effectiveAriaLabel()"
     class="lc-donut-chart__svg"
   >
-    @for (arc of arcs(); track arc.label) {
+    <title>{{ effectiveAriaLabel() }}</title>
+
+    @for (arc of arcs(); track $index) {
       <path
         [attr.d]="arc.d"
         [attr.fill]="arc.color"
@@ -41,7 +43,7 @@
 
   @if (showLegend()) {
     <div class="lc-donut-chart__legend">
-      @for (item of legendItems(); track item.label) {
+      @for (item of legendItems(); track $index) {
         <div class="lc-donut-chart__legend-item">
           <span class="lc-donut-chart__legend-dot" [style.background-color]="item.color"></span>
           <span class="lc-donut-chart__legend-label">{{ item.label }}</span>

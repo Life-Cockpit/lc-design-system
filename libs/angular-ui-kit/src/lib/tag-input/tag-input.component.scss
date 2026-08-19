@@ -97,6 +97,10 @@
   &::placeholder {
     color: var(--color-text-tertiary);
   }
+
+  &:read-only {
+    cursor: default;
+  }
 }
 
 .lc-tag-input__suggestions {
@@ -123,7 +127,9 @@
   cursor: pointer;
   color: var(--color-text-secondary);
 
-  &:hover {
+  // Hover and keyboard highlight look the same; hover also moves the highlight.
+  &:hover,
+  &--active {
     background: var(--color-surface-hover);
     color: var(--color-text-primary);
   }

@@ -92,6 +92,10 @@
   &__svg {
     transform-origin: 0 0;
     transition: transform 0.1s ease-out;
+    // The svg's own box is the node layout's extent; bowed edges and their labels
+    // swing past it on every side (into negative coordinates above/left of the
+    // first row). Let them draw — the canvas clips at the frame anyway.
+    overflow: visible;
   }
 
   &__edge {
@@ -141,6 +145,9 @@
     fill: var(--color-surface);
   }
 
+  // Size and weight are mirrored in the component (LABEL_FONT_SIZE / _WEIGHT):
+  // the layout measures the labels in this font to size the boxes and wrap the
+  // lines. Change them together.
   &__node-label {
     font-size: 12px;
     font-weight: 500;

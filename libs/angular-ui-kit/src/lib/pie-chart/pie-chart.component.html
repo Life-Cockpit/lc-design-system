@@ -1,13 +1,15 @@
 <div class="lc-pie-chart">
-  <svg [attr.width]="svgSize()" [attr.height]="svgSize()" [attr.viewBox]="viewBox()" role="img" aria-label="Pie chart" class="lc-pie-chart__svg">
-    @for (arc of arcs(); track arc.label) {
+  <svg [attr.width]="svgSize()" [attr.height]="svgSize()" [attr.viewBox]="viewBox()" role="img" [attr.aria-label]="effectiveAriaLabel()" class="lc-pie-chart__svg">
+    <title>{{ effectiveAriaLabel() }}</title>
+
+    @for (arc of arcs(); track $index) {
       <path [attr.d]="arc.d" [attr.fill]="arc.color" class="lc-pie-chart__segment" />
     }
   </svg>
 
   @if (showLegend()) {
     <div class="lc-pie-chart__legend">
-      @for (item of legendItems(); track item.label) {
+      @for (item of legendItems(); track $index) {
         <div class="lc-pie-chart__legend-item">
           <span class="lc-pie-chart__legend-dot" [style.background-color]="item.color"></span>
           <span class="lc-pie-chart__legend-label">{{ item.label }}</span>

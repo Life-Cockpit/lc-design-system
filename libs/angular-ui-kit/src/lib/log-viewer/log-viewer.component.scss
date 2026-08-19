@@ -1,4 +1,10 @@
 .lc-log-viewer {
+  // Row height of the virtual window. The component reads this once after
+  // render (see `lineHeight`), so overriding it on the host keeps the
+  // rendered rows and the virtual-scroll maths in sync.
+  --lc-log-viewer-line-height: 22px;
+
+  position: relative;
   display: flex;
   flex-direction: column;
   border: 1px solid var(--color-divider, #e5e7eb);
@@ -90,7 +96,7 @@
 
   &--error {
     background-color: rgba(157, 14, 14, 0.18);
-    color: var(--color-error);
+    color: var(--color-error-default);
 
     .lc-log-viewer--terminal & {
       background-color: #45202a;
@@ -100,7 +106,7 @@
 
   &--warn {
     background-color: rgba(225, 160, 64, 0.18);
-    color: var(--color-warning);
+    color: var(--color-warning-default);
 
     .lc-log-viewer--terminal & {
       background-color: #3d3520;
@@ -145,6 +151,19 @@
   }
 }
 
+// Visually hidden (search label).
+.lc-log-viewer__sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 // Content area
 .lc-log-viewer__content {
   flex: 1;
@@ -172,13 +191,22 @@
   align-items: baseline;
   gap: 0.625rem;
   padding: 1px 0.75rem;
-  height: 22px;
+  height: var(--lc-log-viewer-line-height);
   white-space: nowrap;
-  cursor: pointer;
   transition: background-color 0.1s;
 
   &:hover {
     background-color: rgba(128, 128, 128, 0.08);
+  }
+
+  // Interactive rows (`clickableLines`): pointer + a visible focus ring.
+  &--clickable {
+    cursor: pointer;
+
+    &:focus-visible {
+      outline: none;
+      box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--color-primary-500) 60%, transparent);
+    }
   }
 
   // Level colors
@@ -212,10 +240,11 @@
   min-width: 5ch;
   font-weight: 600;
 
-  .lc-log-viewer__line--debug & { color: #9ca3af; }
-  .lc-log-viewer__line--info & { color: #3b82f6; }
-  .lc-log-viewer__line--warn & { color: #f59e0b; }
-  .lc-log-viewer__line--error & { color: #ef4444; }
+  // Semantic status ink (theme-tuned tokens) for the log variant.
+  .lc-log-viewer__line--debug & { color: var(--color-text-tertiary); }
+  .lc-log-viewer__line--info & { color: var(--color-info-default); }
+  .lc-log-viewer__line--warn & { color: var(--color-warning-default); }
+  .lc-log-viewer__line--error & { color: var(--color-error-default); }
 
   .lc-log-viewer--terminal & {
     .lc-log-viewer__line--debug & { color: #6c7086; }
@@ -236,7 +265,8 @@
 }
 
 .lc-log-viewer__match {
-  background-color: #fbbf2480;
+  background-color: color-mix(in srgb, var(--color-warning-default) 45%, transparent);
+  color: inherit;
   border-radius: 2px;
   padding: 0 1px;
 
@@ -267,7 +297,12 @@
   transition: background-color 0.15s;
 
   &:hover {
-    background-color: var(--color-neutral-50, #f9fafb);
+    background-color: var(--color-surface-hover);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary-500) 20%, transparent);
   }
 
   .lc-log-viewer--terminal & {
@@ -281,10 +316,11 @@
   }
 }
 
-// ANSI color classes
+// ANSI color classes — dark-surface palette (Catppuccin Mocha) is the default;
+// "black" maps to Surface 1 so it stays legible on a dark background.
 .ansi-bold { font-weight: 700; }
 .ansi-italic { font-style: italic; }
-.ansi-black { color: #1e1e2e; }
+.ansi-black { color: #45475a; }
 .ansi-red { color: #f38ba8; }
 .ansi-green { color: #a6e3a1; }
 .ansi-yellow { color: #f9e2af; }
@@ -301,17 +337,27 @@
 .ansi-bright-cyan { color: #94e2d5; }
 .ansi-bright-white { color: #bac2de; }
 
-// Light theme ANSI overrides
-.lc-log-viewer--log {
-  .ansi-black { color: #111827; }
-  .ansi-red { color: #dc2626; }
-  .ansi-green { color: #16a34a; }
-  .ansi-yellow { color: #ca8a04; }
-  .ansi-blue { color: #2563eb; }
-  .ansi-magenta { color: #9333ea; }
-  .ansi-cyan { color: #0891b2; }
-  .ansi-white { color: #6b7280; }
-  .ansi-gray { color: #9ca3af; }
+// Light theme ANSI overrides (Catppuccin Latte) — keyed to the *theme*, not
+// the variant: the log variant sits on the theme surface, so on a dark
+// surface (dark theme) the Mocha palette above must stay. The terminal
+// variant is always a dark surface and never takes these.
+:root.light .lc-log-viewer--log {
+  .ansi-black { color: #4c4f69; }
+  .ansi-red { color: #d20f39; }
+  .ansi-green { color: #40a02b; }
+  .ansi-yellow { color: #df8e1d; }
+  .ansi-blue { color: #1e66f5; }
+  .ansi-magenta { color: #8839ef; }
+  .ansi-cyan { color: #179299; }
+  .ansi-white { color: #6c6f85; }
+  .ansi-gray { color: #9ca0b0; }
+  .ansi-bright-red { color: #e64553; }
+  .ansi-bright-green { color: #40a02b; }
+  .ansi-bright-yellow { color: #df8e1d; }
+  .ansi-bright-blue { color: #04a5e5; }
+  .ansi-bright-magenta { color: #ea76cb; }
+  .ansi-bright-cyan { color: #179299; }
+  .ansi-bright-white { color: #5c5f77; }
 }
 
 // Custom scrollbar for terminal

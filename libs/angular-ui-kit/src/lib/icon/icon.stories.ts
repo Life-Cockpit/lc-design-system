@@ -2,6 +2,9 @@ import type { Meta, StoryObj } from '@storybook/angular';
 import { Component, signal, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { IconComponent } from './icon.component';
+// The package's exports map only exposes ./icons/*, so the catalogue JSON has to be
+// reached by path.
+// eslint-disable-next-line @nx/enforce-module-boundaries
 import tablerIcons from '../../../../../node_modules/@tabler/icons/icons.json';
 
 const ALL_ICONS = Object.keys(tablerIcons).sort((a, b) => a.localeCompare(b));

@@ -28,7 +28,6 @@ export type ButtonType = 'button' | 'submit' | 'reset';
   imports: [NgClass],
   templateUrl: './button.component.html',
   styleUrl: './button.component.scss',
-  // eslint-disable-next-line @angular-eslint/use-component-view-encapsulation
   encapsulation: ViewEncapsulation.None, // Required for dynamic variant class styling
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

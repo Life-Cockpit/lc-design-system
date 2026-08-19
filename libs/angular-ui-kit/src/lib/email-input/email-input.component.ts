@@ -146,8 +146,8 @@ export class EmailInputComponent implements ControlValueAccessor {
     /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
 
   // ControlValueAccessor callbacks
-  private onChange: (value: string) => void = () => {};
-  private onTouched: () => void = () => {};
+  private onChange: (value: string) => void = () => { /* set by registerOnChange */ };
+  private onTouched: () => void = () => { /* set by registerOnTouched */ };
 
   /**
    * Computed validation state

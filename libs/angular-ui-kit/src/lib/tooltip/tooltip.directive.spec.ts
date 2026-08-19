@@ -2,7 +2,8 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { By } from '@angular/platform-browser';
 import { TooltipDirective } from './tooltip.directive';
-import { OverlayModule } from '@angular/cdk/overlay';
+import { FlexibleConnectedPositionStrategy, OverlayModule, OverlayRef } from '@angular/cdk/overlay';
+import { OverlayStackService } from '../shared/overlay-stack.service';
 
 describe('TooltipDirective', () => {
   let fixture: ComponentFixture<TestComponent>;
@@ -373,6 +374,91 @@ describe('TooltipDirective', () => {
         expect(tooltip?.getAttribute('role')).toBe('tooltip');
         done();
       }, 100);
+    });
+
+    it('should point aria-describedby at the id of the tooltip element', () => {
+      directive.show();
+      fixture.detectChanges();
+
+      const tooltip = document.querySelector('.lc-tooltip');
+      expect(tooltip?.id).toBeTruthy();
+      expect(buttonElement.getAttribute('aria-describedby')).toBe(tooltip?.id);
+      directive.hide();
+    });
+
+    it('should keep ids the host already lists in aria-describedby', () => {
+      @Component({
+        standalone: true,
+        imports: [TooltipDirective],
+        template: `<button lcTooltip="Test" aria-describedby="hint">Hover me</button>`,
+        changeDetection: ChangeDetectionStrategy.OnPush,
+      })
+      class DescribedTestComponent {}
+
+      const describedFixture = TestBed.createComponent(DescribedTestComponent);
+      describedFixture.detectChanges();
+      const btn = describedFixture.debugElement.query(By.css('button')).nativeElement as HTMLButtonElement;
+      const dir = describedFixture.debugElement.query(By.directive(TooltipDirective)).injector.get(TooltipDirective);
+
+      dir.show();
+      expect(btn.getAttribute('aria-describedby')).toBe(`hint ${dir.tooltipId}`);
+
+      dir.hide();
+      expect(btn.getAttribute('aria-describedby')).toBe('hint');
+    });
+
+    it('should hide on Escape and stop listening afterwards', () => {
+      directive.show();
+      expect(document.querySelector('.lc-tooltip')).toBeTruthy();
+
+      const escape = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true });
+      document.dispatchEvent(escape);
+      expect(document.querySelector('.lc-tooltip')).toBeFalsy();
+      expect(buttonElement.getAttribute('aria-describedby')).toBeFalsy();
+
+      const hideSpy = jest.spyOn(directive, 'hide');
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      expect(hideSpy).not.toHaveBeenCalled();
+    });
+
+    it('should not hide on Escape while another overlay is on top of it', () => {
+      const stack = TestBed.inject(OverlayStackService);
+      directive.show();
+      stack.push('some-modal-above');
+
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      expect(document.querySelector('.lc-tooltip')).toBeTruthy();
+
+      stack.remove('some-modal-above');
+      directive.hide();
+    });
+  });
+
+  describe('Position fallbacks', () => {
+    it('should register the preferred position first and the other sides as fallbacks', () => {
+      @Component({
+        standalone: true,
+        imports: [TooltipDirective],
+        template: `<button lcTooltip="Test" tooltipPosition="left">Hover me</button>`,
+        changeDetection: ChangeDetectionStrategy.OnPush,
+      })
+      class LeftTestComponent {}
+
+      const leftFixture = TestBed.createComponent(LeftTestComponent);
+      leftFixture.detectChanges();
+      const dir = leftFixture.debugElement.query(By.directive(TooltipDirective)).injector.get(TooltipDirective);
+
+      dir.show();
+      const strategy = (dir as unknown as { overlayRef: OverlayRef }).overlayRef.getConfig()
+        .positionStrategy as FlexibleConnectedPositionStrategy;
+      const sides = strategy.positions.map((p) => `${p.originX}/${p.originY}->${p.overlayX}/${p.overlayY}`);
+      expect(sides).toEqual([
+        'start/center->end/center', // left (preferred)
+        'end/center->start/center', // right
+        'center/top->center/bottom', // top
+        'center/bottom->center/top', // bottom
+      ]);
+      dir.hide();
     });
   });
 

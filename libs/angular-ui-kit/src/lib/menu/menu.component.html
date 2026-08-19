@@ -6,7 +6,7 @@
 
   <!-- Dropdown menu -->
   @if (isOpen()) {
-    <div 
+    <div
       class="lc-menu__dropdown"
       [class.lc-menu__dropdown--bottom-left]="position() === 'bottom-left'"
       [class.lc-menu__dropdown--bottom-right]="position() === 'bottom-right'"
@@ -16,64 +16,78 @@
       [class.lc-menu__dropdown--lg]="size() === 'lg'"
       [style.min-width]="minWidth()"
     >
-      <!-- Optional header slot -->
+      <!-- Optional header slot (outside the menu role: it is not an item) -->
       <ng-content select="[header]" />
 
       <!-- Menu items -->
-      @for (item of items(); track item.id) {
-        @if (item.href) {
-          <!-- Link item -->
-          <a
-            [href]="item.href"
-            [target]="item.target || '_self'"
-            [attr.rel]="item.target === '_blank' ? 'noopener noreferrer' : null"
-            class="lc-menu__item"
-            [class.lc-menu__item--danger]="item.variant === 'danger'"
-            [class.lc-menu__item--disabled]="item.disabled"
-            (click)="onItemClick(item, $event)"
-          >
-            @if (item.icon) {
-              <lc-icon [name]="item.icon" [size]="item.iconSize || 'sm'" />
-            }
-            <span class="lc-menu__item-content">
-              <span class="lc-menu__item-label">{{ item.label }}</span>
-              @if (item.metadata?.subtitle) {
-                <span class="lc-menu__item-subtitle">{{ item.metadata?.subtitle }}</span>
+      <div
+        class="lc-menu__items"
+        role="menu"
+        [id]="panelId"
+        (keydown)="onPanelKeydown($event)"
+      >
+        @for (item of items(); track item.id; let i = $index) {
+          @if (item.href) {
+            <!-- Link item -->
+            <a
+              #menuItem
+              role="menuitem"
+              [href]="item.href"
+              [target]="item.target || '_self'"
+              [attr.rel]="item.target === '_blank' ? 'noopener noreferrer' : null"
+              [attr.tabindex]="tabindexFor(i, item)"
+              [attr.aria-disabled]="item.disabled ? 'true' : null"
+              class="lc-menu__item"
+              [class.lc-menu__item--danger]="item.variant === 'danger'"
+              [class.lc-menu__item--disabled]="item.disabled"
+              (click)="onItemClick(item, $event)"
+            >
+              @if (item.icon) {
+                <lc-icon [name]="item.icon" [size]="item.iconSize || 'sm'" />
               }
-            </span>
-            @if (item.metadata?.badge) {
-              <span class="lc-menu__item-badge">{{ item.metadata?.badge }}</span>
-            }
-          </a>
-        } @else {
-          <!-- Button item -->
-          <button
-            type="button"
-            class="lc-menu__item"
-            [class.lc-menu__item--danger]="item.variant === 'danger'"
-            [class.lc-menu__item--disabled]="item.disabled"
-            [disabled]="item.disabled"
-            (click)="onItemClick(item, $event)"
-          >
-            @if (item.icon) {
-              <lc-icon [name]="item.icon" [size]="item.iconSize || 'sm'" />
-            }
-            <span class="lc-menu__item-content">
-              <span class="lc-menu__item-label">{{ item.label }}</span>
-              @if (item.metadata?.subtitle) {
-                <span class="lc-menu__item-subtitle">{{ item.metadata?.subtitle }}</span>
+              <span class="lc-menu__item-content">
+                <span class="lc-menu__item-label">{{ item.label }}</span>
+                @if (item.metadata?.subtitle) {
+                  <span class="lc-menu__item-subtitle">{{ item.metadata?.subtitle }}</span>
+                }
+              </span>
+              @if (item.metadata?.badge) {
+                <span class="lc-menu__item-badge">{{ item.metadata?.badge }}</span>
               }
-            </span>
-            @if (item.metadata?.badge) {
-              <span class="lc-menu__item-badge">{{ item.metadata?.badge }}</span>
-            }
-          </button>
-        }
+            </a>
+          } @else {
+            <!-- Button item -->
+            <button
+              #menuItem
+              type="button"
+              role="menuitem"
+              class="lc-menu__item"
+              [class.lc-menu__item--danger]="item.variant === 'danger'"
+              [class.lc-menu__item--disabled]="item.disabled"
+              [attr.tabindex]="tabindexFor(i, item)"
+              [disabled]="item.disabled"
+              (click)="onItemClick(item, $event)"
+            >
+              @if (item.icon) {
+                <lc-icon [name]="item.icon" [size]="item.iconSize || 'sm'" />
+              }
+              <span class="lc-menu__item-content">
+                <span class="lc-menu__item-label">{{ item.label }}</span>
+                @if (item.metadata?.subtitle) {
+                  <span class="lc-menu__item-subtitle">{{ item.metadata?.subtitle }}</span>
+                }
+              </span>
+              @if (item.metadata?.badge) {
+                <span class="lc-menu__item-badge">{{ item.metadata?.badge }}</span>
+              }
+            </button>
+          }
 
-        @if (item.dividerAfter) {
-          <hr class="lc-menu__divider" />
+          @if (item.dividerAfter) {
+            <hr class="lc-menu__divider" />
+          }
         }
-      }
+      </div>
 
       <!-- Optional footer slot -->
       <ng-content select="[footer]" />

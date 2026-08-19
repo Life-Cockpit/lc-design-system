@@ -269,6 +269,58 @@ export const TypedNodes: Story = {
   },
 };
 
+export const LongLabels: Story = {
+  name: 'Long Labels & Sibling Dependencies',
+  args: {
+    root: {
+      id: 'group',
+      label: 'Group A',
+      type: 'Group',
+      children: [
+        { id: 'a1', label: 'Item A1 with a fairly long descriptive label', type: 'Highlight' },
+        {
+          id: 'a2',
+          label: 'Item A2 with a long label',
+          type: 'Item',
+          dependsOn: [{ id: 'a1', relation: 'requires' }],
+        },
+        {
+          id: 'a3',
+          label: 'Item A3 with an even longer descriptive label that wraps and is cut',
+          type: 'Item',
+          dependsOn: [{ id: 'a1', relation: 'requires' }],
+        },
+        {
+          id: 'a4',
+          label: 'Item A4 with a long label',
+          type: 'Item',
+          dependsOn: [
+            { id: 'a1', relation: 'requires' },
+            { id: 'a2', relation: 'references' },
+          ],
+        },
+      ],
+    },
+    typeColors: { Group: '#c1e3e9', Highlight: '#2f6f86', Item: '#eef6f7' },
+    direction: 'horizontal',
+    fitMode: 'contain',
+    interactive: false,
+    height: '440px',
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Boxes size themselves to the labels: the width grows with the longest label up to a cap, ' +
+          'past which labels wrap onto a second line, and what still does not fit is ellipsised ' +
+          '(hover for the full text). Dependencies between siblings — nodes in the same column — ' +
+          'bow out beside the column, nested into lanes when they overlap, so every arc stays its ' +
+          'own line and no edge runs through the nodes it connects.',
+      },
+    },
+  },
+};
+
 export const CappedNeighbourhood: Story = {
   name: 'Truncation Indicator',
   args: {

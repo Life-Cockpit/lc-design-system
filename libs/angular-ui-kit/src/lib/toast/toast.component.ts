@@ -17,12 +17,14 @@ import type { Toast, ToastVariant } from './toast.service';
  * - Auto-dismiss with configurable duration
  * - Manual dismiss with close button
  * - Icon display per variant
- * - Stacked toast positioning via ToastService
+ * - Stacked toast positioning via ToastService + `<lc-toast-outlet />`
  * - Animated enter/exit transitions
  *
+ * Usually rendered by `<lc-toast-outlet />`; can also be placed directly:
+ *
  * @example
- * ```typescript
- * this.toastService.show({ message: 'Saved!', variant: 'success' });
+ * ```html
+ * <lc-toast [toast]="toast" (closed)="dismiss($event)" />
  * ```
  */
 @Component({
@@ -31,14 +33,13 @@ import type { Toast, ToastVariant } from './toast.service';
   imports: [IconComponent],
   templateUrl: './toast.component.html',
   styleUrls: ['./toast.component.scss'],
-  // eslint-disable-next-line @angular-eslint/use-component-view-encapsulation
   encapsulation: ViewEncapsulation.None, // Required for dynamic variant class styling
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     '[class]': 'hostClasses()',
     '[attr.role]': 'ariaRole()',
     '[attr.aria-live]': 'ariaLive()',
-    '[attr.aria-atomic]': '"true"',
+    '[attr.aria-atomic]': 'announce() ? "true" : null',
   },
 })
 export class ToastComponent {
@@ -46,6 +47,14 @@ export class ToastComponent {
    * Toast data
    */
   toast = input.required<Toast>();
+
+  /**
+   * Whether the toast is its own live region (`role="status"`/`"alert"` on the
+   * host). `lc-toast-outlet` sets this to false because its persistent live
+   * regions already announce the toast — announcing twice would be noise.
+   * @default true
+   */
+  announce = input<boolean>(true);
 
   /**
    * Emitted when toast is closed
@@ -71,6 +80,7 @@ export class ToastComponent {
    * Computed ARIA role
    */
   protected ariaRole = computed(() => {
+    if (!this.announce()) return null;
     const variant = this.toast().variant;
     return variant === 'error' || variant === 'warning' ? 'alert' : 'status';
   });
@@ -79,6 +89,7 @@ export class ToastComponent {
    * Computed ARIA live region priority
    */
   protected ariaLive = computed(() => {
+    if (!this.announce()) return null;
     const variant = this.toast().variant;
     return variant === 'error' || variant === 'warning' ? 'assertive' : 'polite';
   });

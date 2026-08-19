@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { DocumentViewerComponent, DocumentType } from './document-viewer.component';
 import { CodeBlockLanguage } from '../code-block/code-block.component';
 import { provideHttpClient } from '@angular/common/http';
@@ -9,26 +9,28 @@ import { provideHttpClient } from '@angular/common/http';
   imports: [DocumentViewerComponent],
   template: `
     <lc-document-viewer
-      [src]="src"
-      [content]="content"
-      [type]="type"
-      [filename]="filename"
-      [language]="language"
-      [showToolbar]="showToolbar"
-      [showDownload]="showDownload"
-      [height]="height"
+      [src]="src()"
+      [content]="content()"
+      [type]="type()"
+      [filename]="filename()"
+      [language]="language()"
+      [showToolbar]="showToolbar()"
+      [showDownload]="showDownload()"
+      [height]="height()"
     />
   `,
 })
+// Signals, not plain fields: the tests run zoneless, where a plain field changed
+// after the first render is not picked up by `fixture.detectChanges()`.
 class TestHostComponent {
-  src = '';
-  content = '';
-  type: DocumentType = 'auto';
-  filename = '';
-  language: CodeBlockLanguage = 'text';
-  showToolbar = true;
-  showDownload = true;
-  height = '400px';
+  src = signal('');
+  content = signal('');
+  type = signal<DocumentType>('auto');
+  filename = signal('');
+  language = signal<CodeBlockLanguage>('text');
+  showToolbar = signal(true);
+  showDownload = signal(true);
+  height = signal('400px');
 }
 
 describe('DocumentViewerComponent', () => {
@@ -46,8 +48,8 @@ describe('DocumentViewerComponent', () => {
   });
 
   it('should create', () => {
-    host.content = 'Hello';
-    host.type = 'text';
+    host.content.set('Hello');
+    host.type.set('text');
     fixture.detectChanges();
     expect(fixture.componentInstance).toBeTruthy();
   });
@@ -55,43 +57,43 @@ describe('DocumentViewerComponent', () => {
   // ── Toolbar ──────────────────────────────────────────────────────────
 
   it('should display toolbar by default', () => {
-    host.content = 'Test';
-    host.type = 'text';
+    host.content.set('Test');
+    host.type.set('text');
     fixture.detectChanges();
     const toolbar = fixture.nativeElement.querySelector('.doc-viewer__toolbar');
     expect(toolbar).toBeTruthy();
   });
 
   it('should hide toolbar when showToolbar is false', () => {
-    host.content = 'Test';
-    host.type = 'text';
-    host.showToolbar = false;
+    host.content.set('Test');
+    host.type.set('text');
+    host.showToolbar.set(false);
     fixture.detectChanges();
     const toolbar = fixture.nativeElement.querySelector('.doc-viewer__toolbar');
     expect(toolbar).toBeNull();
   });
 
   it('should display filename in toolbar', () => {
-    host.content = 'Test';
-    host.type = 'text';
-    host.filename = 'readme.txt';
+    host.content.set('Test');
+    host.type.set('text');
+    host.filename.set('readme.txt');
     fixture.detectChanges();
     const name = fixture.nativeElement.querySelector('.doc-viewer__filename');
     expect(name.textContent).toContain('readme.txt');
   });
 
   it('should extract filename from src when no filename provided', () => {
-    host.content = 'Test';
-    host.type = 'text';
-    host.src = 'https://example.com/docs/guide.txt';
+    host.content.set('Test');
+    host.type.set('text');
+    host.src.set('https://example.com/docs/guide.txt');
     fixture.detectChanges();
     const name = fixture.nativeElement.querySelector('.doc-viewer__filename');
     expect(name.textContent).toContain('guide.txt');
   });
 
   it('should show type badge', () => {
-    host.content = '# Hello';
-    host.type = 'markdown';
+    host.content.set('# Hello');
+    host.type.set('markdown');
     fixture.detectChanges();
     const badge = fixture.nativeElement.querySelector('.doc-viewer__badge');
     expect(badge.textContent.trim()).toBe('Markdown');
@@ -100,36 +102,36 @@ describe('DocumentViewerComponent', () => {
   // ── Type detection ───────────────────────────────────────────────────
 
   it('should auto-detect PDF from URL extension', () => {
-    host.src = 'https://example.com/report.pdf';
+    host.src.set('https://example.com/report.pdf');
     fixture.detectChanges();
     const badge = fixture.nativeElement.querySelector('.doc-viewer__badge');
     expect(badge.textContent.trim()).toBe('PDF');
   });
 
   it('should auto-detect image from URL extension', () => {
-    host.src = '/assets/photo.png';
+    host.src.set('/assets/photo.png');
     fixture.detectChanges();
     const badge = fixture.nativeElement.querySelector('.doc-viewer__badge');
     expect(badge.textContent.trim()).toBe('Image');
   });
 
   it('should auto-detect markdown from URL extension', () => {
-    host.src = '/docs/readme.md';
+    host.src.set('/docs/readme.md');
     fixture.detectChanges();
     const badge = fixture.nativeElement.querySelector('.doc-viewer__badge');
     expect(badge.textContent.trim()).toBe('Markdown');
   });
 
   it('should auto-detect code from URL extension', () => {
-    host.src = '/src/app.ts';
+    host.src.set('/src/app.ts');
     fixture.detectChanges();
     const badge = fixture.nativeElement.querySelector('.doc-viewer__badge');
     expect(badge.textContent.trim()).toBe('TYPESCRIPT');
   });
 
   it('should use explicit type over auto-detection', () => {
-    host.src = '/myfile.txt';
-    host.type = 'markdown';
+    host.src.set('/myfile.txt');
+    host.type.set('markdown');
     fixture.detectChanges();
     const badge = fixture.nativeElement.querySelector('.doc-viewer__badge');
     expect(badge.textContent.trim()).toBe('Markdown');
@@ -138,8 +140,8 @@ describe('DocumentViewerComponent', () => {
   // ── Markdown rendering ───────────────────────────────────────────────
 
   it('should render markdown headings', () => {
-    host.content = '# Hello World';
-    host.type = 'markdown';
+    host.content.set('# Hello World');
+    host.type.set('markdown');
     fixture.detectChanges();
     const h1 = fixture.nativeElement.querySelector('.doc-viewer__markdown h1');
     expect(h1).toBeTruthy();
@@ -147,8 +149,8 @@ describe('DocumentViewerComponent', () => {
   });
 
   it('should render markdown bold and italic', () => {
-    host.content = '**bold** and *italic*';
-    host.type = 'markdown';
+    host.content.set('**bold** and *italic*');
+    host.type.set('markdown');
     fixture.detectChanges();
     const md = fixture.nativeElement.querySelector('.doc-viewer__markdown');
     expect(md.querySelector('strong').textContent).toBe('bold');
@@ -156,24 +158,24 @@ describe('DocumentViewerComponent', () => {
   });
 
   it('should render markdown unordered list', () => {
-    host.content = '- Item 1\n- Item 2\n- Item 3';
-    host.type = 'markdown';
+    host.content.set('- Item 1\n- Item 2\n- Item 3');
+    host.type.set('markdown');
     fixture.detectChanges();
     const items = fixture.nativeElement.querySelectorAll('.doc-viewer__markdown li');
     expect(items.length).toBe(3);
   });
 
   it('should render markdown ordered list', () => {
-    host.content = '1. First\n2. Second';
-    host.type = 'markdown';
+    host.content.set('1. First\n2. Second');
+    host.type.set('markdown');
     fixture.detectChanges();
     const ol = fixture.nativeElement.querySelector('.doc-viewer__markdown ol');
     expect(ol).toBeTruthy();
   });
 
   it('should render markdown links', () => {
-    host.content = '[Click here](https://example.com)';
-    host.type = 'markdown';
+    host.content.set('[Click here](https://example.com)');
+    host.type.set('markdown');
     fixture.detectChanges();
     const a = fixture.nativeElement.querySelector('.doc-viewer__markdown a');
     expect(a).toBeTruthy();
@@ -183,55 +185,131 @@ describe('DocumentViewerComponent', () => {
   });
 
   it('should render markdown inline code', () => {
-    host.content = 'Use `console.log()` for debugging';
-    host.type = 'markdown';
+    host.content.set('Use `console.log()` for debugging');
+    host.type.set('markdown');
     fixture.detectChanges();
-    const code = fixture.nativeElement.querySelector('.doc-viewer__md-inline-code');
+    const code = fixture.nativeElement.querySelector('.doc-viewer__markdown code');
     expect(code).toBeTruthy();
     expect(code.textContent).toBe('console.log()');
   });
 
   it('should render markdown code blocks', () => {
-    host.content = '```typescript\nconst x = 1;\n```';
-    host.type = 'markdown';
+    host.content.set('```typescript\nconst x = 1;\n```');
+    host.type.set('markdown');
     fixture.detectChanges();
-    const pre = fixture.nativeElement.querySelector('.doc-viewer__md-code-block');
-    expect(pre).toBeTruthy();
-    expect(pre.textContent).toContain('const x = 1;');
+    // Fenced code is rendered by lc-markdown through lc-code-block.
+    const block = fixture.nativeElement.querySelector('.doc-viewer__markdown lc-code-block');
+    expect(block).toBeTruthy();
+    expect(block.textContent).toContain('const x = 1;');
   });
 
   it('should render markdown blockquotes', () => {
-    host.content = '> This is a quote';
-    host.type = 'markdown';
+    host.content.set('> This is a quote');
+    host.type.set('markdown');
     fixture.detectChanges();
-    const bq = fixture.nativeElement.querySelector('.doc-viewer__md-blockquote');
+    const bq = fixture.nativeElement.querySelector('.doc-viewer__markdown blockquote');
     expect(bq).toBeTruthy();
     expect(bq.textContent).toContain('This is a quote');
   });
 
   it('should render markdown tables', () => {
-    host.content = '| Name | Value |\n| --- | --- |\n| A | 1 |\n| B | 2 |';
-    host.type = 'markdown';
+    host.content.set('| Name | Value |\n| --- | --- |\n| A | 1 |\n| B | 2 |');
+    host.type.set('markdown');
     fixture.detectChanges();
-    const table = fixture.nativeElement.querySelector('.doc-viewer__md-table');
+    const table = fixture.nativeElement.querySelector('.doc-viewer__markdown table');
     expect(table).toBeTruthy();
     const rows = table.querySelectorAll('tbody tr');
     expect(rows.length).toBe(2);
   });
 
   it('should render markdown horizontal rule', () => {
-    host.content = 'Before\n\n---\n\nAfter';
-    host.type = 'markdown';
+    host.content.set('Before\n\n---\n\nAfter');
+    host.type.set('markdown');
     fixture.detectChanges();
     const hr = fixture.nativeElement.querySelector('.doc-viewer__markdown hr');
     expect(hr).toBeTruthy();
   });
 
+  // ── Safety ───────────────────────────────────────────────────────────
+  // Markdown may come from a fetched file, `src` from anywhere. Neither may
+  // put script into the page.
+
+  it('should not render script or event handlers from markdown', () => {
+    host.content.set('Hi <img src=x onerror="alert(1)"> <script>alert(2)</script> [x](javascript:alert(3))');
+    host.type.set('markdown');
+    fixture.detectChanges();
+    const md = fixture.nativeElement.querySelector('.doc-viewer__markdown') as HTMLElement;
+    expect(md.querySelector('script')).toBeNull();
+    const withHandler = Array.from(md.querySelectorAll('*')).some((n) =>
+      Array.from(n.attributes).some((a) => a.name.startsWith('on')),
+    );
+    expect(withHandler).toBe(false);
+    const link = md.querySelector('a[href^="javascript"]');
+    expect(link).toBeNull();
+  });
+
+  it('should refuse to embed a javascript: URL as a PDF', () => {
+    host.src.set('javascript:alert(1)');
+    host.type.set('pdf');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('iframe')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.doc-viewer__error')?.textContent).toContain('cannot be displayed');
+  });
+
+  it('should embed http(s) PDFs in a titled iframe', () => {
+    host.src.set('https://example.com/report.pdf');
+    host.type.set('pdf');
+    fixture.detectChanges();
+    const iframe = fixture.nativeElement.querySelector('iframe') as HTMLIFrameElement;
+    expect(iframe).toBeTruthy();
+    expect(iframe.getAttribute('title')).toBe('report.pdf');
+  });
+
+  it('should not download a javascript: URL', () => {
+    host.src.set('javascript:alert(1)');
+    host.type.set('text');
+    host.content.set('x');
+    fixture.detectChanges();
+    const created: HTMLAnchorElement[] = [];
+    const orig = document.createElement.bind(document);
+    const spy = jest.spyOn(document, 'createElement').mockImplementation((tag: string) => {
+      const el = orig(tag);
+      if (tag === 'a') created.push(el as HTMLAnchorElement);
+      return el;
+    });
+    const btn = fixture.nativeElement.querySelector('button[aria-label="Download"]') as HTMLButtonElement;
+    btn.click();
+    spy.mockRestore();
+    expect(created.length).toBe(0);
+  });
+
+  // ── Reacting to input changes ────────────────────────────────────────
+
+  it('should re-render when content changes after init', () => {
+    host.content.set('# One');
+    host.type.set('markdown');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.doc-viewer__markdown h1').textContent).toContain('One');
+    host.content.set('# Two');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.doc-viewer__markdown h1').textContent).toContain('Two');
+  });
+
+  it('should recover from an error state when a valid content arrives', () => {
+    host.type.set('text');
+    fixture.detectChanges(); // no src, no content → error
+    expect(fixture.nativeElement.querySelector('.doc-viewer__error')).toBeTruthy();
+    host.content.set('Now there is content');
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.doc-viewer__error')).toBeNull();
+    expect(fixture.nativeElement.querySelector('.doc-viewer__text').textContent).toContain('Now there is content');
+  });
+
   // ── Text rendering ───────────────────────────────────────────────────
 
   it('should render text content in pre tag', () => {
-    host.content = 'Plain text content';
-    host.type = 'text';
+    host.content.set('Plain text content');
+    host.type.set('text');
     fixture.detectChanges();
     const pre = fixture.nativeElement.querySelector('.doc-viewer__text');
     expect(pre).toBeTruthy();
@@ -241,9 +319,9 @@ describe('DocumentViewerComponent', () => {
   // ── Code rendering ──────────────────────────────────────────────────
 
   it('should render code with code-block component', () => {
-    host.content = 'const x = 42;';
-    host.type = 'code';
-    host.language = 'typescript';
+    host.content.set('const x = 42;');
+    host.type.set('code');
+    host.language.set('typescript');
     fixture.detectChanges();
     const codeBlock = fixture.nativeElement.querySelector('lc-code-block');
     expect(codeBlock).toBeTruthy();
@@ -252,8 +330,8 @@ describe('DocumentViewerComponent', () => {
   // ── Image rendering ─────────────────────────────────────────────────
 
   it('should render image with img tag', () => {
-    host.src = '/assets/test.png';
-    host.type = 'image';
+    host.src.set('/assets/test.png');
+    host.type.set('image');
     fixture.detectChanges();
     const img = fixture.nativeElement.querySelector('.doc-viewer__image');
     expect(img).toBeTruthy();
@@ -261,16 +339,16 @@ describe('DocumentViewerComponent', () => {
   });
 
   it('should show zoom controls for images', () => {
-    host.src = '/assets/test.png';
-    host.type = 'image';
+    host.src.set('/assets/test.png');
+    host.type.set('image');
     fixture.detectChanges();
     const zoom = fixture.nativeElement.querySelector('.doc-viewer__zoom');
     expect(zoom).toBeTruthy();
   });
 
   it('should not show zoom controls for non-image types', () => {
-    host.content = 'Hello';
-    host.type = 'text';
+    host.content.set('Hello');
+    host.type.set('text');
     fixture.detectChanges();
     const zoom = fixture.nativeElement.querySelector('.doc-viewer__zoom');
     expect(zoom).toBeNull();
@@ -279,8 +357,8 @@ describe('DocumentViewerComponent', () => {
   // ── PDF rendering ───────────────────────────────────────────────────
 
   it('should render PDF in iframe', () => {
-    host.src = '/assets/test.pdf';
-    host.type = 'pdf';
+    host.src.set('/assets/test.pdf');
+    host.type.set('pdf');
     fixture.detectChanges();
     const iframe = fixture.nativeElement.querySelector('.doc-viewer__iframe');
     expect(iframe).toBeTruthy();
@@ -289,7 +367,7 @@ describe('DocumentViewerComponent', () => {
   // ── Unsupported type ────────────────────────────────────────────────
 
   it('should show unsupported state for unknown file type', () => {
-    host.src = '/file.xyz';
+    host.src.set('/file.xyz');
     fixture.detectChanges();
     const unsup = fixture.nativeElement.querySelector('.doc-viewer__unsupported');
     expect(unsup).toBeTruthy();
@@ -308,17 +386,17 @@ describe('DocumentViewerComponent', () => {
   // ── Download button ─────────────────────────────────────────────────
 
   it('should show download button when src is provided', () => {
-    host.src = '/assets/test.png';
-    host.type = 'image';
+    host.src.set('/assets/test.png');
+    host.type.set('image');
     fixture.detectChanges();
     const dlBtn = fixture.nativeElement.querySelector('[aria-label="Download"]');
     expect(dlBtn).toBeTruthy();
   });
 
   it('should hide download button when showDownload is false', () => {
-    host.src = '/assets/test.png';
-    host.type = 'image';
-    host.showDownload = false;
+    host.src.set('/assets/test.png');
+    host.type.set('image');
+    host.showDownload.set(false);
     fixture.detectChanges();
     const dlBtn = fixture.nativeElement.querySelector('[aria-label="Download"]');
     expect(dlBtn).toBeNull();
@@ -327,9 +405,9 @@ describe('DocumentViewerComponent', () => {
   // ── Container height ────────────────────────────────────────────────
 
   it('should apply custom height', () => {
-    host.content = 'Test';
-    host.type = 'text';
-    host.height = '300px';
+    host.content.set('Test');
+    host.type.set('text');
+    host.height.set('300px');
     fixture.detectChanges();
     const viewer = fixture.nativeElement.querySelector('.doc-viewer');
     expect(viewer.style.height).toBe('300px');

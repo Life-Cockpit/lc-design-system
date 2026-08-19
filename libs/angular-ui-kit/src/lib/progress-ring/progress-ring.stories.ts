@@ -8,6 +8,8 @@ const meta: Meta<ProgressRingComponent> = {
   argTypes: {
     color: { control: 'select', options: ['primary', 'secondary', 'success', 'warning', 'error', 'info'] },
     size: { control: 'select', options: ['xs', 'sm', 'md', 'lg'] },
+    showValue: { control: 'boolean', description: 'Show the percentage text in the centre (alias: showLabel)' },
+    ariaLabel: { control: 'text', description: 'Accessible name of the progressbar', table: { defaultValue: { summary: 'Progress' } } },
   },
 
   parameters: {
@@ -20,8 +22,9 @@ Progress ring component for circular progress indication.
 - Circular SVG progress arc (0–100%)
 - Color theme variants (primary, secondary, success, warning, error)
 - Size presets (xs, sm, md, lg)
-- Optional percentage value display
+- Optional percentage value display (\`showValue\` / \`showLabel\`)
 - Animated stroke transitions
+- Accessible \`progressbar\` role with \`aria-valuenow\` and \`ariaLabel\`
 `,
       },
     },

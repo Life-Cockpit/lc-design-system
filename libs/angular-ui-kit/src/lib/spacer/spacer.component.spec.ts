@@ -1,7 +1,9 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Component, ChangeDetectionStrategy } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal } from '@angular/core';
 import { By } from '@angular/platform-browser';
-import { SpacerComponent } from './spacer.component';
+import { readFileSync } from 'fs';
+import { join } from 'path';
+import { SpacerComponent, SpacerSize } from './spacer.component';
 import { StackComponent } from '../stack/stack.component';
 
 @Component({
@@ -11,13 +13,13 @@ import { StackComponent } from '../stack/stack.component';
   template: `
     <div style="display: flex;">
       <div>Start</div>
-      <lc-spacer [size]="size"></lc-spacer>
+      <lc-spacer [size]="size()"></lc-spacer>
       <div>End</div>
     </div>
   `,
 })
 class TestHostComponent {
-  size: 'auto' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' = 'auto';
+  readonly size = signal<SpacerSize>('auto');
 }
 
 describe('SpacerComponent', () => {
@@ -51,34 +53,21 @@ describe('SpacerComponent', () => {
       expect(spacerElement.classList).toContain('spacer-auto');
     });
 
-    it('should render xs size', () => {
-      hostFixture.componentInstance.size = 'xs';
+    it.each<SpacerSize>(['xs', 'sm', 'md', 'lg', 'xl'])('should render %s size on the host', (size) => {
+      hostFixture.componentInstance.size.set(size);
       hostFixture.detectChanges();
-      expect(spacerElement.classList).toContain('spacer-xs');
+      expect(spacerElement.classList).toContain(`spacer-${size}`);
     });
 
-    it('should render sm size', () => {
-      hostFixture.componentInstance.size = 'sm';
-      hostFixture.detectChanges();
-      expect(spacerElement.classList).toContain('spacer-sm');
-    });
-
-    it('should render md size', () => {
-      hostFixture.componentInstance.size = 'md';
+    it('should swap the size class when the input changes', () => {
+      hostFixture.componentInstance.size.set('md');
       hostFixture.detectChanges();
       expect(spacerElement.classList).toContain('spacer-md');
-    });
 
-    it('should render lg size', () => {
-      hostFixture.componentInstance.size = 'lg';
-      hostFixture.detectChanges();
-      expect(spacerElement.classList).toContain('spacer-lg');
-    });
-
-    it('should render xl size', () => {
-      hostFixture.componentInstance.size = 'xl';
+      hostFixture.componentInstance.size.set('xl');
       hostFixture.detectChanges();
       expect(spacerElement.classList).toContain('spacer-xl');
+      expect(spacerElement.classList).not.toContain('spacer-md');
     });
   });
 
@@ -89,15 +78,46 @@ describe('SpacerComponent', () => {
     });
 
     it('should grow to fill available space with auto size', () => {
-      hostFixture.componentInstance.size = 'auto';
+      hostFixture.componentInstance.size.set('auto');
       hostFixture.detectChanges();
       expect(spacerElement.classList).toContain('spacer-grow');
     });
 
     it('should not grow with fixed sizes', () => {
-      hostFixture.componentInstance.size = 'md';
+      hostFixture.componentInstance.size.set('md');
       hostFixture.detectChanges();
       expect(spacerElement.classList).not.toContain('spacer-grow');
+    });
+  });
+
+  describe('Stylesheet (host-scoped size rules)', () => {
+    // jest-preset-angular strips component styles, so the cascade can't be
+    // measured in jsdom. Assert the stylesheet itself: sizes must be written
+    // as `:host(.spacer-*)` — plain `.spacer-*` rules are scoped to the
+    // component's (empty) content by emulated encapsulation and give the
+    // spacer zero size.
+    const scss = readFileSync(join(__dirname, 'spacer.component.scss'), 'utf8');
+
+    it.each<SpacerSize>(['xs', 'sm', 'md', 'lg', 'xl'])(
+      'should size the host for %s via a :host(.spacer-%s) rule',
+      (size) => {
+        const rule = new RegExp(`:host\\(\\.spacer-${size}\\)\\s*\\{([^}]*)\\}`);
+        const match = scss.match(rule);
+        expect(match).toBeTruthy();
+        const body = match?.[1] ?? '';
+        expect(body).toMatch(new RegExp(`width:\\s*var\\(--lc-density-gap-${size}`));
+        expect(body).toMatch(new RegExp(`height:\\s*var\\(--lc-density-gap-${size}`));
+        expect(body).toMatch(new RegExp(`flex:\\s*0 0 var\\(--lc-density-gap-${size}`));
+      },
+    );
+
+    it('should not contain content-scoped .spacer-* rules that never match the host', () => {
+      // A `.spacer-xs {` selector at the start of a line (not wrapped in :host())
+      expect(scss).not.toMatch(/^\s*\.spacer-[a-z]+\s*[,{]/m);
+    });
+
+    it('should grow the host in auto mode', () => {
+      expect(scss).toMatch(/:host\(\.spacer-grow\)\s*\{[^}]*flex:\s*1 1 auto/);
     });
   });
 
@@ -138,6 +158,7 @@ describe('SpacerComponent', () => {
       hostFixture.detectChanges();
       spacerElement = hostFixture.debugElement.query(By.css('lc-spacer')).nativeElement;
       expect(spacerElement.tabIndex).toBe(-1);
+      expect(spacerElement.hasAttribute('tabindex')).toBe(false);
     });
   });
 });

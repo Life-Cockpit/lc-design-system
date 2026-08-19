@@ -2,10 +2,14 @@
   width: 100%;
 
   // ── Header (step indicators) ──────────────────────────────────────────
+  // An <ol>: list semantics give screen readers "step 2 of 4" for free.
   &__header {
     display: flex;
     align-items: center;
     gap: 0;
+    list-style: none;
+    margin: 0;
+    padding: 0;
   }
 
   &--horizontal &__header {
@@ -17,15 +21,56 @@
     align-items: flex-start;
   }
 
-  // ── Individual step ───────────────────────────────────────────────────
+  // ── List item (step + trailing connector) ─────────────────────────────
+  // Every item except the last grows so the connector inside it stretches
+  // to fill the space between steps, exactly like the old flat layout.
+  &__item {
+    display: flex;
+    align-items: center;
+    flex: 1 1 auto;
+    min-width: 0;
+
+    &:last-child {
+      flex: 0 0 auto;
+    }
+  }
+
+  &--vertical &__item {
+    flex-direction: column;
+    align-items: flex-start;
+    flex: 0 0 auto;
+  }
+
+  // ── Individual step (a <button>) ──────────────────────────────────────
   &__step {
+    // Reset the UA button chrome; the indicator/label carry the visuals.
+    appearance: none;
+    background: none;
+    border: 0;
+    margin: 0;
+    padding: 0;
+    font: inherit;
+    color: inherit;
+    text-align: left;
+    cursor: default;
+
     display: flex;
     align-items: center;
     gap: 0.75rem;
     flex-shrink: 0;
+    border-radius: var(--border-radius-sm);
 
     &--clickable {
       cursor: pointer;
+    }
+
+    &:disabled {
+      cursor: default;
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--color-primary-500);
+      outline-offset: 2px;
     }
   }
 
@@ -112,6 +157,7 @@
   }
 
   &--vertical &__connector {
+    flex: 0 0 auto;
     width: 0.125rem;
     height: 2rem;
     min-width: 0;

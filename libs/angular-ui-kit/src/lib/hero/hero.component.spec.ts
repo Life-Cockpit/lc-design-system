@@ -1,7 +1,9 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Component } from '@angular/core';
 import { By } from '@angular/platform-browser';
-import { HeroComponent, HeroColor, HeroSize } from './hero.component';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
+import { HeroComponent, HeroColor, HeroSize, HeroVariant } from './hero.component';
 
 @Component({
   standalone: true,
@@ -13,6 +15,7 @@ import { HeroComponent, HeroColor, HeroSize } from './hero.component';
       [color]="color"
       [size]="size"
       [borderRadius]="borderRadius"
+      [variant]="variant"
     >
       <p class="body-content">Description text</p>
       <div hero-footer>
@@ -28,6 +31,7 @@ class TestHostComponent {
   color: HeroColor = 'primary';
   size: HeroSize = 'md';
   borderRadius: 'none' | 'sm' | 'md' | 'lg' = 'lg';
+  variant: HeroVariant = 'default';
 }
 
 describe('HeroComponent', () => {
@@ -147,6 +151,41 @@ describe('HeroComponent', () => {
       fixture.detectChanges();
       heroEl = getHeroDiv();
       expect(heroEl.classList).toContain('hero--radius-none');
+    });
+  });
+
+  describe('Variant', () => {
+    it('should apply default variant class by default', () => {
+      fixture.detectChanges();
+      expect(getHeroDiv().classList).toContain('hero--default');
+    });
+
+    (['slim', 'light'] as HeroVariant[]).forEach((variant) => {
+      it(`should apply ${variant} variant class`, () => {
+        hostComponent.variant = variant;
+        fixture.detectChanges();
+        expect(getHeroDiv().classList).toContain(`hero--${variant}`);
+      });
+    });
+  });
+
+  describe('Stylesheet contract', () => {
+    // jsdom does not apply component styles, so the two theming guarantees are
+    // checked against the source: they are what keeps the light variant
+    // readable under the dark root and the footer rule out of the global scope.
+    const scss = readFileSync(resolve(__dirname, 'hero.component.scss'), 'utf-8');
+
+    it('pins the light variant ink to a literal dark value (not a theme-dependent token)', () => {
+      const start = scss.indexOf('&--light {');
+      expect(start).toBeGreaterThan(-1);
+      const lightBlock = scss.slice(start, scss.indexOf('// Light gradient overrides', start));
+      expect(lightBlock).not.toContain('var(--color-text-primary');
+      expect(lightBlock).toMatch(/color:\s*colors\.\$color-neutral-800/);
+    });
+
+    it('does not ship a bare (unscoped) ::ng-deep rule', () => {
+      const bareNgDeep = scss.split('\n').filter((line) => /^::ng-deep/.test(line));
+      expect(bareNgDeep).toEqual([]);
     });
   });
 

@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { PageHeaderComponent } from './page-header.component';
 
 @Component({
@@ -15,6 +15,19 @@ import { PageHeaderComponent } from './page-header.component';
   `,
 })
 class SlotsHostComponent {}
+
+@Component({
+  standalone: true,
+  imports: [PageHeaderComponent],
+  template: `
+    <lc-page-header title="Reports" [level]="level()">
+      <span slot="title-suffix" class="suffix">beta</span>
+    </lc-page-header>
+  `,
+})
+class SuffixHostComponent {
+  level = signal<1 | 2 | 3>(1);
+}
 
 describe('PageHeaderComponent', () => {
   describe('inputs (direct fixture)', () => {
@@ -97,6 +110,20 @@ describe('PageHeaderComponent', () => {
       fixture.componentRef.setInput('size', 'compact');
       fixture.detectChanges();
       expect(rootEl.classList).toContain('lc-page-header--size-compact');
+    });
+  });
+
+  describe('title suffix projection across heading levels', () => {
+    // The suffix slot sits inside a @switch over `level`; a slot per branch
+    // projected the content into the first branch only (levels 2/3 lost it).
+    it.each([1, 2, 3] as const)('renders the title-suffix at level %s', async (level) => {
+      await TestBed.configureTestingModule({ imports: [SuffixHostComponent] }).compileComponents();
+      const fixture = TestBed.createComponent(SuffixHostComponent);
+      fixture.componentInstance.level.set(level);
+      fixture.detectChanges();
+      const heading = (fixture.nativeElement as HTMLElement).querySelector(`h${level}.lc-page-header__title`);
+      expect(heading).toBeTruthy();
+      expect(heading?.querySelector('.suffix')?.textContent).toBe('beta');
     });
   });
 

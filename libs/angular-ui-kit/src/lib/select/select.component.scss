@@ -70,11 +70,12 @@
 
   // Variant styles
   &.lc-select--filled {
-    background-color: var(--color-neutral-100);
+    background-color: var(--color-surface-sunken);
     border-color: transparent;
 
     &:hover:not(.lc-select--disabled) {
-      background-color: var(--color-neutral-200);
+      background-color: var(--color-surface-hover);
+      border-color: var(--color-border);
     }
 
     &:focus,
@@ -96,7 +97,7 @@
   }
 
   &.lc-select--disabled {
-    background-color: var(--color-neutral-100);
+    background-color: var(--color-surface-muted);
     border-color: var(--color-border);
     cursor: not-allowed;
     opacity: 0.6;
@@ -163,7 +164,7 @@
 
   &:hover {
     color: var(--lc-select-clear-hover-fg, var(--color-text-primary));
-    background-color: var(--lc-select-clear-hover-bg, var(--color-neutral-100));
+    background-color: var(--lc-select-clear-hover-bg, var(--color-surface-hover));
   }
 
   svg {
@@ -215,16 +216,16 @@
   }
 
   &::-webkit-scrollbar-track {
-    background: var(--color-neutral-100);
+    background: var(--color-surface-sunken);
     border-radius: var(--border-radius-md);
   }
 
   &::-webkit-scrollbar-thumb {
-    background: var(--color-neutral-400);
+    background: var(--color-border);
     border-radius: var(--border-radius-md);
 
     &:hover {
-      background: var(--color-neutral-500);
+      background: var(--color-border-strong);
     }
   }
 }
@@ -276,7 +277,7 @@
   width: 100%;
 
   &:hover:not(.lc-select__option--disabled) {
-    background-color: var(--color-neutral-100);
+    background-color: var(--color-surface-hover);
   }
 
   &.lc-select__option--selected {
@@ -285,8 +286,10 @@
     background-color: var(--color-primary-50);
   }
 
+  // Keyboard highlight (aria-activedescendant target) — must stay visible on top of the selected tint.
   &.lc-select__option--highlighted {
-    background-color: var(--color-neutral-100);
+    background-color: var(--color-surface-hover);
+    box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--color-primary-500) 40%, transparent);
   }
 
   &.lc-select__option--disabled {
@@ -312,6 +315,8 @@
   margin-right: var(--spacing-2);
   width: 1rem;
   height: 1rem;
+  // Visual only — the option row handles the click and carries aria-selected.
+  pointer-events: none;
 }
 
 .lc-select__empty {

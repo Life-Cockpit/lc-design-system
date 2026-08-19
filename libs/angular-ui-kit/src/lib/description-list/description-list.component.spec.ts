@@ -16,6 +16,7 @@ import {
       [layout]="layout()"
       [leaders]="leaders()"
       [separator]="separator()"
+      [clickable]="clickable()"
       (itemClick)="onItemClick($event)"
     />
   `,
@@ -29,6 +30,7 @@ class TestHost {
   readonly layout = signal<DescriptionListLayout>('rows');
   readonly leaders = signal(false);
   readonly separator = signal<DescriptionListSeparator>('line');
+  readonly clickable = signal(false);
 
   readonly onItemClick = jest.fn<(item: DescriptionListItem) => void>();
 }
@@ -85,6 +87,31 @@ describe('DescriptionListComponent', () => {
     expect(host.onItemClick).toHaveBeenCalledWith(
       expect.objectContaining({ id: 'repo', term: 'Repository' }),
     );
+  });
+
+  it('makes rows keyboard-operable when clickable', () => {
+    let row = hostElement.querySelector<HTMLElement>('.lc-dl__row') as HTMLElement;
+    expect(row.hasAttribute('tabindex')).toBe(false);
+    expect(row.hasAttribute('role')).toBe(false);
+
+    host.clickable.set(true);
+    fixture.detectChanges();
+    row = hostElement.querySelector<HTMLElement>('.lc-dl__row') as HTMLElement;
+    expect(row.getAttribute('role')).toBe('button');
+    expect(row.getAttribute('tabindex')).toBe('0');
+    expect(row.classList).toContain('lc-dl__row--clickable');
+
+    const enter = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+    row.dispatchEvent(enter);
+    row.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
+    expect(enter.defaultPrevented).toBe(true);
+    expect(host.onItemClick).toHaveBeenCalledTimes(2);
+    expect(host.onItemClick).toHaveBeenCalledWith(expect.objectContaining({ id: 'repo' }));
+
+    // Enter on the nested link is the link's own activation, not the row's.
+    const link = row.querySelector<HTMLElement>('.lc-dl__link') as HTMLElement;
+    link.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    expect(host.onItemClick).toHaveBeenCalledTimes(2);
   });
 
   it('renders a muted value suffix when provided', () => {

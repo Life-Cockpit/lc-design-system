@@ -5,6 +5,7 @@ import {
   computed,
   input,
 } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import { IconComponent } from '../icon/icon.component';
 
 /**
@@ -44,7 +45,7 @@ import { IconComponent } from '../icon/icon.component';
 @Component({
   selector: 'lc-page-header',
   standalone: true,
-  imports: [IconComponent],
+  imports: [IconComponent, NgTemplateOutlet],
   templateUrl: './page-header.component.html',
   styleUrl: './page-header.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

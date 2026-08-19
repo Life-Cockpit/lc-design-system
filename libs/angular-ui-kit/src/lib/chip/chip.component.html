@@ -1,65 +1,63 @@
 <!--
-  The chip renders as a real <button> when clickable, otherwise as a <span>
-  (optionally with role="button" for the legacy removable keyboard behavior).
-  The inner content is shared via template so both shells stay identical.
+  Three shells, one interactive control per role — never nested:
+  - clickable + removable: a <span> pill holding two sibling <button>s
+    (activate / remove)
+  - clickable:             the pill itself is the <button>
+  - otherwise:             a static <span>; the only control is the
+                           labelled remove <button> (when removable)
+  The icon + label content is shared via template so all shells stay identical.
 -->
 <ng-template #chipContent>
   <span class="lc-chip__content">
     @if (icon()) {
-      <lc-icon [name]="icon()!" class="lc-chip__icon" size="sm" />
+      <lc-icon [name]="icon()!" class="lc-chip__icon" size="sm" [decorative]="true" />
     }
     <span class="lc-chip__label">
       <ng-content></ng-content>
     </span>
-    @if (removable() && !disabled()) {
-      @if (clickable()) {
-        <!--
-          Inside a clickable chip the shell is already a <button>; a nested
-          native button would be invalid HTML, so the delete affordance is a
-          focusable span with button semantics.
-        -->
-        <span
-          class="lc-chip__delete"
-          role="button"
-          tabindex="0"
-          aria-label="Remove chip"
-          (click)="onRemove($event)"
-          (keydown)="onDeleteKeydown($event)"
-        >
-          <ng-container [ngTemplateOutlet]="deleteIcon" />
-        </span>
-      } @else {
-        <button
-          type="button"
-          class="lc-chip__delete"
-          aria-label="Remove chip"
-          (click)="onRemove($event)"
-        >
-          <ng-container [ngTemplateOutlet]="deleteIcon" />
-        </button>
-      }
-    }
   </span>
 </ng-template>
 
-<ng-template #deleteIcon>
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="16"
-    height="16"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="2"
-    stroke-linecap="round"
-    stroke-linejoin="round"
+<ng-template #deleteButton>
+  <button
+    type="button"
+    class="lc-chip__delete"
+    aria-label="Remove chip"
+    (click)="onRemove($event)"
   >
-    <line x1="18" y1="6" x2="6" y2="18"></line>
-    <line x1="6" y1="6" x2="18" y2="18"></line>
-  </svg>
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+    >
+      <line x1="18" y1="6" x2="6" y2="18"></line>
+      <line x1="6" y1="6" x2="18" y2="18"></line>
+    </svg>
+  </button>
 </ng-template>
 
-@if (clickable()) {
+@if (clickable() && removable()) {
+  <span [class]="chipClasses() + ' lc-chip--split'" [attr.aria-disabled]="disabled() ? 'true' : null">
+    <button
+      type="button"
+      class="lc-chip__action"
+      [disabled]="disabled()"
+      (click)="onChipClick()"
+    >
+      <ng-container [ngTemplateOutlet]="chipContent" />
+    </button>
+    @if (!disabled()) {
+      <ng-container [ngTemplateOutlet]="deleteButton" />
+    }
+  </span>
+} @else if (clickable()) {
   <button
     type="button"
     [class]="chipClasses()"
@@ -70,13 +68,10 @@
     <ng-container [ngTemplateOutlet]="chipContent" />
   </button>
 } @else {
-  <span
-    [class]="chipClasses()"
-    [attr.role]="removable() ? 'button' : null"
-    [attr.tabindex]="removable() ? (disabled() ? '-1' : '0') : null"
-    [attr.aria-disabled]="disabled() ? 'true' : null"
-    (keydown)="onKeydown($event)"
-  >
+  <span [class]="chipClasses()" [attr.aria-disabled]="disabled() ? 'true' : null">
     <ng-container [ngTemplateOutlet]="chipContent" />
+    @if (removable() && !disabled()) {
+      <ng-container [ngTemplateOutlet]="deleteButton" />
+    }
   </span>
 }

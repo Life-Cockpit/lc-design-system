@@ -1,15 +1,16 @@
 import {
   Component,
-  Input,
-  Output,
-  EventEmitter,
   ChangeDetectionStrategy,
+  computed,
   forwardRef,
-  inject,
-  ElementRef,
+  input,
+  linkedSignal,
+  output,
+  signal,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { ControlValueAccessor, NG_VALUE_ACCESSOR, FormsModule } from '@angular/forms';
+import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
+
+let nextUniqueId = 0;
 
 /**
  * Switch component for boolean toggle functionality.
@@ -28,11 +29,10 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR, FormsModule } from '@angular/f
  * <lc-switch label="Enable notifications" [(ngModel)]="isEnabled" />
  * ```
  */
-/* eslint-disable @typescript-eslint/member-ordering */
 @Component({
   selector: 'lc-switch',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [],
   templateUrl: './switch.component.html',
   styleUrl: './switch.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -48,99 +48,121 @@ export class SwitchComponent implements ControlValueAccessor {
   /**
    * Visual variant of the switch
    */
-  @Input() variant: 'primary' | 'secondary' | 'success' | 'warning' | 'danger' = 'primary';
+  readonly variant = input<'primary' | 'secondary' | 'success' | 'warning' | 'danger'>('primary');
 
   /**
    * Size of the switch
    */
-  @Input() size: 'sm' | 'md' | 'lg' = 'md';
+  readonly size = input<'sm' | 'md' | 'lg'>('md');
 
   /**
-   * Whether the switch is checked
+   * Whether the switch is checked (template-driven usage; forms write via `writeValue`)
    */
-  @Input() checked = false;
+  readonly checked = input<boolean>(false);
 
   /**
    * Whether the switch is disabled
    */
-  @Input() disabled = false;
+  readonly disabled = input<boolean>(false);
 
   /**
    * Whether the switch is required
    */
-  @Input() required = false;
+  readonly required = input<boolean>(false);
 
   /**
    * Whether the switch is in loading state
    */
-  @Input() loading = false;
+  readonly loading = input<boolean>(false);
 
   /**
    * Label text
    */
-  @Input() label = '';
+  readonly label = input<string>('');
 
   /**
    * Label position relative to switch
    */
-  @Input() labelPosition: 'left' | 'right' = 'right';
+  readonly labelPosition = input<'left' | 'right'>('right');
 
   /**
-   * ARIA label for accessibility
+   * ARIA label for accessibility (overrides the visible label as accessible name)
    */
-  @Input() ariaLabel: string | undefined = undefined;
+  readonly ariaLabel = input<string | undefined>(undefined);
 
   /**
    * Emitted when checked state changes
    */
-  @Output() readonly checkedChange = new EventEmitter<boolean>();
+  readonly checkedChange = output<boolean>();
 
-  // Private properties
-  private elementRef = inject(ElementRef);
-  // eslint-disable-next-line @typescript-eslint/member-ordering
+  /** Per-instance id so the visible `<label for>` points at this switch. */
+  readonly switchId = `lc-switch-${nextUniqueId++}`;
+
+  /**
+   * Effective checked state: follows the `checked` input, overridden by
+   * form writes (`writeValue`) and user toggles.
+   */
+  readonly checkedState = linkedSignal(() => this.checked());
+
+  // Internal disabled state (for ControlValueAccessor)
+  private readonly formDisabled = signal<boolean>(false);
+
+  /**
+   * Computed disabled state from both input and form control
+   */
+  readonly isDisabled = computed(() => this.disabled() || this.formDisabled());
+
+  /**
+   * Computed classes for the switch element
+   */
+  readonly switchClasses = computed(() => {
+    const classes = ['lc-switch', `lc-switch--${this.variant()}`, `lc-switch--${this.size()}`];
+
+    if (this.checkedState()) {
+      classes.push('lc-switch--checked');
+    }
+
+    if (this.isDisabled()) {
+      classes.push('lc-switch--disabled');
+    }
+
+    if (this.loading()) {
+      classes.push('lc-switch--loading');
+    }
+
+    return classes.join(' ');
+  });
+
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
   private onChange: (value: boolean) => void = () => {};
-  // eslint-disable-next-line @typescript-eslint/member-ordering
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
   private onTouched: () => void = () => {};
 
-  // Public methods
   /**
    * Toggle the switch state
    */
   toggle(): void {
-    if (this.disabled || this.loading) {
+    if (this.isDisabled() || this.loading()) {
       return;
     }
 
-    this.checked = !this.checked;
-    this.onChange(this.checked);
+    const next = !this.checkedState();
+    this.checkedState.set(next);
+    this.onChange(next);
     this.onTouched();
-    this.checkedChange.emit(this.checked);
+    this.checkedChange.emit(next);
   }
 
   /**
-   * Handle click event
+   * Handle click event (the control is a native button, so Space/Enter arrive here too)
    */
   onClick(): void {
     this.toggle();
   }
 
-  /**
-   * Handle keyboard navigation
-   */
-  onKeyDown(event: KeyboardEvent): void {
-    if (this.disabled || this.loading) {
-      return;
-    }
-
-    if (event.key === ' ' || event.key === 'Enter') {
-      event.preventDefault();
-      this.toggle();
-    }
-  }
-
   // ControlValueAccessor implementation
   writeValue(value: boolean | null | undefined): void {
-    this.checked = !!value;
+    this.checkedState.set(!!value);
   }
 
   registerOnChange(fn: (value: boolean) => void): void {
@@ -152,30 +174,6 @@ export class SwitchComponent implements ControlValueAccessor {
   }
 
   setDisabledState(isDisabled: boolean): void {
-    this.disabled = isDisabled;
-  }
-
-  /**
-   * Get computed classes for the switch element
-   */
-  get switchClasses(): string {
-    const classes = ['lc-switch'];
-
-    classes.push(`lc-switch--${this.variant}`);
-    classes.push(`lc-switch--${this.size}`);
-
-    if (this.checked) {
-      classes.push('lc-switch--checked');
-    }
-
-    if (this.disabled) {
-      classes.push('lc-switch--disabled');
-    }
-
-    if (this.loading) {
-      classes.push('lc-switch--loading');
-    }
-
-    return classes.join(' ');
+    this.formDisabled.set(isDisabled);
   }
 }

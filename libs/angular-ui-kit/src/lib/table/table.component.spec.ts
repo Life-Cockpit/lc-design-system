@@ -582,6 +582,123 @@ describe('TableComponent', () => {
     });
   });
 
+  // ── Identity, not position ───────────────────────────────────────────
+  // Selection and inline editing must follow the *row*, whatever sorting,
+  // filtering or paging did to where it is shown.
+  describe('Selection and editing under sort/filter/paging', () => {
+    beforeEach(() => {
+      fixture.componentRef.setInput('columns', mockColumns);
+      fixture.componentRef.setInput('data', mockData);
+      fixture.componentRef.setInput('selectable', true);
+      fixture.componentRef.setInput('editable', true);
+      fixture.detectChanges();
+    });
+
+    const firstVisibleName = () =>
+      fixture.debugElement.queryAll(By.css('tbody tr'))[0].nativeElement.textContent.trim().split(/\s+/)[0];
+
+    it('should emit the row that was clicked, not the row at that position in data', () => {
+      const emitted: unknown[] = [];
+      component.selectionChange.subscribe((e) => emitted.push(e.selected));
+      component.handleSort('name');
+      component.handleSort('name'); // desc → Charlie first
+      fixture.detectChanges();
+      expect(firstVisibleName()).toBe('Charlie');
+
+      fixture.debugElement.queryAll(By.css('tbody .lc-table__checkbox'))[0].nativeElement.click();
+      fixture.detectChanges();
+      expect(emitted[emitted.length - 1]).toEqual([{ name: 'Charlie', age: 35, email: 'charlie@example.com' }]);
+    });
+
+    it('should keep the selection on the same row when the sort changes', () => {
+      fixture.debugElement.queryAll(By.css('tbody .lc-table__checkbox'))[0].nativeElement.click(); // Alice
+      fixture.detectChanges();
+      component.handleSort('name');
+      component.handleSort('name'); // desc: Charlie, Bob, Alice
+      fixture.detectChanges();
+      const rows = fixture.debugElement.queryAll(By.css('tbody tr'));
+      expect(rows[2].nativeElement.textContent).toContain('Alice');
+      expect(rows[2].nativeElement.classList.contains('lc-table__row--selected')).toBe(true);
+      expect(rows[0].nativeElement.classList.contains('lc-table__row--selected')).toBe(false);
+    });
+
+    it('should drop selected rows that disappear from data', () => {
+      fixture.debugElement.queryAll(By.css('tbody .lc-table__checkbox'))[0].nativeElement.click(); // Alice
+      fixture.detectChanges();
+      fixture.componentRef.setInput('data', mockData.slice(1)); // Bob, Charlie
+      fixture.detectChanges();
+      const header = fixture.debugElement.query(By.css('thead .lc-table__checkbox')).nativeElement as HTMLInputElement;
+      expect(header.checked).toBe(false);
+      expect(header.indeterminate).toBe(false);
+      expect(fixture.debugElement.queryAll(By.css('.lc-table__row--selected')).length).toBe(0);
+    });
+
+    it('should show the header checkbox as indeterminate for a partial selection', () => {
+      fixture.debugElement.queryAll(By.css('tbody .lc-table__checkbox'))[0].nativeElement.click();
+      fixture.detectChanges();
+      const header = fixture.debugElement.query(By.css('thead .lc-table__checkbox')).nativeElement as HTMLInputElement;
+      expect(header.indeterminate).toBe(true);
+      expect(header.checked).toBe(false);
+    });
+
+    it('should edit the row that was double-clicked after sorting', () => {
+      const emitted: unknown[] = [];
+      component.cellEdit.subscribe((e) => emitted.push(e));
+      component.handleSort('name');
+      component.handleSort('name'); // Charlie first
+      fixture.detectChanges();
+
+      const cell = fixture.debugElement.queryAll(By.css('tbody td'))[1]; // first data cell after checkbox cell
+      cell.triggerEventHandler('dblclick', {});
+      fixture.detectChanges();
+      const editInput = fixture.debugElement.query(By.css('.lc-table__edit-input'));
+      expect(editInput.nativeElement.value).toBe('Charlie');
+      editInput.nativeElement.value = 'Charles';
+      editInput.nativeElement.dispatchEvent(new Event('input'));
+      editInput.triggerEventHandler('keydown', { key: 'Enter' });
+      fixture.detectChanges();
+
+      expect(emitted).toEqual([
+        expect.objectContaining({ row: expect.objectContaining({ name: 'Charlie' }), oldValue: 'Charlie', newValue: 'Charles', rowIndex: 2 }),
+      ]);
+    });
+
+    it('should not commit again when blur follows Enter or Escape', () => {
+      const emitted: unknown[] = [];
+      component.cellEdit.subscribe((e) => emitted.push(e));
+      const cell = fixture.debugElement.queryAll(By.css('tbody td'))[1];
+      cell.triggerEventHandler('dblclick', {});
+      fixture.detectChanges();
+      const editInput = fixture.debugElement.query(By.css('.lc-table__edit-input'));
+      editInput.nativeElement.value = 'Alicia';
+      editInput.nativeElement.dispatchEvent(new Event('input'));
+      editInput.triggerEventHandler('keydown', { key: 'Escape' });
+      editInput.triggerEventHandler('blur', {}); // arrives after the input is torn down
+      fixture.detectChanges();
+      expect(emitted).toEqual([]);
+    });
+  });
+
+  describe('Sortable header keyboard access', () => {
+    beforeEach(() => {
+      fixture.componentRef.setInput('columns', mockColumns);
+      fixture.componentRef.setInput('data', mockData);
+      fixture.detectChanges();
+    });
+
+    it('should make sortable headers focusable and sort on Enter/Space', () => {
+      const headers = fixture.debugElement.queryAll(By.css('thead th'));
+      expect(headers[0].nativeElement.getAttribute('tabindex')).toBe('0');
+      expect(headers[2].nativeElement.getAttribute('tabindex')).toBeNull(); // not sortable
+      headers[0].triggerEventHandler('keydown', { key: 'Enter', preventDefault: jest.fn() });
+      fixture.detectChanges();
+      expect(headers[0].nativeElement.getAttribute('aria-sort')).toBe('ascending');
+      headers[0].triggerEventHandler('keydown', { key: ' ', preventDefault: jest.fn() });
+      fixture.detectChanges();
+      expect(headers[0].nativeElement.getAttribute('aria-sort')).toBe('descending');
+    });
+  });
+
   describe('Inline Editing', () => {
     beforeEach(() => {
       fixture.componentRef.setInput('columns', mockColumns);
@@ -731,6 +848,46 @@ describe('TableComponent', () => {
     });
   });
 
+  describe('Pagination clamping', () => {
+    const many = Array.from({ length: 5 }, (_, i) => ({ name: `N${i}`, age: i, email: `${i}@x` }));
+
+    beforeEach(() => {
+      fixture.componentRef.setInput('columns', mockColumns);
+      fixture.componentRef.setInput('data', many);
+      fixture.componentRef.setInput('paginate', true);
+      fixture.componentRef.setInput('pageSize', 1);
+      fixture.detectChanges();
+    });
+
+    it('should move back to the last page when the data shrinks', () => {
+      component['goToPage'](4);
+      fixture.detectChanges();
+      expect(fixture.debugElement.queryAll(By.css('tbody tr'))[0].nativeElement.textContent).toContain('N4');
+
+      fixture.componentRef.setInput('data', many.slice(0, 2));
+      fixture.detectChanges();
+      const rows = fixture.debugElement.queryAll(By.css('tbody tr'));
+      expect(rows.length).toBe(1);
+      expect(rows[0].nativeElement.textContent).toContain('N1');
+      expect(component['currentPage']()).toBe(1);
+    });
+
+    it('should clamp when the page size grows past the current page', () => {
+      component['goToPage'](4);
+      fixture.componentRef.setInput('pageSize', 10);
+      fixture.detectChanges();
+      expect(component['currentPage']()).toBe(0);
+      expect(fixture.debugElement.queryAll(By.css('tbody tr')).length).toBe(5);
+    });
+
+    it('should report 0–0 of 0 for empty data', () => {
+      fixture.componentRef.setInput('data', []);
+      fixture.detectChanges();
+      expect(component['paginationStart']).toBe(0);
+      expect(component['paginationEnd']).toBe(0);
+    });
+  });
+
   describe('Tree / grouped rows', () => {
     const treeColumns: TableColumn[] = [
       { key: 'title', label: 'Title', sortable: true },
@@ -771,6 +928,63 @@ describe('TableComponent', () => {
 
       setUpTree();
       expect(fixture.debugElement.query(By.css('table')).nativeElement.getAttribute('role')).toBe('treegrid');
+    });
+
+    // The treegrid role promises a keyboard model: one roving tab stop, arrows
+    // between rows, Right/Left to open/close or step into/out of a group.
+    it('should give exactly one row the tab stop and move it with the arrow keys', () => {
+      setUpTree();
+      const rows = () => fixture.debugElement.queryAll(By.css('tbody tr'));
+      expect(rows().map((r) => r.nativeElement.getAttribute('tabindex'))).toEqual(['0', '-1', '-1', '-1']);
+
+      rows()[0].triggerEventHandler('keydown', { key: 'ArrowDown', target: rows()[0].nativeElement, preventDefault: jest.fn() });
+      fixture.detectChanges();
+      expect(rows().map((r) => r.nativeElement.getAttribute('tabindex'))).toEqual(['-1', '0', '-1', '-1']);
+      expect(document.activeElement).toBe(rows()[1].nativeElement);
+
+      rows()[1].triggerEventHandler('keydown', { key: 'End', target: rows()[1].nativeElement, preventDefault: jest.fn() });
+      fixture.detectChanges();
+      expect(rows()[3].nativeElement.getAttribute('tabindex')).toBe('0');
+    });
+
+    it('should collapse and expand a group with ArrowLeft/ArrowRight', () => {
+      setUpTree();
+      const rows = () => fixture.debugElement.queryAll(By.css('tbody tr'));
+      rows()[0].triggerEventHandler('keydown', { key: 'ArrowLeft', target: rows()[0].nativeElement, preventDefault: jest.fn() });
+      fixture.detectChanges();
+      expect(rowText()).toEqual(['Epic Alpha', 'Standalone Feature']);
+
+      rows()[0].triggerEventHandler('keydown', { key: 'ArrowRight', target: rows()[0].nativeElement, preventDefault: jest.fn() });
+      fixture.detectChanges();
+      expect(rowText()).toEqual(['Epic Alpha', 'Child One', 'Child Two', 'Standalone Feature']);
+
+      // Right on an expanded group steps into its first child; Left on a child steps out.
+      rows()[0].triggerEventHandler('keydown', { key: 'ArrowRight', target: rows()[0].nativeElement, preventDefault: jest.fn() });
+      fixture.detectChanges();
+      expect(rows()[1].nativeElement.getAttribute('tabindex')).toBe('0');
+      rows()[1].triggerEventHandler('keydown', { key: 'ArrowLeft', target: rows()[1].nativeElement, preventDefault: jest.fn() });
+      fixture.detectChanges();
+      expect(rows()[0].nativeElement.getAttribute('tabindex')).toBe('0');
+    });
+
+    it('should emit rowClick on Enter and toggle selection on Space', () => {
+      setUpTree({ selectable: true });
+      const clicked: unknown[] = [];
+      component.rowClick.subscribe((r) => clicked.push(r));
+      const rows = fixture.debugElement.queryAll(By.css('tbody tr'));
+      rows[0].triggerEventHandler('keydown', { key: 'Enter', target: rows[0].nativeElement, preventDefault: jest.fn() });
+      expect(clicked).toEqual([expect.objectContaining({ id: 'e1' })]);
+      rows[0].triggerEventHandler('keydown', { key: ' ', target: rows[0].nativeElement, preventDefault: jest.fn() });
+      fixture.detectChanges();
+      expect(rows[0].nativeElement.getAttribute('aria-selected')).toBe('true');
+    });
+
+    it('should not give flat-mode rows a tabindex', () => {
+      fixture.componentRef.setInput('columns', treeColumns);
+      fixture.componentRef.setInput('data', treeData);
+      fixture.detectChanges();
+      const rows = fixture.debugElement.queryAll(By.css('tbody tr'));
+      expect(rows.every((r) => r.nativeElement.getAttribute('tabindex') === null)).toBe(true);
     });
 
     it('should render children indented beneath their parent (expanded by default)', () => {

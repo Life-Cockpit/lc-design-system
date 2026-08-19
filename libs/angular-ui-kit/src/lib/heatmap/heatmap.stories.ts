@@ -63,7 +63,22 @@ export const LargeCells: Story = {
   },
 };
 
-export const GithubStyle: Story = {
+export const CustomColors: Story = {
+  parameters: {
+    docs: { description: { story: '`colorMin` and `colorMax` are blended per cell (`color-mix`); value ink flips to the surface colour on strong cells.' } },
+  },
+  args: {
+    data: [[8, 3, 5], [2, 9, 1], [4, 6, 7]],
+    rowLabels: ['A', 'B', 'C'],
+    colLabels: ['X', 'Y', 'Z'],
+    colorMin: 'var(--color-warning-50)',
+    colorMax: 'var(--color-error-default)',
+    showValues: true,
+    cellSize: 40,
+  },
+};
+
+export const CompactGrid: Story = {
   args: {
     data: Array.from({ length: 7 }, () => Array.from({ length: 12 }, () => Math.floor(Math.random() * 10))),
     rowLabels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],

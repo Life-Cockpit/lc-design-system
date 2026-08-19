@@ -3,24 +3,29 @@
     <input
       #datepickerInput
       type="text"
-      [class]="datepickerClasses"
-      [attr.role]="'combobox'"
+      [id]="inputId"
+      [class]="datepickerClasses()"
+      role="combobox"
+      aria-haspopup="dialog"
+      autocomplete="off"
       [attr.aria-expanded]="isOpen() ? 'true' : 'false'"
-      [attr.aria-label]="ariaLabel || null"
-      [attr.aria-required]="required ? 'true' : null"
-      [attr.aria-disabled]="disabled ? 'true' : null"
-      [attr.aria-invalid]="error ? 'true' : null"
-      [attr.readonly]="readonly"
-      [attr.disabled]="disabled ? true : null"
-      [attr.placeholder]="placeholder"
-      [value]="formattedDate()"
+      [attr.aria-controls]="isOpen() ? inputId + '-calendar' : null"
+      [attr.aria-label]="ariaLabel() || null"
+      [attr.aria-required]="required() ? 'true' : null"
+      [attr.aria-disabled]="isDisabled() ? 'true' : null"
+      [attr.aria-invalid]="error() ? 'true' : null"
+      [attr.aria-describedby]="describedBy()"
+      [readonly]="readonly()"
+      [disabled]="isDisabled()"
+      [placeholder]="placeholder()"
+      [value]="inputValue()"
       (input)="onInputChange(getInputValue($event))"
       (click)="toggle()"
       (keydown)="onKeyDown($event)"
       (blur)="onBlur()"
     />
     <div class="lc-datepicker-icons">
-      @if (selectedDate() && !disabled && !readonly) {
+      @if (selectedDate() && !isDisabled() && !readonly()) {
         <button
           type="button"
           class="lc-datepicker-clear"
@@ -31,6 +36,7 @@
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 20 20"
             fill="currentColor"
+            aria-hidden="true"
           >
             <path
               d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z"
@@ -43,6 +49,7 @@
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 20 20"
         fill="currentColor"
+        aria-hidden="true"
       >
         <path
           d="M5.25 12a.75.75 0 01.75-.75h.01a.75.75 0 01.75.75v.01a.75.75 0 01-.75.75H6a.75.75 0 01-.75-.75V12zM6 13.25a.75.75 0 00-.75.75v.01c0 .414.336.75.75.75h.01a.75.75 0 00.75-.75V14a.75.75 0 00-.75-.75H6zM7.25 12a.75.75 0 01.75-.75h.01a.75.75 0 01.75.75v.01a.75.75 0 01-.75.75H8a.75.75 0 01-.75-.75V12zM8 13.25a.75.75 0 00-.75.75v.01c0 .414.336.75.75.75h.01a.75.75 0 00.75-.75V14a.75.75 0 00-.75-.75H8zM9.25 10a.75.75 0 01.75-.75h.01a.75.75 0 01.75.75v.01a.75.75 0 01-.75.75H10a.75.75 0 01-.75-.75V10zM10 11.25a.75.75 0 00-.75.75v.01c0 .414.336.75.75.75h.01a.75.75 0 00.75-.75V12a.75.75 0 00-.75-.75H10zM9.25 14a.75.75 0 01.75-.75h.01a.75.75 0 01.75.75v.01a.75.75 0 01-.75.75H10a.75.75 0 01-.75-.75V14zM12 9.25a.75.75 0 00-.75.75v.01c0 .414.336.75.75.75h.01a.75.75 0 00.75-.75V10a.75.75 0 00-.75-.75H12zM11.25 12a.75.75 0 01.75-.75h.01a.75.75 0 01.75.75v.01a.75.75 0 01-.75.75H12a.75.75 0 01-.75-.75V12zM12 13.25a.75.75 0 00-.75.75v.01c0 .414.336.75.75.75h.01a.75.75 0 00.75-.75V14a.75.75 0 00-.75-.75H12zM13.25 10a.75.75 0 01.75-.75h.01a.75.75 0 01.75.75v.01a.75.75 0 01-.75.75H14a.75.75 0 01-.75-.75V10zM14 11.25a.75.75 0 00-.75.75v.01c0 .414.336.75.75.75h.01a.75.75 0 00.75-.75V12a.75.75 0 00-.75-.75H14z"
@@ -66,7 +73,14 @@
     (backdropClick)="onClickOutside()"
     (detach)="close()"
   >
-    <div class="lc-datepicker-calendar" [class.lc-datepicker-calendar--open]="isOpen()">
+    <div
+      #calendarPanel
+      class="lc-datepicker-calendar"
+      [class.lc-datepicker-calendar--open]="isOpen()"
+      [id]="inputId + '-calendar'"
+      role="dialog"
+      aria-label="Choose date"
+    >
       <!-- Calendar Header -->
       <div class="lc-datepicker-header">
         <button
@@ -75,7 +89,7 @@
           (click)="previousMonth()"
           aria-label="Previous month"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
             <path
               fill-rule="evenodd"
               d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z"
@@ -84,7 +98,7 @@
           </svg>
         </button>
         
-        <div class="lc-datepicker-month-year">
+        <div class="lc-datepicker-month-year" aria-live="polite">
           {{ currentMonthName() }} {{ currentYear() }}
         </div>
         
@@ -94,7 +108,7 @@
           (click)="nextMonth()"
           aria-label="Next month"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
             <path
               fill-rule="evenodd"
               d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"
@@ -116,7 +130,7 @@
       </div>
 
       <!-- Weekday Headers -->
-      <div class="lc-datepicker-weekdays">
+      <div class="lc-datepicker-weekdays" aria-hidden="true">
         @for (day of weekDays; track day) {
           <div class="lc-datepicker-weekday">{{ day }}</div>
         }
@@ -133,6 +147,8 @@
             [class.lc-datepicker-day--selected]="isSelectedDate(date)"
             [class.lc-datepicker-day--disabled]="isDateDisabled(date)"
             [disabled]="isDateDisabled(date)"
+            [attr.aria-current]="isToday(date) ? 'date' : null"
+            [attr.aria-label]="date.toDateString() + (isSelectedDate(date) ? ', selected' : '')"
             (click)="selectDate(date)"
           >
             {{ date.getDate() }}
@@ -143,13 +159,13 @@
   </ng-template>
 
   <!-- Helper/Error Text -->
-  @if (error && errorMessage) {
-    <div class="lc-datepicker__error" role="alert">
-      {{ errorMessage }}
+  @if (error() && errorMessage()) {
+    <div class="lc-datepicker__error" [id]="inputId + '-error'" role="alert">
+      {{ errorMessage() }}
     </div>
-  } @else if (helperText) {
-    <div class="lc-datepicker__helper">
-      {{ helperText }}
+  } @else if (helperText()) {
+    <div class="lc-datepicker__helper" [id]="inputId + '-helper'">
+      {{ helperText() }}
     </div>
   }
 </div>

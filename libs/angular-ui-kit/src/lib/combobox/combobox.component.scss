@@ -18,30 +18,39 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 0.25rem;
-  border: 1px solid var(--color-neutral-300, #d1d5db);
+  border: 1px solid var(--color-border);
   border-radius: var(--border-radius-md, 0.375rem);
-  background-color: var(--color-surface, #ffffff);
+  // DS2.0: slightly raised field surface, same as lc-input
+  background-color: var(--color-surface-2);
   padding: 0.25rem 0.5rem;
   transition: border-color 0.15s, box-shadow 0.15s;
   cursor: text;
 
+  &:hover {
+    border-color: var(--color-border-strong);
+  }
+
   &:focus-within {
-    border-color: var(--color-primary-500, #3b82f6);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    border-color: var(--color-primary-500);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary-500) 20%, transparent);
   }
 
   .lc-combobox--error & {
-    border-color: var(--color-error-default, #ef4444);
+    border-color: var(--color-error-default);
 
     &:focus-within {
-      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-error-default) 20%, transparent);
     }
   }
 
   .lc-combobox--disabled & {
-    opacity: 0.5;
+    opacity: 0.6;
     cursor: not-allowed;
-    background-color: var(--color-neutral-50, #f9fafb);
+    background-color: var(--color-surface-muted);
+
+    &:hover {
+      border-color: var(--color-border);
+    }
   }
 }
 
@@ -55,7 +64,7 @@
   font-family: inherit;
 
   &::placeholder {
-    color: var(--color-neutral-400, #9ca3af);
+    color: var(--color-text-tertiary);
   }
 
   &:disabled {
@@ -82,37 +91,37 @@
   border: none;
   background: transparent;
   cursor: pointer;
-  color: var(--color-neutral-400, #9ca3af);
+  color: var(--color-text-tertiary);
   border-radius: var(--border-radius-sm, 0.25rem);
   flex-shrink: 0;
 
-  &:hover {
+  &:hover:not(:disabled) {
     color: var(--color-text-primary);
-    background-color: var(--color-neutral-100, #f3f4f6);
+    background-color: var(--color-surface-hover);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
   }
 }
 
-// Dropdown
+// Dropdown — positioned by the CDK overlay (see template), so no
+// absolute positioning / z-index here. The pane matches the field width.
 .lc-combobox__dropdown {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
   margin-top: 0.25rem;
   max-height: 240px;
   overflow-y: auto;
-  background-color: var(--color-surface, #ffffff);
-  border: 1px solid var(--color-neutral-200, #e5e7eb);
+  background-color: var(--color-surface-raised);
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--border-radius-md, 0.375rem);
-  box-shadow: var(--elevation-3, 0 10px 15px -3px rgba(0, 0, 0, 0.1));
-  z-index: 50;
+  box-shadow: var(--elevation-3);
 }
 
 .lc-combobox__group-header {
   padding: 0.375rem 0.75rem;
   font-size: var(--font-size-xs, 0.75rem);
   font-weight: 600;
-  color: var(--color-neutral-500, #6b7280);
+  color: var(--color-text-tertiary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin-top: 0.25rem;
@@ -131,7 +140,7 @@
   transition: background-color 0.1s;
 
   &--highlighted {
-    background-color: var(--color-neutral-100, #f3f4f6);
+    background-color: var(--color-surface-hover);
   }
 
   &--disabled {
@@ -140,15 +149,15 @@
   }
 
   &--create {
-    color: var(--color-primary-600, #2563eb);
+    color: var(--color-primary-600);
     font-weight: 500;
-    border-top: 1px solid var(--color-neutral-100, #f3f4f6);
+    border-top: 1px solid var(--color-divider);
   }
 }
 
 .lc-combobox__option-icon {
   flex-shrink: 0;
-  color: var(--color-neutral-500, #6b7280);
+  color: var(--color-text-tertiary);
 }
 
 .lc-combobox__option-content {
@@ -167,7 +176,7 @@
 
 .lc-combobox__option-desc {
   font-size: var(--font-size-xs, 0.75rem);
-  color: var(--color-text-secondary, #6b7280);
+  color: var(--color-text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -176,16 +185,16 @@
 .lc-combobox__empty {
   padding: 0.75rem;
   text-align: center;
-  color: var(--color-neutral-400, #9ca3af);
+  color: var(--color-text-tertiary);
   font-size: var(--font-size-sm, 0.875rem);
 }
 
 .lc-combobox__helper {
   font-size: var(--font-size-xs, 0.75rem);
-  color: var(--color-text-secondary, #6b7280);
+  color: var(--color-text-secondary);
 }
 
 .lc-combobox__error {
   font-size: var(--font-size-xs, 0.75rem);
-  color: var(--color-error-default, #ef4444);
+  color: var(--color-text-error);
 }

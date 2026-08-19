@@ -166,7 +166,13 @@
       border-radius: var(--border-radius-md, 0.375rem);
       position: relative;
 
-      &:hover::after {
+      // Label tooltip beside the rail — also on keyboard focus, a rail with
+      // hidden labels is otherwise unusable without a mouse. It floats over
+      // the content area, so it takes the semantic surface tokens (which
+      // follow the root theme like that area does), NOT --color-neutral-*:
+      // the neutral scale inverts in dark and rendered white-on-white.
+      &:hover::after,
+      &:focus-visible::after {
         content: attr(title);
         position: absolute;
         left: 100%;
@@ -174,8 +180,10 @@
         transform: translateY(-50%);
         margin-left: 8px;
         padding: 4px 10px;
-        background-color: var(--color-neutral-900, #111827);
-        color: #fff;
+        background-color: var(--color-surface-raised);
+        color: var(--color-text-primary);
+        border: 1px solid var(--color-border);
+        box-shadow: var(--elevation-2, 0 4px 6px -1px rgba(0, 0, 0, 0.1));
         font-size: 0.75rem;
         white-space: nowrap;
         border-radius: 4px;

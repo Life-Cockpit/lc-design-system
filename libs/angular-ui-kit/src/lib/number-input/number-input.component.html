@@ -1,35 +1,48 @@
 <div [class]="containerClasses()">
   @if (label()) {
-    <label class="number-input__label">{{ label() }}</label>
+    <label class="number-input__label" [for]="inputId">{{ label() }}</label>
   }
   <div class="number-input__control">
     <button
       type="button"
       class="number-input__button number-input__button--decrement"
-      [disabled]="disabled() || isDisabled() || !canDecrement()"
+      [disabled]="isDisabled() || !canDecrement()"
       (click)="decrement()"
       aria-label="Decrease value"
     >
-      <lc-icon name="minus" size="sm" />
+      <lc-icon name="minus" size="sm" [decorative]="true" />
     </button>
     <input
+      #inputEl
       type="text"
-      inputmode="numeric"
+      [id]="inputId"
+      [attr.inputmode]="inputMode()"
       class="number-input__input"
-      [value]="value() !== null ? value() : ''"
+      [value]="text()"
       [placeholder]="placeholder()"
-      [disabled]="disabled() || isDisabled()"
+      [disabled]="isDisabled()"
+      [attr.min]="min() ?? null"
+      [attr.max]="max() ?? null"
+      [attr.aria-label]="label() ? null : ariaLabel()"
+      [attr.aria-invalid]="error() ? true : null"
+      [attr.aria-describedby]="describedBy()"
       (input)="onInput($event)"
+      (keydown)="onKeydown($event)"
       (blur)="onBlur()"
     />
     <button
       type="button"
       class="number-input__button number-input__button--increment"
-      [disabled]="disabled() || isDisabled() || !canIncrement()"
+      [disabled]="isDisabled() || !canIncrement()"
       (click)="increment()"
       aria-label="Increase value"
     >
-      <lc-icon name="plus" size="sm" />
+      <lc-icon name="plus" size="sm" [decorative]="true" />
     </button>
   </div>
+  @if (error()) {
+    <p [id]="inputId + '-error'" class="number-input__error" role="alert">{{ error() }}</p>
+  } @else if (helperText()) {
+    <p [id]="inputId + '-helper'" class="number-input__helper">{{ helperText() }}</p>
+  }
 </div>

@@ -80,6 +80,7 @@
         <iframe
           class="doc-viewer__iframe"
           [src]="safeSrc()"
+          [title]="displayName()"
           type="application/pdf"
           (load)="onIframeLoad()"
         ></iframe>
@@ -99,7 +100,12 @@
       }
 
       @case ('markdown') {
-        <div class="doc-viewer__markdown" [innerHTML]="renderedMarkdown()"></div>
+        <!-- lc-markdown escapes the source and runs Angular's sanitizer — the
+             one markdown renderer in the kit, so its safety work isn't duplicated
+             (or missed) here. -->
+        <div class="doc-viewer__markdown">
+          <lc-markdown [content]="effectiveContent()" linkTarget="_blank" />
+        </div>
       }
 
       @case ('code') {

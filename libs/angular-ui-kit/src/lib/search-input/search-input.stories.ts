@@ -15,6 +15,7 @@ Specialized search input with built-in magnifying glass icon, clear button, and 
 - Clear button appears when input has a value
 - Debounced \`searchChange\` output (default 300ms)
 - \`searchSubmit\` output on Enter key
+- Two-way bindable \`value\` (preset / reset from the parent)
 - 3 size variants (sm, md, lg)
 - Disabled state
         `,
@@ -26,6 +27,8 @@ Specialized search input with built-in magnifying glass icon, clear button, and 
     size: { control: 'select', options: ['sm', 'md', 'lg'] },
     debounceMs: { control: { type: 'number', min: 0, max: 1000 } },
     disabled: { control: 'boolean' },
+    value: { control: 'text', description: 'Current query (two-way bindable via [(value)])' },
+    ariaLabel: { control: 'text', description: 'Accessible name (default "Search")' },
   },
 };
 
@@ -49,4 +52,11 @@ export const Sizes: Story = {
 
 export const Disabled: Story = {
   args: { placeholder: 'Search disabled', disabled: true, size: 'md' },
+};
+
+export const WithPresetValue: Story = {
+  parameters: {
+    docs: { description: { story: 'A parent can preset or reset the query via `[value]`; external writes do not emit `searchChange`.' } },
+  },
+  args: { placeholder: 'Search…', value: 'preset query', size: 'md', debounceMs: 300 },
 };

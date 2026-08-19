@@ -379,4 +379,112 @@ describe('GalleryComponent', () => {
     const dialog = fixture.nativeElement.querySelector('[role="dialog"]');
     expect(dialog.getAttribute('aria-modal')).toBe('true');
   });
+
+  // ── Focus management ─────────────────────────────────────────────────
+
+  describe('lightbox focus management', () => {
+    it('moves focus to the close button when the lightbox opens', () => {
+      fixture.detectChanges();
+      const items = fixture.nativeElement.querySelectorAll('.gallery__item');
+      items[1].focus();
+      items[1].click();
+      fixture.detectChanges();
+      const closeBtn = fixture.nativeElement.querySelector('[aria-label="Close"]');
+      expect(document.activeElement).toBe(closeBtn);
+    });
+
+    it('traps focus inside the lightbox', () => {
+      fixture.detectChanges();
+      fixture.nativeElement.querySelectorAll('.gallery__item')[0].click();
+      fixture.detectChanges();
+      const dialog = fixture.nativeElement.querySelector('.gallery__lightbox') as HTMLElement;
+      // cdkTrapFocus surrounds the region with focus-catching sibling anchors.
+      expect(dialog.previousElementSibling?.classList).toContain('cdk-focus-trap-anchor');
+      expect(dialog.nextElementSibling?.classList).toContain('cdk-focus-trap-anchor');
+      expect(dialog.getAttribute('tabindex')).toBe('-1');
+    });
+
+    it('returns focus to the originating thumbnail on close', () => {
+      fixture.detectChanges();
+      const items = fixture.nativeElement.querySelectorAll('.gallery__item');
+      items[2].focus();
+      items[2].click();
+      fixture.detectChanges();
+      expect(document.activeElement).not.toBe(items[2]);
+      (fixture.nativeElement.querySelector('[aria-label="Close"]') as HTMLElement).click();
+      fixture.detectChanges();
+      expect(document.activeElement).toBe(items[2]);
+    });
+
+    it('returns focus to the thumbnail after closing with Escape', () => {
+      fixture.detectChanges();
+      const items = fixture.nativeElement.querySelectorAll('.gallery__item');
+      items[0].focus();
+      items[0].dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      fixture.detectChanges();
+      const dialog = fixture.nativeElement.querySelector('.gallery__lightbox') as HTMLElement;
+      dialog.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('.gallery__lightbox')).toBeNull();
+      expect(document.activeElement).toBe(items[0]);
+    });
+  });
+
+  // ── Keyboard: thumbnails + Escape stacking ───────────────────────────
+
+  describe('keyboard', () => {
+    it('opens the lightbox on Space (keyup, like a native button) and prevents page scroll', () => {
+      fixture.detectChanges();
+      const item = fixture.nativeElement.querySelectorAll('.gallery__item')[1] as HTMLElement;
+      const down = new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true });
+      item.dispatchEvent(down);
+      fixture.detectChanges();
+      expect(down.defaultPrevented).toBe(true);
+      // Not yet — activating on keydown would let the Space keyup hit the Close button.
+      expect(fixture.nativeElement.querySelector('.gallery__lightbox')).toBeNull();
+      item.dispatchEvent(new KeyboardEvent('keyup', { key: ' ', bubbles: true, cancelable: true }));
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('.gallery__lightbox')).toBeTruthy();
+      expect(fixture.nativeElement.querySelector('.gallery__lightbox-image').getAttribute('src')).toBe('/img/2.jpg');
+    });
+
+    it('does not open the lightbox on Space when the lightbox is disabled', () => {
+      host.enableLightbox = false;
+      fixture.detectChanges();
+      const item = fixture.nativeElement.querySelector('.gallery__item') as HTMLElement;
+      item.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }));
+      item.dispatchEvent(new KeyboardEvent('keyup', { key: ' ', bubbles: true, cancelable: true }));
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('.gallery__lightbox')).toBeNull();
+    });
+
+    it('stops a handled Escape from propagating to enclosing dialogs', () => {
+      fixture.detectChanges();
+      fixture.nativeElement.querySelectorAll('.gallery__item')[0].click();
+      fixture.detectChanges();
+      const outer = jest.fn();
+      document.addEventListener('keydown', outer);
+      try {
+        const dialog = fixture.nativeElement.querySelector('.gallery__lightbox') as HTMLElement;
+        dialog.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+        fixture.detectChanges();
+        expect(fixture.nativeElement.querySelector('.gallery__lightbox')).toBeNull();
+        expect(outer).not.toHaveBeenCalled();
+      } finally {
+        document.removeEventListener('keydown', outer);
+      }
+    });
+
+    it('lets Escape through once the lightbox is closed', () => {
+      fixture.detectChanges();
+      const outer = jest.fn();
+      document.addEventListener('keydown', outer);
+      try {
+        document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+        expect(outer).toHaveBeenCalledTimes(1);
+      } finally {
+        document.removeEventListener('keydown', outer);
+      }
+    });
+  });
 });

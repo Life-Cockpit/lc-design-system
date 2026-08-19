@@ -13,6 +13,7 @@ Kanban board with drag-and-drop card management across multiple columns.
 
 **Key Features:**
 - HTML5 drag & drop between columns and within columns
+- Keyboard alternative: cards are focusable, Enter / Space activate, Alt+Arrow keys move a card between / within columns
 - Column headers with colour dot, card count, and WIP limit
 - WIP limit enforcement with over-limit highlighting
 - Card priorities (critical, high, medium, low) with \`lc-icon\` indicators
@@ -28,7 +29,7 @@ Kanban board with drag-and-drop card management across multiple columns.
   argTypes: {
     showCardCount: { control: 'boolean', description: 'Display the number of cards in each column header', table: { defaultValue: { summary: 'true' } } },
     showWipLimit: { control: 'boolean', description: 'Show WIP limit in column header and highlight over-limit columns', table: { defaultValue: { summary: 'true' } } },
-    readonly: { control: 'boolean', description: 'Disable drag-and-drop interactions', table: { defaultValue: { summary: 'false' } } },
+    readonly: { control: 'boolean', description: 'Disable drag-and-drop and keyboard moves (cards stay activatable)', table: { defaultValue: { summary: 'false' } } },
   },
 };
 export default meta;

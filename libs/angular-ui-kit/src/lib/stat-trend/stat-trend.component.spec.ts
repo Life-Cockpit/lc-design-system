@@ -1,5 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { By } from '@angular/platform-browser';
+import { provideHttpClient } from '@angular/common/http';
 import { StatTrendComponent } from './stat-trend.component';
+import { IconComponent } from '../icon/icon.component';
 
 describe('StatTrendComponent', () => {
   let component: StatTrendComponent;
@@ -8,6 +11,7 @@ describe('StatTrendComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [StatTrendComponent],
+      providers: [provideHttpClient()],
     }).compileComponents();
 
     fixture = TestBed.createComponent(StatTrendComponent);
@@ -82,5 +86,13 @@ describe('StatTrendComponent', () => {
     fixture.detectChanges();
     const sparkline = fixture.nativeElement.querySelector('lc-sparkline');
     expect(sparkline).toBeFalsy();
+  });
+
+  it('renders the header icon as decorative', () => {
+    fixture.componentRef.setInput('value', '100');
+    fixture.componentRef.setInput('icon', 'chart-bar');
+    fixture.detectChanges();
+    const icon = fixture.debugElement.query(By.directive(IconComponent)).componentInstance as IconComponent;
+    expect(icon.decorative()).toBe(true);
   });
 });

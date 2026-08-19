@@ -24,7 +24,7 @@ const meta: Meta<SpacerComponent> = {
 Spacer component for adding vertical or flexible spacing.
 
 **Key Features:**
-- Fixed spacing sizes (xs, sm, md, lg, xl, 2xl)
+- Fixed, density-aware spacing sizes (xs, sm, md, lg, xl)
 - Auto (flex-grow) mode for filling available space
 - Host class binding for layout integration
 `,

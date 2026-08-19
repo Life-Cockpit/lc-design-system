@@ -2,6 +2,320 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.0.0] - 2026-08-19
+
+A library-wide review of every component (correctness, security, accessibility,
+theming, API consistency, tests) and the fixes for everything it found — 114
+findings across ~60 components, plus the dependency-viewer rework. Major version
+because a handful of programmatic APIs changed shape on the way (see *Breaking
+changes*); template usage is unchanged for almost every consumer.
+
+### Security
+
+- **Rich text editor: markdown could inject markup and script**
+  (`lc-rich-text-editor`) — the built-in markdown → HTML conversion copied raw
+  HTML and link/image URLs verbatim and wrote the result to the editable area via
+  `innerHTML`, so markdown from a server or another user could run
+  `<img onerror>` / `javascript:` links. The source is now HTML-escaped before
+  any markup is applied, only http(s)/mailto/tel/relative links and image-safe
+  URLs become attributes (everything else renders as its text), and the result is
+  passed through Angular's sanitizer before it reaches the DOM. Raw HTML in the
+  markdown therefore shows as text — except `<u>`, which the toolbar's own
+  underline action writes and which is let through in escaped form.
+- **Document viewer: markdown XSS and unchecked `src`** (`lc-document-viewer`) —
+  its private markdown parser escaped only fenced code and marked the rest as
+  trusted HTML; a fetched `.md` file could inject markup. The private parser is
+  gone: markdown renders through `lc-markdown` (escaped + sanitised). `src` is
+  only embedded in the PDF iframe, or downloaded, when it is a http(s), blob:,
+  relative or `data:application/pdf` URL — a `javascript:` URL now shows "cannot
+  be displayed" instead of a frame. The iframe carries a `title`; the gallery's
+  download button applies the same URL check.
+- **Markdown: parser hardened independently of `sanitize`** (`lc-markdown`) —
+  quotes are escaped in attribute values and `javascript:`/unknown-scheme
+  link/image URLs are refused by the parser itself, so `sanitize=false` no longer
+  turns `![x](x" onerror=…)` into live markup. A literal `<!--CODE_BLOCK_5-->` in
+  the text used to dereference a missing block and throw inside a computed
+  (unforgeable NUL-bracketed placeholders now); heading ids — which Angular's
+  sanitizer strips — are restored after sanitising, so `#anchor` links and the
+  `rendered` TOC resolve again (and the dev-mode "sanitizing HTML stripped some
+  content" warning on every heading is gone); mermaid render ids are per instance,
+  so two `<lc-markdown>` with diagrams no longer delete each other's SVG;
+  ordered lists get their `<ol>`. New safety regression specs for markdown,
+  rich-text-editor and document-viewer.
+
+### Fixed
+
+- **Table: selection and inline edit followed the *position*, not the row**
+  (`lc-table`) — with a sort or filter active, ticking the first visible row
+  reported a different row of `data` in `selectionChange`, re-sorting made the
+  selection jump, and committing an inline edit emitted the wrong row. Both are
+  keyed by row identity now (the `idKey` value when set, else the row object);
+  `DisplayRow.absIndex` / `CellEditEvent.rowIndex` / the `rowIndex` passed to
+  formatters, class/style resolvers and action callbacks is the index into
+  `data` in both modes. Selection survives sort/filter/page changes and is
+  pruned when rows leave `data`; a blur arriving after Enter/Escape no longer
+  re-commits an edit. `currentPage` clamps to the last page when data or page
+  size shrink ("3–1 of 1" is gone); sortable headers are keyboard stops
+  (Enter/Space sort); the select-all box shows the mixed state; tree mode
+  finally has the keyboard model its `treegrid` role promised (roving tab stop,
+  Arrow/Home/End, Right/Left open/close or step into/out of a group, Enter →
+  `rowClick`, Space toggles selection).
+- **Forms: values and disabled state reaching the DOM** — `lc-email-input` never
+  passed its form value to the inner `lc-input` (`setValue`/`reset`/initial
+  values didn't render); `lc-rich-text-editor` lost a form's initial value in
+  rich mode and stayed editable while disabled/readonly; `lc-switch`,
+  `lc-textarea`, `lc-password-input`, `lc-verification-code-input`, `lc-select`
+  and `lc-datepicker` mutated plain fields in `writeValue`/`setDisabledState`
+  under OnPush, so `control.setValue()`/`disable()` left the DOM stale; `lc-combobox`,
+  `lc-rich-text-editor`, `lc-tag-input` and `lc-date-range-picker` had no working
+  `setDisabledState` at all. All of these are signal-driven now and honour the
+  form control.
+- **Checkbox / radio without a form control** — `checked`/`disabled`/
+  `indeterminate` were internal signals, not inputs (the components' own
+  Disabled stories bound a non-existent `[disabled]`); they are `model()`/`input()`
+  now. Several `lc-radio` sharing a `name` without a control desynced (clicking B
+  left A's dot filled) — siblings now uncheck each other like native radios.
+- **Datepicker was permanently read-only** — `[attr.readonly]="readonly"` set the
+  attribute even for `false`, so typing a date never worked. It does now: text is
+  kept separately while typing, a date is committed only once it parses fully,
+  partial text is reverted on blur. `minDate: new Date()` no longer disables
+  today (min/max compare by calendar day — also in `lc-date-range-picker`);
+  `closed` fires once (it fired twice via the overlay's `detach`), also in
+  `lc-select`.
+- **Select, multiple mode** — clicking an option's checkbox flipped the box but
+  never changed the value (the click was swallowed); options are real
+  `role="option"`s with `aria-selected` now, the checkbox is decorative. Trigger
+  and panel carry full combobox/listbox semantics (`aria-controls`,
+  `aria-activedescendant`, ids), keyboard works from the search input too, and a
+  placeholder/`searchable`/`multiple` change after init is reflected (the
+  computeds read non-signal inputs before).
+- **Confirm dialog confirmed on Enter anywhere** — Enter with focus on Cancel or
+  the close button triggered the (destructive) confirm. Enter now only confirms
+  from the require-text input; the buttons keep their native behaviour.
+- **Combobox** — clear emitted a fake `{value:'',label:''}` option instead of
+  `null` and `writeValue(null)` left the old text standing; `debounceMs` was read
+  once at construction (always 250); a failing `loadOptions()` killed the search
+  forever with the spinner on. Dropdown moved to a CDK overlay (no more clipping
+  in overflow containers); full listbox ARIA.
+- **Number input** — "12abc" stayed in the field while the model kept 12;
+  stepping drifted (0.1+0.2); no ArrowUp/Down. Invalid characters are stripped
+  as typed, the field resets to the model on blur, steps round to the step's
+  precision, arrows step.
+- **Slider** — every instance shared `id="lc-slider"` (labels pointed at the
+  first one); the initial value ignored `min` (negative fill); the unfilled track
+  was invisible in dark. **Rating** — `radiogroup` of plain buttons, `onTouched`
+  never called, `allowHalf` not selectable, `readonly` removed it from the tab
+  order. **Tag input** — the input vanished (and focus with it) at `maxTags`;
+  suggestions were mouse-only. **Search input** — `clear()` emitted twice,
+  `debounceMs` frozen, no way to set the value from outside (`value` is a model
+  now; `lc-filter-bar` binds it, so external resets clear the field).
+- **Verification code input** — `length` was ignored until a form wrote a value
+  (always six boxes), `complete` fired twice with `autoSubmit`, timers were never
+  cleared, the mount auto-focus stole focus unconditionally (opt-in `autofocus`
+  now), the hint was hard-coded to "…sent to your email" (`hint` input).
+- **Tabs** — `tabList` was a `computed` over a `QueryList` (no signal
+  dependency): tabs added or removed via `@for` after init never rendered. Arrow
+  keys moved the selection but not focus; `selectedIndexChange` fired `0` on
+  init. `contentChildren()` + `selectedIndex = model(0)`, focus follows, a
+  removed selected tab falls back to the last enabled one.
+- **Spacer sizes never applied** — `.spacer-xs {…}` in the component stylesheet
+  could not match the host under emulated encapsulation; `<lc-spacer size="md">`
+  had zero size. `:host(.spacer-*)` now.
+- **Kanban board** — after the first drop the `columns` input was ignored for
+  good (`linkedSignal` re-seeds it); cards are keyboard-operable (Enter/Space →
+  `cardClick`, Alt+Arrows move cards and emit `cardMoved`). **List** — an action
+  button's click also fired `itemClick`. **Avatar** — a single image error stuck
+  for the component's lifetime (reset on `src` change). **Gantt** — a fixed SVG
+  marker id collided across instances. **Notification center** — sorted the
+  caller's array in place. **Accordion** — focusable content in a collapsed
+  (aria-hidden) panel stayed in the tab order (`inert` now).
+- **Charts** — bar and stacked-bar drew grid lines and bars on different scales
+  (max 90 → top line "92", bar ends there); one nice scale now, negatives drawn
+  from a zero baseline; area with an empty series produced "NaN"/"-Infinity"
+  labels; waterfall labels drifted (0.30000000000000004) and totals got a "+";
+  donut single segment relied on float noise; stacked-bar `showValues` and
+  heatmap `colorMin` were dead inputs (implemented); scatter tooltip was white on
+  white in dark; funnel/heatmap labels were white on tints. Every chart has an
+  `ariaLabel` input defaulting to a generated summary of its data (the SVGs were
+  `role="img"` with a static name, hiding every value), scatter points are
+  keyboard-reachable, and a shared nice-scale / palette / formatter lives under
+  `shared/` (`formatValue` input on value-rendering charts).
+- **Log viewer** — `autoScroll` was declared but not implemented; the virtual
+  window was sized from `parseInt(height)` (a `100%`/`50vh` height rendered six
+  rows — measured now); the search highlight corrupted ANSI markup; pausing the
+  stream re-subscribed and duplicated replayed lines; `[lines]="[]"` couldn't
+  clear. **Chat** — no auto-scroll for incoming/streamed messages. **Diff
+  viewer** — O(m·n) LCS matrix froze on large inputs (Myers' diff + size cap).
+  **Gallery** — lightbox had no focus management. **Code block** — chrome ink
+  followed the theme on an always-dark surface (fails contrast in light).
+- **Icon** — fetched icons: a slow old response could overwrite a newer icon, every
+  instance refetched, size/color changes after load weren't applied (cancel on
+  change, shared cache, reactive decoration, SSR guards). **Theme service** —
+  forced dark on first injection (clobbering a pre-bootstrap class), persisted
+  nothing, never followed OS changes (adopts root class / `localStorage`,
+  persists, subscribes to the media query). **Header** — the theme button toggled
+  internally *and* emitted, so the documented wiring toggled straight back
+  (`autoToggleTheme` input; hamburger exposes `aria-expanded`/`aria-controls` via
+  `sidenavOpen`/`sidenavId`). **Sidenav** — a group containing the active route
+  couldn't be collapsed; Escape checked `mode()` instead of `effectiveMode()`;
+  drawer mode has dialog semantics and a focus trap.
+- **Overlays close one at a time** — modal, drawer, popover, menu, tooltip and
+  select/combobox/datepicker/date-range-picker all reacted to the same Escape (a
+  confirm dialog over a modal closed both). A small internal overlay stack lets
+  only the top-most overlay handle Escape and outside clicks. Drawer: SSR-unsafe
+  `document` access, a close-timer race on quick re-open, scroll lock left on
+  destroy. Tooltip: `aria-describedby` pointed at an id that was never set; no
+  Escape; no flip at viewport edges. Menu: no `menu`/`menuitem` roles or arrow
+  keys (it has them, and a spec).
+- **Toast had no outlet** — nothing rendered `ToastService.toasts`; new
+  `lc-toast-outlet` renders them per position inside persistent `aria-live`
+  regions (`position` and stacking finally apply).
+- **Typography and page header lost projected content in the browser** — both
+  placed a `<ng-content>` per `@switch` branch (one per heading level); Angular
+  projects into a single slot, so in an AOT build the h1/h2/… rendered *empty*
+  (`<lc-typography>` showed no text at all in Storybook) and the page header's
+  `title-suffix` slot only worked at level 1. One slot in an `<ng-template>`,
+  stamped into the rendered branch.
+- **Global `pre`/`code` followed the inverting neutral scale** — `pre` used
+  `--color-neutral-900/-50`, which turned every `<pre>` (lc-code-block's body
+  included) light on the dark theme; `code` used `--color-neutral-100`. `pre` is
+  the same terminal-dark surface as lc-code-block in both themes, `code` a
+  recessed theme surface; lc-code-block's body no longer inherits the page rule.
+- **Checkbox looked like a radio** — the smallest radius token is 10px, which
+  rounds a 16–20px box into a circle; the box has a 4px corner now.
+  **Switch** with `labelPosition="right"` sat at the far right of its line
+  (reversed flex row packed at the end). **Scatter plot**'s x-axis title
+  overlapped the tick labels.
+- **Typography** — `weight` never applied (`!important` in every variant); the
+  stylesheet leaked global utility classes (`.mb-4`, `.uppercase`, `.text-center`,
+  `.line-clamp-*`, …) that shadowed Tailwind — prefixed `lc-typography--*` now.
+  **Container** depended on Tailwind utilities the library doesn't ship (own
+  CSS now). Undefined tokens `--transition-fast/-normal`, `--spacing-0\.5`,
+  `--color-bg-disabled` referenced in breadcrumbs/pagination/tabs/
+  verification-code-input (invalid declarations → no transitions, collapsed
+  padding, light disabled boxes in dark).
+- **Theming** — text drawn with the raw fill token `--color-error` (~1.9:1 in
+  dark) in textarea/checkbox/radio/verification-code/typography →
+  `--color-text-error`; checked checkbox/radio/switch fills use
+  `--color-primary-fill` + `--color-on-primary`; the inverting neutral scale is
+  no longer used as fixed ink or surface (sidenav rail tooltip was white on
+  white in dark, footer dark variant, document-viewer code block invisible in
+  both themes, list/tree-view/kanban/select/datepicker/combobox surfaces);
+  hero's light variant pins dark ink on its pastel gradients; logo follows the
+  app's theme class instead of `prefers-color-scheme`; spinner's `.dark`
+  override that double-inverted the primary scale is gone; Tailwind-blue focus
+  rings replaced by the primary ring; the light ANSI palette of the log viewer
+  is keyed to `:root.light`.
+- **Accessibility, across the board** — `<label for>` + per-instance ids and
+  `aria-describedby`/`aria-invalid` wiring in textarea, number-input, tag-input,
+  color-picker, switch, verification-code-input, password-input, slider;
+  keyboard access for everything that was click-only (stepper steps, list items,
+  description-list items, gantt bars, calendar cells, notification items,
+  log lines, tree-view with roving tabindex and Arrow/Home/End, toggle-group as a
+  radiogroup, tabs focus); `progress-ring` is a `progressbar`; chip no longer
+  nests interactive elements; callout/alert announce as `status` unless
+  error/warning; decorative icons are marked decorative.
+- **Dependency viewer: labels fit their boxes** (`lc-dependency-viewer`) — the
+  box was a fixed 160×40 and the label a single centred line, so anything past
+  ~22 characters ran out both sides of the box (and, in white on a dark type
+  colour, simply vanished against the canvas). Boxes now size themselves to the
+  graph's labels: one width per graph, from 160px up to 240px for the longest
+  label; past the cap a label wraps onto a second line (the whole graph then
+  uses the taller 54px box) and what two lines still can't hold is ellipsised,
+  with the full label as a native tooltip. Text is measured in the label font
+  actually in use (canvas `measureText`; a metric estimate stands in where
+  there is no canvas, e.g. SSR/jsdom). Short-labelled graphs render exactly as
+  before. `minNodeSize` is still "smallest node width in px" — it now scales
+  against the graph's actual box width.
+- **Dependency viewer: cross-references between siblings no longer run through
+  the nodes they connect** (`lc-dependency-viewer`) — for two nodes in the same
+  column the "direct" S-curve had nowhere to go but backwards through both
+  endpoints, and surfaced only as a diagonal stub between them; several
+  dependencies on one sibling were then bowed at the same distance and drawn on
+  top of each other. Routing now depends on where the target sits: a later
+  column takes the gutter S-curve as before, an earlier one bows around the
+  rows, and siblings bow *beside* their column — never through it — with
+  overlapping bows spread into nested lanes (shorter span inside, 18px apart)
+  so every arc stays its own line with its own arrowhead. A bow's label now
+  sits just outside its apex instead of on top of the arc (and of whatever
+  arrowhead landed under it); bows clear the collapse toggle discs and attach
+  beside them (an arrowhead under the disc was invisible); the gutter between
+  levels widens when nested bows and their labels would otherwise reach the
+  next level's boxes; and bows are no longer clipped at the layout's edge.
+  Fitting (`autoFit` / `fitMode`) accounts for the labels' real extent.
+
+### Added
+
+- `lc-toast-outlet` (`ToastOutletComponent`); `ToastComponent.announce`.
+- Inputs: `lc-input.value` (model), `lc-search-input.value` (model) +
+  `valueChange`, `lc-checkbox.checked/indeterminate` (models) + `disabled`,
+  `lc-radio.checked` (model) + `disabled`, `lc-tabs.selectedIndex` (model),
+  `lc-calendar.view` (model) + `labels`, `lc-callout.visible`/`lc-alert.visible`
+  (models), `lc-list.clickable`, `lc-description-list.clickable`,
+  `lc-log-viewer.clickableLines`, `lc-accordion.headingLevel`,
+  `lc-progress-ring.ariaLabel/showLabel`, `lc-gantt-chart.locale/labelsHeader`,
+  `lc-notification-center.dateLocale`, `lc-date-range-picker.locale`,
+  `lc-verification-code-input.hint/autofocus`, `lc-number-input.helperText/error/
+  ariaLabel`, `lc-search-input.inputId/ariaLabel/ariaLabelledBy`,
+  `lc-toggle-group.ariaLabel/ariaLabelledBy`, `lc-header.sidenavOpen/sidenavId/
+  autoToggleTheme`, `lc-stepper.optionalLabel/stepAriaLabel`, `lc-pagination`
+  label inputs (`previousLabel`, `nextLabel`, `infoText`, …), `lc-diff-viewer.
+  maxLines`, `lc-chat.inputLabel`, charts: `ariaLabel`, `formatValue`,
+  `lc-scatter-plot.interactive`, `lc-sparkline.fluid`.
+- Methods: `lc-combobox.clear()`; `TimelineItem.id`.
+- Specs for components that had none (empty-state, logo, menu, password-input,
+  skeleton, spinner, verification-code-input, toast component/outlet) and
+  behaviour tests for every fix above; the library suite grew from 2 146 to
+  2 736 tests.
+- **Dependency viewer: "Long Labels & Sibling Dependencies" story** — long,
+  wrapping and ellipsised labels together with a fan of same-column
+  dependencies.
+
+### Breaking changes
+
+Template bindings keep working everywhere; what changed is programmatic access
+and a few DOM/semantic details:
+
+- **Signal inputs** — `lc-switch`, `lc-textarea`, `lc-password-input`,
+  `lc-verification-code-input`, `lc-select`, `lc-datepicker` moved from
+  `@Input()` fields to `input()` signals: read `component.disabled()` instead of
+  `component.disabled`. `lc-switch.checked` is an input and the effective state is
+  `checkedState()`; its `onKeyDown` method is gone (the control is a native
+  `<button role="switch">`).
+- **Models instead of output properties** — `lc-input.valueChange`,
+  `lc-checkbox.checkedChange`, `lc-radio.checkedChange`,
+  `lc-tabs.selectedIndexChange`, `lc-calendar.viewChange` are the model's
+  change outputs now: still bindable with `(xChange)`, but no longer class
+  properties to `subscribe()` to (subscribe to the model). They also emit when a
+  form control writes a value.
+- **Tabs** — `tabs` is a `Signal<readonly TabComponent[]>` (was a `QueryList`),
+  `registerTab()` is removed, `TabComponent.template` is a signal;
+  `selectedIndexInput` remains as a deprecated alias.
+- **Chip** — the removable wrapper is no longer `role="button"` (Enter/Space on
+  the wrapper no longer removes; the labelled remove button does);
+  `onKeydown`/`onDeleteKeydown` removed. Clickable + removable renders two
+  sibling buttons.
+- **Table** — `DisplayRow.absIndex` / `CellEditEvent.rowIndex` / callback
+  `rowIndex` are the index into `data`, not the on-screen position.
+- **Typography** — utility class names are prefixed (`.lc-typography--uppercase`
+  instead of `.uppercase`, etc.); `weight` defaults to unset.
+- **Container** — no longer emits Tailwind classes; sizes and padding come from
+  its own stylesheet. **Spacer** sizes actually apply now.
+- **Sparkline** no longer stretches to its container by default (`fluid` opts in);
+  an explicit `width` on the other fluid charts acts as a max-width.
+- **Rich text editor / markdown** — raw HTML in markdown renders as text (RTE:
+  except `<u>`); `javascript:` links render as plain text.
+- **Document viewer** — markdown DOM is `lc-markdown`'s (the private
+  `.doc-viewer__md-*` classes are gone).
+- **Callout / alert** default to `role="status"` (error/warning keep `alert`);
+  `visible` is a public model. **Toggle group** exposes radio semantics instead
+  of `aria-pressed`. **Logo** renders two `<img>` (no `<picture>`).
+- **Theme service** persists the choice in `localStorage` (`lc-theme`) and adopts
+  an existing root class on start; light `META_COLOR` follows
+  `--color-background`.
+- **Modal** `backdropClicked` is not emitted while another overlay is on top;
+  **drawer** `close()` unlocks scrolling only once `open` is false.
+
 ## [2.21.1] - 2026-08-17
 
 ### Fixed

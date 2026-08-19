@@ -35,6 +35,26 @@
   fill: var(--color-text-secondary);
 }
 
+// Segment values sit on the segment fill, whose token resolves differently per
+// theme, so the ink can't be picked from the fill: primary text with a halo in
+// the page surface (`paint-order: stroke`) reads on any fill in both themes.
+.lc-stacked-bar-chart__segment-value {
+  font-size: 0.625rem;
+  font-weight: 600;
+  fill: var(--color-text-primary);
+  paint-order: stroke;
+  stroke: var(--color-surface);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+
+.lc-stacked-bar-chart__total {
+  font-size: 0.625rem;
+  font-weight: 600;
+  fill: var(--color-text-secondary);
+}
+
 .lc-stacked-bar-chart__legend {
   display: flex;
   flex-wrap: wrap;

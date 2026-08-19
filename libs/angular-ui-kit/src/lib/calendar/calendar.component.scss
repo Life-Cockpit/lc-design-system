@@ -24,7 +24,17 @@
   gap: 0.5rem;
 }
 
+// Shared keyboard focus ring for every button in the calendar chrome and grid.
+%calendar-focus-ring {
+  &:focus-visible {
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: 1px;
+    z-index: 2;
+  }
+}
+
 .lc-calendar__nav-btn {
+  @extend %calendar-focus-ring;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -42,6 +52,7 @@
 }
 
 .lc-calendar__today-btn {
+  @extend %calendar-focus-ring;
   padding: 0.25rem 0.75rem;
   border: 1px solid var(--color-border);
   border-radius: 0.375rem;
@@ -72,6 +83,7 @@
 
 
   button {
+    @extend %calendar-focus-ring;
     padding: 0.25rem 0.75rem;
     border: none;
     background: var(--color-surface);
@@ -140,15 +152,23 @@
 }
 
 .lc-calendar__day-number {
+  @extend %calendar-focus-ring;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 1.5rem;
   height: 1.5rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font: inherit;
   font-size: 0.75rem;
   font-weight: 500;
   color: var(--color-text-secondary);
   border-radius: 50%;
+  cursor: pointer;
+
+  &:hover { background: var(--color-surface-hover); }
 
   .lc-calendar__day-cell--today & {
     background: var(--color-primary-500);
@@ -159,6 +179,12 @@
 }
 
 .lc-calendar__event-dot {
+  @extend %calendar-focus-ring;
+  display: block;
+  width: 100%;
+  border: none;
+  font: inherit;
+  text-align: left;
   font-size: 0.6875rem;
   padding: 0.0625rem 0.25rem;
   border-radius: 0.1875rem;
@@ -201,13 +227,21 @@
 }
 
 .lc-calendar__time-col-header {
+  @extend %calendar-focus-ring;
   flex: 1;
+  min-width: 0;
   text-align: center;
   padding: 0.5rem 0.25rem;
+  border: none;
+  border-left: 1px solid var(--color-border);
+  background: transparent;
+  font: inherit;
   font-size: 0.75rem;
   font-weight: 600;
   color: var(--color-text-secondary);
-  border-left: 1px solid var(--color-border);
+  cursor: pointer;
+
+  &:hover { background: var(--color-surface-hover); }
 
   &--today {
     color: var(--color-primary-500);
@@ -256,12 +290,16 @@
 }
 
 .lc-calendar__time-event {
+  @extend %calendar-focus-ring;
   position: absolute;
   left: 0.125rem;
   right: 0.125rem;
+  border: none;
   border-radius: 0.25rem;
   padding: 0.125rem 0.375rem;
+  font: inherit;
   font-size: 0.6875rem;
+  text-align: left;
   color: var(--color-on-primary);
   overflow: hidden;
   cursor: pointer;

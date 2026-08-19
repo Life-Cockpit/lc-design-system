@@ -52,3 +52,7 @@ export const NoLabel: Story = {
 export const NoValue: Story = {
   args: { min: 0, max: 100, step: 1, label: 'Secret', showValue: false },
 };
+
+export const OffsetRange: Story = {
+  args: { min: 10, max: 20, step: 0.5, label: 'Level', showValue: true },
+};

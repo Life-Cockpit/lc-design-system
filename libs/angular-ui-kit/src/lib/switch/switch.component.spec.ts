@@ -1,489 +1,284 @@
+import { Component, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { SwitchComponent } from './switch.component';
 
+@Component({
+  standalone: true,
+  imports: [SwitchComponent, ReactiveFormsModule],
+  template: `
+    <lc-switch
+      [formControl]="control"
+      [label]="label()"
+      [labelPosition]="labelPosition()"
+      [variant]="variant()"
+      [size]="size()"
+      [required]="required()"
+      [loading]="loading()"
+      [ariaLabel]="ariaLabel()"
+      (checkedChange)="changes.push($event)"
+    />
+  `,
+})
+class FormHostComponent {
+  readonly control = new FormControl<boolean>(false, { nonNullable: true });
+  readonly label = signal('Enable notifications');
+  readonly labelPosition = signal<'left' | 'right'>('right');
+  readonly variant = signal<'primary' | 'secondary' | 'success' | 'warning' | 'danger'>('primary');
+  readonly size = signal<'sm' | 'md' | 'lg'>('md');
+  readonly required = signal(false);
+  readonly loading = signal(false);
+  readonly ariaLabel = signal<string | undefined>(undefined);
+  readonly changes: boolean[] = [];
+}
+
+@Component({
+  standalone: true,
+  imports: [SwitchComponent],
+  template: `
+    <lc-switch label="First" [checked]="checked()" [disabled]="disabled()" (checkedChange)="checked.set($event)" />
+    <lc-switch label="Second" />
+  `,
+})
+class TwoInstancesHostComponent {
+  readonly checked = signal(false);
+  readonly disabled = signal(false);
+}
+
 describe('SwitchComponent', () => {
-  let component: SwitchComponent;
-  let fixture: ComponentFixture<SwitchComponent>;
+  describe('with a FormControl host', () => {
+    let fixture: ComponentFixture<FormHostComponent>;
+    let host: FormHostComponent;
 
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [SwitchComponent, ReactiveFormsModule],
-    }).compileComponents();
+    const button = (): HTMLButtonElement => fixture.nativeElement.querySelector('button.lc-switch');
+    const label = (): HTMLLabelElement | null => fixture.nativeElement.querySelector('label.lc-switch-label');
 
-    fixture = TestBed.createComponent(SwitchComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
-  });
+    beforeEach(async () => {
+      await TestBed.configureTestingModule({
+        imports: [FormHostComponent],
+      }).compileComponents();
 
-  describe('Component Creation', () => {
-    it('should create', () => {
-      expect(component).toBeTruthy();
-    });
-
-    it('should have default variant as primary', () => {
-      expect(component.variant).toBe('primary');
-    });
-
-    it('should have default size as md', () => {
-      expect(component.size).toBe('md');
-    });
-
-    it('should not be checked by default', () => {
-      expect(component.checked).toBe(false);
-    });
-
-    it('should not be disabled by default', () => {
-      expect(component.disabled).toBe(false);
-    });
-
-    it('should not be required by default', () => {
-      expect(component.required).toBe(false);
-    });
-
-    it('should not be loading by default', () => {
-      expect(component.loading).toBe(false);
-    });
-  });
-
-  describe('Variant', () => {
-    it('should set variant to primary', () => {
-      component.variant = 'primary';
-      fixture.changeDetectorRef.markForCheck();
+      fixture = TestBed.createComponent(FormHostComponent);
+      host = fixture.componentInstance;
       fixture.detectChanges();
-      expect(component.variant).toBe('primary');
     });
 
-    it('should set variant to secondary', () => {
-      component.variant = 'secondary';
-      fixture.changeDetectorRef.markForCheck();
-      fixture.detectChanges();
-      expect(component.variant).toBe('secondary');
+    it('renders a native button with role="switch"', () => {
+      expect(button()).toBeTruthy();
+      expect(button().getAttribute('role')).toBe('switch');
+      expect(button().getAttribute('type')).toBe('button');
+      expect(button().getAttribute('aria-checked')).toBe('false');
     });
 
-    it('should set variant to success', () => {
-      component.variant = 'success';
-      fixture.changeDetectorRef.markForCheck();
-      fixture.detectChanges();
-      expect(component.variant).toBe('success');
+    it('associates the label with the switch via for/id', () => {
+      const id = button().id;
+      expect(id).toMatch(/^lc-switch-\d+$/);
+      expect(label()?.getAttribute('for')).toBe(id);
+      expect(label()?.textContent?.trim()).toBe('Enable notifications');
+      // No redundant aria-label duplicating the visible label
+      expect(button().hasAttribute('aria-label')).toBe(false);
     });
 
-    it('should set variant to warning', () => {
-      component.variant = 'warning';
-      fixture.changeDetectorRef.markForCheck();
+    it('renders the label before the switch when labelPosition is left', () => {
+      host.labelPosition.set('left');
       fixture.detectChanges();
-      expect(component.variant).toBe('warning');
+      const wrapper: HTMLElement = fixture.nativeElement.querySelector('.lc-switch-wrapper');
+      expect(wrapper.classList).toContain('lc-switch-wrapper--label-left');
+      expect(wrapper.firstElementChild?.tagName).toBe('LABEL');
+      expect(label()?.getAttribute('for')).toBe(button().id);
     });
 
-    it('should set variant to danger', () => {
-      component.variant = 'danger';
-      fixture.changeDetectorRef.markForCheck();
-      fixture.detectChanges();
-      expect(component.variant).toBe('danger');
+    it('applies default variant and size classes', () => {
+      expect(button().classList).toContain('lc-switch--primary');
+      expect(button().classList).toContain('lc-switch--md');
     });
 
-    it('should apply correct CSS class for primary variant', () => {
-      component.variant = 'primary';
-      fixture.changeDetectorRef.markForCheck();
+    it('updates variant and size classes when inputs change', () => {
+      host.variant.set('success');
+      host.size.set('lg');
       fixture.detectChanges();
-      expect(component.switchClasses).toContain('lc-switch--primary');
+      expect(button().classList).toContain('lc-switch--success');
+      expect(button().classList).toContain('lc-switch--lg');
+      expect(button().classList).not.toContain('lc-switch--primary');
     });
 
-    it('should apply correct CSS class for success variant', () => {
-      component.variant = 'success';
-      fixture.changeDetectorRef.markForCheck();
+    it('reflects control.setValue(true) in the DOM without manual markForCheck', () => {
+      host.control.setValue(true);
       fixture.detectChanges();
-      expect(component.switchClasses).toContain('lc-switch--success');
-    });
-  });
+      expect(button().getAttribute('aria-checked')).toBe('true');
+      expect(button().classList).toContain('lc-switch--checked');
 
-  describe('Size', () => {
-    it('should set size to sm', () => {
-      component.size = 'sm';
-      fixture.changeDetectorRef.markForCheck();
+      host.control.setValue(false);
       fixture.detectChanges();
-      expect(component.size).toBe('sm');
+      expect(button().getAttribute('aria-checked')).toBe('false');
+      expect(button().classList).not.toContain('lc-switch--checked');
     });
 
-    it('should set size to md', () => {
-      component.size = 'md';
-      fixture.changeDetectorRef.markForCheck();
+    it('does not emit checkedChange for form-driven writes', () => {
+      host.control.setValue(true);
       fixture.detectChanges();
-      expect(component.size).toBe('md');
+      expect(host.changes).toEqual([]);
     });
 
-    it('should set size to lg', () => {
-      component.size = 'lg';
-      fixture.changeDetectorRef.markForCheck();
+    it('reflects control.disable()/enable() in the DOM without manual markForCheck', () => {
+      host.control.disable();
       fixture.detectChanges();
-      expect(component.size).toBe('lg');
+      expect(button().disabled).toBe(true);
+      expect(button().classList).toContain('lc-switch--disabled');
+
+      host.control.enable();
+      fixture.detectChanges();
+      expect(button().disabled).toBe(false);
+      expect(button().classList).not.toContain('lc-switch--disabled');
     });
 
-    it('should apply correct CSS class for sm size', () => {
-      component.size = 'sm';
-      fixture.changeDetectorRef.markForCheck();
+    it('toggles the control value and emits checkedChange on click', () => {
+      button().click();
       fixture.detectChanges();
-      expect(component.switchClasses).toContain('lc-switch--sm');
+      expect(host.control.value).toBe(true);
+      expect(host.control.touched).toBe(true);
+      expect(button().getAttribute('aria-checked')).toBe('true');
+      expect(host.changes).toEqual([true]);
+
+      button().click();
+      fixture.detectChanges();
+      expect(host.control.value).toBe(false);
+      expect(host.changes).toEqual([true, false]);
     });
 
-    it('should apply correct CSS class for lg size', () => {
-      component.size = 'lg';
-      fixture.changeDetectorRef.markForCheck();
+    it('does not toggle when the control is disabled', () => {
+      host.control.disable();
       fixture.detectChanges();
-      expect(component.switchClasses).toContain('lc-switch--lg');
-    });
-  });
-
-  describe('States', () => {
-    it('should set checked state', () => {
-      component.checked = true;
-      fixture.changeDetectorRef.markForCheck();
+      button().click();
       fixture.detectChanges();
-      expect(component.checked).toBe(true);
+      expect(host.control.value).toBe(false);
+      expect(host.changes).toEqual([]);
     });
 
-    it('should set disabled state', () => {
-      component.disabled = true;
-      fixture.changeDetectorRef.markForCheck();
+    it('does not toggle while loading, but stays focusable and announces busy', () => {
+      host.loading.set(true);
       fixture.detectChanges();
-      expect(component.disabled).toBe(true);
+      expect(button().classList).toContain('lc-switch--loading');
+      expect(button().disabled).toBe(false);
+      expect(button().getAttribute('aria-busy')).toBe('true');
+      expect(button().getAttribute('aria-disabled')).toBe('true');
+      expect(fixture.nativeElement.querySelector('.lc-switch-loading-spinner')).toBeTruthy();
+
+      button().click();
+      fixture.detectChanges();
+      expect(host.control.value).toBe(false);
+      expect(host.changes).toEqual([]);
     });
 
-    it('should set required state', () => {
-      component.required = true;
-      fixture.changeDetectorRef.markForCheck();
+    it('sets aria-required when required', () => {
+      expect(button().hasAttribute('aria-required')).toBe(false);
+      host.required.set(true);
       fixture.detectChanges();
-      expect(component.required).toBe(true);
+      expect(button().getAttribute('aria-required')).toBe('true');
     });
 
-    it('should set loading state', () => {
-      component.loading = true;
-      fixture.changeDetectorRef.markForCheck();
+    it('uses ariaLabel as accessible name override when provided', () => {
+      host.ariaLabel.set('Toggle feature');
       fixture.detectChanges();
-      expect(component.loading).toBe(true);
+      expect(button().getAttribute('aria-label')).toBe('Toggle feature');
     });
 
-    it('should apply checked CSS class', () => {
-      component.checked = true;
-      fixture.changeDetectorRef.markForCheck();
+    it('omits the label element when label is empty', () => {
+      host.label.set('');
       fixture.detectChanges();
-      expect(component.switchClasses).toContain('lc-switch--checked');
-    });
-
-    it('should apply disabled CSS class', () => {
-      component.disabled = true;
-      fixture.changeDetectorRef.markForCheck();
-      fixture.detectChanges();
-      expect(component.switchClasses).toContain('lc-switch--disabled');
-    });
-
-    it('should apply loading CSS class', () => {
-      component.loading = true;
-      fixture.changeDetectorRef.markForCheck();
-      fixture.detectChanges();
-      expect(component.switchClasses).toContain('lc-switch--loading');
+      expect(label()).toBeNull();
     });
   });
 
-  describe('Text Properties', () => {
-    it('should set label', () => {
-      component.label = 'Enable notifications';
-      fixture.changeDetectorRef.markForCheck();
+  describe('with a template-driven [checked] host', () => {
+    let fixture: ComponentFixture<TwoInstancesHostComponent>;
+    let host: TwoInstancesHostComponent;
+
+    beforeEach(async () => {
+      await TestBed.configureTestingModule({
+        imports: [TwoInstancesHostComponent],
+      }).compileComponents();
+
+      fixture = TestBed.createComponent(TwoInstancesHostComponent);
+      host = fixture.componentInstance;
       fixture.detectChanges();
-      expect(component.label).toBe('Enable notifications');
     });
 
-    it('should set label position to left', () => {
-      component.labelPosition = 'left';
-      fixture.changeDetectorRef.markForCheck();
-      fixture.detectChanges();
-      expect(component.labelPosition).toBe('left');
+    it('generates unique ids across instances', () => {
+      const buttons: HTMLButtonElement[] = Array.from(fixture.nativeElement.querySelectorAll('button.lc-switch'));
+      const labels: HTMLLabelElement[] = Array.from(fixture.nativeElement.querySelectorAll('label.lc-switch-label'));
+      expect(buttons).toHaveLength(2);
+      expect(buttons[0].id).not.toBe(buttons[1].id);
+      expect(labels[0].getAttribute('for')).toBe(buttons[0].id);
+      expect(labels[1].getAttribute('for')).toBe(buttons[1].id);
     });
 
-    it('should set label position to right', () => {
-      component.labelPosition = 'right';
-      fixture.changeDetectorRef.markForCheck();
+    it('disables the button and ignores clicks when the disabled input is set', () => {
+      const first: HTMLButtonElement = fixture.nativeElement.querySelector('button.lc-switch');
+      host.disabled.set(true);
       fixture.detectChanges();
-      expect(component.labelPosition).toBe('right');
+      expect(first.disabled).toBe(true);
+      expect(first.classList).toContain('lc-switch--disabled');
+      first.click();
+      fixture.detectChanges();
+      expect(host.checked()).toBe(false);
     });
 
-    it('should set aria label', () => {
-      component.ariaLabel = 'Toggle feature';
-      fixture.changeDetectorRef.markForCheck();
+    it('follows the [checked] input and round-trips via (checkedChange)', () => {
+      const first: HTMLButtonElement = fixture.nativeElement.querySelector('button.lc-switch');
+      expect(first.getAttribute('aria-checked')).toBe('false');
+
+      host.checked.set(true);
       fixture.detectChanges();
-      expect(component.ariaLabel).toBe('Toggle feature');
+      expect(first.getAttribute('aria-checked')).toBe('true');
+
+      first.click();
+      fixture.detectChanges();
+      expect(host.checked()).toBe(false);
+      expect(first.getAttribute('aria-checked')).toBe('false');
     });
   });
 
-  describe('Toggle Functionality', () => {
-    it('should toggle from false to true', () => {
-      component.checked = false;
-      component.toggle();
-      expect(component.checked).toBe(true);
+  describe('ControlValueAccessor (direct)', () => {
+    let fixture: ComponentFixture<SwitchComponent>;
+    let component: SwitchComponent;
+
+    beforeEach(async () => {
+      await TestBed.configureTestingModule({
+        imports: [SwitchComponent],
+      }).compileComponents();
+
+      fixture = TestBed.createComponent(SwitchComponent);
+      component = fixture.componentInstance;
+      fixture.detectChanges();
     });
 
-    it('should toggle from true to false', () => {
-      component.checked = true;
-      component.toggle();
-      expect(component.checked).toBe(false);
-    });
-
-    it('should not toggle when disabled', () => {
-      component.disabled = true;
-      component.checked = false;
-      component.toggle();
-      expect(component.checked).toBe(false);
-    });
-
-    it('should not toggle when loading', () => {
-      component.loading = true;
-      component.checked = false;
-      component.toggle();
-      expect(component.checked).toBe(false);
-    });
-
-    it('should emit checkedChange on toggle', (done) => {
-      component.checkedChange.subscribe((value) => {
-        expect(value).toBe(true);
-        done();
-      });
-      component.checked = false;
-      component.toggle();
-    });
-
-    it('should call onChange callback on toggle', () => {
-      const onChangeSpy = jest.fn();
-      component.registerOnChange(onChangeSpy);
-      component.toggle();
-      expect(onChangeSpy).toHaveBeenCalled();
-    });
-
-    it('should call onTouched on toggle', () => {
-      const onTouchedSpy = jest.fn();
-      component.registerOnTouched(onTouchedSpy);
-      component.toggle();
-      expect(onTouchedSpy).toHaveBeenCalled();
-    });
-  });
-
-  describe('Click Handling', () => {
-    it('should toggle on click', () => {
-      component.checked = false;
-      component.onClick();
-      expect(component.checked).toBe(true);
-    });
-
-    it('should not toggle on click when disabled', () => {
-      component.disabled = true;
-      component.checked = false;
-      component.onClick();
-      expect(component.checked).toBe(false);
-    });
-
-    it('should not toggle on click when loading', () => {
-      component.loading = true;
-      component.checked = false;
-      component.onClick();
-      expect(component.checked).toBe(false);
-    });
-  });
-
-  describe('Keyboard Handling', () => {
-    it('should toggle on Space key', () => {
-      const event = new KeyboardEvent('keydown', { key: ' ' });
-      component.checked = false;
-      component.onKeyDown(event);
-      expect(component.checked).toBe(true);
-    });
-
-    it('should toggle on Enter key', () => {
-      const event = new KeyboardEvent('keydown', { key: 'Enter' });
-      component.checked = false;
-      component.onKeyDown(event);
-      expect(component.checked).toBe(true);
-    });
-
-    it('should not toggle on other keys', () => {
-      const event = new KeyboardEvent('keydown', { key: 'a' });
-      component.checked = false;
-      component.onKeyDown(event);
-      expect(component.checked).toBe(false);
-    });
-
-    it('should not toggle on Space when disabled', () => {
-      const event = new KeyboardEvent('keydown', { key: ' ' });
-      component.disabled = true;
-      component.checked = false;
-      component.onKeyDown(event);
-      expect(component.checked).toBe(false);
-    });
-
-    it('should not toggle on Enter when loading', () => {
-      const event = new KeyboardEvent('keydown', { key: 'Enter' });
-      component.loading = true;
-      component.checked = false;
-      component.onKeyDown(event);
-      expect(component.checked).toBe(false);
-    });
-
-    it('should prevent default on Space key', () => {
-      const event = new KeyboardEvent('keydown', { key: ' ' });
-      const preventDefaultSpy = jest.spyOn(event, 'preventDefault');
-      component.onKeyDown(event);
-      expect(preventDefaultSpy).toHaveBeenCalled();
-    });
-
-    it('should prevent default on Enter key', () => {
-      const event = new KeyboardEvent('keydown', { key: 'Enter' });
-      const preventDefaultSpy = jest.spyOn(event, 'preventDefault');
-      component.onKeyDown(event);
-      expect(preventDefaultSpy).toHaveBeenCalled();
-    });
-  });
-
-  describe('ControlValueAccessor', () => {
-    it('should write true value', () => {
+    it('writes null/undefined as unchecked', () => {
       component.writeValue(true);
-      expect(component.checked).toBe(true);
-    });
-
-    it('should write false value', () => {
-      component.writeValue(false);
-      expect(component.checked).toBe(false);
-    });
-
-    it('should write null as false', () => {
+      expect(component.checkedState()).toBe(true);
       component.writeValue(null);
-      expect(component.checked).toBe(false);
-    });
-
-    it('should write undefined as false', () => {
+      expect(component.checkedState()).toBe(false);
       component.writeValue(undefined);
-      expect(component.checked).toBe(false);
+      expect(component.checkedState()).toBe(false);
     });
 
-    it('should register onChange callback', () => {
-      const fn = jest.fn();
-      component.registerOnChange(fn);
+    it('calls the registered onChange and onTouched callbacks on toggle', () => {
+      const onChange = jest.fn();
+      const onTouched = jest.fn();
+      component.registerOnChange(onChange);
+      component.registerOnTouched(onTouched);
       component.toggle();
-      expect(fn).toHaveBeenCalled();
+      expect(onChange).toHaveBeenCalledWith(true);
+      expect(onTouched).toHaveBeenCalled();
     });
 
-    it('should register onTouched callback', () => {
-      const fn = jest.fn();
-      component.registerOnTouched(fn);
-      component.toggle();
-      expect(fn).toHaveBeenCalled();
-    });
-
-    it('should set disabled state through ControlValueAccessor', () => {
+    it('ORs the disabled input with the form disabled state', () => {
+      expect(component.isDisabled()).toBe(false);
       component.setDisabledState(true);
-      expect(component.disabled).toBe(true);
-    });
-
-    it('should enable through ControlValueAccessor', () => {
+      expect(component.isDisabled()).toBe(true);
       component.setDisabledState(false);
-      expect(component.disabled).toBe(false);
-    });
-  });
-
-  describe('Reactive Forms Integration', () => {
-    it('should work with FormControl', () => {
-      const _control = new FormControl(true);
-      component.writeValue(true);
-      expect(component.checked).toBe(true);
-    });
-
-    it('should update FormControl on toggle', () => {
-      const _control = new FormControl(false);
-      const onChangeSpy = jest.fn();
-      component.registerOnChange(onChangeSpy);
-
-      component.toggle();
-      expect(onChangeSpy).toHaveBeenCalledWith(true);
-    });
-
-    it('should sync with FormControl disabled state', () => {
-      component.setDisabledState(true);
-      expect(component.disabled).toBe(true);
-    });
-  });
-
-  describe('CSS Classes', () => {
-    it('should generate correct base classes', () => {
-      expect(component.switchClasses).toContain('lc-switch');
-    });
-
-    it('should include variant class', () => {
-      component.variant = 'success';
-      fixture.changeDetectorRef.markForCheck();
-      fixture.detectChanges();
-      expect(component.switchClasses).toContain('lc-switch--success');
-    });
-
-    it('should include size class', () => {
-      component.size = 'lg';
-      fixture.changeDetectorRef.markForCheck();
-      fixture.detectChanges();
-      expect(component.switchClasses).toContain('lc-switch--lg');
-    });
-
-    it('should include multiple state classes', () => {
-      component.checked = true;
-      component.disabled = true;
-      fixture.changeDetectorRef.markForCheck();
-      fixture.detectChanges();
-      const classes = component.switchClasses;
-      expect(classes).toContain('lc-switch--checked');
-      expect(classes).toContain('lc-switch--disabled');
-    });
-
-    it('should include loading class when loading', () => {
-      component.loading = true;
-      fixture.changeDetectorRef.markForCheck();
-      fixture.detectChanges();
-      expect(component.switchClasses).toContain('lc-switch--loading');
-    });
-  });
-
-  describe('Accessibility', () => {
-    it('should have role="switch"', () => {
-      expect(component.switchClasses).toContain('lc-switch');
-    });
-
-    it('should have aria-label when provided', () => {
-      component.ariaLabel = 'Toggle feature';
-      fixture.changeDetectorRef.markForCheck();
-      fixture.detectChanges();
-      expect(component.ariaLabel).toBe('Toggle feature');
-    });
-
-    it('should have aria-required when required', () => {
-      component.required = true;
-      fixture.changeDetectorRef.markForCheck();
-      fixture.detectChanges();
-      expect(component.required).toBe(true);
-    });
-
-    it('should have aria-checked reflecting state', () => {
-      component.checked = true;
-      fixture.changeDetectorRef.markForCheck();
-      fixture.detectChanges();
-      expect(component.checked).toBe(true);
-    });
-
-    it('should have tabindex 0 when not disabled', () => {
-      component.disabled = false;
-      fixture.changeDetectorRef.markForCheck();
-      fixture.detectChanges();
-      expect(component.disabled).toBe(false);
-    });
-
-    it('should have tabindex -1 when disabled', () => {
-      component.disabled = true;
-      fixture.changeDetectorRef.markForCheck();
-      fixture.detectChanges();
-      expect(component.disabled).toBe(true);
+      fixture.componentRef.setInput('disabled', true);
+      expect(component.isDisabled()).toBe(true);
     });
   });
 });

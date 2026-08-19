@@ -29,6 +29,8 @@ Supports validation, help text, and indeterminate state.
     },
     label: { control: 'text', description: 'Checkbox label' },
     helpText: { control: 'text', description: 'Helper text shown below the label' },
+    checked: { control: 'boolean', description: 'Checked state (two-way bindable via [(checked)])' },
+    indeterminate: { control: 'boolean', description: 'Partially-checked state, cleared on the next toggle' },
     disabled: { control: 'boolean', description: 'Disables the checkbox' },
     required: { control: 'boolean', description: 'Marks as required' },
   },
@@ -58,8 +60,19 @@ export const Required: Story = {
 
 export const Disabled: Story = {
   render: () => ({
-    template: `<lc-checkbox label="This option is currently unavailable" [disabled]="true"></lc-checkbox>`,
+    template: `
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <lc-checkbox label="This option is currently unavailable" [disabled]="true"></lc-checkbox>
+        <lc-checkbox label="Locked in the on state" [disabled]="true" [checked]="true"></lc-checkbox>
+      </div>`,
   }),
+};
+
+export const Indeterminate: Story = {
+  parameters: {
+    docs: { description: { story: 'Partially selected parent checkbox; the state clears on the next user toggle.' } },
+  },
+  args: { label: 'Select all', indeterminate: true },
 };
 
 export const CheckboxGroup: Story = {

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/angular';
-import { fn, expect, userEvent, within } from 'storybook/test';
+import { fn } from 'storybook/test';
 import { MenuComponent } from './menu.component';
 
 /**
@@ -43,8 +43,9 @@ Menu Component - Dropdown menu for navigation and actions
 - Dividers between menu sections
 - Optional subtitle/metadata for items
 - Danger variant for destructive actions
-- Click outside to close
-- Keyboard navigation (Escape to close)
+- Click outside to close (top-most overlay only)
+- Keyboard navigation: focus moves into the menu on open, Arrow keys / Home / End move between items, Enter / Space activate, Escape closes and returns focus to the trigger
+- ARIA menu semantics (\`aria-haspopup\` / \`aria-expanded\` / \`aria-controls\` on the trigger, \`role="menu"\` / \`role="menuitem"\`)
 - OnPush change detection for performance
 `,
       },

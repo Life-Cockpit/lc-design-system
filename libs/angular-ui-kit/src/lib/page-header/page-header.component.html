@@ -15,6 +15,9 @@
     <div class="lc-page-header__titles">
       <div class="lc-page-header__title-row">
         @if (title()) {
+          <!-- One projection slot for the suffix: a slot inside a non-rendered
+               @switch branch would swallow it for levels 2 and 3. -->
+          <ng-template #titleSuffix><ng-content select="[slot='title-suffix']" /></ng-template>
           @switch (level()) {
             @case (1) {
               <h1 class="lc-page-header__title">
@@ -23,7 +26,7 @@
                   <span class="lc-page-header__badge">{{ badge() }}</span>
                 }
                 <span class="lc-page-header__title-suffix">
-                  <ng-content select="[slot='title-suffix']" />
+                  <ng-container [ngTemplateOutlet]="titleSuffix" />
                 </span>
               </h1>
             }
@@ -34,7 +37,7 @@
                   <span class="lc-page-header__badge">{{ badge() }}</span>
                 }
                 <span class="lc-page-header__title-suffix">
-                  <ng-content select="[slot='title-suffix']" />
+                  <ng-container [ngTemplateOutlet]="titleSuffix" />
                 </span>
               </h2>
             }
@@ -45,7 +48,7 @@
                   <span class="lc-page-header__badge">{{ badge() }}</span>
                 }
                 <span class="lc-page-header__title-suffix">
-                  <ng-content select="[slot='title-suffix']" />
+                  <ng-container [ngTemplateOutlet]="titleSuffix" />
                 </span>
               </h3>
             }

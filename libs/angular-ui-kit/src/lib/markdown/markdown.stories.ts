@@ -91,7 +91,7 @@ export class MyComponent {}
 
 > **Note:** This is a blockquote with \`inline code\` inside.
 
-For more info, visit [the docs](https://design.life-cockpit.de).
+For more info, visit [the docs](https://example.com/docs).
 `;
 
 export const Default: Story = {

@@ -84,7 +84,9 @@ code {
   font-family: var(--font-family-mono);
   font-size: 0.875em;
   padding: 0.125rem 0.25rem;
-  background-color: var(--color-neutral-100);
+  // A recessed surface that follows the theme (the neutral scale inverts in
+  // dark, so neutral-100 would turn near-black there).
+  background-color: var(--color-surface-sunken);
   color: var(--color-text-primary);
   border-radius: 0.25rem;
 }
@@ -93,8 +95,11 @@ pre {
   font-family: var(--font-family-mono);
   font-size: var(--font-size-sm);
   padding: 1rem;
-  background-color: var(--color-neutral-900);
-  color: var(--color-neutral-50);
+  // A terminal-dark block in BOTH themes — the same surface lc-code-block uses.
+  // Literal values on purpose: neutral-900/-50 invert with the theme and made
+  // every <pre> (lc-code-block's body included) light on the dark theme.
+  background-color: #0c1722;
+  color: #eef4f6;
   border-radius: 0.5rem;
   overflow-x: auto;
 

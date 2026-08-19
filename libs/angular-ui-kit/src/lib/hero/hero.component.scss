@@ -189,7 +189,11 @@ $hero-colors: (
   // Variant: light – softer pastel gradient with dark text
   // -------------------------------------------------------------------------
   &--light {
-    color: var(--color-text-primary, #1f2937);
+    // LITERAL dark ink, not --color-text-primary: the pastel gradients below
+    // are fixed light hexes that do not follow the theme, so a theme-dependent
+    // ink turned near-white on them under the dark root. Same principle as
+    // the dark gradients pinning #fff.
+    color: colors.$color-neutral-800;
 
     .hero__label {
       opacity: 0.7;
@@ -332,7 +336,9 @@ $hero-colors: (
 // ---------------------------------------------------------------------------
 // Footer slot (stats, metadata, CTAs)
 // ---------------------------------------------------------------------------
-::ng-deep [hero-footer] {
+// Scoped to this host: a bare `::ng-deep` here would be a global rule and
+// style every `[hero-footer]` in the app, projected into a hero or not.
+:host ::ng-deep [hero-footer] {
   display: grid;
   grid-template-columns: 1fr;
   gap: 1rem;

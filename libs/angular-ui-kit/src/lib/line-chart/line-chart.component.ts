@@ -9,6 +9,14 @@ import {
   computed,
   signal,
 } from '@angular/core';
+import { chartColor } from '../shared/chart-palette';
+import { linearPath, smoothPath } from '../shared/chart-path';
+import {
+  ChartValueFormatter,
+  formatChartValue,
+  niceScale,
+  toFinite,
+} from '../shared/chart-scale';
 
 export interface LineChartSeries {
   label: string;
@@ -16,14 +24,10 @@ export interface LineChartSeries {
   color?: string;
 }
 
-const DEFAULT_COLORS = [
-  'var(--color-primary-500)',
-  'var(--color-secondary-500)',
-  'var(--color-success-default)',
-  'var(--color-warning-default)',
-  'var(--color-error-default)',
-  'var(--color-info-default)',
-];
+/** viewBox width used until the container has been measured. */
+const DEFAULT_WIDTH = 400;
+
+let nextClipId = 0;
 
 @Component({
   selector: 'lc-line-chart',
@@ -31,6 +35,9 @@ const DEFAULT_COLORS = [
   templateUrl: './line-chart.component.html',
   styleUrls: ['./line-chart.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    '[style.max-width.px]': 'width()',
+  },
 })
 /**
  * Line chart component for visualizing data trends.
@@ -39,7 +46,7 @@ const DEFAULT_COLORS = [
  * - Multiple data series support
  * - Smooth or linear curve interpolation
  * - Optional area fill below lines
- * - Configurable grid, axis labels, dots, and legend
+ * - Configurable grid on a nice tick scale, axis labels, dots, and legend
  * - Responsive SVG rendering with configurable dimensions
  *
  * @example
@@ -68,8 +75,14 @@ export class LineChartComponent {
   /** X-axis labels. */
   labels = input<string[]>([]);
 
-  /** Chart width in pixels. */
-  width = input<number>(400);
+  /**
+   * Intrinsic chart width in pixels. The chart fills its container (the SVG is
+   * `width="100%"` and its viewBox follows the measured container width);
+   * `width` is the viewBox width until the container has been measured and,
+   * when set, the host's `max-width`, so the chart never grows past it. Leave
+   * unset for a fully fluid chart.
+   */
+  width = input<number | undefined>(undefined);
 
   /** Chart height in pixels. */
   height = input<number>(200);
@@ -101,23 +114,38 @@ export class LineChartComponent {
   /** Force a minimum Y value (e.g. 0 for cost charts to avoid negative baseline). */
   yMin = input<number | null>(null);
 
+  /** Formats Y-axis tick labels. Defaults to a float-safe `String(value)`. */
+  formatValue = input<ChartValueFormatter>(formatChartValue);
+
+  /**
+   * Accessible name of the chart. Defaults to a generated summary naming each
+   * series with its point count and value range.
+   */
+  ariaLabel = input<string>('');
+
   private readonly PL = 40;
   private readonly PR = 10;
   private readonly PT = 10;
   private readonly PB = 30;
 
   protected readonly effectiveWidth = computed(
-    () => this._containerWidth() || this.width()
+    () => this._containerWidth() || this.width() || DEFAULT_WIDTH
   );
 
   protected readonly viewBox = computed(
     () => `0 0 ${this.effectiveWidth()} ${this.height()}`
   );
 
-  protected readonly allValues = computed(() => {
-    const s = this.series();
-    return s.flatMap((ser) => ser.data);
-  });
+  private readonly cleanSeries = computed(() =>
+    (this.series() ?? []).map((ser) => ({
+      ...ser,
+      data: (ser.data ?? []).map((v) => toFinite(v)),
+    }))
+  );
+
+  protected readonly allValues = computed(() =>
+    this.cleanSeries().flatMap((ser) => ser.data)
+  );
 
   protected readonly minValue = computed(() => {
     const dataMin = this.allValues().length ? Math.min(...this.allValues()) : 0;
@@ -129,8 +157,11 @@ export class LineChartComponent {
     this.allValues().length ? Math.max(...this.allValues()) : 0
   );
 
+  /** Y scale with nice tick bounds; the plot edges sit on the outermost ticks. */
+  protected readonly scale = computed(() => niceScale(this.minValue(), this.maxValue(), 4));
+
   protected readonly maxDataLength = computed(() =>
-    Math.max(...this.series().map((s) => s.data.length), 0)
+    Math.max(...this.cleanSeries().map((s) => s.data.length), 0)
   );
 
   protected readonly plotArea = computed(() => ({
@@ -140,21 +171,16 @@ export class LineChartComponent {
     h: this.height() - this.PT - this.PB,
   }));
 
+  private valueToY(value: number): number {
+    const { min, max } = this.scale();
+    const pa = this.plotArea();
+    return pa.y + pa.h - ((value - min) / (max - min || 1)) * pa.h;
+  }
+
   protected readonly gridLines = computed(() => {
     if (!this.showGrid()) return [];
-    const max = this.maxValue();
-    const min = this.minValue();
-    const range = max - min || 1;
-    const steps = 4;
-    const pa = this.plotArea();
-    const lines: { y: number; label: string }[] = [];
-
-    for (let i = 0; i <= steps; i++) {
-      const val = min + (i / steps) * range;
-      const y = pa.y + pa.h - (i / steps) * pa.h;
-      lines.push({ y, label: this.fmtY(val) });
-    }
-    return lines;
+    const fmt = this.formatValue();
+    return this.scale().ticks.map((tick) => ({ y: this.valueToY(tick), label: fmt(tick) }));
   });
 
   protected readonly xLabels = computed(() => {
@@ -170,44 +196,20 @@ export class LineChartComponent {
     }));
   });
 
-
-
   protected readonly renderedSeries = computed(() => {
-    const allSeries = this.series();
     const pa = this.plotArea();
-    const min = this.minValue();
-    const max = this.maxValue();
-    const range = max - min || 1;
 
-    return allSeries.map((ser, si) => {
-      const color = ser.color || DEFAULT_COLORS[si % DEFAULT_COLORS.length];
+    return this.cleanSeries().map((ser, si) => {
+      const color = ser.color || chartColor(si);
       const points = ser.data.map((v, i) => ({
         x: pa.x + (ser.data.length > 1 ? (i / (ser.data.length - 1)) * pa.w : pa.w / 2),
-        y: pa.y + pa.h - ((v - min) / range) * pa.h,
+        y: this.valueToY(v),
       }));
 
-      let pathD = '';
-      if (points.length >= 2) {
-        if (this.smooth()) {
-          pathD = `M${points[0].x},${points[0].y}`;
-          for (let i = 0; i < points.length - 1; i++) {
-            const p0 = points[Math.max(i - 1, 0)];
-            const p1 = points[i];
-            const p2 = points[i + 1];
-            const p3 = points[Math.min(i + 2, points.length - 1)];
-            const cp1x = p1.x + (p2.x - p0.x) / 6;
-            const cp1y = p1.y + (p2.y - p0.y) / 6;
-            const cp2x = p2.x - (p3.x - p1.x) / 6;
-            const cp2y = p2.y - (p3.y - p1.y) / 6;
-            pathD += ` C${cp1x},${cp1y} ${cp2x},${cp2y} ${p2.x},${p2.y}`;
-          }
-        } else {
-          pathD = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ');
-        }
-      }
+      const pathD = this.smooth() ? smoothPath(points) : linearPath(points);
 
       let areaD = '';
-      if (this.filled() && pathD && points.length >= 2) {
+      if (this.filled() && pathD) {
         const lastX = points[points.length - 1].x;
         const firstX = points[0].x;
         const bottomY = pa.y + pa.h;
@@ -242,16 +244,21 @@ export class LineChartComponent {
     }));
   });
 
-  private readonly _clipId = `lc-chart-clip-${Math.random().toString(36).slice(2)}`;
+  private readonly _clipId = `lc-chart-clip-${++nextClipId}`;
   protected readonly clipId = () => this._clipId;
 
-  protected fmtY(val: number): string {
-    if (val === 0) return '0';
-    const abs = Math.abs(val);
-    if (abs < 0.001) return val.toFixed(4);
-    if (abs < 0.01)  return val.toFixed(3);
-    if (abs < 0.1)   return val.toFixed(2);
-    if (abs < 10)    return val.toFixed(1);
-    return String(Math.round(val));
-  }
+  protected readonly effectiveAriaLabel = computed(() => {
+    const explicit = this.ariaLabel();
+    if (explicit) return explicit;
+    const series = this.cleanSeries();
+    if (!series.length) return 'Line chart: no data';
+    const fmt = this.formatValue();
+    const parts = series.map((s, i) => {
+      const name = s.label || `Series ${i + 1}`;
+      if (!s.data.length) return `${name} (no data)`;
+      const n = s.data.length;
+      return `${name} (${n} ${n === 1 ? 'point' : 'points'}, ${fmt(Math.min(...s.data))} to ${fmt(Math.max(...s.data))})`;
+    });
+    return `Line chart: ${parts.join(', ')}`;
+  });
 }

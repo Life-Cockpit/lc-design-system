@@ -64,7 +64,10 @@ toolbar (e.g. inside a card) should be tighter than the surrounding page.
 - Renders with \`role="toolbar"\` on the host element
 - Provide an \`aria-label\` on the host if the toolbar's purpose is not obvious from
   context (e.g. \`<lc-toolbar aria-label="Table filters">\`)
-- Slot projection preserves DOM order, so tab order matches visual order
+- Left / Right (and Home / End) move focus between the toolbar's controls, as the role
+  promises; arrows are left alone inside text fields, selects and nested composite widgets
+- Slot projection preserves DOM order, so tab order matches visual order; every control
+  stays reachable via Tab (no roving tabindex over the projected content)
 
 ---
 

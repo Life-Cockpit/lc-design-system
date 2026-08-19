@@ -1,27 +1,49 @@
 @if (label()) {
-  <label class="lc-drp__label">{{ label() }}</label>
+  <label class="lc-drp__label" [id]="labelId" [for]="triggerId">{{ label() }}</label>
 }
 
-<div class="lc-drp__trigger" [class.lc-drp__trigger--disabled]="disabled()" (click)="toggle()">
-  <lc-icon class="lc-drp__icon" name="calendar" size="sm" [decorative]="true" />
-  <span class="lc-drp__value" [class.lc-drp__value--placeholder]="!displayValue()">
-    {{ displayValue() || placeholder() }}
-  </span>
-  @if (displayValue()) {
+<!-- The clear button must not be nested inside the trigger button, so the
+     bordered "field" wraps both. -->
+<div class="lc-drp__field" [class.lc-drp__field--disabled]="isDisabled()">
+  <button
+    #triggerEl
+    type="button"
+    class="lc-drp__trigger"
+    [id]="triggerId"
+    [class.lc-drp__trigger--disabled]="isDisabled()"
+    [disabled]="isDisabled()"
+    aria-haspopup="dialog"
+    [attr.aria-expanded]="isOpen()"
+    [attr.aria-controls]="isOpen() ? panelId : null"
+    [attr.aria-labelledby]="label() ? labelId + ' ' + valueId : null"
+    (click)="toggle()"
+  >
+    <lc-icon class="lc-drp__icon" name="calendar" size="sm" [decorative]="true" />
+    <span class="lc-drp__value" [id]="valueId" [class.lc-drp__value--placeholder]="!displayValue()">
+      {{ displayValue() || placeholder() }}
+    </span>
+  </button>
+  @if (displayValue() && !isDisabled()) {
     <button type="button" class="lc-drp__clear" (click)="clearRange($event)" aria-label="Clear">×</button>
   }
 </div>
 
 @if (isOpen()) {
-  <div class="lc-drp__dropdown">
+  <div
+    #panelEl
+    class="lc-drp__dropdown"
+    role="dialog"
+    [id]="panelId"
+    [attr.aria-label]="label() || placeholder()"
+  >
     <div class="lc-drp__header">
-      <button type="button" class="lc-drp__nav" (click)="prevMonth()">‹</button>
-      <span class="lc-drp__month">{{ monthLabel() }}</span>
-      <button type="button" class="lc-drp__nav" (click)="nextMonth()">›</button>
+      <button type="button" class="lc-drp__nav" aria-label="Previous month" (click)="prevMonth()">‹</button>
+      <span class="lc-drp__month" aria-live="polite">{{ monthLabel() }}</span>
+      <button type="button" class="lc-drp__nav" aria-label="Next month" (click)="nextMonth()">›</button>
     </div>
 
-    <div class="lc-drp__weekdays">
-      @for (wd of weekdays; track wd) {
+    <div class="lc-drp__weekdays" aria-hidden="true">
+      @for (wd of weekdays(); track $index) {
         <span class="lc-drp__weekday">{{ wd }}</span>
       }
     </div>
@@ -38,6 +60,8 @@
           [class.lc-drp__day--end]="isEnd(day.date)"
           [class.lc-drp__day--in-range]="isInRange(day.date)"
           [disabled]="day.disabled"
+          [attr.aria-label]="day.ariaLabel"
+          [attr.aria-pressed]="isStart(day.date) || isEnd(day.date)"
           (click)="selectDate(day.date)"
           (mouseenter)="onDayHover(day.date)"
         >{{ day.date.getDate() }}</button>
@@ -45,7 +69,7 @@
     </div>
 
     <div class="lc-drp__footer">
-      <span class="lc-drp__hint">
+      <span class="lc-drp__hint" aria-live="polite">
         @if (selecting() === 'start') { Select start date }
         @else { Select end date }
       </span>

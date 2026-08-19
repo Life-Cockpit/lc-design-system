@@ -134,6 +134,7 @@ export class MyComponent {}
 | Error Display | `lc-error-display` | Error state display |
 | Modal | `lc-modal` | Dialog/modal window |
 | Toast | `lc-toast` | Notification toast |
+| Toast Outlet | `lc-toast-outlet` | Renders the `ToastService` queue per position inside persistent live regions — place it once in the app shell |
 | Tooltip | `lcTooltip` | Tooltip directive |
 
 ### Services
@@ -141,7 +142,8 @@ export class MyComponent {}
 | Service | Description |
 |---------|-------------|
 | `ConfirmService` | Imperative confirm/destructive/warning dialogs returning `Promise<boolean>` |
-| `ThemeService` | Toggle light/dark theme |
+| `ThemeService` | Toggle light/dark theme; persists the choice (`localStorage` key `lc-theme`) and adopts a `dark`/`light` class already on `<html>` at startup |
+| `ToastService` | `show({ message, variant, … })` — rendered by `<lc-toast-outlet />` |
 
 ## Theming
 
@@ -158,6 +160,20 @@ export class AppComponent {
     this.themeService.toggleTheme();
   }
 }
+```
+
+`lc-header`'s theme button toggles the service itself (set `[autoToggleTheme]="false"`
+to handle `(themeToggleClick)` in the app instead).
+
+### Toasts
+
+```html
+<!-- once, e.g. in the app shell -->
+<lc-toast-outlet />
+```
+
+```typescript
+inject(ToastService).show({ message: 'Saved', variant: 'success' });
 ```
 
 ## Branding (custom logo)

@@ -34,19 +34,23 @@
               type="checkbox"
               class="lc-table__checkbox"
               [checked]="allSelected()"
+              [indeterminate]="someSelected()"
               (change)="toggleSelectAll()"
               aria-label="Select all rows"
             />
           </th>
         }
         @for (column of columns(); track column.key) {
+          <!-- A sortable header is a keyboard stop too: Enter/Space sort like a click. -->
           <th
             scope="col"
             [class]="getHeaderClasses(column) + (column.cssClass ? ' ' + column.cssClass : '')"
             [attr.aria-sort]="getAriaSort(column.key)"
+            [attr.tabindex]="column.sortable ? 0 : null"
             [style.width]="column.width"
             [title]="column.tooltip || ''"
-            (click)="handleSort(column.key)">
+            (click)="handleSort(column.key)"
+            (keydown)="column.sortable ? onHeaderKeydown($event, column.key) : null">
             {{ column.label }}
             @if (column.sortable && getSortState(column.key)) {
               <span class="sort-indicator" [attr.aria-label]="getSortState(column.key) === 'asc' ? 'sorted ascending' : 'sorted descending'">
@@ -79,24 +83,32 @@
           </td>
         </tr>
       } @else {
-        @for (dr of displayRows(); track dr.absIndex) {
+        @for (dr of displayRows(); track dr.key) {
+          <!-- In tree mode the rows form the treegrid's keyboard model: a roving
+               tab stop plus Arrow/Home/End/Enter/Space handling (see the
+               component). Flat mode keeps plain table rows. -->
           <tr
-            [class.lc-table__row--selected]="selectable() && isRowSelected(dr.absIndex)"
+            #dataRow
+            [class.lc-table__row--selected]="selectable() && isRowSelected(dr.row)"
             [class.lc-table__row--group]="dr.hasChildren"
             [attr.role]="treeMode() ? 'row' : null"
+            [attr.tabindex]="rowTabindex(dr)"
             [attr.aria-level]="treeMode() ? dr.level : null"
             [attr.aria-expanded]="treeMode() && dr.hasChildren ? dr.expanded : null"
             [attr.aria-posinset]="treeMode() ? dr.posInSet : null"
             [attr.aria-setsize]="treeMode() ? dr.setSize : null"
+            [attr.aria-selected]="treeMode() && selectable() ? isRowSelected(dr.row) : null"
             (click)="onRowClick(dr.row)"
+            (focus)="onRowFocus(dr)"
+            (keydown)="onRowKeydown($event, dr)"
           >
             @if (selectable()) {
               <td class="lc-table__select-cell" [attr.role]="treeMode() ? 'gridcell' : null">
                 <input
                   type="checkbox"
                   class="lc-table__checkbox"
-                  [checked]="isRowSelected(dr.absIndex)"
-                  (change)="toggleRowSelect(dr.absIndex)"
+                  [checked]="isRowSelected(dr.row)"
+                  (change)="toggleRowSelect(dr.row)"
                   (click)="$event.stopPropagation()"
                   [attr.aria-label]="'Select row ' + (dr.absIndex + 1)"
                 />
@@ -107,7 +119,7 @@
                 [class]="getCellClasses(dr.row, column, dr.absIndex)"
                 [ngStyle]="getCellStyles(dr.row, column, dr.absIndex)"
                 [attr.role]="treeMode() ? 'gridcell' : null"
-                (dblclick)="editable() ? startEdit(dr.absIndex, column.key, getCellValue(dr.row, column.key)) : null"
+                (dblclick)="editable() ? startEdit(dr.row, column.key, getCellValue(dr.row, column.key)) : null"
               >
                 @if (isTreeColumn(column.key)) {
                   <span class="lc-table__tree-cell">
@@ -180,14 +192,14 @@
 
 <!-- Shared cell content (edit input / custom template / formatted value) -->
 <ng-template #cellContent let-row="row" let-column="column" let-absIndex="absIndex">
-  @if (isEditing(absIndex, column.key)) {
+  @if (isEditing(row, column.key)) {
     <input
       type="text"
       class="lc-table__edit-input"
       [value]="editValue()"
       (input)="editValue.set(getInputValue($event))"
-      (blur)="commitEdit(absIndex, column.key)"
-      (keydown)="onEditKeydown($event, absIndex, column.key)"
+      (blur)="commitEdit(row, column.key)"
+      (keydown)="onEditKeydown($event, row, column.key)"
       autofocus
     />
   } @else if (hasCustomTemplate(column.key)) {

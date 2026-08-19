@@ -57,7 +57,8 @@ export type DescriptionListSeparator = 'line' | 'divider' | 'none';
  *   dotted leader line connecting them (the DS2.0 "spec sheet" look).
  * - `stacked` layout: term above value, for narrow columns.
  * - Per-row value emphasis and optional links.
- * - Semantic markup (`<dl>`/`<dt>`/`<dd>`) for accessibility.
+ * - Semantic markup (`<dl>`/`<dt>`/`<dd>`) for accessibility; `clickable`
+ *   rows are focusable and keyboard-activatable.
  *
  * @example
  * ```html
@@ -106,7 +107,15 @@ export class DescriptionListComponent {
    */
   readonly separator = input<DescriptionListSeparator>('line');
 
-  /** Emitted when a row is clicked. */
+  /**
+   * Whether rows are interactive. When set, each row is focusable and
+   * Enter / Space emit `itemClick`, so the click handler is reachable from
+   * the keyboard. Set this whenever you handle `itemClick`.
+   * @default false
+   */
+  readonly clickable = input<boolean>(false);
+
+  /** Emitted when a row is clicked (or activated via keyboard when `clickable`). */
   readonly itemClick = output<DescriptionListItem>();
 
   protected readonly hostClasses = computed(() =>
@@ -123,5 +132,14 @@ export class DescriptionListComponent {
 
   protected valueClass(item: DescriptionListItem): string {
     return `lc-dl__value lc-dl__value--${item.emphasis ?? 'default'}`;
+  }
+
+  /** Keyboard activation of a clickable row (only from the row itself, not a nested link). */
+  protected onRowKeydown(event: KeyboardEvent, item: DescriptionListItem): void {
+    if (event.target !== event.currentTarget) return;
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      this.itemClick.emit(item);
+    }
   }
 }

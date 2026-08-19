@@ -3,40 +3,52 @@
   [class.lc-stepper--horizontal]="orientation() === 'horizontal'"
   [class.lc-stepper--vertical]="orientation() === 'vertical'"
 >
-  <!-- Step indicators -->
-  <div class="lc-stepper__header">
-    @for (step of steps(); track step.label; let i = $index; let last = $last) {
-      <div [class]="getStepClasses(i)" (click)="goToStep(i)">
-        <div class="lc-stepper__indicator">
-          @if (getStepState(i) === 'completed') {
-            <!-- Checkmark for completed -->
-            <svg class="lc-stepper__check" viewBox="0 0 20 20" fill="currentColor">
-              <path
-                fill-rule="evenodd"
-                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                clip-rule="evenodd"
-              />
-            </svg>
-          } @else {
-            <span class="lc-stepper__number">{{ i + 1 }}</span>
-          }
-        </div>
-        <div class="lc-stepper__label">
-          <span class="lc-stepper__title">{{ step.label }}</span>
-          @if (step.description) {
-            <span class="lc-stepper__description">{{ step.description }}</span>
-          }
-          @if (step.optional) {
-            <span class="lc-stepper__optional">Optional</span>
-          }
-        </div>
-      </div>
+  <!-- Step indicators: an ordered list of buttons (position is conveyed by the list) -->
+  <ol class="lc-stepper__header">
+    @for (step of steps(); track $index; let i = $index; let last = $last) {
+      <li class="lc-stepper__item">
+        <button
+          type="button"
+          [class]="getStepClasses(i)"
+          [disabled]="!isStepNavigable(i)"
+          [attr.aria-current]="getStepState(i) === 'active' ? 'step' : null"
+          [attr.aria-label]="getStepAriaLabel(i)"
+          [attr.aria-describedby]="getDescriptionId(i)"
+          (click)="goToStep(i)"
+        >
+          <span class="lc-stepper__indicator" aria-hidden="true">
+            @if (getStepState(i) === 'completed') {
+              <!-- Checkmark for completed -->
+              <svg class="lc-stepper__check" viewBox="0 0 20 20" fill="currentColor">
+                <path
+                  fill-rule="evenodd"
+                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+            } @else {
+              <span class="lc-stepper__number">{{ i + 1 }}</span>
+            }
+          </span>
+          <span class="lc-stepper__label">
+            <span class="lc-stepper__title">{{ step.label }}</span>
+            @if (step.description) {
+              <span class="lc-stepper__description" [attr.id]="getDescriptionId(i)">{{
+                step.description
+              }}</span>
+            }
+            @if (step.optional) {
+              <span class="lc-stepper__optional">{{ optionalLabel() }}</span>
+            }
+          </span>
+        </button>
 
-      @if (!last) {
-        <div [class]="getConnectorClasses(i)"></div>
-      }
+        @if (!last) {
+          <span [class]="getConnectorClasses(i)" aria-hidden="true"></span>
+        }
+      </li>
     }
-  </div>
+  </ol>
 
   <!-- Step content area (projected) -->
   <div class="lc-stepper__content">

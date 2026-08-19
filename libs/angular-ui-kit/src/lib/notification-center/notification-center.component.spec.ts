@@ -18,6 +18,7 @@ const ago = (mins: number) => new Date(now.getTime() - mins * 60000);
     [showPriority]="showPriority()"
     [emptyMessage]="emptyMessage()"
     [groupByCategory]="groupByCategory()"
+    [dateLocale]="dateLocale()"
     (notificationClick)="clicked = $event"
     (notificationDismiss)="dismissed = $event"
     (notificationAction)="actioned = $event"
@@ -38,6 +39,7 @@ class TestHost {
   showPriority = signal(false);
   emptyMessage = signal('No notifications');
   groupByCategory = signal(false);
+  dateLocale = signal('de-DE');
   clicked: Notification | null = null;
   dismissed: string | null = null;
   actioned: Notification | null = null;
@@ -243,6 +245,76 @@ describe('NotificationCenterComponent', () => {
   it('should sort urgent items first', () => {
     const titles = el.querySelectorAll('.lc-nc__item-title');
     expect(titles[0].textContent?.trim()).toBe('Error in pipeline'); // urgent priority
+  });
+
+  it('should not reorder the caller\'s notifications array while sorting', () => {
+    const input = host.notifications();
+    const idsBefore = input.map(n => n.id);
+    // trigger a re-computation without a filter (the unfiltered path used to sort in place)
+    host.showPriority.set(true);
+    fixture.detectChanges();
+    expect(input.map(n => n.id)).toEqual(idsBefore);
+    expect(idsBefore).toEqual(['1', '2', '3', '4']);
+  });
+
+  it('should render a single list without group headers when not grouping', () => {
+    expect(el.querySelectorAll('.lc-nc__group-header').length).toBe(0);
+    expect(el.querySelectorAll('.lc-nc__item').length).toBe(4);
+  });
+
+  // -- Keyboard access --
+
+  it('should render the title as a button that activates the row exactly once', () => {
+    const title = el.querySelector('.lc-nc__item-title') as HTMLButtonElement;
+    expect(title.tagName).toBe('BUTTON');
+    const clicks: Notification[] = [];
+    fixture.debugElement.query(By.directive(NotificationCenterComponent)).componentInstance
+      .notificationClick.subscribe((n: Notification) => clicks.push(n));
+
+    title.click(); // what Enter/Space on a focused button dispatches
+    expect(clicks.length).toBe(1);
+    expect(clicks[0].title).toBe('Error in pipeline');
+  });
+
+  it('should not activate the row when the dismiss or action button is used', () => {
+    const clicks: Notification[] = [];
+    fixture.debugElement.query(By.directive(NotificationCenterComponent)).componentInstance
+      .notificationClick.subscribe((n: Notification) => clicks.push(n));
+
+    (el.querySelector('.lc-nc__item-dismiss') as HTMLElement).click();
+    (el.querySelector('.lc-nc__item-action') as HTMLElement).click();
+    expect(clicks.length).toBe(0);
+    expect(host.dismissed).toBe('2');
+    expect(host.actioned?.id).toBe('3');
+  });
+
+  it('should label each dismiss button with its notification title', () => {
+    const dismiss = el.querySelector('.lc-nc__item-dismiss') as HTMLElement;
+    expect(dismiss.getAttribute('aria-label')).toBe('Dismiss notification: Error in pipeline');
+  });
+
+  it('should expose the active filter via aria-pressed', () => {
+    const [all, error] = Array.from(el.querySelectorAll('.lc-nc__filter')) as HTMLElement[];
+    expect(all.getAttribute('aria-pressed')).toBe('true');
+    expect(error.getAttribute('aria-pressed')).toBe('false');
+    error.click();
+    fixture.detectChanges();
+    expect(all.getAttribute('aria-pressed')).toBe('false');
+    expect(error.getAttribute('aria-pressed')).toBe('true');
+  });
+
+  // -- Locale --
+
+  it('should format old dates with the configured locale', () => {
+    host.notifications.set([
+      { id: 'old', title: 'Old one', type: 'info', timestamp: new Date(2024, 0, 31), read: true },
+    ]);
+    fixture.detectChanges();
+    expect(el.querySelector('.lc-nc__item-time')?.textContent?.trim()).toBe('31.01.2024');
+
+    host.dateLocale.set('en-US');
+    fixture.detectChanges();
+    expect(el.querySelector('.lc-nc__item-time')?.textContent?.trim()).toBe('01/31/2024');
   });
 
   // -- Search input --

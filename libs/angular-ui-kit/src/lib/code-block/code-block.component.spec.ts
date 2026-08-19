@@ -1,5 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Component } from '@angular/core';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
 import { CodeBlockComponent, CodeBlockLanguage } from './code-block.component';
 import { provideHttpClient } from '@angular/common/http';
 
@@ -105,5 +107,65 @@ describe('CodeBlockComponent', () => {
     fixture.detectChanges();
     const lines = fixture.nativeElement.querySelectorAll('.code-block__line');
     expect(lines.length).toBe(3);
+  });
+
+  // ── Copy button a11y ────────────────────────────────────────────────
+
+  describe('copy button', () => {
+    const flush = () => new Promise<void>(r => setTimeout(r, 0));
+
+    it('has an accessible name', () => {
+      fixture.detectChanges();
+      const btn = fixture.nativeElement.querySelector('.code-block__copy') as HTMLButtonElement;
+      expect(btn.getAttribute('aria-label')).toBe('Copy code');
+    });
+
+    it('announces the copy confirmation through a polite live region', async () => {
+      const writeText = jest.fn().mockResolvedValue(undefined);
+      Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+      fixture.detectChanges();
+      const live = fixture.nativeElement.querySelector('.code-block__live') as HTMLElement;
+      expect(live).toBeTruthy();
+      expect(live.getAttribute('aria-live')).toBe('polite');
+      expect(live.textContent?.trim()).toBe('');
+
+      (fixture.nativeElement.querySelector('.code-block__copy') as HTMLButtonElement).click();
+      await flush();
+      fixture.detectChanges();
+      expect(writeText).toHaveBeenCalledWith('const x = 42;');
+      expect(live.textContent?.trim()).toBe('Copied to clipboard');
+    });
+
+    it('does not throw when the clipboard write is rejected', async () => {
+      Object.defineProperty(navigator, 'clipboard', {
+        value: { writeText: jest.fn().mockRejectedValue(new Error('denied')) },
+        configurable: true,
+      });
+      fixture.detectChanges();
+      (fixture.nativeElement.querySelector('.code-block__copy') as HTMLButtonElement).click();
+      await flush();
+      fixture.detectChanges();
+      const live = fixture.nativeElement.querySelector('.code-block__live') as HTMLElement;
+      expect(live.textContent?.trim()).toBe('');
+    });
+  });
+
+  // ── Theme-independent chrome ink ─────────────────────────────────────
+  // The block is always a dark surface; its chrome must not follow the page
+  // ink/border tokens (which turn dark in the light theme → sub-3:1 contrast).
+
+  describe('styles', () => {
+    const scss = readFileSync(resolve(__dirname, 'code-block.component.scss'), 'utf-8');
+
+    it('uses component-local light-on-dark ink instead of page ink tokens', () => {
+      expect(scss).not.toMatch(/--color-text-(primary|secondary|tertiary|disabled)/);
+      expect(scss).toMatch(/--lc-code-block-muted:\s*#/);
+      expect(scss).toMatch(/\.code-block[\s\S]*__line-number[\s\S]*color:\s*var\(--lc-code-block-muted\)/);
+    });
+
+    it('does not draw the light-theme page border around the dark box', () => {
+      expect(scss).not.toMatch(/var\(--color-border\)/);
+      expect(scss).toMatch(/border:\s*1px solid var\(--lc-code-block-border\)/);
+    });
   });
 });

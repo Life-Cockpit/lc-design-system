@@ -29,7 +29,7 @@ Funnel chart for visualizing conversion pipelines and progressive filtering.
 - Toggleable value and percentage labels
 - Per-step custom colors
 - Smooth trapezoidal step rendering
-- Hover tooltips with step details
+- Labels readable on any step fill (ink picked from literal colours, halo on tokens)
 - Responsive SVG rendering
         `,
       },
@@ -79,10 +79,10 @@ export const CustomColors: Story = {
   },
   args: {
     steps: [
-      { label: 'Awareness', value: 10000, color: '#6366f1' },
-      { label: 'Interest', value: 6000, color: '#8b5cf6' },
-      { label: 'Decision', value: 2500, color: '#a855f7' },
-      { label: 'Action', value: 1000, color: '#d946ef' },
+      { label: 'Awareness', value: 10000, color: 'var(--color-info-default)' },
+      { label: 'Interest', value: 6000, color: 'var(--color-secondary-500)' },
+      { label: 'Decision', value: 2500, color: 'var(--color-secondary-600)' },
+      { label: 'Action', value: 1000, color: 'var(--color-secondary-700)' },
     ],
     width: 400,
     height: 300,

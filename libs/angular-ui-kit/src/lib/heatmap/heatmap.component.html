@@ -1,4 +1,6 @@
-<svg [attr.width]="svgWidth()" [attr.height]="svgHeight()" [attr.viewBox]="viewBox()" role="img" aria-label="Heatmap" class="lc-heatmap">
+<svg [attr.width]="svgWidth()" [attr.height]="svgHeight()" [attr.viewBox]="viewBox()" role="img" [attr.aria-label]="effectiveAriaLabel()" class="lc-heatmap">
+  <title>{{ effectiveAriaLabel() }}</title>
+
   @for (lbl of rowLabelItems(); track lbl.y) {
     <text [attr.x]="lbl.x" [attr.y]="lbl.y" text-anchor="end" dominant-baseline="central" class="lc-heatmap__label">{{ lbl.label }}</text>
   }
@@ -10,11 +12,11 @@
   @for (cell of cells(); track $index) {
     <rect
       [attr.x]="cell.x" [attr.y]="cell.y" [attr.width]="cell.w" [attr.height]="cell.h"
-      [attr.rx]="cellRadius()" [attr.fill]="colorMax()" [attr.opacity]="cell.opacity"
+      [attr.rx]="cellRadius()" [attr.fill]="cell.fill"
       class="lc-heatmap__cell"
     />
     @if (showValues()) {
-      <text [attr.x]="cell.x + cell.w / 2" [attr.y]="cell.y + cell.h / 2" text-anchor="middle" dominant-baseline="central" class="lc-heatmap__cell-value">{{ cell.value }}</text>
+      <text [attr.x]="cell.x + cell.w / 2" [attr.y]="cell.y + cell.h / 2" [attr.fill]="cell.ink" text-anchor="middle" dominant-baseline="central" class="lc-heatmap__cell-value">{{ cell.valueText }}</text>
     }
   }
 </svg>

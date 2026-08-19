@@ -81,6 +81,9 @@ export const Clickable: Story = {
 
 export const ClickableRemovable: Story = {
   name: 'Clickable + Removable',
+  parameters: {
+    docs: { description: { story: 'Two sibling buttons inside the pill — activate (chipClick) and remove — so no control is nested in another and both are reachable with Tab.' } },
+  },
   render: () => ({
     template: `
       <div style="display: flex; gap: 8px; flex-wrap: wrap;">

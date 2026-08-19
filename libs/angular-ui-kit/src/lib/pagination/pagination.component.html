@@ -6,13 +6,13 @@
         type="button"
         class="lc-pagination__button lc-pagination__button--prev"
         [disabled]="isFirstPage()"
-        [attr.aria-label]="'Previous page'"
+        [attr.aria-label]="previousAriaLabel()"
         (click)="goToPreviousPage()"
       >
-        <svg class="lc-pagination__icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+        <svg class="lc-pagination__icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
         </svg>
-        <span class="lc-pagination__button-text">Previous</span>
+        <span class="lc-pagination__button-text">{{ previousLabel() }}</span>
       </button>
 
       <!-- Page Numbers -->
@@ -27,7 +27,7 @@
               type="button"
               class="lc-pagination__button lc-pagination__button--page"
               [class.lc-pagination__button--active]="isCurrentPage(page)"
-              [attr.aria-label]="'Page ' + page"
+              [attr.aria-label]="getPageAriaLabel(page)"
               [attr.aria-current]="isCurrentPage(page) ? 'page' : null"
               (click)="goToPage(page)"
             >
@@ -42,11 +42,11 @@
         type="button"
         class="lc-pagination__button lc-pagination__button--next"
         [disabled]="isLastPage()"
-        [attr.aria-label]="'Next page'"
+        [attr.aria-label]="nextAriaLabel()"
         (click)="goToNextPage()"
       >
-        <span class="lc-pagination__button-text">Next</span>
-        <svg class="lc-pagination__icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+        <span class="lc-pagination__button-text">{{ nextLabel() }}</span>
+        <svg class="lc-pagination__icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
         </svg>
       </button>
@@ -54,9 +54,7 @@
 
     <!-- Optional Info Text -->
     @if (showInfo()) {
-      <div class="lc-pagination__info">
-        Showing {{ firstItemIndex() }} to {{ lastItemIndex() }} of {{ totalItems() }} items
-      </div>
+      <div class="lc-pagination__info">{{ infoLine() }}</div>
     }
   </nav>
 }

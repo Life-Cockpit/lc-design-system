@@ -1,16 +1,36 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { ChangeDetectorRef } from '@angular/core';
+import { Component, signal } from '@angular/core';
+import { By } from '@angular/platform-browser';
 import { DatepickerComponent } from './datepicker.component';
-import { NoopAnimationsModule } from '@angular/platform-browser/animations';
+
+/** The calendar is rendered through the CDK overlay, i.e. outside the fixture's host element. */
+function calendarPanel(): HTMLElement | null {
+  return document.querySelector('.lc-datepicker-calendar');
+}
 
 describe('DatepickerComponent', () => {
   let component: DatepickerComponent;
   let fixture: ComponentFixture<DatepickerComponent>;
 
+  const setInput = (name: string, value: unknown) => {
+    fixture.componentRef.setInput(name, value);
+    fixture.detectChanges();
+  };
+
+  const inputEl = (): HTMLInputElement => fixture.nativeElement.querySelector('input');
+
+  /** Simulates the user typing `text` into the input. */
+  const type = (text: string) => {
+    const el = inputEl();
+    el.value = text;
+    el.dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+  };
+
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [DatepickerComponent, ReactiveFormsModule, NoopAnimationsModule],
+      imports: [DatepickerComponent, ReactiveFormsModule],
     }).compileComponents();
 
     fixture = TestBed.createComponent(DatepickerComponent);
@@ -18,33 +38,36 @@ describe('DatepickerComponent', () => {
     fixture.detectChanges();
   });
 
+  afterEach(() => fixture.destroy());
+
   describe('Component Creation', () => {
     it('should create', () => {
       expect(component).toBeTruthy();
     });
 
     it('should have default variant "outline"', () => {
-      expect(component.variant).toBe('outline');
+      expect(component.variant()).toBe('outline');
     });
 
     it('should have default size "md"', () => {
-      expect(component.size).toBe('md');
+      expect(component.size()).toBe('md');
     });
 
     it('should not be disabled by default', () => {
-      expect(component.disabled).toBe(false);
+      expect(component.disabled()).toBe(false);
+      expect(component.isDisabled()).toBe(false);
     });
 
     it('should not have error state by default', () => {
-      expect(component.error).toBe(false);
+      expect(component.error()).toBe(false);
     });
 
     it('should not be required by default', () => {
-      expect(component.required).toBe(false);
+      expect(component.required()).toBe(false);
     });
 
     it('should not be readonly by default', () => {
-      expect(component.readonly).toBe(false);
+      expect(component.readonly()).toBe(false);
     });
   });
 
@@ -61,6 +84,7 @@ describe('DatepickerComponent', () => {
       component.selectDate(date);
 
       expect(component.formattedDate()).toBe('2024-01-15');
+      expect(component.inputValue()).toBe('2024-01-15');
     });
 
     it('should clear selected date', () => {
@@ -69,10 +93,11 @@ describe('DatepickerComponent', () => {
       component.clear();
 
       expect(component.selectedDate()).toBeNull();
+      expect(component.inputValue()).toBe('');
     });
 
     it('should not select date when disabled', () => {
-      component.disabled = true;
+      setInput('disabled', true);
       const date = new Date(2024, 0, 15);
       component.selectDate(date);
 
@@ -80,11 +105,31 @@ describe('DatepickerComponent', () => {
     });
 
     it('should not select date when readonly', () => {
-      component.readonly = true;
+      setInput('readonly', true);
       const date = new Date(2024, 0, 15);
       component.selectDate(date);
 
       expect(component.selectedDate()).toBeNull();
+    });
+
+    it('should select a date by clicking a day button in the overlay', () => {
+      const dateChange = jest.fn();
+      component.dateChange.subscribe(dateChange);
+      component.currentMonth.set(0);
+      component.currentYear.set(2024);
+      component.open();
+      fixture.detectChanges();
+
+      const day = Array.from(calendarPanel()!.querySelectorAll<HTMLButtonElement>('.lc-datepicker-day')).find(
+        (b) => !b.classList.contains('lc-datepicker-day--other-month') && b.textContent?.trim() === '15',
+      )!;
+      day.click();
+      fixture.detectChanges();
+
+      expect(component.selectedDate()).toEqual(new Date(2024, 0, 15));
+      expect(dateChange).toHaveBeenCalledTimes(1);
+      expect(component.isOpen()).toBe(false);
+      expect(inputEl().value).toBe('2024-01-15');
     });
   });
 
@@ -123,7 +168,7 @@ describe('DatepickerComponent', () => {
       const minDate = new Date(2024, 0, 10);
       const invalidDate = new Date(2024, 0, 5);
 
-      component.minDate = minDate;
+      setInput('minDate', minDate);
 
       expect(component.isDateDisabled(invalidDate)).toBe(true);
       expect(component.isDateDisabled(new Date(2024, 0, 15))).toBe(false);
@@ -133,15 +178,36 @@ describe('DatepickerComponent', () => {
       const maxDate = new Date(2024, 0, 20);
       const invalidDate = new Date(2024, 0, 25);
 
-      component.maxDate = maxDate;
+      setInput('maxDate', maxDate);
 
       expect(component.isDateDisabled(invalidDate)).toBe(true);
       expect(component.isDateDisabled(new Date(2024, 0, 15))).toBe(false);
     });
 
+    it('should compare min/max by calendar day, ignoring the time of day', () => {
+      // Regression: `minDate = new Date()` (now, e.g. 14:37) disabled today's
+      // midnight cell because the comparison included the time.
+      const now = new Date();
+      now.setHours(14, 37, 12, 345);
+      const todayCell = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const yesterdayCell = new Date(todayCell);
+      yesterdayCell.setDate(todayCell.getDate() - 1);
+      const tomorrowCell = new Date(todayCell);
+      tomorrowCell.setDate(todayCell.getDate() + 1);
+
+      setInput('minDate', now);
+      expect(component.isDateDisabled(todayCell)).toBe(false);
+      expect(component.isDateDisabled(yesterdayCell)).toBe(true);
+
+      setInput('minDate', undefined);
+      setInput('maxDate', new Date(todayCell.getFullYear(), todayCell.getMonth(), todayCell.getDate(), 0, 0, 1));
+      expect(component.isDateDisabled(new Date(todayCell.getFullYear(), todayCell.getMonth(), todayCell.getDate(), 23, 59))).toBe(false);
+      expect(component.isDateDisabled(tomorrowCell)).toBe(true);
+    });
+
     it('should disable specific dates', () => {
       const disabledDates = [new Date(2024, 0, 10), new Date(2024, 0, 15)];
-      component.disabledDates = disabledDates;
+      setInput('disabledDates', disabledDates);
 
       expect(component.isDateDisabled(new Date(2024, 0, 10))).toBe(true);
       expect(component.isDateDisabled(new Date(2024, 0, 15))).toBe(true);
@@ -149,7 +215,7 @@ describe('DatepickerComponent', () => {
     });
 
     it('should disable weekends when specified', () => {
-      component.disableWeekends = true;
+      setInput('disableWeekends', true);
 
       const saturday = new Date(2024, 0, 6); // Jan 6, 2024 is Saturday
       const sunday = new Date(2024, 0, 7); // Jan 7, 2024 is Sunday
@@ -162,108 +228,52 @@ describe('DatepickerComponent', () => {
   });
 
   describe('Variant Styles', () => {
-    it('should apply outline variant classes', () => {
-      component.variant = 'outline';
-      fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
-      fixture.detectChanges();
-
-      const compiled = fixture.nativeElement;
-      const datepicker = compiled.querySelector('.lc-datepicker');
-      expect(datepicker.classList.contains('lc-datepicker--outline')).toBe(true);
-    });
-
-    it('should apply filled variant classes', () => {
-      component.variant = 'filled';
-      fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
-      fixture.detectChanges();
-
-      const compiled = fixture.nativeElement;
-      const datepicker = compiled.querySelector('.lc-datepicker');
-      expect(datepicker.classList.contains('lc-datepicker--filled')).toBe(true);
+    it.each(['outline', 'filled'] as const)('should apply %s variant class', (variant) => {
+      setInput('variant', variant);
+      expect(inputEl().classList.contains(`lc-datepicker--${variant}`)).toBe(true);
     });
   });
 
   describe('Size Styles', () => {
-    it('should apply xs size classes', () => {
-      component.size = 'xs';
-      fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
-      fixture.detectChanges();
-
-      const compiled = fixture.nativeElement;
-      const datepicker = compiled.querySelector('.lc-datepicker');
-      expect(datepicker.classList.contains('lc-datepicker--xs')).toBe(true);
-    });
-
-    it('should apply sm size classes', () => {
-      component.size = 'sm';
-      fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
-      fixture.detectChanges();
-
-      const compiled = fixture.nativeElement;
-      const datepicker = compiled.querySelector('.lc-datepicker');
-      expect(datepicker.classList.contains('lc-datepicker--sm')).toBe(true);
-    });
-
-    it('should apply md size classes', () => {
-      component.size = 'md';
-      fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
-      fixture.detectChanges();
-
-      const compiled = fixture.nativeElement;
-      const datepicker = compiled.querySelector('.lc-datepicker');
-      expect(datepicker.classList.contains('lc-datepicker--md')).toBe(true);
-    });
-
-    it('should apply lg size classes', () => {
-      component.size = 'lg';
-      fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
-      fixture.detectChanges();
-
-      const compiled = fixture.nativeElement;
-      const datepicker = compiled.querySelector('.lc-datepicker');
-      expect(datepicker.classList.contains('lc-datepicker--lg')).toBe(true);
+    it.each(['xs', 'sm', 'md', 'lg'] as const)('should apply %s size class', (size) => {
+      setInput('size', size);
+      expect(inputEl().classList.contains(`lc-datepicker--${size}`)).toBe(true);
     });
   });
 
   describe('State Management', () => {
     it('should apply disabled state', () => {
-      component.disabled = true;
-      fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
-      fixture.detectChanges();
-
-      const compiled = fixture.nativeElement;
-      const datepicker = compiled.querySelector('.lc-datepicker');
-      expect(datepicker.classList.contains('lc-datepicker--disabled')).toBe(true);
+      setInput('disabled', true);
+      expect(inputEl().classList.contains('lc-datepicker--disabled')).toBe(true);
+      expect(inputEl().disabled).toBe(true);
     });
 
     it('should apply error state', () => {
-      component.error = true;
-      fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
-      fixture.detectChanges();
-
-      const compiled = fixture.nativeElement;
-      const datepicker = compiled.querySelector('.lc-datepicker');
-      expect(datepicker.classList.contains('lc-datepicker--error')).toBe(true);
+      setInput('error', true);
+      expect(inputEl().classList.contains('lc-datepicker--error')).toBe(true);
     });
 
     it('should apply readonly state', () => {
-      component.readonly = true;
-      fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
-      fixture.detectChanges();
+      setInput('readonly', true);
+      expect(inputEl().classList.contains('lc-datepicker--readonly')).toBe(true);
+      expect(inputEl().readOnly).toBe(true);
+    });
 
-      const compiled = fixture.nativeElement;
-      const datepicker = compiled.querySelector('.lc-datepicker');
-      expect(datepicker.classList.contains('lc-datepicker--readonly')).toBe(true);
+    it('should not be readonly when readonly is false', () => {
+      // Regression: [attr.readonly]="false" rendered readonly="false", which the
+      // browser treats as read-only — manual entry was impossible.
+      expect(inputEl().readOnly).toBe(false);
+      expect(inputEl().hasAttribute('readonly')).toBe(false);
     });
 
     it('should not open calendar when disabled', () => {
-      component.disabled = true;
+      setInput('disabled', true);
       component.toggle();
       expect(component.isOpen()).toBe(false);
     });
 
     it('should not open calendar when readonly', () => {
-      component.readonly = true;
+      setInput('readonly', true);
       component.toggle();
       expect(component.isOpen()).toBe(false);
     });
@@ -294,6 +304,28 @@ describe('DatepickerComponent', () => {
       component.onClickOutside();
       expect(component.isOpen()).toBe(false);
     });
+
+    it('should emit closed exactly once when the overlay detaches', () => {
+      // Regression: close() flipped isOpen, the CDK overlay detached and its
+      // (detach) handler called close() a second time -> two `closed` emissions.
+      const opened = jest.fn();
+      const closed = jest.fn();
+      component.opened.subscribe(opened);
+      component.closed.subscribe(closed);
+
+      component.open();
+      fixture.detectChanges();
+      expect(calendarPanel()).toBeTruthy();
+      expect(opened).toHaveBeenCalledTimes(1);
+
+      component.close();
+      fixture.detectChanges();
+      expect(calendarPanel()).toBeFalsy();
+      expect(closed).toHaveBeenCalledTimes(1);
+
+      component.close(); // idempotent
+      expect(closed).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('ControlValueAccessor', () => {
@@ -301,6 +333,7 @@ describe('DatepickerComponent', () => {
       const date = new Date(2024, 0, 15);
       component.writeValue(date);
       expect(component.selectedDate()).toEqual(date);
+      expect(component.inputValue()).toBe('2024-01-15');
     });
 
     it('should write string value', () => {
@@ -313,6 +346,13 @@ describe('DatepickerComponent', () => {
     it('should write null value', () => {
       component.selectDate(new Date(2024, 0, 15));
       component.writeValue(null);
+      expect(component.selectedDate()).toBeNull();
+      expect(component.inputValue()).toBe('');
+    });
+
+    it('should clear the selection when an unparsable string is written', () => {
+      component.selectDate(new Date(2024, 0, 15));
+      component.writeValue('not a date');
       expect(component.selectedDate()).toBeNull();
     });
 
@@ -333,12 +373,19 @@ describe('DatepickerComponent', () => {
       expect(onTouched).toHaveBeenCalled();
     });
 
-    it('should set disabled state', () => {
+    it('should set disabled state without touching the disabled input', () => {
       component.setDisabledState(true);
-      expect(component.disabled).toBe(true);
+      expect(component.isDisabled()).toBe(true);
+      expect(component.disabled()).toBe(false);
 
       component.setDisabledState(false);
-      expect(component.disabled).toBe(false);
+      expect(component.isDisabled()).toBe(false);
+    });
+
+    it('should OR the form disabled state with the disabled input', () => {
+      setInput('disabled', true);
+      component.setDisabledState(false);
+      expect(component.isDisabled()).toBe(true);
     });
   });
 
@@ -382,59 +429,78 @@ describe('DatepickerComponent', () => {
 
   describe('Accessibility', () => {
     it('should have proper ARIA role', () => {
-      const compiled = fixture.nativeElement;
-      const input = compiled.querySelector('input');
-      expect(input.getAttribute('role')).toBe('combobox');
+      expect(inputEl().getAttribute('role')).toBe('combobox');
+      expect(inputEl().getAttribute('aria-haspopup')).toBe('dialog');
     });
 
-    it('should have aria-expanded attribute', () => {
-      const compiled = fixture.nativeElement;
-      const input = compiled.querySelector('input');
-      expect(input.getAttribute('aria-expanded')).toBe('false');
+    it('should have aria-expanded attribute and aria-controls when open', () => {
+      expect(inputEl().getAttribute('aria-expanded')).toBe('false');
+      expect(inputEl().getAttribute('aria-controls')).toBeNull();
 
       component.open();
       fixture.detectChanges();
-      expect(input.getAttribute('aria-expanded')).toBe('true');
+      expect(inputEl().getAttribute('aria-expanded')).toBe('true');
+      const controls = inputEl().getAttribute('aria-controls')!;
+      expect(document.getElementById(controls)?.getAttribute('role')).toBe('dialog');
     });
 
     it('should have aria-label when provided', () => {
-      component.ariaLabel = 'Choose a date';
-      fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
-      fixture.detectChanges();
-
-      const compiled = fixture.nativeElement;
-      const input = compiled.querySelector('input');
-      expect(input.getAttribute('aria-label')).toBe('Choose a date');
+      setInput('ariaLabel', 'Choose a date');
+      expect(inputEl().getAttribute('aria-label')).toBe('Choose a date');
     });
 
     it('should have aria-required when required', () => {
-      component.required = true;
-      fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
-      fixture.detectChanges();
-
-      const compiled = fixture.nativeElement;
-      const input = compiled.querySelector('input');
-      expect(input.getAttribute('aria-required')).toBe('true');
+      setInput('required', true);
+      expect(inputEl().getAttribute('aria-required')).toBe('true');
     });
 
     it('should have aria-disabled when disabled', () => {
-      component.disabled = true;
-      fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
-      fixture.detectChanges();
-
-      const compiled = fixture.nativeElement;
-      const input = compiled.querySelector('input');
-      expect(input.getAttribute('aria-disabled')).toBe('true');
+      setInput('disabled', true);
+      expect(inputEl().getAttribute('aria-disabled')).toBe('true');
     });
 
     it('should have aria-invalid when error', () => {
-      component.error = true;
-      fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
+      setInput('error', true);
+      expect(inputEl().getAttribute('aria-invalid')).toBe('true');
+    });
+
+    it('should link helper and error text via aria-describedby', () => {
+      expect(inputEl().getAttribute('aria-describedby')).toBeNull();
+
+      setInput('helperText', 'Pick a day');
+      const helperId = inputEl().getAttribute('aria-describedby')!;
+      expect(document.getElementById(helperId)?.textContent).toContain('Pick a day');
+
+      setInput('error', true);
+      setInput('errorMessage', 'Required');
+      const errorId = inputEl().getAttribute('aria-describedby')!;
+      expect(errorId).not.toBe(helperId);
+      expect(document.getElementById(errorId)?.textContent).toContain('Required');
+    });
+
+    it('should give day buttons an accessible name and mark today', () => {
+      component.currentMonth.set(0);
+      component.currentYear.set(2024);
+      component.open();
       fixture.detectChanges();
 
-      const compiled = fixture.nativeElement;
-      const input = compiled.querySelector('input');
-      expect(input.getAttribute('aria-invalid')).toBe('true');
+      const buttons = calendarPanel()!.querySelectorAll<HTMLButtonElement>('.lc-datepicker-day');
+      expect(buttons.length).toBe(42);
+      buttons.forEach((b) => expect(b.getAttribute('aria-label')).toBeTruthy());
+      expect(calendarPanel()!.querySelector('[aria-label="Previous month"]')).toBeTruthy();
+      expect(calendarPanel()!.querySelector('[aria-label="Next month"]')).toBeTruthy();
+    });
+
+    it('should return focus to the input when a day button had focus on close', () => {
+      component.open();
+      fixture.detectChanges();
+      const day = calendarPanel()!.querySelector<HTMLButtonElement>('.lc-datepicker-day:not([disabled])')!;
+      day.focus();
+      expect(document.activeElement).toBe(day);
+
+      component.close();
+      fixture.detectChanges();
+      expect(document.activeElement).toBe(inputEl());
     });
   });
 
@@ -445,10 +511,21 @@ describe('DatepickerComponent', () => {
       component.open();
     });
 
-    it('should close calendar on Escape', () => {
-      const event = new KeyboardEvent('keydown', { key: 'Escape' });
+    it('should close calendar on Escape and stop propagation', () => {
+      const event = new KeyboardEvent('keydown', { key: 'Escape', cancelable: true });
+      const stop = jest.spyOn(event, 'stopPropagation');
       component.onKeyDown(event);
       expect(component.isOpen()).toBe(false);
+      expect(stop).toHaveBeenCalled();
+      expect(event.defaultPrevented).toBe(true);
+    });
+
+    it('should not stop Escape propagation while closed', () => {
+      component.close();
+      const event = new KeyboardEvent('keydown', { key: 'Escape' });
+      const stop = jest.spyOn(event, 'stopPropagation');
+      component.onKeyDown(event);
+      expect(stop).not.toHaveBeenCalled();
     });
 
     it('should navigate to next day with ArrowRight', () => {
@@ -493,40 +570,44 @@ describe('DatepickerComponent', () => {
       expect(onChange).toHaveBeenCalled();
       expect(component.isOpen()).toBe(false);
     });
+
+    it('should leave the arrow keys to the caret while the user is mid-edit', () => {
+      component.inputValue.set('2024-01-1');
+      const event = new KeyboardEvent('keydown', { key: 'ArrowRight', cancelable: true });
+      component.onKeyDown(event);
+
+      expect(component.selectedDate()?.getDate()).toBe(15);
+      expect(event.defaultPrevented).toBe(false);
+    });
+
+    it('should open on ArrowDown when closed', () => {
+      component.close();
+      component.onKeyDown(new KeyboardEvent('keydown', { key: 'ArrowDown' }));
+      expect(component.isOpen()).toBe(true);
+    });
   });
 
   describe('Helper Text', () => {
     it('should display helper text', () => {
-      component.helperText = 'Select a date';
-      fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
-      fixture.detectChanges();
-
-      const compiled = fixture.nativeElement;
-      const helper = compiled.querySelector('.lc-datepicker__helper');
+      setInput('helperText', 'Select a date');
+      const helper = fixture.nativeElement.querySelector('.lc-datepicker__helper');
       expect(helper?.textContent).toContain('Select a date');
     });
 
     it('should display error message when in error state', () => {
-      component.error = true;
-      component.errorMessage = 'Invalid date';
-      fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
-      fixture.detectChanges();
-
-      const compiled = fixture.nativeElement;
-      const error = compiled.querySelector('.lc-datepicker__error');
+      setInput('error', true);
+      setInput('errorMessage', 'Invalid date');
+      const error = fixture.nativeElement.querySelector('.lc-datepicker__error');
       expect(error?.textContent).toContain('Invalid date');
     });
 
     it('should prioritize error message over helper text', () => {
-      component.helperText = 'Select a date';
-      component.error = true;
-      component.errorMessage = 'Invalid date';
-      fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
-      fixture.detectChanges();
+      setInput('helperText', 'Select a date');
+      setInput('error', true);
+      setInput('errorMessage', 'Invalid date');
 
-      const compiled = fixture.nativeElement;
-      const error = compiled.querySelector('.lc-datepicker__error');
-      const helper = compiled.querySelector('.lc-datepicker__helper');
+      const error = fixture.nativeElement.querySelector('.lc-datepicker__error');
+      const helper = fixture.nativeElement.querySelector('.lc-datepicker__helper');
 
       expect(error).toBeTruthy();
       expect(helper).toBeFalsy();
@@ -535,17 +616,25 @@ describe('DatepickerComponent', () => {
 
   describe('Date Formatting', () => {
     it('should format date according to format string', () => {
-      component.format = 'MM/DD/YYYY';
-      fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
+      setInput('format', 'MM/DD/YYYY');
       const date = new Date(2024, 0, 15);
       component.selectDate(date);
+      fixture.detectChanges();
 
       expect(component.formattedDate()).toBe('01/15/2024');
+      expect(inputEl().value).toBe('01/15/2024');
+    });
+
+    it('should re-format the shown text when the format input changes', () => {
+      component.selectDate(new Date(2024, 0, 15));
+      fixture.detectChanges();
+      expect(inputEl().value).toBe('2024-01-15');
+      setInput('format', 'DD.MM.YYYY');
+      expect(inputEl().value).toBe('15.01.2024');
     });
 
     it('should parse input date string', () => {
-      component.format = 'MM/DD/YYYY';
-      fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
+      setInput('format', 'MM/DD/YYYY');
       component.onInputChange('01/15/2024');
 
       const date = component.selectedDate();
@@ -555,15 +644,103 @@ describe('DatepickerComponent', () => {
     });
   });
 
-  describe('Placeholder', () => {
-    it('should display placeholder when no date selected', () => {
-      component.placeholder = 'Select a date';
-      fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
+  describe('Manual entry', () => {
+    it('should commit a fully typed date and emit once', () => {
+      const dateChange = jest.fn();
+      const onChange = jest.fn();
+      component.dateChange.subscribe(dateChange);
+      component.registerOnChange(onChange);
+
+      type('2024-01-15');
+
+      expect(component.selectedDate()).toEqual(new Date(2024, 0, 15));
+      expect(dateChange).toHaveBeenCalledTimes(1);
+      expect(onChange).toHaveBeenCalledWith(new Date(2024, 0, 15));
+      expect(inputEl().value).toBe('2024-01-15');
+      expect(component.currentMonth()).toBe(0);
+      expect(component.currentYear()).toBe(2024);
+    });
+
+    it('should keep partial input as text without committing a date', () => {
+      // Regression: '2024-01-0' was parsed as new Date(2024, 0, 0) = 31 Dec 2023
+      // and committed, and the [value] binding then overwrote the text mid-typing.
+      const dateChange = jest.fn();
+      component.dateChange.subscribe(dateChange);
+
+      type('2024-01-0');
+
+      expect(component.selectedDate()).toBeNull();
+      expect(dateChange).not.toHaveBeenCalled();
+      expect(inputEl().value).toBe('2024-01-0');
+      expect(component.inputValue()).toBe('2024-01-0');
+    });
+
+    it('should not commit an impossible date such as Feb 31', () => {
+      type('2024-02-31');
+      expect(component.selectedDate()).toBeNull();
+      expect(inputEl().value).toBe('2024-02-31');
+    });
+
+    it('should not commit a typed date that is disabled', () => {
+      setInput('disableWeekends', true);
+      type('2024-01-06'); // Saturday
+      expect(component.selectedDate()).toBeNull();
+    });
+
+    it('should not overwrite the text while the user is still typing over an existing date', () => {
+      component.writeValue(new Date(2024, 0, 15));
+      fixture.detectChanges();
+      expect(inputEl().value).toBe('2024-01-15');
+
+      type('2024-01-1');
+      expect(inputEl().value).toBe('2024-01-1');
+      expect(component.selectedDate()).toEqual(new Date(2024, 0, 15));
+    });
+
+    it('should revert partial text to the selected date on blur', () => {
+      component.writeValue(new Date(2024, 0, 15));
+      type('2024-01-1');
+
+      inputEl().dispatchEvent(new Event('blur'));
       fixture.detectChanges();
 
-      const compiled = fixture.nativeElement;
-      const input = compiled.querySelector('input');
-      expect(input.getAttribute('placeholder')).toBe('Select a date');
+      expect(inputEl().value).toBe('2024-01-15');
+      expect(component.selectedDate()).toEqual(new Date(2024, 0, 15));
+    });
+
+    it('should clear the model when the text is emptied', () => {
+      const dateChange = jest.fn();
+      component.dateChange.subscribe(dateChange);
+      component.writeValue(new Date(2024, 0, 15));
+
+      type('');
+
+      expect(component.selectedDate()).toBeNull();
+      expect(dateChange).toHaveBeenCalledWith(null);
+    });
+
+    it('should not re-emit when the typed text equals the current selection', () => {
+      const dateChange = jest.fn();
+      component.dateChange.subscribe(dateChange);
+      component.writeValue(new Date(2024, 0, 15));
+
+      type('2024-01-15');
+
+      expect(dateChange).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Placeholder', () => {
+    it('should display placeholder when no date selected', () => {
+      setInput('placeholder', 'Select a date');
+      expect(inputEl().getAttribute('placeholder')).toBe('Select a date');
+    });
+
+    it('should reflect a placeholder change after init', () => {
+      setInput('placeholder', 'First');
+      expect(inputEl().placeholder).toBe('First');
+      setInput('placeholder', 'Second');
+      expect(inputEl().placeholder).toBe('Second');
     });
   });
 
@@ -584,5 +761,71 @@ describe('DatepickerComponent', () => {
       expect(component.isSelectedDate(date)).toBe(true);
       expect(component.isSelectedDate(new Date(2024, 0, 16))).toBe(false);
     });
+  });
+});
+
+@Component({
+  standalone: true,
+  imports: [DatepickerComponent, ReactiveFormsModule],
+  template: `
+    <lc-datepicker [formControl]="control" [readonly]="readonly()" ariaLabel="Host date" />
+  `,
+})
+class HostComponent {
+  readonly control = new FormControl<Date | null>(null);
+  readonly readonly = signal(false);
+}
+
+describe('DatepickerComponent in a reactive form', () => {
+  let fixture: ComponentFixture<HostComponent>;
+  let host: HostComponent;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({ imports: [HostComponent] }).compileComponents();
+    fixture = TestBed.createComponent(HostComponent);
+    host = fixture.componentInstance;
+    fixture.detectChanges();
+  });
+
+  afterEach(() => fixture.destroy());
+
+  const inputEl = (): HTMLInputElement => fixture.nativeElement.querySelector('input');
+  const picker = (): DatepickerComponent =>
+    fixture.debugElement.query(By.directive(DatepickerComponent)).componentInstance;
+
+  it('should disable the input when the control is disabled', () => {
+    expect(inputEl().disabled).toBe(false);
+
+    host.control.disable();
+    fixture.detectChanges();
+    expect(inputEl().disabled).toBe(true);
+    expect(inputEl().getAttribute('aria-disabled')).toBe('true');
+    picker().toggle();
+    expect(picker().isOpen()).toBe(false);
+
+    host.control.enable();
+    fixture.detectChanges();
+    expect(inputEl().disabled).toBe(false);
+  });
+
+  it('should push typed dates into the control and control values into the input', () => {
+    inputEl().value = '2024-03-05';
+    inputEl().dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect(host.control.value).toEqual(new Date(2024, 2, 5));
+
+    host.control.setValue(new Date(2025, 11, 24));
+    fixture.detectChanges();
+    expect(inputEl().value).toBe('2025-12-24');
+  });
+
+  it('should toggle the readonly property from the host binding', () => {
+    expect(inputEl().readOnly).toBe(false);
+    host.readonly.set(true);
+    fixture.detectChanges();
+    expect(inputEl().readOnly).toBe(true);
+    host.readonly.set(false);
+    fixture.detectChanges();
+    expect(inputEl().readOnly).toBe(false);
   });
 });

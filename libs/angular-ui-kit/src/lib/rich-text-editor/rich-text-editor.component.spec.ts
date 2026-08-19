@@ -1,6 +1,18 @@
+import { Component, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { By } from '@angular/platform-browser';
 import { RichTextEditorComponent } from './rich-text-editor.component';
+
+@Component({
+  standalone: true,
+  imports: [RichTextEditorComponent, ReactiveFormsModule],
+  template: `<lc-rich-text-editor [formControl]="control" [mode]="mode()" />`,
+})
+class FormHost {
+  control = new FormControl('# Hello **world**');
+  mode = signal<'rich' | 'markdown' | 'split'>('rich');
+}
 
 describe('RichTextEditorComponent', () => {
   let component: RichTextEditorComponent;
@@ -8,7 +20,7 @@ describe('RichTextEditorComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [RichTextEditorComponent],
+      imports: [RichTextEditorComponent, FormHost],
     }).compileComponents();
 
     fixture = TestBed.createComponent(RichTextEditorComponent);
@@ -163,6 +175,131 @@ describe('RichTextEditorComponent', () => {
     it('should convert strikethrough', () => {
       component.writeValue('~~deleted~~');
       expect(component['renderedHtml']()).toContain('<del>deleted</del>');
+    });
+  });
+
+  // ── Safety of the built-in markdown renderer ─────────────────────────
+  // The rich area is filled via innerHTML, and the markdown may come from a
+  // server or another user — nothing in it may become live markup.
+  describe('Sanitisation', () => {
+    const rendered = () => component['renderedHtml']();
+    // What the browser would actually build from the HTML — the only thing that
+    // matters. (Text that merely *reads* like an attribute is harmless.)
+    const dom = (html: string) => {
+      const el = document.createElement('div');
+      el.innerHTML = html;
+      return el;
+    };
+    const hasEventHandler = (root: HTMLElement) =>
+      Array.from(root.querySelectorAll('*')).some((n) =>
+        Array.from(n.attributes).some((a) => a.name.startsWith('on')),
+      );
+
+    it('should show raw HTML in the markdown as text, not markup', () => {
+      component.writeValue('Hello <img src=x onerror="alert(1)"> <script>alert(2)</script>');
+      const root = dom(rendered());
+      expect(root.querySelector('img')).toBeNull();
+      expect(root.querySelector('script')).toBeNull();
+      expect(hasEventHandler(root)).toBe(false);
+      expect(root.textContent).toContain('<img src=x onerror="alert(1)">');
+    });
+
+    it('should drop javascript: links but keep their text', () => {
+      component.writeValue('[click me](javascript:alert(1))');
+      const html = rendered();
+      expect(html).not.toContain('javascript:');
+      expect(html).not.toContain('<a');
+      expect(html).toContain('click me');
+    });
+
+    it('should keep http(s), mailto and relative links', () => {
+      component.writeValue('[a](https://example.com) [b](mailto:x@example.com) [c](/docs) [d](#top)');
+      const html = rendered();
+      expect(html).toContain('href="https://example.com"');
+      expect(html).toContain('href="mailto:x@example.com"');
+      expect(html).toContain('href="/docs"');
+      expect(html).toContain('href="#top"');
+    });
+
+    it('should not let a quote in a URL break out of the attribute', () => {
+      component.writeValue('![x](x" onerror="alert(1))');
+      const root = dom(rendered());
+      const img = root.querySelector('img');
+      // Either no image at all, or one whose only attributes are alt/src.
+      expect(img === null || !img.hasAttribute('onerror')).toBe(true);
+      expect(hasEventHandler(root)).toBe(false);
+    });
+
+    it('should never put unsanitised markup into the rich area', () => {
+      component.writeValue('<b onclick="alert(1)">x</b> <img src=x onerror=alert(1)>');
+      fixture.detectChanges();
+      const rich = fixture.debugElement.query(By.css('.lc-rich-text-editor__rich')).nativeElement as HTMLElement;
+      expect(rich.querySelector('img')).toBeNull();
+      expect(rich.querySelector('b')).toBeNull();
+      expect(hasEventHandler(rich)).toBe(false);
+    });
+
+    it('should still support the underline markup the toolbar writes', () => {
+      component.writeValue('<u>under</u>');
+      expect(rendered()).toContain('<u>under</u>');
+    });
+  });
+
+  // ── Form integration ─────────────────────────────────────────────────
+  describe('Form integration', () => {
+    let hostFixture: ComponentFixture<FormHost>;
+    let host: FormHost;
+
+    beforeEach(() => {
+      hostFixture = TestBed.createComponent(FormHost);
+      host = hostFixture.componentInstance;
+      hostFixture.detectChanges();
+    });
+
+    const richArea = () =>
+      hostFixture.nativeElement.querySelector('.lc-rich-text-editor__rich') as HTMLElement;
+
+    it('should render the initial form value into the rich area', () => {
+      // writeValue runs before the view exists — the rich area must still be filled.
+      expect(richArea().innerHTML).toContain('<h1>Hello <strong>world</strong></h1>');
+    });
+
+    it('should render a later setValue into the rich area', () => {
+      host.control.setValue('*later*');
+      hostFixture.detectChanges();
+      expect(richArea().innerHTML).toContain('<em>later</em>');
+    });
+
+    it('should re-render when switching back into rich mode', () => {
+      host.mode.set('markdown');
+      hostFixture.detectChanges();
+      expect(richArea()).toBeNull();
+      host.mode.set('rich');
+      hostFixture.detectChanges();
+      expect(richArea().innerHTML).toContain('<h1>');
+    });
+
+    it('should honour control.disable(): toolbar and rich area become inert', () => {
+      host.control.disable();
+      hostFixture.detectChanges();
+      expect(richArea().getAttribute('contenteditable')).toBe('false');
+      expect(richArea().getAttribute('aria-disabled')).toBe('true');
+      const btns = hostFixture.nativeElement.querySelectorAll('.lc-rich-text-editor__toolbar-btn') as NodeListOf<HTMLButtonElement>;
+      btns.forEach((b) => expect(b.disabled).toBe(true));
+
+      host.control.enable();
+      hostFixture.detectChanges();
+      expect(richArea().getAttribute('contenteditable')).toBe('true');
+    });
+  });
+
+  describe('Readonly', () => {
+    it('should make the rich area non-editable', () => {
+      fixture.componentRef.setInput('readonly', true);
+      fixture.detectChanges();
+      const rich = fixture.debugElement.query(By.css('.lc-rich-text-editor__rich')).nativeElement as HTMLElement;
+      expect(rich.getAttribute('contenteditable')).toBe('false');
+      expect(rich.getAttribute('aria-readonly')).toBe('true');
     });
   });
 

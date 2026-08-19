@@ -2,7 +2,7 @@
   <div [class]="containerClasses()">
     @if (showIcon()) {
       <div class="lc-alert__icon">
-        <lc-icon [name]="defaultIcon()" size="md" />
+        <lc-icon [name]="defaultIcon()" size="md" [ariaLabel]="iconLabel()" />
       </div>
     }
     
@@ -31,7 +31,7 @@
         aria-label="Close alert"
         (click)="onCloseClick($event)"
       >
-        <lc-icon name="x-mark" size="sm" />
+        <lc-icon name="x-mark" size="sm" [decorative]="true" />
       </button>
     }
   </div>

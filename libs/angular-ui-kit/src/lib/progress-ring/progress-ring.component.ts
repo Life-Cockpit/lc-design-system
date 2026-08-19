@@ -24,6 +24,7 @@ export type ProgressRingSize = 'xs' | 'sm' | 'md' | 'lg';
  * - Size presets (xs, sm, md, lg)
  * - Optional percentage value display
  * - Animated stroke transitions
+ * - Accessible `progressbar` role with `aria-valuenow` and a configurable label
  *
  * @example
  * ```html
@@ -43,6 +44,15 @@ export class ProgressRingComponent {
   /** Show percentage text in center. */
   showValue = input<boolean>(true);
 
+  /**
+   * Alias of `showValue`, named like `lc-progress-bar`'s `showLabel`. When
+   * set it wins over `showValue`.
+   */
+  showLabel = input<boolean | undefined>(undefined);
+
+  /** Accessible name of the progress ring. */
+  ariaLabel = input<string>('Progress');
+
   private readonly SIZE_MAP: Record<ProgressRingSize, number> = { xs: 32, sm: 48, md: 64, lg: 96 };
   private readonly STROKE_MAP: Record<ProgressRingSize, number> = { xs: 3, sm: 4, md: 5, lg: 7 };
 
@@ -53,10 +63,14 @@ export class ProgressRingComponent {
   protected readonly radius = computed(() => (this.svgSize() - this.strokeW() * 2) / 2);
   protected readonly circumference = computed(() => 2 * Math.PI * this.radius());
 
+  /** `value` clamped to the 0–100 range (drives arc, text and ARIA). */
+  protected readonly clampedValue = computed(() => Math.min(Math.max(this.value(), 0), 100));
+
+  protected readonly shouldShowValue = computed(() => this.showLabel() ?? this.showValue());
+
   protected readonly dashOffset = computed(() => {
     const c = this.circumference();
-    const v = Math.min(Math.max(this.value(), 0), 100);
-    return c - (v / 100) * c;
+    return c - (this.clampedValue() / 100) * c;
   });
 
   protected readonly fontSize = computed(() => {
@@ -64,5 +78,5 @@ export class ProgressRingComponent {
     return map[this.size()];
   });
 
-  protected readonly displayValue = computed(() => `${Math.round(this.value())}%`);
+  protected readonly displayValue = computed(() => `${Math.round(this.clampedValue())}%`);
 }

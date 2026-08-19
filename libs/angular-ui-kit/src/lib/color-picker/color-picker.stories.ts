@@ -16,8 +16,8 @@ const meta: Meta<ColorPickerComponent> = {
 Color picker component for selecting colors from swatches or custom input.
 
 **Key Features:**
-- Predefined color swatch palette
-- Native browser color picker integration
+- Predefined color swatch palette (a radiogroup — Arrow keys / Home / End move the selection)
+- Native browser color picker integration, labelled by \`label\`
 - Hex color text input with validation
 - Disabled state support
 - ControlValueAccessor integration for reactive forms

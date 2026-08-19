@@ -2,26 +2,26 @@
   <!-- Header -->
   <div class="lc-calendar__header">
     <div class="lc-calendar__nav">
-      <button class="lc-calendar__nav-btn" (click)="navigatePrev()" aria-label="Previous">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <button type="button" class="lc-calendar__nav-btn" (click)="navigatePrev()" [attr.aria-label]="text().previous">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 12L6 8l4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
-      <button class="lc-calendar__today-btn" (click)="navigateToday()">Heute</button>
-      <button class="lc-calendar__nav-btn" (click)="navigateNext()" aria-label="Next">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <button type="button" class="lc-calendar__today-btn" (click)="navigateToday()">{{ text().today }}</button>
+      <button type="button" class="lc-calendar__nav-btn" (click)="navigateNext()" [attr.aria-label]="text().next">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
-      <span class="lc-calendar__title">{{ headerTitle() }}</span>
+      <span class="lc-calendar__title" aria-live="polite">{{ headerTitle() }}</span>
     </div>
-    <div class="lc-calendar__view-toggle">
-      <button [class.active]="view() === 'day'" (click)="setView('day')">Tag</button>
-      <button [class.active]="view() === 'week'" (click)="setView('week')">Woche</button>
-      <button [class.active]="view() === 'month'" (click)="setView('month')">Monat</button>
+    <div class="lc-calendar__view-toggle" role="group">
+      <button type="button" [class.active]="view() === 'day'" [attr.aria-pressed]="view() === 'day'" (click)="setView('day')">{{ text().day }}</button>
+      <button type="button" [class.active]="view() === 'week'" [attr.aria-pressed]="view() === 'week'" (click)="setView('week')">{{ text().week }}</button>
+      <button type="button" [class.active]="view() === 'month'" [attr.aria-pressed]="view() === 'month'" (click)="setView('month')">{{ text().month }}</button>
     </div>
   </div>
 
   <!-- Month View -->
   @if (view() === 'month') {
     <div class="lc-calendar__month">
-      <div class="lc-calendar__weekdays">
+      <div class="lc-calendar__weekdays" aria-hidden="true">
         @for (name of weekDayNames(); track name) {
           <div class="lc-calendar__weekday">{{ name }}</div>
         }
@@ -29,22 +29,34 @@
       @for (week of monthGrid(); track $index) {
         <div class="lc-calendar__week-row">
           @for (cell of week; track cell.date.getTime()) {
+            <!-- The cell stays a mouse target for the whole area; keyboard users reach the
+                 date through the day-number button and each event through its own button. -->
             <div
               class="lc-calendar__day-cell"
               [class.lc-calendar__day-cell--today]="cell.isToday"
               [class.lc-calendar__day-cell--other]="!cell.isCurrentMonth"
               (click)="onDateClick(cell.date)"
             >
-              <span class="lc-calendar__day-number">{{ cell.date.getDate() }}</span>
+              <button
+                type="button"
+                class="lc-calendar__day-number"
+                [attr.aria-label]="dateLabel(cell.date)"
+                [attr.aria-current]="cell.isToday ? 'date' : null"
+                (click)="onDateClick(cell.date, $event)"
+              >
+                {{ cell.date.getDate() }}
+              </button>
               @for (evt of cell.events | slice:0:3; track evt.id) {
-                <div
+                <button
+                  type="button"
                   class="lc-calendar__event-dot"
-                  [class]="'lc-calendar__event-dot--' + (evt.color || 'primary')"
-                  (click)="onEventClick(evt, $event)"
+                  [class]="'lc-calendar__event-dot lc-calendar__event-dot--' + (evt.color || 'primary')"
+                  [attr.aria-label]="eventLabel(evt)"
                   [title]="evt.title"
+                  (click)="onEventClick(evt, $event)"
                 >
                   {{ evt.title }}
-                </div>
+                </button>
               }
               @if (cell.events.length > 3) {
                 <div class="lc-calendar__more">+{{ cell.events.length - 3 }}</div>
@@ -62,9 +74,16 @@
       <div class="lc-calendar__time-header">
         <div class="lc-calendar__time-gutter"></div>
         @for (day of weekDays(); track day.date.getTime()) {
-          <div class="lc-calendar__time-col-header" [class.lc-calendar__time-col-header--today]="day.isToday">
+          <button
+            type="button"
+            class="lc-calendar__time-col-header"
+            [class.lc-calendar__time-col-header--today]="day.isToday"
+            [attr.aria-label]="dateLabel(day.date)"
+            [attr.aria-current]="day.isToday ? 'date' : null"
+            (click)="onDateClick(day.date)"
+          >
             {{ day.label }}
-          </div>
+          </button>
         }
       </div>
       <div class="lc-calendar__time-body">
@@ -79,15 +98,18 @@
               <div class="lc-calendar__time-slot"></div>
             }
             @for (evt of day.events; track evt.id) {
-              <div
+              <button
+                type="button"
                 class="lc-calendar__time-event"
                 [class]="'lc-calendar__time-event lc-calendar__time-event--' + (evt.color || 'primary')"
                 [style.top.px]="eventTop(evt)"
                 [style.height.px]="eventHeight(evt)"
+                [attr.aria-label]="eventLabel(evt)"
+                [title]="evt.title"
                 (click)="onEventClick(evt, $event)"
               >
                 {{ evt.title }}
-              </div>
+              </button>
             }
           </div>
         }
@@ -109,15 +131,18 @@
             <div class="lc-calendar__time-slot"></div>
           }
           @for (evt of dayEvents(); track evt.id) {
-            <div
+            <button
+              type="button"
               class="lc-calendar__time-event"
               [class]="'lc-calendar__time-event lc-calendar__time-event--' + (evt.color || 'primary')"
               [style.top.px]="eventTop(evt)"
               [style.height.px]="eventHeight(evt)"
+              [attr.aria-label]="eventLabel(evt)"
+              [title]="evt.title"
               (click)="onEventClick(evt, $event)"
             >
               {{ evt.title }}
-            </div>
+            </button>
           }
         </div>
       </div>

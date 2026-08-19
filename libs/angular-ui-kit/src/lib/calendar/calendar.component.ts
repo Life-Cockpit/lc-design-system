@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   input,
+  model,
   output,
   computed,
   signal,
@@ -9,6 +10,25 @@ import {
 import { SlicePipe } from '@angular/common';
 
 export type CalendarView = 'day' | 'week' | 'month';
+
+/** UI strings of the calendar chrome; override individual keys via the `labels` input. */
+export interface CalendarLabels {
+  today: string;
+  day: string;
+  week: string;
+  month: string;
+  previous: string;
+  next: string;
+}
+
+const DEFAULT_LABELS: CalendarLabels = {
+  today: 'Heute',
+  day: 'Tag',
+  week: 'Woche',
+  month: 'Monat',
+  previous: 'Zurück',
+  next: 'Weiter',
+};
 
 export interface CalendarEvent {
   id: string;
@@ -56,8 +76,8 @@ interface HourSlot {
  * ```
  */
 export class CalendarComponent {
-  /** Current view mode. */
-  view = input<CalendarView>('month');
+  /** Current view mode. Two-way bindable; the view toggle writes it and emits `viewChange`. */
+  view = model<CalendarView>('month');
 
   /** Events to display. */
   events = input<CalendarEvent[]>([]);
@@ -67,6 +87,9 @@ export class CalendarComponent {
 
   /** Locale for date formatting. */
   locale = input<string>('de-DE');
+
+  /** Overrides for the built-in UI strings (defaults are German, matching the default locale). */
+  labels = input<Partial<CalendarLabels>>({});
 
   /** Start hour for day/week view. */
   startHour = input<number>(6);
@@ -80,10 +103,9 @@ export class CalendarComponent {
   /** Emits when a date cell is clicked. */
   dateClick = output<Date>();
 
-  /** Emits when the view changes. */
-  viewChange = output<CalendarView>();
-
   protected readonly currentDate = signal(new Date());
+
+  protected readonly text = computed<CalendarLabels>(() => ({ ...DEFAULT_LABELS, ...this.labels() }));
 
   protected readonly headerTitle = computed(() => {
     const d = this.currentDate();
@@ -197,16 +219,39 @@ export class CalendarComponent {
   }
 
   protected setView(v: CalendarView): void {
-    this.viewChange.emit(v);
+    this.view.set(v);
   }
 
-  protected onEventClick(event: CalendarEvent, e: MouseEvent): void {
+  protected onEventClick(event: CalendarEvent, e: Event): void {
+    // The event button sits inside a clickable cell/column; don't let it count as a date click too.
     e.stopPropagation();
     this.eventClick.emit(event);
   }
 
-  protected onDateClick(date: Date): void {
+  protected onDateClick(date: Date, e?: Event): void {
+    e?.stopPropagation();
     this.dateClick.emit(date);
+  }
+
+  /** Full, localized accessible name for a day button (e.g. "Montag, 15. Januar 2024"). */
+  protected dateLabel(date: Date): string {
+    return date.toLocaleDateString(this.locale(), {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+    });
+  }
+
+  /** Accessible name for an event button: title plus its time range (or "all day"). */
+  protected eventLabel(event: CalendarEvent): string {
+    const start = event.start instanceof Date ? event.start : new Date(event.start);
+    const end = event.end instanceof Date ? event.end : new Date(event.end);
+    const loc = this.locale();
+    const opts: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit' };
+    return event.allDay
+      ? event.title
+      : `${event.title}, ${start.toLocaleTimeString(loc, opts)} – ${end.toLocaleTimeString(loc, opts)}`;
   }
 
   protected eventTop(event: CalendarEvent): number {

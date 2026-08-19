@@ -30,8 +30,10 @@
       [class.gallery__item--loaded]="isLoaded(i)"
       [class.gallery__item--clickable]="enableLightbox()"
       [ngStyle]="itemStyle()"
-      (click)="openLightbox(i)"
-      (keydown.enter)="openLightbox(i)"
+      (click)="openLightbox(i, $event)"
+      (keydown.enter)="openLightbox(i, $event)"
+      (keydown.space)="$event.preventDefault()"
+      (keyup.space)="openLightbox(i, $event)"
       [attr.tabindex]="enableLightbox() ? 0 : null"
       [attr.role]="enableLightbox() ? 'button' : null"
       [attr.aria-label]="item.alt || 'Image ' + (i + 1)"
@@ -55,7 +57,15 @@
 
 <!-- Lightbox overlay -->
 @if (lightboxItem(); as item) {
-  <div class="gallery__lightbox" role="dialog" aria-modal="true" aria-label="Image lightbox">
+  <div
+    class="gallery__lightbox"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Image lightbox"
+    tabindex="-1"
+    cdkTrapFocus
+    (keydown)="onKeydown($event)"
+  >
     <!-- Backdrop -->
     <div class="gallery__lightbox-backdrop" (click)="closeLightbox()"></div>
 
@@ -76,7 +86,7 @@
         <button type="button" class="gallery__lightbox-btn" aria-label="Download" (click)="downloadCurrent()">
           <lc-icon name="arrow-down-tray" size="sm" />
         </button>
-        <button type="button" class="gallery__lightbox-btn" aria-label="Close" (click)="closeLightbox()">
+        <button #closeBtn type="button" class="gallery__lightbox-btn" aria-label="Close" (click)="closeLightbox()">
           <lc-icon name="x-mark" size="sm" />
         </button>
       </div>

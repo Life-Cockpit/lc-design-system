@@ -1,20 +1,12 @@
-import { Component, input, computed, HostBinding, ChangeDetectionStrategy } from '@angular/core';
+import { Component, input, computed, ChangeDetectionStrategy } from '@angular/core';
 
 export type SpacerSize = 'auto' | 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 
-@Component({
-  selector: 'lc-spacer',
-  standalone: true,
-  imports: [],
-  templateUrl: './spacer.component.html',
-  styleUrls: ['./spacer.component.scss'],
-  changeDetection: ChangeDetectionStrategy.OnPush,
-})
 /**
  * Spacer component for adding vertical or flexible spacing.
  *
  * Features:
- * - Fixed spacing sizes (xs, sm, md, lg, xl, 2xl)
+ * - Fixed, density-aware spacing sizes (xs, sm, md, lg, xl)
  * - Auto (flex-grow) mode for filling available space
  * - Host class binding for layout integration
  *
@@ -23,28 +15,28 @@ export type SpacerSize = 'auto' | 'xs' | 'sm' | 'md' | 'lg' | 'xl';
  * <lc-spacer size="lg" />
  * ```
  */
+@Component({
+  selector: 'lc-spacer',
+  standalone: true,
+  imports: [],
+  templateUrl: './spacer.component.html',
+  styleUrls: ['./spacer.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    '[class]': 'classes()',
+    // Purely presentational — never announced, never focusable.
+    'aria-hidden': 'true',
+  },
+})
 export class SpacerComponent {
-  size = input<SpacerSize>('auto');
+  readonly size = input<SpacerSize>('auto');
 
-  @HostBinding('class')
-  get hostClasses(): string {
-    return this.classes();
-  }
-
-  @HostBinding('attr.aria-hidden')
-  get ariaHidden(): string {
-    return 'true';
-  }
-
-  @HostBinding('attr.tabindex')
-  get tabIndex(): number {
-    return -1;
-  }
-
-  classes = computed(() => {
+  readonly classes = computed(() => {
     const classes: string[] = [];
 
-    // Semantic size class — sizes are defined in spacer.component.scss
+    // Semantic size class — the matching `:host(.spacer-*)` rules live in
+    // spacer.component.scss (plain class rules would be scoped away by the
+    // emulated encapsulation and never match the host).
     classes.push(`spacer-${this.size()}`);
 
     if (this.size() === 'auto') {

@@ -1,58 +1,84 @@
-<div [class]="listClasses()" role="list">
-  @for (item of items(); track item.id || $index) {
-    <div
-      [class]="getItemClasses(item)"
-      role="listitem"
-      [attr.aria-disabled]="item.disabled ? 'true' : null"
-      (click)="onItemClick(item)"
-    >
-      @if (itemTemplate) {
-        <ng-container *ngTemplateOutlet="itemTemplate.template; context: { $implicit: item }"></ng-container>
-      } @else {
-        <!-- Leading: Avatar or Icon -->
-        @if (item.avatar) {
-          <div class="lc-list__avatar">
-            @if (item.avatar.startsWith('http') || item.avatar.startsWith('/') || item.avatar.startsWith('data:')) {
-              <img [src]="item.avatar" [alt]="item.label" class="lc-list__avatar-img" />
-            } @else {
-              <span class="lc-list__avatar-initials">{{ item.avatar }}</span>
-            }
-          </div>
-        } @else if (item.icon) {
-          <lc-icon [name]="item.icon" class="lc-list__icon" size="sm" />
+<!--
+  Row content is shared between the plain (legacy) row and the keyboard-
+  operable row rendered when `clickable` is set.
+-->
+<ng-template #rowContent let-item>
+  @if (itemTemplate(); as tpl) {
+    <ng-container *ngTemplateOutlet="tpl.template; context: { $implicit: item }"></ng-container>
+  } @else {
+    <!-- Leading: Avatar or Icon -->
+    @if (item.avatar) {
+      <div class="lc-list__avatar">
+        @if (item.avatar.startsWith('http') || item.avatar.startsWith('/') || item.avatar.startsWith('data:')) {
+          <img [src]="item.avatar" [alt]="item.label" class="lc-list__avatar-img" />
+        } @else {
+          <span class="lc-list__avatar-initials">{{ item.avatar }}</span>
         }
+      </div>
+    } @else if (item.icon) {
+      <lc-icon [name]="item.icon" class="lc-list__icon" size="sm" [decorative]="true" />
+    }
 
-        <!-- Content: Label, Subtitle, Description -->
-        <div class="lc-list__content">
-          <span class="lc-list__label">{{ item.label }}</span>
-          @if (item.subtitle) {
-            <span class="lc-list__subtitle">{{ item.subtitle }}</span>
-          }
-          @if (item.description) {
-            <span class="lc-list__description">{{ item.description }}</span>
-          }
-        </div>
-
-        <!-- Trailing: Badge, Metadata, Action -->
-        <div class="lc-list__trailing">
-          @if (item.badge) {
-            <span class="lc-list__badge lc-list__badge--{{ item.badgeVariant || 'default' }}">{{ item.badge }}</span>
-          }
-          @if (item.metadata) {
-            <span class="lc-list__metadata">{{ item.metadata }}</span>
-          }
-          @if (item.action) {
-            <lc-button
-              variant="ghost"
-              size="xs"
-              class="lc-list__action"
-              (clicked)="onActionClick(item)"
-            >
-              {{ item.action }}
-            </lc-button>
-          }
-        </div>
+    <!-- Content: Label, Subtitle, Description -->
+    <div class="lc-list__content">
+      <span class="lc-list__label">{{ item.label }}</span>
+      @if (item.subtitle) {
+        <span class="lc-list__subtitle">{{ item.subtitle }}</span>
+      }
+      @if (item.description) {
+        <span class="lc-list__description">{{ item.description }}</span>
       }
     </div>
+
+    <!-- Trailing: Badge, Metadata, Action -->
+    <div class="lc-list__trailing">
+      @if (item.badge) {
+        <span class="lc-list__badge lc-list__badge--{{ item.badgeVariant || 'default' }}">{{ item.badge }}</span>
+      }
+      @if (item.metadata) {
+        <span class="lc-list__metadata">{{ item.metadata }}</span>
+      }
+      @if (item.action) {
+        <!-- The action is its own control: its click must not also activate the row. -->
+        <span class="lc-list__action-area" (click)="$event.stopPropagation()">
+          <lc-button
+            variant="ghost"
+            size="xs"
+            class="lc-list__action"
+            (clicked)="onActionClick(item)"
+          >
+            {{ item.action }}
+          </lc-button>
+        </span>
+      }
+    </div>
+  }
+</ng-template>
+
+<div [class]="listClasses()" role="list">
+  @for (item of items(); track item.id || $index) {
+    @if (clickable()) {
+      <div class="lc-list__item-wrapper" role="listitem">
+        <div
+          [class]="getItemClasses(item)"
+          role="button"
+          [attr.tabindex]="item.disabled ? -1 : 0"
+          [attr.aria-disabled]="item.disabled ? 'true' : null"
+          (click)="onItemClick(item)"
+          (keydown)="onItemKeydown($event, item)"
+        >
+          <ng-container *ngTemplateOutlet="rowContent; context: { $implicit: item }"></ng-container>
+        </div>
+      </div>
+    } @else {
+      <div
+        [class]="getItemClasses(item)"
+        role="listitem"
+        [attr.aria-disabled]="item.disabled ? 'true' : null"
+        (click)="onItemClick(item)"
+      >
+        <ng-container *ngTemplateOutlet="rowContent; context: { $implicit: item }"></ng-container>
+      </div>
+    }
   }
 </div>

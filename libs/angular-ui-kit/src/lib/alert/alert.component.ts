@@ -2,8 +2,8 @@ import {
   Component,
   ChangeDetectionStrategy,
   input,
+  model,
   output,
-  signal,
   computed,
   ViewEncapsulation,
 } from '@angular/core';
@@ -18,10 +18,11 @@ export type AlertVariant = 'success' | 'error' | 'warning' | 'info';
  * - Semantic variants (success, warning, error, info)
  * - Optional title and icon display
  * - Auto-mapped variant icons
- * - Dismissible with close button
+ * - Dismissible with close button; `visible` is two-way bindable so a
+ *   dismissed alert can be shown again
  * - Content projection for custom body
  * - Action slot for a button rendered right of the body (e.g. retry)
- * - Accessible with ARIA alert role
+ * - Accessible: `role="alert"` for error / warning, `role="status"` otherwise
  *
  * @example
  * ```html
@@ -41,12 +42,11 @@ export type AlertVariant = 'success' | 'error' | 'warning' | 'info';
   imports: [IconComponent],
   templateUrl: './alert.component.html',
   styleUrls: ['./alert.component.scss'],
-  // eslint-disable-next-line @angular-eslint/use-component-view-encapsulation
   encapsulation: ViewEncapsulation.None, // Required for dynamic variant class styling
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     '[class]': 'hostClasses()',
-    '[attr.role]': '"alert"',
+    '[attr.role]': 'role()',
     '[attr.aria-live]': 'ariaLive()',
     '[attr.aria-label]': 'ariaLabel()',
   },
@@ -96,9 +96,10 @@ export class AlertComponent {
   readonly dismissed = output<void>();
 
   /**
-   * Internal visibility state
+   * Visibility (two-way bindable). Dismissing sets it to `false`; the parent
+   * can set it back to `true` to show the alert again.
    */
-  protected visible = signal(true);
+  visible = model<boolean>(true);
 
   /**
    * Computed host classes
@@ -118,12 +119,32 @@ export class AlertComponent {
     return 'lc-alert__container';
   });
 
+  /** Whether the variant should interrupt the user (error / warning). */
+  private readonly isUrgent = computed(() => {
+    const variant = this.variant();
+    return variant === 'error' || variant === 'warning';
+  });
+
+  /**
+   * Live-region role: `alert` (assertive) only for error / warning,
+   * `status` (polite) for info / success.
+   */
+  protected role = computed(() => (this.isUrgent() ? 'alert' : 'status'));
+
   /**
    * Computed ARIA live region priority
    */
-  protected ariaLive = computed(() => {
-    const variant = this.variant();
-    return variant === 'error' || variant === 'warning' ? 'assertive' : 'polite';
+  protected ariaLive = computed(() => (this.isUrgent() ? 'assertive' : 'polite'));
+
+  /** Accessible name of the variant icon (it conveys the alert's tone). */
+  protected iconLabel = computed(() => {
+    const labels: Record<AlertVariant, string> = {
+      success: 'Success',
+      error: 'Error',
+      warning: 'Warning',
+      info: 'Info',
+    };
+    return labels[this.variant()];
   });
 
   /**

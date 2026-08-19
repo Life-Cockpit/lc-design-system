@@ -92,6 +92,89 @@ describe('TreeViewComponent', () => {
     expect(items().length).toBe(4);
   });
 
+  describe('keyboard navigation (roving tabindex)', () => {
+    function key(target: HTMLElement, key: string): KeyboardEvent {
+      const ev = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
+      target.dispatchEvent(ev);
+      return ev;
+    }
+
+    it('exposes exactly one tab stop and aria-posinset / aria-setsize', () => {
+      const rows = items();
+      const tabStops = rows.filter((r) => r.getAttribute('tabindex') === '0');
+      expect(tabStops.length).toBe(1);
+      expect(tabStops[0].textContent).toContain('src');
+      // src (1 of 2 roots), app.component.ts (1 of 2 children), README.md (2 of 2 roots)
+      expect(rows[0].getAttribute('aria-posinset')).toBe('1');
+      expect(rows[0].getAttribute('aria-setsize')).toBe('2');
+      expect(rows[1].getAttribute('aria-posinset')).toBe('1');
+      expect(rows[1].getAttribute('aria-setsize')).toBe('2');
+      expect(rows[3].getAttribute('aria-posinset')).toBe('2');
+      expect(rows[3].getAttribute('aria-setsize')).toBe('2');
+    });
+
+    it('ArrowDown / ArrowUp move focus and the tab stop', () => {
+      const rows = items();
+      rows[0].focus();
+      const ev = key(rows[0], 'ArrowDown');
+      fixture.detectChanges();
+      expect(ev.defaultPrevented).toBe(true);
+      expect(document.activeElement).toBe(rows[1]);
+      expect(rows[1].getAttribute('tabindex')).toBe('0');
+      expect(rows[0].getAttribute('tabindex')).toBe('-1');
+
+      key(rows[1], 'ArrowUp');
+      fixture.detectChanges();
+      expect(document.activeElement).toBe(rows[0]);
+    });
+
+    it('Home / End jump to the first / last node', () => {
+      const rows = items();
+      rows[1].focus();
+      key(rows[1], 'End');
+      expect(document.activeElement).toBe(rows[3]);
+      key(rows[3], 'Home');
+      expect(document.activeElement).toBe(rows[0]);
+    });
+
+    it('ArrowLeft on a leaf focuses the parent, ArrowRight on an expanded folder focuses the first child', () => {
+      const rows = items();
+      rows[1].focus();
+      key(rows[1], 'ArrowLeft');
+      expect(document.activeElement).toBe(rows[0]);
+
+      key(rows[0], 'ArrowRight');
+      expect(document.activeElement).toBe(rows[1]);
+    });
+
+    it('ArrowLeft / ArrowRight collapse and expand a folder', () => {
+      const rows = items();
+      key(rows[0], 'ArrowLeft');
+      fixture.detectChanges();
+      expect(items().length).toBe(2);
+      key(items()[0], 'ArrowRight');
+      fixture.detectChanges();
+      expect(items().length).toBe(4);
+    });
+
+    it('skips disabled nodes and falls back to the selected node as tab stop', () => {
+      host.nodes.set([
+        { name: 'a', id: 'a', disabled: true },
+        { name: 'b', id: 'b' },
+        { name: 'c', id: 'c' },
+      ]);
+      host.selectedId.set('c');
+      fixture.detectChanges();
+      const rows = items();
+      expect(rows.map((r) => r.getAttribute('tabindex'))).toEqual(['-1', '-1', '0']);
+
+      rows[1].focus();
+      key(rows[1], 'ArrowUp');
+      // 'a' is disabled: focus stays on 'b'.
+      expect(document.activeElement).toBe(rows[1]);
+    });
+  });
+
   describe('custom node types', () => {
     const domainTree: TreeNode[] = [
       {

@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { PLATFORM_ID } from '@angular/core';
 import { ToastService } from './toast.service';
 
 describe('ToastService', () => {
@@ -148,6 +149,23 @@ describe('ToastService', () => {
 
     it('should not error when no toasts exist', () => {
       expect(() => service.closeAll()).not.toThrow();
+    });
+  });
+
+  describe('Server-side rendering', () => {
+    it('should not schedule auto-dismiss timers on the server', () => {
+      jest.useFakeTimers();
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        providers: [ToastService, { provide: PLATFORM_ID, useValue: 'server' }],
+      });
+      const serverService = TestBed.inject(ToastService);
+
+      expect(() => serverService.show({ message: 'Test', duration: 1000 })).not.toThrow();
+      expect(jest.getTimerCount()).toBe(0);
+      jest.advanceTimersByTime(5000);
+      expect(serverService.toasts().length).toBe(1);
+      jest.useRealTimers();
     });
   });
 

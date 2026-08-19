@@ -1,25 +1,41 @@
 <div [class]="ratingClasses()" (mouseleave)="onMouseLeave()">
   @if (label()) {
-    <span class="rating__label">{{ label() }}</span>
+    <span class="rating__label" [id]="labelId">{{ label() }}</span>
   }
-  <div class="rating__stars" role="radiogroup" [attr.aria-label]="label() || 'Rating'">
+  <div
+    class="rating__stars"
+    role="radiogroup"
+    [attr.aria-labelledby]="label() ? labelId : null"
+    [attr.aria-label]="label() ? null : 'Rating'"
+    [attr.aria-readonly]="readonly() ? true : null"
+    [attr.aria-disabled]="isDisabled() ? true : null"
+    (keydown)="onKeydown($event)"
+    (focusout)="onFocusOut($event)"
+  >
     @for (star of stars(); track star) {
       <button
+        #starBtn
         type="button"
         class="rating__star"
+        role="radio"
         [class.rating__star--filled]="isStarFilled(star)"
         [class.rating__star--half]="isStarHalf(star)"
-        [disabled]="readonly() || disabled() || isDisabled()"
-        [attr.aria-label]="star + ' of ' + max() + ' stars'"
-        (click)="onStarClick(star)"
-        (mouseenter)="onStarHover(star)"
+        [disabled]="isDisabled()"
+        [tabindex]="star === focusableStar() ? 0 : -1"
+        [attr.aria-checked]="isStarChecked(star)"
+        [attr.aria-label]="starLabel(star)"
+        (click)="onStarClick(star, $event)"
+        (mousemove)="onStarHover(star, $event)"
       >
         @if (isStarFilled(star)) {
-          <lc-icon name="star" [size]="size()" class="rating__icon rating__icon--filled" />
+          <lc-icon name="star" variant="solid" [size]="size()" class="rating__icon rating__icon--filled" [decorative]="true" />
         } @else if (isStarHalf(star)) {
-          <lc-icon name="star" [size]="size()" class="rating__icon rating__icon--half" />
+          <span class="rating__icon rating__icon--half">
+            <lc-icon name="star" [size]="size()" [decorative]="true" />
+            <lc-icon name="star" variant="solid" [size]="size()" class="rating__icon-fill" [decorative]="true" />
+          </span>
         } @else {
-          <lc-icon name="star" [size]="size()" class="rating__icon rating__icon--empty" />
+          <lc-icon name="star" [size]="size()" class="rating__icon rating__icon--empty" [decorative]="true" />
         }
       </button>
     }

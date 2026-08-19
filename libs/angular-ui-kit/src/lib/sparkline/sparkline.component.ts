@@ -9,6 +9,8 @@ import {
   computed,
   signal,
 } from '@angular/core';
+import { linearPath, smoothPath } from '../shared/chart-path';
+import { ChartValueFormatter, formatChartValue, toFinite } from '../shared/chart-scale';
 
 export type SparklineColor = 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'info';
 export type SparklineCurve = 'linear' | 'smooth';
@@ -19,6 +21,10 @@ export type SparklineCurve = 'linear' | 'smooth';
   templateUrl: './sparkline.component.html',
   styleUrls: ['./sparkline.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    '[class.lc-sparkline--fluid]': 'fluid()',
+    '[style.width.px]': 'fluid() ? null : width()',
+  },
 })
 /**
  * Sparkline component for compact inline trend visualization.
@@ -28,7 +34,7 @@ export type SparklineCurve = 'linear' | 'smooth';
  * - Optional area fill below the line
  * - Color theme variants (primary, secondary, success, warning, error)
  * - Optional end-dot indicator
- * - Configurable dimensions and stroke width
+ * - Fixed `width` × `height` inline box, or `fluid` to fill the container
  * - Lightweight SVG rendering
  *
  * @example
@@ -57,7 +63,12 @@ export class SparklineComponent {
   /** Stroke color theme. */
   color = input<SparklineColor>('primary');
 
-  /** Width of the SVG in pixels. */
+  /**
+   * Width of the sparkline in pixels. The host is an inline-block of exactly
+   * this width unless `fluid` is set, in which case the sparkline fills its
+   * container and `width` only serves as the viewBox width until the container
+   * has been measured.
+   */
   width = input<number>(120);
 
   /** Height of the SVG in pixels. */
@@ -74,6 +85,18 @@ export class SparklineComponent {
 
   /** Show a dot on the last data point. */
   showEndDot = input<boolean>(false);
+
+  /** Stretch to the container width instead of the fixed `width`. */
+  fluid = input<boolean>(false);
+
+  /** Formats values in the generated accessible summary. Defaults to a float-safe `String(value)`. */
+  formatValue = input<ChartValueFormatter>(formatChartValue);
+
+  /**
+   * Accessible name of the sparkline. Defaults to a generated summary such as
+   * "Sparkline: 10 points, min 4, max 18, last 18".
+   */
+  ariaLabel = input<string>('');
 
   protected readonly colorVar = computed(() => {
     const map: Record<SparklineColor, string> = {
@@ -99,14 +122,24 @@ export class SparklineComponent {
     return map[this.color()];
   });
 
-  protected readonly pathD = computed(() => {
-    const d = this.data();
-    if (!d || d.length < 2) return '';
+  private readonly values = computed(() => (this.data() ?? []).map((v) => toFinite(v)));
+
+  protected readonly effectiveWidth = computed(() =>
+    this.fluid() ? this._containerWidth() || this.width() : this.width()
+  );
+
+  protected readonly viewBox = computed(
+    () => `0 0 ${this.effectiveWidth()} ${this.height()}`
+  );
+
+  /** Plot geometry and the data mapped into it; null with fewer than two points. */
+  private readonly layout = computed(() => {
+    const d = this.values();
+    if (d.length < 2) return null;
 
     const w = this.effectiveWidth();
     const h = this.height();
-    const sw = this.strokeWidth();
-    const padding = sw;
+    const padding = this.strokeWidth();
     const plotW = w - padding * 2;
     const plotH = h - padding * 2;
 
@@ -118,74 +151,37 @@ export class SparklineComponent {
       x: padding + (i / (d.length - 1)) * plotW,
       y: padding + plotH - ((v - min) / range) * plotH,
     }));
+    return { points, padding, plotW, bottomY: h - padding };
+  });
 
-    if (this.curve() === 'linear') {
-      return points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ');
-    }
-
-    // Smooth (monotone cubic) via catmull-rom approximation
-    let path = `M${points[0].x},${points[0].y}`;
-    for (let i = 0; i < points.length - 1; i++) {
-      const p0 = points[Math.max(i - 1, 0)];
-      const p1 = points[i];
-      const p2 = points[i + 1];
-      const p3 = points[Math.min(i + 2, points.length - 1)];
-
-      const cp1x = p1.x + (p2.x - p0.x) / 6;
-      const cp1y = p1.y + (p2.y - p0.y) / 6;
-      const cp2x = p2.x - (p3.x - p1.x) / 6;
-      const cp2y = p2.y - (p3.y - p1.y) / 6;
-
-      path += ` C${cp1x},${cp1y} ${cp2x},${cp2y} ${p2.x},${p2.y}`;
-    }
-    return path;
+  protected readonly pathD = computed(() => {
+    const l = this.layout();
+    if (!l) return '';
+    return this.curve() === 'linear' ? linearPath(l.points) : smoothPath(l.points);
   });
 
   protected readonly areaD = computed(() => {
     if (!this.filled()) return '';
     const line = this.pathD();
-    if (!line) return '';
-    const d = this.data();
-    const w = this.effectiveWidth();
-    const h = this.height();
-    const sw = this.strokeWidth();
-    const padding = sw;
-    const plotW = w - padding * 2;
-    const lastX = padding + plotW;
-    const bottomY = h - padding;
-    const firstX = padding;
-    return `${line} L${lastX},${bottomY} L${firstX},${bottomY} Z`;
+    const l = this.layout();
+    if (!line || !l) return '';
+    return `${line} L${l.padding + l.plotW},${l.bottomY} L${l.padding},${l.bottomY} Z`;
   });
 
   protected readonly endDot = computed(() => {
     if (!this.showEndDot()) return null;
-    const d = this.data();
-    if (!d || d.length < 2) return null;
-
-    const w = this.effectiveWidth();
-    const h = this.height();
-    const sw = this.strokeWidth();
-    const padding = sw;
-    const plotW = w - padding * 2;
-    const plotH = h - padding * 2;
-
-    const min = Math.min(...d);
-    const max = Math.max(...d);
-    const range = max - min || 1;
-
-    const lastIdx = d.length - 1;
-    return {
-      cx: padding + (lastIdx / (d.length - 1)) * plotW,
-      cy: padding + plotH - ((d[lastIdx] - min) / range) * plotH,
-      r: sw + 1,
-    };
+    const l = this.layout();
+    if (!l) return null;
+    const last = l.points[l.points.length - 1];
+    return { cx: last.x, cy: last.y, r: this.strokeWidth() + 1 };
   });
 
-  protected readonly effectiveWidth = computed(
-    () => this._containerWidth() || this.width()
-  );
-
-  protected readonly viewBox = computed(
-    () => `0 0 ${this.effectiveWidth()} ${this.height()}`
-  );
+  protected readonly effectiveAriaLabel = computed(() => {
+    const explicit = this.ariaLabel();
+    if (explicit) return explicit;
+    const d = this.values();
+    if (!d.length) return 'Sparkline: no data';
+    const fmt = this.formatValue();
+    return `Sparkline: ${d.length} ${d.length === 1 ? 'point' : 'points'}, min ${fmt(Math.min(...d))}, max ${fmt(Math.max(...d))}, last ${fmt(d[d.length - 1])}`;
+  });
 }

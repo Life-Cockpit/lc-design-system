@@ -20,13 +20,14 @@ export type PaginationSize = 'sm' | 'md' | 'lg';
  * - Size variants (sm, md, lg)
  * - Accessible with ARIA attributes
  * - Optional item count display
+ * - All UI strings overridable via inputs (i18n)
  *
  * @example
  * ```html
  * <lc-pagination
- *   [currentPageInput]="currentPage"
- *   [totalItemsInput]="totalItems"
- *   [pageSizeInput]="10"
+ *   [currentPage]="currentPage"
+ *   [totalItems]="totalItems"
+ *   [pageSize]="10"
  *   (pageChange)="onPageChange($event)"
  * ></lc-pagination>
  * ```
@@ -47,6 +48,23 @@ export class PaginationComponent {
   readonly maxVisiblePages = input(7);
   readonly ariaLabel = input('Pagination');
   readonly showInfo = input(false);
+
+  // ── UI strings (override for i18n) ──────────────────────────────────────
+  /** Visible text of the previous button */
+  readonly previousLabel = input('Previous');
+  /** Visible text of the next button */
+  readonly nextLabel = input('Next');
+  /** Accessible name of the previous button (the visible text is hidden on small screens) */
+  readonly previousAriaLabel = input('Previous page');
+  /** Accessible name of the next button */
+  readonly nextAriaLabel = input('Next page');
+  /** Accessible name of a page button; `{page}` is replaced with the page number */
+  readonly pageAriaLabel = input('Page {page}');
+  /**
+   * Info line shown when `showInfo` is true; `{first}`, `{last}` and `{total}`
+   * are replaced with the item range and total.
+   */
+  readonly infoText = input('Showing {first} to {last} of {total} items');
 
   readonly pageChange = output<number>();
 
@@ -148,6 +166,19 @@ export class PaginationComponent {
     if (page >= 1 && page <= this.totalPages() && page !== this.currentPage()) {
       this.pageChange.emit(page);
     }
+  }
+
+  /** Resolved info line (`infoText` with placeholders filled in) */
+  readonly infoLine = computed(() =>
+    this.infoText()
+      .replace('{first}', String(this.firstItemIndex()))
+      .replace('{last}', String(this.lastItemIndex()))
+      .replace('{total}', String(this.totalItems())),
+  );
+
+  /** Accessible name for the button of `page` */
+  getPageAriaLabel(page: number): string {
+    return this.pageAriaLabel().replace('{page}', String(page));
   }
 
   // Helper methods

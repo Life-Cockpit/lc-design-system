@@ -24,6 +24,10 @@ Description list for key/value metadata (a styled \`<dl>\`).
     layout: { control: 'inline-radio', options: ['rows', 'stacked'] },
     leaders: { control: 'boolean' },
     size: { control: 'inline-radio', options: ['sm', 'md'] },
+    clickable: {
+      control: 'boolean',
+      description: 'Rows are focusable buttons (Enter / Space emit itemClick). Set this whenever itemClick is handled.',
+    },
     separator: {
       control: 'inline-radio',
       options: ['line', 'divider', 'none'],

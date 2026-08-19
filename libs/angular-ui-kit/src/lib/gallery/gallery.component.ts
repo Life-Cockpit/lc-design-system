@@ -1,16 +1,23 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
+  HostListener,
+  Injector,
+  OnDestroy,
+  afterNextRender,
+  computed,
+  inject,
   input,
   output,
-  computed,
   signal,
-  OnDestroy,
-  HostListener,
+  viewChild,
 } from '@angular/core';
+import { CdkTrapFocus } from '@angular/cdk/a11y';
 import { IconComponent } from '../icon/icon.component';
 import { SpinnerComponent } from '../spinner/spinner.component';
 import { NgStyle } from '@angular/common';
+import { isSafeImageUrl } from '../shared/safe-url';
 
 export type GalleryLayout = 'grid' | 'masonry';
 export type GallerySize = 'sm' | 'md' | 'lg';
@@ -42,7 +49,8 @@ const SIZE_COLUMNS: Record<GallerySize, number> = {
  * - Responsive column count via size presets (sm, md, lg thumbnails)
  * - Configurable custom column count
  * - Lightbox overlay with navigation (prev/next)
- * - Keyboard navigation (Arrow keys, Escape)
+ * - Keyboard navigation (Arrow keys, Escape); focus is trapped inside the
+ *   lightbox and returned to the originating thumbnail on close
  * - Optional captions and category filtering
  * - Lazy loading with placeholder shimmer
  * - Zoom control in lightbox
@@ -61,7 +69,7 @@ const SIZE_COLUMNS: Record<GallerySize, number> = {
 @Component({
   selector: 'lc-gallery',
   standalone: true,
-  imports: [IconComponent, SpinnerComponent, NgStyle],
+  imports: [IconComponent, SpinnerComponent, NgStyle, CdkTrapFocus],
   templateUrl: './gallery.component.html',
   styleUrls: ['./gallery.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -101,6 +109,11 @@ export class GalleryComponent implements OnDestroy {
   readonly lightboxClose = output<void>();
 
   // ── Internal state ───────────────────────────────────────────────────
+
+  private readonly injector = inject(Injector);
+  private readonly closeBtn = viewChild<ElementRef<HTMLButtonElement>>('closeBtn');
+  /** Element that opened the lightbox — focus returns there on close. */
+  private triggerElement: HTMLElement | null = null;
 
   protected lightboxIndex = signal<number | null>(null);
   protected lightboxZoom = signal(100);
@@ -181,25 +194,43 @@ export class GalleryComponent implements OnDestroy {
   // ── Lifecycle ────────────────────────────────────────────────────────
 
   ngOnDestroy(): void {
-    this.closeLightbox();
+    // No focus restore here: the injector is going away with the view.
+    this.closeLightbox(false);
   }
 
   // ── Actions ──────────────────────────────────────────────────────────
 
-  protected openLightbox(index: number): void {
+  /**
+   * Opens the lightbox for `index`. Like a native button, Space activates on
+   * *keyup* (keydown only prevents the page scroll): activating on keydown
+   * would move focus to the Close button before the key is released, and the
+   * Space keyup would then immediately click Close.
+   */
+  protected openLightbox(index: number, event?: Event): void {
     if (!this.enableLightbox()) return;
+    if (event instanceof KeyboardEvent) event.preventDefault();
+    this.triggerElement =
+      (event?.currentTarget as HTMLElement | null) ??
+      (document.activeElement instanceof HTMLElement ? document.activeElement : null);
     this.lightboxIndex.set(index);
     this.lightboxZoom.set(100);
     this.lightboxOpen.emit(index);
     document.body.style.overflow = 'hidden';
+    // The dialog is `@if`-rendered — move focus in once it exists.
+    afterNextRender(() => this.closeBtn()?.nativeElement.focus(), { injector: this.injector });
   }
 
-  protected closeLightbox(): void {
+  protected closeLightbox(restoreFocus = true): void {
     if (this.lightboxIndex() === null) return;
     this.lightboxIndex.set(null);
     this.lightboxZoom.set(100);
     this.lightboxClose.emit();
     document.body.style.overflow = '';
+    const trigger = this.triggerElement;
+    this.triggerElement = null;
+    if (restoreFocus && trigger?.isConnected) {
+      afterNextRender(() => trigger.focus(), { injector: this.injector });
+    }
   }
 
   protected goToPrev(): void {
@@ -232,7 +263,8 @@ export class GalleryComponent implements OnDestroy {
 
   protected downloadCurrent(): void {
     const item = this.lightboxItem();
-    if (!item) return;
+    // A programmatic click on a caller-supplied URL: only image-safe schemes.
+    if (!item || !isSafeImageUrl(item.src)) return;
     const a = document.createElement('a');
     a.href = item.src;
     a.download = item.alt || 'image';
@@ -267,17 +299,25 @@ export class GalleryComponent implements OnDestroy {
     return index;
   }
 
+  /**
+   * Keyboard handling while the lightbox is open. Bound on the lightbox itself
+   * (focus is trapped inside it) and, as a fallback, on `document`. A handled
+   * Escape stops propagating so an enclosing modal/drawer doesn't close too.
+   */
   @HostListener('document:keydown', ['$event'])
   protected onKeydown(event: KeyboardEvent): void {
     if (this.lightboxIndex() === null) return;
     switch (event.key) {
       case 'Escape':
+        event.stopPropagation();
         this.closeLightbox();
         break;
       case 'ArrowLeft':
+        event.stopPropagation();
         this.goToPrev();
         break;
       case 'ArrowRight':
+        event.stopPropagation();
         this.goToNext();
         break;
     }

@@ -35,6 +35,8 @@ export interface FilterValues {
   [key: string]: string;
 }
 
+const NO_OPTIONS: SelectOption[] = [];
+
 /**
  * Filter bar component for composable data filtering.
  *
@@ -64,6 +66,11 @@ export interface FilterValues {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FilterBarComponent {
+  private static nextId = 0;
+
+  /** Per-instance id prefix for label/control linking */
+  readonly barId = `lc-filter-bar-${++FilterBarComponent.nextId}`;
+
   /** Filter configurations */
   filters = input.required<readonly FilterConfig[]>();
 
@@ -79,13 +86,38 @@ export class FilterBarComponent {
   /** Computed size class */
   sizeClass = computed(() => `lc-filter-bar--${this.size()}`);
 
+  /**
+   * Select options per filter key, built once per `filters` change so the
+   * lc-select `options` input keeps a stable reference across change detection.
+   */
+  private readonly selectOptionsByKey = computed(() => {
+    const map = new Map<string, SelectOption[]>();
+    for (const filter of this.filters()) {
+      if (filter.type === 'select') {
+        map.set(filter.key, (filter.options ?? []).map((opt) => ({ ...opt })));
+      }
+    }
+    return map;
+  });
+
   /** Get the current value for a filter key */
   getValue(key: string): string {
     return this.values()[key] ?? '';
   }
 
-  getSelectOptions(options?: readonly FilterOption[]): SelectOption[] {
-    return options ? options.map((opt) => ({ ...opt })) : [];
+  /** Memoised select options for a filter key */
+  selectOptions(key: string): SelectOption[] {
+    return this.selectOptionsByKey().get(key) ?? NO_OPTIONS;
+  }
+
+  /** id of the control rendered for a filter (used by `<label for>`) */
+  fieldId(key: string): string {
+    return `${this.barId}-${key}`;
+  }
+
+  /** id of the label rendered for a filter (used by `aria-labelledby`) */
+  labelId(key: string): string {
+    return `${this.barId}-${key}-label`;
   }
 
   /** Handle select / toggle change */

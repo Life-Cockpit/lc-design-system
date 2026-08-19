@@ -157,4 +157,97 @@ describe('KanbanBoardComponent', () => {
     fixture.detectChanges();
     expect(el.querySelectorAll('.lc-kanban__column-limit').length).toBe(0);
   });
+
+  describe('keyboard operability', () => {
+    function key(target: HTMLElement, key: string, altKey = false): KeyboardEvent {
+      const ev = new KeyboardEvent('keydown', { key, altKey, bubbles: true, cancelable: true });
+      target.dispatchEvent(ev);
+      return ev;
+    }
+
+    it('renders cards as focusable buttons', () => {
+      const card = el.querySelector('.lc-kanban__card') as HTMLElement;
+      expect(card.getAttribute('role')).toBe('button');
+      expect(card.getAttribute('tabindex')).toBe('0');
+    });
+
+    it('emits cardClick on Enter and Space', () => {
+      const card = el.querySelector('.lc-kanban__card') as HTMLElement;
+      const enter = key(card, 'Enter');
+      expect(enter.defaultPrevented).toBe(true);
+      expect(host.lastClick?.card.id).toBe('1');
+
+      host.lastClick = null;
+      key(card, ' ');
+      expect(host.lastClick?.card.id).toBe('1');
+    });
+
+    it('moves a card to the next column with Alt+ArrowRight and emits cardMoved like a drop', () => {
+      const card = el.querySelector('.lc-kanban__card') as HTMLElement;
+      key(card, 'ArrowRight', true);
+      fixture.detectChanges();
+
+      expect(host.lastMove).toEqual({ cardId: '1', fromColumnId: 'todo', toColumnId: 'progress', toIndex: 1 });
+      const counts = el.querySelectorAll('.lc-kanban__column-count');
+      expect(counts[0].textContent?.trim()).toBe('1');
+      expect(counts[1].textContent?.trim()).toBe('2');
+      // Focus follows the card into its new column.
+      const moved = Array.from(el.querySelectorAll<HTMLElement>('.lc-kanban__card')).find(c => c.dataset['cardId'] === '1');
+      expect(document.activeElement).toBe(moved);
+    });
+
+    it('reorders within the column with Alt+ArrowDown / Alt+ArrowUp', () => {
+      const card = el.querySelector('.lc-kanban__card') as HTMLElement;
+      key(card, 'ArrowDown', true);
+      fixture.detectChanges();
+      expect(host.lastMove).toEqual({ cardId: '1', fromColumnId: 'todo', toColumnId: 'todo', toIndex: 1 });
+      const titles = el.querySelectorAll('.lc-kanban__card-title');
+      expect(titles[0].textContent?.trim()).toBe('Task 2');
+      expect(titles[1].textContent?.trim()).toBe('Task 1');
+
+      const movedCard = el.querySelectorAll('.lc-kanban__card')[1] as HTMLElement;
+      key(movedCard, 'ArrowUp', true);
+      fixture.detectChanges();
+      expect(host.lastMove).toEqual({ cardId: '1', fromColumnId: 'todo', toColumnId: 'todo', toIndex: 0 });
+    });
+
+    it('does not move at the board edges or without Alt', () => {
+      const card = el.querySelector('.lc-kanban__card') as HTMLElement;
+      key(card, 'ArrowLeft', true);
+      key(card, 'ArrowUp', true);
+      key(card, 'ArrowRight', false);
+      expect(host.lastMove).toBeNull();
+    });
+
+    it('does not move cards in readonly mode', () => {
+      host.readonly.set(true);
+      fixture.detectChanges();
+      const card = el.querySelector('.lc-kanban__card') as HTMLElement;
+      key(card, 'ArrowRight', true);
+      expect(host.lastMove).toBeNull();
+      expect(card.getAttribute('aria-keyshortcuts')).toBeNull();
+      // Activation still works on a readonly board.
+      key(card, 'Enter');
+      expect(host.lastClick?.card.id).toBe('1');
+    });
+  });
+
+  describe('columns input after a local move', () => {
+    it('re-seeds from a later columns update instead of latching the first drop', () => {
+      const card = el.querySelector('.lc-kanban__card') as HTMLElement;
+      card.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', altKey: true, bubbles: true }));
+      fixture.detectChanges();
+      expect(host.lastMove?.toColumnId).toBe('progress');
+
+      host.columns.set([
+        { id: 'todo', title: 'To Do', cards: [{ id: '9', title: 'Fresh' }] },
+        { id: 'done', title: 'Done', cards: [] },
+      ]);
+      fixture.detectChanges();
+
+      expect(el.querySelectorAll('.lc-kanban__column').length).toBe(2);
+      const titles = Array.from(el.querySelectorAll('.lc-kanban__card-title')).map(t => t.textContent?.trim());
+      expect(titles).toEqual(['Fresh']);
+    });
+  });
 });

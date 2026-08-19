@@ -63,8 +63,8 @@ interface DepLine {
  * - Monthly and daily header timeline
  * - Today marker line
  * - Weekend highlighting
- * - Configurable row height, label width, and day width
- * - Task click event handling
+ * - Configurable row height, label width, day width, locale and label header
+ * - Task click event handling (bars are focusable, Enter / Space activate)
  *
  * @example
  * ```html
@@ -72,6 +72,14 @@ interface DepLine {
  * ```
  */
 export class GanttChartComponent {
+  private static nextId = 0;
+
+  /**
+   * Per-instance id for the SVG arrowhead marker. `<marker id>` is document
+   * global, so two charts on one page must not share it.
+   */
+  protected readonly markerId = `lc-gantt-arrowhead-${++GanttChartComponent.nextId}`;
+
   /** Tasks to display. */
   tasks = input.required<GanttTask[]>();
 
@@ -90,7 +98,13 @@ export class GanttChartComponent {
   /** Show today marker. */
   showToday = input<boolean>(true);
 
-  /** Emits when a task bar is clicked. */
+  /** BCP 47 locale used for the month header labels. */
+  locale = input<string>('de-DE');
+
+  /** Header text of the task label column. */
+  labelsHeader = input<string>('Aufgaben');
+
+  /** Emits when a task bar is clicked / activated via keyboard. */
   taskClick = output<GanttTask>();
 
   private readonly normalizedTasks = computed((): NormalizedTask[] =>
@@ -143,7 +157,7 @@ export class GanttChartComponent {
         left: i * dw,
         label: d.getDate(),
         isWeekend: d.getDay() === 0 || d.getDay() === 6,
-        monthLabel: d.getDate() === 1 ? d.toLocaleDateString('de-DE', { month: 'short' }) : null,
+        monthLabel: d.getDate() === 1 ? d.toLocaleDateString(this.locale(), { month: 'short' }) : null,
       };
     });
   });
@@ -151,11 +165,12 @@ export class GanttChartComponent {
   protected readonly monthHeaders = computed(() => {
     const cols = this.dayColumns();
     const dw = this.dayWidth();
+    const locale = this.locale();
     const months: { label: string; left: number; width: number }[] = [];
     let current: { label: string; left: number; count: number } | null = null;
 
     for (const col of cols) {
-      const label = col.date.toLocaleDateString('de-DE', { month: 'short', year: 'numeric' });
+      const label = col.date.toLocaleDateString(locale, { month: 'short', year: 'numeric' });
       if (!current || current.label !== label) {
         if (current) months.push({ label: current.label, left: current.left, width: current.count * dw });
         current = { label, left: col.left, count: 1 };
@@ -220,6 +235,13 @@ export class GanttChartComponent {
 
   protected onTaskClick(task: NormalizedTask): void {
     this.taskClick.emit(this.tasks().find(t => t.id === task.id)!);
+  }
+
+  protected onTaskKeydown(event: KeyboardEvent, task: NormalizedTask): void {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      this.onTaskClick(task);
+    }
   }
 
   private startOfDay(d: Date): Date {

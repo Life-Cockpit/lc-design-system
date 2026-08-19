@@ -1,8 +1,10 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import { Component, ChangeDetectionStrategy } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal } from '@angular/core';
 import { ModalComponent } from './modal.component';
+import { OverlayStackService } from '../shared/overlay-stack.service';
 import { OverlayModule } from '@angular/cdk/overlay';
+import { InteractivityChecker } from '@angular/cdk/a11y';
 import { HttpTestingController } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
@@ -238,6 +240,98 @@ describe('ModalComponent', () => {
 
       expect(component._open()).toBe(true);
     });
+
+    it('should stop the Escape from propagating when it handles it', () => {
+      fixture.componentRef.setInput('open', true);
+      fixture.detectChanges();
+      const reachedWindow = jest.fn();
+      window.addEventListener('keydown', reachedWindow);
+
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+
+      expect(component._open()).toBe(false);
+      expect(reachedWindow).not.toHaveBeenCalled();
+      window.removeEventListener('keydown', reachedWindow);
+    });
+
+    it('should leave the Escape to the overlay on top of it', () => {
+      const stack = TestBed.inject(OverlayStackService);
+      fixture.componentRef.setInput('open', true);
+      fixture.detectChanges();
+      stack.push('overlay-above-the-modal');
+      const reachedWindow = jest.fn();
+      window.addEventListener('keydown', reachedWindow);
+
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      fixture.detectChanges();
+
+      expect(component._open()).toBe(true);
+      expect(reachedWindow).toHaveBeenCalled();
+      window.removeEventListener('keydown', reachedWindow);
+      stack.remove('overlay-above-the-modal');
+    });
+
+    it('should still consume the Escape when it is on top but closeOnEscape is false', () => {
+      const stack = TestBed.inject(OverlayStackService);
+      stack.push('overlay-below-the-modal');
+      fixture.componentRef.setInput('open', true);
+      fixture.componentRef.setInput('closeOnEscape', false);
+      fixture.detectChanges();
+
+      const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true });
+      document.dispatchEvent(event);
+
+      expect(component._open()).toBe(true);
+      expect(stack.claim('overlay-below-the-modal', event)).toBe(false);
+      stack.remove('overlay-below-the-modal');
+    });
+  });
+
+  describe('Overlay stacking', () => {
+    it('should register itself while open and unregister when closed', () => {
+      const stack = TestBed.inject(OverlayStackService);
+      fixture.componentRef.setInput('open', true);
+      fixture.detectChanges();
+      stack.push('probe');
+      stack.remove('probe');
+      // the modal is the only overlay left, so it must be top-most
+      expect(stack.claim('someone-else', new Event('x'))).toBe(false);
+
+      component.closeModal();
+      fixture.detectChanges();
+      stack.push('probe');
+      expect(stack.isTop('probe')).toBe(true);
+      stack.remove('probe');
+    });
+
+    it('should ignore backdrop clicks while another overlay is on top of it', () => {
+      const stack = TestBed.inject(OverlayStackService);
+      fixture.componentRef.setInput('open', true);
+      fixture.detectChanges();
+      stack.push('overlay-above-the-modal');
+
+      let backdropClicked = false;
+      component.backdropClicked.subscribe(() => (backdropClicked = true));
+      fixture.debugElement.query(By.css('.lc-modal-backdrop')).nativeElement.click();
+      fixture.detectChanges();
+
+      expect(component._open()).toBe(true);
+      expect(backdropClicked).toBe(false);
+      stack.remove('overlay-above-the-modal');
+    });
+
+    it('should unregister itself when destroyed while open', () => {
+      const stack = TestBed.inject(OverlayStackService);
+      fixture.componentRef.setInput('open', true);
+      fixture.detectChanges();
+
+      fixture.destroy();
+
+      stack.push('probe');
+      expect(stack.isTop('probe')).toBe(true);
+      stack.remove('probe');
+      expect(document.body.style.overflow).toBe('');
+    });
   });
 
   describe('Content Projection', () => {
@@ -355,6 +449,62 @@ describe('ModalComponent', () => {
       component.closeModal();
 
       expect(component._open()).toBe(false);
+    });
+  });
+
+  describe('Focus management', () => {
+    @Component({
+      standalone: true,
+      imports: [ModalComponent],
+      template: `
+        <button type="button" class="opener" (click)="open.set(true)">Open</button>
+        <lc-modal [open]="open()" (openChange)="open.set($event)">
+          <div slot="body"><input class="inside" /></div>
+        </lc-modal>
+      `,
+      changeDetection: ChangeDetectionStrategy.OnPush,
+    })
+    class FocusHostComponent {
+      readonly open = signal(false);
+    }
+
+    const FOCUSABLE = 'button, input, [tabindex]';
+
+    it('should move focus into the modal on open and back to the opener on close', async () => {
+      // jsdom has no layout, so the CDK would consider nothing tabbable
+      TestBed.resetTestingModule();
+      await TestBed.configureTestingModule({
+        imports: [FocusHostComponent],
+        providers: [
+          provideHttpClient(),
+          provideHttpClientTesting(),
+          {
+            provide: InteractivityChecker,
+            useValue: {
+              isFocusable: (el: Element) => el.matches(FOCUSABLE),
+              isTabbable: (el: Element) => el.matches(FOCUSABLE),
+            },
+          },
+        ],
+      }).compileComponents();
+      httpMock = TestBed.inject(HttpTestingController);
+      const hostFixture = TestBed.createComponent(FocusHostComponent);
+      hostFixture.detectChanges();
+      const opener = hostFixture.nativeElement.querySelector('.opener') as HTMLButtonElement;
+      opener.focus();
+      expect(document.activeElement).toBe(opener);
+
+      opener.click();
+      hostFixture.detectChanges();
+      await hostFixture.whenStable();
+      const modal = hostFixture.nativeElement.querySelector('.lc-modal') as HTMLElement;
+      expect(modal.contains(document.activeElement)).toBe(true);
+
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      hostFixture.detectChanges();
+      await hostFixture.whenStable();
+      expect(hostFixture.nativeElement.querySelector('.lc-modal')).toBeNull();
+      expect(document.activeElement).toBe(opener);
     });
   });
 

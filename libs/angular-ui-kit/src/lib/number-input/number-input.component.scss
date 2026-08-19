@@ -80,6 +80,30 @@
     }
   }
 
+  &__helper,
+  &__error {
+    margin: 0;
+    font-size: var(--typography-font-size-xs, 0.75rem);
+    line-height: 1.4;
+  }
+
+  &__helper {
+    color: var(--color-text-tertiary);
+  }
+
+  &__error {
+    color: var(--color-text-error);
+  }
+
+  &--error &__control {
+    border-color: var(--color-error-600);
+
+    &:focus-within {
+      border-color: var(--color-error-600);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-error-600) 20%, transparent);
+    }
+  }
+
   &--disabled {
     opacity: 0.5;
     pointer-events: none;

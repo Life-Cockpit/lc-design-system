@@ -13,11 +13,6 @@
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   color: var(--color-text-primary);
-  
-  &--required::after {
-    content: ' *';
-    color: var(--color-error);
-  }
 }
 
 // Base textarea styles
@@ -40,7 +35,7 @@
   
   &:focus {
     border-color: var(--color-primary-500);
-    box-shadow: 0 0 0 3px var(--color-primary-100);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary-500) 20%, transparent);
   }
   
   // Size variants
@@ -79,22 +74,22 @@
     
     &:focus {
       border-color: var(--color-primary-500);
-      box-shadow: 0 0 0 3px var(--color-primary-100);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary-500) 20%, transparent);
     }
   }
   
   &--filled {
-    background-color: var(--color-neutral-100);
+    background-color: var(--color-surface-sunken);
     border-color: transparent;
     
     &:hover:not(:disabled):not(:read-only) {
-      background-color: var(--color-neutral-200);
+      background-color: var(--color-surface-hover);
     }
     
     &:focus {
       background-color: var(--color-surface);
       border-color: var(--color-primary-500);
-      box-shadow: 0 0 0 3px var(--color-primary-100);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary-500) 20%, transparent);
     }
   }
   
@@ -102,21 +97,21 @@
   &--disabled {
     cursor: not-allowed;
     opacity: 0.6;
-    background-color: var(--color-neutral-100);
+    background-color: var(--color-surface-muted);
     color: var(--color-text-tertiary);
   }
   
   &--readonly {
     cursor: default;
-    background-color: var(--color-neutral-50);
+    background-color: var(--color-surface-muted);
   }
   
   &--error {
-    border-color: var(--color-error);
+    border-color: var(--color-error-600);
     
     &:focus {
-      border-color: var(--color-error);
-      box-shadow: 0 0 0 3px rgba(157, 14, 14, 0.2);
+      border-color: var(--color-error-600);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-error-600) 20%, transparent);
     }
   }
   
@@ -134,7 +129,7 @@
 
 .lc-textarea-error-message {
   font-size: var(--font-size-xs);
-  color: var(--color-error);
+  color: var(--color-text-error);
 }
 
 .lc-textarea-char-count,
@@ -149,7 +144,7 @@
   
   &--error,
   &--over-limit {
-    color: var(--color-error);
+    color: var(--color-text-error);
   }
 }
 
@@ -170,5 +165,5 @@
 }
 
 .lc-textarea-required-indicator {
-  color: var(--color-error);
+  color: var(--color-text-error);
 }

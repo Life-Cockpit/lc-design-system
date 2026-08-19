@@ -1,7 +1,39 @@
+import { Component, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { FormsModule, ReactiveFormsModule, FormControl } from '@angular/forms';
 import { RadioComponent } from './radio.component';
+
+/** Three radios sharing a name without any form binding (the way stories are written). */
+@Component({
+  standalone: true,
+  imports: [RadioComponent],
+  template: `
+    <lc-radio name="fruit" value="a" label="A" (checkedChange)="log('a', $event)" />
+    <lc-radio name="fruit" value="b" label="B" (checkedChange)="log('b', $event)" />
+    <lc-radio name="fruit" value="c" label="C" [disabled]="cDisabled()" (valueChange)="selected.set($event)" />
+    <lc-radio name="other" value="x" label="X" />
+  `,
+})
+class UnboundGroupHostComponent {
+  readonly cDisabled = signal(false);
+  readonly selected = signal('');
+  readonly log = jest.fn();
+}
+
+/** Radios driven by a single reactive FormControl. */
+@Component({
+  standalone: true,
+  imports: [RadioComponent, ReactiveFormsModule],
+  template: `
+    <lc-radio name="plan" value="a" label="A" [formControl]="control" />
+    <lc-radio name="plan" value="b" label="B" [formControl]="control" />
+    <lc-radio name="plan" value="c" label="C" [formControl]="control" />
+  `,
+})
+class FormGroupHostComponent {
+  readonly control = new FormControl('b');
+}
 
 describe('RadioComponent', () => {
   let component: RadioComponent;
@@ -87,7 +119,7 @@ describe('RadioComponent', () => {
       fixture.detectChanges();
 
       // Register onChange callback that simulates form control behavior
-      let formValue: string = '';
+      let formValue = '';
       component.registerOnChange((value: string) => {
         formValue = value;
         // Simulate form control calling writeValue on all radios
@@ -103,7 +135,7 @@ describe('RadioComponent', () => {
 
     it('should emit checkedChange event', () => {
       const spy = jest.fn();
-      component.checkedChange.subscribe(spy);
+      component.checked.subscribe(spy);
 
       inputElement.click();
       fixture.detectChanges();
@@ -131,14 +163,14 @@ describe('RadioComponent', () => {
     });
 
     it('should apply disabled attribute', () => {
-      component.disabled.set(true);
+      fixture.componentRef.setInput('disabled', true);
       fixture.detectChanges();
       expect(inputElement.disabled).toBe(true);
       expect(component.disabled()).toBe(true);
     });
 
     it('should not check when disabled', () => {
-      component.disabled.set(true);
+      fixture.componentRef.setInput('disabled', true);
       fixture.detectChanges();
 
       const initialState = component.checked();
@@ -149,11 +181,11 @@ describe('RadioComponent', () => {
     });
 
     it('should not emit checkedChange when disabled', () => {
-      component.disabled.set(true);
+      fixture.componentRef.setInput('disabled', true);
       fixture.detectChanges();
 
       const spy = jest.fn();
-      component.checkedChange.subscribe(spy);
+      component.checked.subscribe(spy);
 
       inputElement.click();
       fixture.detectChanges();
@@ -162,7 +194,7 @@ describe('RadioComponent', () => {
     });
 
     it('should have disabled CSS class', () => {
-      component.disabled.set(true);
+      fixture.componentRef.setInput('disabled', true);
       fixture.detectChanges();
       expect(labelElement.classList).toContain('radio-disabled');
     });
@@ -296,7 +328,7 @@ describe('RadioComponent', () => {
     });
 
     it('should set aria-disabled when disabled', () => {
-      component.disabled.set(true);
+      fixture.componentRef.setInput('disabled', true);
       fixture.detectChanges();
       expect(inputElement.getAttribute('aria-disabled')).toBe('true');
     });
@@ -364,7 +396,7 @@ describe('RadioComponent', () => {
     it('should disable via CVA', () => {
       component.setDisabledState(true);
       fixture.detectChanges();
-      expect(component.disabled()).toBe(true);
+      expect(component.isDisabled()).toBe(true);
       expect(inputElement.disabled).toBe(true);
     });
   });
@@ -398,7 +430,7 @@ describe('RadioComponent', () => {
       component.setDisabledState(control.disabled);
       fixture.detectChanges();
 
-      expect(component.disabled()).toBe(true);
+      expect(component.isDisabled()).toBe(true);
     });
   });
 
@@ -409,7 +441,7 @@ describe('RadioComponent', () => {
     });
 
     it('should not be focusable when disabled', () => {
-      component.disabled.set(true);
+      fixture.componentRef.setInput('disabled', true);
       fixture.detectChanges();
       expect(inputElement.tabIndex).toBe(-1);
     });
@@ -506,5 +538,182 @@ describe('RadioComponent', () => {
       document.body.removeChild(input1);
       document.body.removeChild(input2);
     });
+  });
+
+  describe('Declarative inputs', () => {
+    it('should accept checked as an input', () => {
+      fixture.componentRef.setInput('checked', true);
+      fixture.detectChanges();
+      expect(inputElement.checked).toBe(true);
+      expect(labelElement.classList).toContain('radio-checked');
+    });
+
+    it('should accept disabled as an input', () => {
+      fixture.componentRef.setInput('disabled', true);
+      fixture.detectChanges();
+      expect(inputElement.disabled).toBe(true);
+      expect(component.isDisabled()).toBe(true);
+    });
+
+    it('should stay disabled while either the input or the form disables it', () => {
+      fixture.componentRef.setInput('disabled', true);
+      component.setDisabledState(true);
+      fixture.detectChanges();
+      expect(inputElement.disabled).toBe(true);
+
+      component.setDisabledState(false);
+      fixture.detectChanges();
+      expect(inputElement.disabled).toBe(true);
+
+      fixture.componentRef.setInput('disabled', false);
+      fixture.detectChanges();
+      expect(inputElement.disabled).toBe(false);
+    });
+
+    it('should let a form write override a checked input binding', () => {
+      fixture.componentRef.setInput('checked', true);
+      fixture.componentRef.setInput('value', 'a');
+      fixture.detectChanges();
+      component.writeValue('b');
+      fixture.detectChanges();
+      expect(inputElement.checked).toBe(false);
+    });
+  });
+
+  describe('Described-by wiring', () => {
+    it('should link help text via aria-describedby', () => {
+      fixture.componentRef.setInput('helpText', 'Some help');
+      fixture.detectChanges();
+      const help = fixture.nativeElement.querySelector('.radio-help-text');
+      expect(help.id).toBe(`${component.id()}-help`);
+      expect(inputElement.getAttribute('aria-describedby')).toBe(help.id);
+    });
+
+    it('should link error message via aria-describedby and set aria-invalid', () => {
+      fixture.componentRef.setInput('error', true);
+      fixture.componentRef.setInput('errorMessage', 'Nope');
+      fixture.detectChanges();
+      const err = fixture.nativeElement.querySelector('.radio-error-message');
+      expect(err.id).toBe(`${component.id()}-error`);
+      expect(inputElement.getAttribute('aria-describedby')).toBe(err.id);
+      expect(inputElement.getAttribute('aria-invalid')).toBe('true');
+    });
+
+    it('should keep consumer-supplied aria-describedby ids', () => {
+      fixture.componentRef.setInput('ariaDescribedBy', 'ext');
+      fixture.componentRef.setInput('helpText', 'Some help');
+      fixture.detectChanges();
+      expect(inputElement.getAttribute('aria-describedby')).toBe(`ext ${component.id()}-help`);
+    });
+  });
+});
+
+describe('RadioComponent group without a form control', () => {
+  let fixture: ComponentFixture<UnboundGroupHostComponent>;
+  let host: UnboundGroupHostComponent;
+  let inputs: HTMLInputElement[];
+  let labels: HTMLLabelElement[];
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({ imports: [UnboundGroupHostComponent] }).compileComponents();
+    fixture = TestBed.createComponent(UnboundGroupHostComponent);
+    host = fixture.componentInstance;
+    fixture.detectChanges();
+    inputs = Array.from(fixture.nativeElement.querySelectorAll('input[type="radio"]'));
+    labels = Array.from(fixture.nativeElement.querySelectorAll('label'));
+  });
+
+  it('should show only the last clicked radio as checked (click A then B)', () => {
+    inputs[0].click();
+    fixture.detectChanges();
+    expect(labels[0].classList).toContain('radio-checked');
+
+    inputs[1].click();
+    fixture.detectChanges();
+    expect(labels[0].classList).not.toContain('radio-checked');
+    expect(labels[1].classList).toContain('radio-checked');
+    expect(labels[2].classList).not.toContain('radio-checked');
+    expect(inputs[0].checked).toBe(false);
+    expect(inputs[1].checked).toBe(true);
+  });
+
+  it('should emit checkedChange on the newly checked and the unchecked sibling', () => {
+    inputs[0].click();
+    inputs[1].click();
+    fixture.detectChanges();
+    expect(host.log.mock.calls).toEqual([
+      ['a', true],
+      ['b', true],
+      ['a', false],
+    ]);
+  });
+
+  it('should not touch radios of another group', () => {
+    inputs[3].click();
+    fixture.detectChanges();
+    inputs[0].click();
+    fixture.detectChanges();
+    expect(labels[3].classList).toContain('radio-checked');
+    expect(labels[0].classList).toContain('radio-checked');
+  });
+
+  it('should emit valueChange with the radio value', () => {
+    inputs[2].click();
+    fixture.detectChanges();
+    expect(host.selected()).toBe('c');
+  });
+
+  it('should honour a disabled binding', () => {
+    host.cDisabled.set(true);
+    fixture.detectChanges();
+    expect(inputs[2].disabled).toBe(true);
+    expect(labels[2].classList).toContain('radio-disabled');
+  });
+});
+
+describe('RadioComponent group bound to a FormControl', () => {
+  let fixture: ComponentFixture<FormGroupHostComponent>;
+  let host: FormGroupHostComponent;
+  let inputs: HTMLInputElement[];
+  let labels: HTMLLabelElement[];
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({ imports: [FormGroupHostComponent] }).compileComponents();
+    fixture = TestBed.createComponent(FormGroupHostComponent);
+    host = fixture.componentInstance;
+    fixture.detectChanges();
+    inputs = Array.from(fixture.nativeElement.querySelectorAll('input[type="radio"]'));
+    labels = Array.from(fixture.nativeElement.querySelectorAll('label'));
+  });
+
+  it('should render the initial control value', () => {
+    expect(inputs[1].checked).toBe(true);
+    expect(labels[1].classList).toContain('radio-checked');
+    expect(labels[0].classList).not.toContain('radio-checked');
+  });
+
+  it('should follow setValue and reset', () => {
+    host.control.setValue('c');
+    fixture.detectChanges();
+    expect(labels[2].classList).toContain('radio-checked');
+    expect(labels[1].classList).not.toContain('radio-checked');
+
+    host.control.reset();
+    fixture.detectChanges();
+    expect(labels.some((l) => l.classList.contains('radio-checked'))).toBe(false);
+  });
+
+  it('should push a click into the control and unmark the previous radio', () => {
+    inputs[0].click();
+    fixture.detectChanges();
+    expect(host.control.value).toBe('a');
+    expect(labels[0].classList).toContain('radio-checked');
+    expect(labels[1].classList).not.toContain('radio-checked');
+  });
+
+  it('should disable all radios when the control is disabled', () => {
+    host.control.disable();
+    fixture.detectChanges();
+    expect(inputs.every((i) => i.disabled)).toBe(true);
   });
 });

@@ -87,4 +87,56 @@ describe('SparklineComponent', () => {
     expect(svg.getAttribute('height')).toBe('50');
     expect(svg.getAttribute('viewBox')).toContain('0 0 200 50');
   });
+
+  describe('width, accessibility and edge cases', () => {
+    it('is an inline box of exactly width px by default', () => {
+      fixture.componentRef.setInput('data', [1, 2, 3]);
+      fixture.componentRef.setInput('width', 160);
+      fixture.detectChanges();
+      expect(fixture.nativeElement.style.width).toBe('160px');
+      expect(fixture.nativeElement.classList.contains('lc-sparkline--fluid')).toBe(false);
+      expect(fixture.nativeElement.querySelector('svg').getAttribute('viewBox')).toBe('0 0 160 32');
+    });
+
+    it('stretches to the container when fluid', () => {
+      fixture.componentRef.setInput('data', [1, 2, 3]);
+      fixture.componentRef.setInput('fluid', true);
+      fixture.detectChanges();
+      expect(fixture.nativeElement.style.width).toBe('');
+      expect(fixture.nativeElement.classList.contains('lc-sparkline--fluid')).toBe(true);
+    });
+
+    it('announces point count, min, max and last value', () => {
+      fixture.componentRef.setInput('data', [4, 8, 5, 12, 9]);
+      fixture.detectChanges();
+      const svg = fixture.nativeElement.querySelector('svg');
+      expect(svg.getAttribute('aria-label')).toBe('Sparkline: 5 points, min 4, max 12, last 9');
+      expect(svg.querySelector('title').textContent).toBe('Sparkline: 5 points, min 4, max 12, last 9');
+    });
+
+    it('honours ariaLabel and formatValue', () => {
+      fixture.componentRef.setInput('data', [0.5, 1]);
+      fixture.componentRef.setInput('formatValue', (v: number) => `${v * 100}%`);
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('svg').getAttribute('aria-label')).toBe('Sparkline: 2 points, min 50%, max 100%, last 100%');
+      fixture.componentRef.setInput('ariaLabel', 'Weekly trend');
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('svg').getAttribute('aria-label')).toBe('Weekly trend');
+    });
+
+    it('renders no NaN for NaN values, flat data or an empty array', () => {
+      fixture.componentRef.setInput('data', [1, NaN, 3]);
+      fixture.componentRef.setInput('filled', true);
+      fixture.componentRef.setInput('showEndDot', true);
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('svg').innerHTML).not.toMatch(/NaN|Infinity/);
+      fixture.componentRef.setInput('data', [5, 5, 5]);
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('svg').innerHTML).not.toMatch(/NaN|Infinity/);
+      fixture.componentRef.setInput('data', []);
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('.lc-sparkline__line')).toBeFalsy();
+      expect(fixture.nativeElement.querySelector('svg').getAttribute('aria-label')).toBe('Sparkline: no data');
+    });
+  });
 });

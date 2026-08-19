@@ -14,7 +14,7 @@
   flex: 0 0 280px;
   display: flex;
   flex-direction: column;
-  background: var(--color-neutral-50);
+  background: var(--color-surface-2);
   border-radius: 8px;
   padding: 8px;
   transition: background 0.15s, box-shadow 0.15s;
@@ -54,7 +54,7 @@
 
 .lc-kanban__column-count {
   font-size: 0.6875rem;
-  background: var(--color-neutral-200);
+  background: var(--color-surface-hover);
   color: var(--color-text-secondary);
   padding: 1px 6px;
   border-radius: 10px;
@@ -81,7 +81,7 @@
 
 .lc-kanban__card {
   background: var(--color-surface);
-  border: 1px solid var(--color-neutral-200);
+  border: 1px solid var(--color-border);
   border-radius: 6px;
   padding: 10px;
   cursor: grab;
@@ -89,6 +89,12 @@
 
   &:hover {
     box-shadow: var(--elevation-1);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary-500) 20%, transparent);
+    border-color: var(--color-primary-500);
   }
 
   &--dragging {
@@ -99,6 +105,11 @@
     cursor: grabbing;
   }
 
+  // Readonly boards cannot be rearranged; the card is still activatable.
+  &--readonly,
+  &--readonly:active {
+    cursor: pointer;
+  }
 }
 
 .lc-kanban__card-priority {
@@ -163,7 +174,7 @@
   align-items: center;
   justify-content: center;
   min-height: 60px;
-  border: 2px dashed var(--color-neutral-200);
+  border: 2px dashed var(--color-border);
   border-radius: 6px;
   font-size: 0.75rem;
   color: var(--color-text-tertiary);

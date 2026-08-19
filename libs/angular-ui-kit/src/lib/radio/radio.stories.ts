@@ -23,6 +23,7 @@ const meta: Meta<RadioComponent> = {
     errorMessage: { description: 'Error message displayed below the radio' },
     required: { description: 'Marks the field as required' },
     disabled: { control: 'boolean', description: 'Prevents interaction' },
+    checked: { control: 'boolean', description: 'Checked state (two-way bindable via [(checked)])' },
   },
 
   parameters: {
@@ -144,10 +145,10 @@ export const PaymentMethod: Story = {
       <fieldset style="border: none; padding: 0; margin: 0; max-width: 360px;">
         <legend style="font-size: 14px; font-weight: 600; margin-bottom: 12px;">Payment Method</legend>
         <div style="display: flex; flex-direction: column; gap: 10px;">
-          <lc-radio name="payment" value="card" label="Credit / Debit Card" helpText="Visa, Mastercard, Amex"></lc-radio>
-          <lc-radio name="payment" value="paypal" label="PayPal" helpText="Pay with your PayPal balance"></lc-radio>
+          <lc-radio name="payment" value="card" label="Credit / Debit Card" helpText="All major card networks" [checked]="true"></lc-radio>
+          <lc-radio name="payment" value="wallet" label="Digital Wallet" helpText="Pay with your wallet balance"></lc-radio>
           <lc-radio name="payment" value="bank" label="Bank Transfer" helpText="Direct bank transfer (1-2 days)"></lc-radio>
-          <lc-radio name="payment" value="crypto" label="Cryptocurrency" [disabled]="true" helpText="Coming soon"></lc-radio>
+          <lc-radio name="payment" value="voucher" label="Voucher" [disabled]="true" helpText="Coming soon"></lc-radio>
         </div>
       </fieldset>`,
   }),

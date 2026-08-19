@@ -1,6 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { PaginationComponent } from './pagination.component';
 import { By } from '@angular/platform-browser';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 
 describe('PaginationComponent', () => {
   let component: PaginationComponent;
@@ -406,6 +408,56 @@ describe('PaginationComponent', () => {
 
       fixture.componentRef.setInput('pageSize', 20);
       expect(component.totalPages()).toBe(5);
+    });
+  });
+
+  describe('UI strings (i18n inputs)', () => {
+    beforeEach(() => {
+      fixture.componentRef.setInput('currentPage', 2);
+      fixture.componentRef.setInput('totalItems', 100);
+      fixture.componentRef.setInput('pageSize', 10);
+      fixture.componentRef.setInput('showInfo', true);
+      fixture.componentRef.setInput('previousLabel', 'Zurück');
+      fixture.componentRef.setInput('nextLabel', 'Weiter');
+      fixture.componentRef.setInput('previousAriaLabel', 'Vorherige Seite');
+      fixture.componentRef.setInput('nextAriaLabel', 'Nächste Seite');
+      fixture.componentRef.setInput('pageAriaLabel', 'Seite {page}');
+      fixture.componentRef.setInput('infoText', '{first}–{last} von {total}');
+      fixture.detectChanges();
+    });
+
+    it('should render the previous / next labels from the inputs', () => {
+      const prev = fixture.debugElement.query(By.css('.lc-pagination__button--prev'));
+      const next = fixture.debugElement.query(By.css('.lc-pagination__button--next'));
+      expect(prev.nativeElement.textContent.trim()).toBe('Zurück');
+      expect(next.nativeElement.textContent.trim()).toBe('Weiter');
+      expect(prev.nativeElement.getAttribute('aria-label')).toBe('Vorherige Seite');
+      expect(next.nativeElement.getAttribute('aria-label')).toBe('Nächste Seite');
+    });
+
+    it('should build page button names from the pageAriaLabel template', () => {
+      const pageButtons = fixture.debugElement.queryAll(By.css('.lc-pagination__button--page'));
+      expect(pageButtons[0]?.nativeElement.getAttribute('aria-label')).toBe('Seite 1');
+      expect(pageButtons[1]?.nativeElement.getAttribute('aria-label')).toBe('Seite 2');
+    });
+
+    it('should build the info line from the infoText template', () => {
+      const info = fixture.debugElement.query(By.css('.lc-pagination__info'));
+      expect(info.nativeElement.textContent.trim()).toBe('11–20 von 100');
+    });
+
+    it('should hide the decorative chevron icons from assistive tech', () => {
+      const icons = fixture.debugElement.queryAll(By.css('.lc-pagination__icon'));
+      expect(icons.length).toBe(2);
+      icons.forEach((icon) => expect(icon.nativeElement.getAttribute('aria-hidden')).toBe('true'));
+    });
+  });
+
+  describe('Stylesheet', () => {
+    it('should only reference existing transition tokens', () => {
+      const scss = readFileSync(join(__dirname, 'pagination.component.scss'), 'utf8');
+      expect(scss).not.toMatch(/--transition-(fast|normal|slow)/);
+      expect(scss).toContain('var(--animation-duration-base)');
     });
   });
 

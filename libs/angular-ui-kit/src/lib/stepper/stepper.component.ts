@@ -15,6 +15,8 @@ export interface StepperStep {
 
 export type StepState = 'pending' | 'active' | 'completed';
 
+let nextStepperId = 0;
+
 /**
  * Stepper component for multi-step wizard workflows.
  *
@@ -26,6 +28,8 @@ export type StepState = 'pending' | 'active' | 'completed';
  * - Linear mode restricting navigation to sequential steps
  * - Two-way active step binding
  * - Content projection for step body
+ * - Accessible: steps are real buttons in an ordered list, the active step
+ *   carries `aria-current="step"`, non-navigable steps are disabled
  *
  * @example
  * ```html
@@ -44,28 +48,41 @@ export type StepState = 'pending' | 'active' | 'completed';
 })
 export class StepperComponent {
   /** Step definitions */
-  steps = input.required<readonly StepperStep[]>();
+  readonly steps = input.required<readonly StepperStep[]>();
 
   /** Active step index (0-based, two-way binding) */
-  activeStep = model<number>(0);
+  readonly activeStep = model<number>(0);
 
   /** Whether completed steps can be clicked to navigate back */
-  linear = input<boolean>(true);
+  readonly linear = input<boolean>(true);
 
   /** Orientation */
-  orientation = input<'horizontal' | 'vertical'>('horizontal');
+  readonly orientation = input<'horizontal' | 'vertical'>('horizontal');
+
+  /** Text shown under optional steps */
+  readonly optionalLabel = input('Optional');
+
+  /**
+   * Accessible name template for each step button. Placeholders: `{n}`
+   * (1-based step number), `{m}` (step count), `{label}`. Optional steps get
+   * `optionalLabel` appended.
+   */
+  readonly stepAriaLabel = input('Step {n} of {m}: {label}');
 
   /** Emitted when active step changes */
-  stepChange = output<number>();
+  readonly stepChange = output<number>();
+
+  /** Per-instance id prefix so description ids stay unique across steppers */
+  private readonly instanceId = `lc-stepper-${++nextStepperId}`;
 
   /** Computed total step count */
-  totalSteps = computed(() => this.steps().length);
+  readonly totalSteps = computed(() => this.steps().length);
 
   /** Whether we're on the first step */
-  isFirstStep = computed(() => this.activeStep() === 0);
+  readonly isFirstStep = computed(() => this.activeStep() === 0);
 
   /** Whether we're on the last step */
-  isLastStep = computed(() => this.activeStep() === this.totalSteps() - 1);
+  readonly isLastStep = computed(() => this.activeStep() === this.totalSteps() - 1);
 
   /** Get the state of a step */
   getStepState(index: number): StepState {
@@ -75,19 +92,37 @@ export class StepperComponent {
     return 'pending';
   }
 
-  /** Navigate to a specific step (only if completed or next) */
+  /**
+   * Whether the step at `index` can be activated by the user. In linear mode
+   * only completed steps (and the active one) are reachable.
+   */
+  isStepNavigable(index: number): boolean {
+    return !this.linear() || index <= this.activeStep();
+  }
+
+  /** Accessible name for the step button at `index` */
+  getStepAriaLabel(index: number): string {
+    const step = this.steps()[index];
+    if (!step) return '';
+    const name = this.stepAriaLabel()
+      .replace('{n}', String(index + 1))
+      .replace('{m}', String(this.totalSteps()))
+      .replace('{label}', step.label);
+    return step.optional ? `${name}, ${this.optionalLabel()}` : name;
+  }
+
+  /** Id of the description element for `aria-describedby` (or null) */
+  getDescriptionId(index: number): string | null {
+    return this.steps()[index]?.description ? `${this.instanceId}-desc-${index}` : null;
+  }
+
+  /** Navigate to a specific step (only if navigable, see `isStepNavigable`) */
   goToStep(index: number): void {
-    const current = this.activeStep();
-    if (this.linear()) {
-      // In linear mode, only allow going to completed steps or next
-      if (index <= current) {
-        this.activeStep.set(index);
-        this.stepChange.emit(index);
-      }
-    } else {
-      this.activeStep.set(index);
-      this.stepChange.emit(index);
+    if (index === this.activeStep() || !this.isStepNavigable(index)) {
+      return;
     }
+    this.activeStep.set(index);
+    this.stepChange.emit(index);
   }
 
   /** Go to next step */

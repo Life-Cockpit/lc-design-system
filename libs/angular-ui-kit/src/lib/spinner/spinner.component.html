@@ -2,6 +2,8 @@
   <div class="spinner__circle"></div>
   @if (message()) {
     <p class="spinner__message">{{ message() }}</p>
+  } @else {
+    <!-- Screen-reader fallback when no visible message is given. -->
+    <span class="sr-only spinner__sr-only">Loading</span>
   }
-  <span class="sr-only">Loading</span>
 </div>

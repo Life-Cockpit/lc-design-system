@@ -1,19 +1,22 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  input,
-  computed,
-  signal,
-  OnInit,
-  OnDestroy,
-  inject,
   ElementRef,
+  OnDestroy,
   ViewEncapsulation,
+  computed,
+  effect,
+  inject,
+  input,
+  signal,
+  untracked,
 } from '@angular/core';
-import { DomSanitizer, SafeHtml, SafeResourceUrl } from '@angular/platform-browser';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { IconComponent } from '../icon/icon.component';
 import { SpinnerComponent } from '../spinner/spinner.component';
 import { CodeBlockComponent, CodeBlockLanguage } from '../code-block/code-block.component';
+import { MarkdownComponent } from '../markdown/markdown.component';
+import { isSafeResourceUrl } from '../shared/safe-url';
 
 export type DocumentType = 'pdf' | 'markdown' | 'image' | 'text' | 'code' | 'auto';
 
@@ -69,219 +72,24 @@ const TYPE_ICONS: Record<string, string> = {
   unknown: 'document',
 };
 
-// ── Markdown Parser ──────────────────────────────────────────────────────────
-
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
-function parseMarkdownInline(text: string): string {
-  return text
-    // Images
-    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" class="doc-viewer__md-img" />')
-    // Links
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
-    // Bold + italic
-    .replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
-    // Bold
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    // Italic
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    // Strikethrough
-    .replace(/~~(.+?)~~/g, '<del>$1</del>')
-    // Inline code
-    .replace(/`([^`]+)`/g, '<code class="doc-viewer__md-inline-code">$1</code>');
-}
-
-function parseMarkdown(md: string): string {
-  const lines = md.split('\n');
-  const html: string[] = [];
-  let inCodeBlock = false;
-  let codeBlockLang = '';
-  let codeLines: string[] = [];
-  let inList: 'ul' | 'ol' | null = null;
-  let inBlockquote = false;
-  let paragraph: string[] = [];
-
-  const flushParagraph = () => {
-    if (paragraph.length > 0) {
-      html.push(`<p>${parseMarkdownInline(paragraph.join(' '))}</p>`);
-      paragraph = [];
-    }
-  };
-
-  const flushList = () => {
-    if (inList) {
-      html.push(`</${inList}>`);
-      inList = null;
-    }
-  };
-
-  const flushBlockquote = () => {
-    if (inBlockquote) {
-      html.push('</blockquote>');
-      inBlockquote = false;
-    }
-  };
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-
-    // Code blocks
-    if (line.trimStart().startsWith('```')) {
-      if (!inCodeBlock) {
-        flushParagraph();
-        flushList();
-        flushBlockquote();
-        inCodeBlock = true;
-        codeBlockLang = line.trim().slice(3).trim();
-        codeLines = [];
-      } else {
-        html.push(
-          `<pre class="doc-viewer__md-code-block"><code class="language-${escapeHtml(codeBlockLang)}">${escapeHtml(codeLines.join('\n'))}</code></pre>`
-        );
-        inCodeBlock = false;
-        codeBlockLang = '';
-      }
-      continue;
-    }
-    if (inCodeBlock) {
-      codeLines.push(line);
-      continue;
-    }
-
-    // Horizontal rule
-    if (/^(\*{3,}|-{3,}|_{3,})\s*$/.test(line.trim())) {
-      flushParagraph();
-      flushList();
-      flushBlockquote();
-      html.push('<hr />');
-      continue;
-    }
-
-    // Headings
-    const headingMatch = line.match(/^(#{1,6})\s+(.+)$/);
-    if (headingMatch) {
-      flushParagraph();
-      flushList();
-      flushBlockquote();
-      const level = headingMatch[1].length;
-      html.push(`<h${level}>${parseMarkdownInline(headingMatch[2])}</h${level}>`);
-      continue;
-    }
-
-    // Blockquotes
-    if (line.startsWith('> ')) {
-      flushParagraph();
-      flushList();
-      if (!inBlockquote) {
-        html.push('<blockquote class="doc-viewer__md-blockquote">');
-        inBlockquote = true;
-      }
-      html.push(`<p>${parseMarkdownInline(line.slice(2))}</p>`);
-      continue;
-    } else if (inBlockquote) {
-      flushBlockquote();
-    }
-
-    // Unordered lists
-    const ulMatch = line.match(/^(\s*)[-*+]\s+(.+)$/);
-    if (ulMatch) {
-      flushParagraph();
-      if (inList !== 'ul') {
-        flushList();
-        html.push('<ul>');
-        inList = 'ul';
-      }
-      html.push(`<li>${parseMarkdownInline(ulMatch[2])}</li>`);
-      continue;
-    }
-
-    // Ordered lists
-    const olMatch = line.match(/^(\s*)\d+\.\s+(.+)$/);
-    if (olMatch) {
-      flushParagraph();
-      if (inList !== 'ol') {
-        flushList();
-        html.push('<ol>');
-        inList = 'ol';
-      }
-      html.push(`<li>${parseMarkdownInline(olMatch[2])}</li>`);
-      continue;
-    }
-
-    // Close list if not a list item
-    if (inList) flushList();
-
-    // Tables
-    if (line.includes('|') && line.trim().startsWith('|')) {
-      flushParagraph();
-      const tableLines: string[] = [line];
-      let j = i + 1;
-      while (j < lines.length && lines[j].includes('|') && lines[j].trim().startsWith('|')) {
-        tableLines.push(lines[j]);
-        j++;
-      }
-      i = j - 1;
-
-      if (tableLines.length >= 2) {
-        html.push('<table class="doc-viewer__md-table">');
-        // Header
-        const headerCells = tableLines[0].split('|').filter(c => c.trim());
-        html.push('<thead><tr>');
-        headerCells.forEach(c => html.push(`<th>${parseMarkdownInline(c.trim())}</th>`));
-        html.push('</tr></thead>');
-        // Body (skip separator row)
-        html.push('<tbody>');
-        for (let k = 2; k < tableLines.length; k++) {
-          const cells = tableLines[k].split('|').filter(c => c.trim());
-          html.push('<tr>');
-          cells.forEach(c => html.push(`<td>${parseMarkdownInline(c.trim())}</td>`));
-          html.push('</tr>');
-        }
-        html.push('</tbody></table>');
-      }
-      continue;
-    }
-
-    // Empty line
-    if (line.trim() === '') {
-      flushParagraph();
-      continue;
-    }
-
-    // Paragraph text
-    paragraph.push(line);
-  }
-
-  // Flush remaining
-  if (inCodeBlock) {
-    html.push(`<pre class="doc-viewer__md-code-block"><code>${escapeHtml(codeLines.join('\n'))}</code></pre>`);
-  }
-  flushParagraph();
-  flushList();
-  flushBlockquote();
-
-  return html.join('\n');
-}
-
 /**
  * Document viewer component for previewing various file types.
  *
  * Features:
  * - Auto-detects file type from URL extension or explicit type input
  * - PDF rendering via browser-native iframe viewer
- * - Markdown parsing and rendering with full formatting support
+ * - Markdown rendered through `lc-markdown` (escaped and sanitised — a fetched
+ *   `.md` file cannot inject markup)
  * - Image display with zoom controls (25% – 500%)
  * - Code display using the built-in code block component
  * - Plain text display
  * - Toolbar with filename, type badge, zoom, download, and fullscreen
  * - Loading and error states
  * - Dark/light theme support
+ *
+ * `src` is only ever embedded (iframe) or downloaded when it is a http(s),
+ * blob: or relative URL — or a `data:application/pdf` — so a `javascript:` URL
+ * handed in as a document can neither run in the frame nor be "downloaded".
  *
  * @example
  * ```html
@@ -293,7 +101,7 @@ function parseMarkdown(md: string): string {
 @Component({
   selector: 'lc-document-viewer',
   standalone: true,
-  imports: [IconComponent, SpinnerComponent, CodeBlockComponent],
+  imports: [IconComponent, SpinnerComponent, CodeBlockComponent, MarkdownComponent],
   templateUrl: './document-viewer.component.html',
   styleUrls: ['./document-viewer.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -303,7 +111,7 @@ function parseMarkdown(md: string): string {
     '[style.height]': 'height()',
   },
 })
-export class DocumentViewerComponent implements OnInit, OnDestroy {
+export class DocumentViewerComponent implements OnDestroy {
   /** URL of the document to display (for PDF, images, or remote files) */
   readonly src = input<string>('');
 
@@ -388,21 +196,22 @@ export class DocumentViewerComponent implements OnInit, OnDestroy {
     return ext && EXTENSION_LANGUAGE_MAP[ext] ? EXTENSION_LANGUAGE_MAP[ext] : 'text';
   });
 
-  /** Sanitized src URL for iframe/img embedding */
+  /** Whether `src` may be embedded in a frame or downloaded at all. */
+  protected srcEmbeddable = computed(() => isSafeResourceUrl(this.src()));
+
+  /**
+   * `src` as the iframe accepts it. Bypassing the resource-URL check is what
+   * lets a PDF URL into an iframe at all; it is only done for URLs that passed
+   * `isSafeResourceUrl` — anything else resolves to an empty frame.
+   */
   protected safeSrc = computed<SafeResourceUrl>(() => {
-    return this.sanitizer.bypassSecurityTrustResourceUrl(this.src());
+    const src = this.src();
+    return this.sanitizer.bypassSecurityTrustResourceUrl(this.srcEmbeddable() ? src : 'about:blank');
   });
 
   /** Effective content: direct content input or fetched content */
   protected effectiveContent = computed(() => {
     return this.content() || this.fetchedContent();
-  });
-
-  /** Rendered markdown HTML */
-  protected renderedMarkdown = computed<SafeHtml>(() => {
-    const md = this.effectiveContent();
-    if (!md) return '';
-    return this.sanitizer.bypassSecurityTrustHtml(parseMarkdown(md));
   });
 
   /** Image transform style for zoom */
@@ -419,10 +228,29 @@ export class DocumentViewerComponent implements OnInit, OnDestroy {
 
   // ── Lifecycle ────────────────────────────────────────────────────────────
 
-  ngOnInit(): void {
-    const type = this.resolvedType();
-    const src = this.src();
-    const content = this.content();
+  constructor() {
+    // Load whenever the document changes — not just once. A new `src` starts a
+    // fresh load (and cancels the one still in flight, so a slow old response
+    // can't overwrite the new document), resets any earlier error, and re-enters
+    // the loading state; a `content` string short-circuits all of that.
+    effect((onCleanup) => {
+      const type = this.resolvedType();
+      const src = this.src();
+      const content = this.content();
+      const controller = typeof AbortController === 'function' ? new AbortController() : null;
+      onCleanup(() => controller?.abort());
+      untracked(() => this.load(type, src, content, controller));
+    });
+  }
+
+  private load(
+    type: DocumentType | 'unknown',
+    src: string,
+    content: string,
+    controller: AbortController | null,
+  ): void {
+    this.error.set(null);
+    this.fetchedContent.set('');
 
     if (content) {
       this.loading.set(false);
@@ -435,15 +263,25 @@ export class DocumentViewerComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // PDF and images are embedded directly — no fetch needed
+    // PDF and images are embedded directly — no fetch needed. They do have to be
+    // embeddable, though: a `javascript:` (or other exotic) URL is refused up
+    // front instead of being handed to an iframe.
     if (type === 'pdf' || type === 'image') {
+      if (!this.srcEmbeddable()) {
+        this.loading.set(false);
+        this.error.set('This document URL cannot be displayed');
+        return;
+      }
+      // Not "loading": the frame/img element only exists once loading is off,
+      // and it is its own load event that would end the state — a deadlock.
       this.loading.set(false);
       return;
     }
 
     // Fetch text-based content
     if (type === 'markdown' || type === 'text' || type === 'code') {
-      this.fetchContent(src);
+      this.loading.set(true);
+      this.fetchContent(src, controller);
     } else {
       this.loading.set(false);
     }
@@ -471,7 +309,9 @@ export class DocumentViewerComponent implements OnInit, OnDestroy {
 
   protected download(): void {
     const src = this.src();
-    if (!src) return;
+    // A download is a click the user never sees the target of — only URLs that
+    // could be embedded are worth clicking.
+    if (!src || !this.srcEmbeddable()) return;
     const a = document.createElement('a');
     a.href = src;
     a.download = this.displayName();
@@ -527,16 +367,25 @@ export class DocumentViewerComponent implements OnInit, OnDestroy {
     }
   }
 
-  private async fetchContent(url: string): Promise<void> {
+  private async fetchContent(url: string, controller: AbortController | null): Promise<void> {
+    if (typeof fetch !== 'function') {
+      this.loading.set(false);
+      this.error.set('Failed to load document: fetch is not available');
+      return;
+    }
     try {
-      const response = await fetch(url);
+      const response = await fetch(url, controller ? { signal: controller.signal } : undefined);
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
       const text = await response.text();
+      // A response for a document that has since been replaced is dropped: the
+      // effect that replaced it aborted this controller and started its own load.
+      if (controller?.signal.aborted) return;
       this.fetchedContent.set(text);
       this.loading.set(false);
     } catch (err) {
+      if (controller?.signal.aborted) return;
       this.loading.set(false);
       this.error.set(`Failed to load document: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }

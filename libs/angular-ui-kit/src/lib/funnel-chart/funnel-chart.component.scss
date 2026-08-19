@@ -19,16 +19,26 @@
   }
 }
 
+// Ink comes from the template (`fill` attribute): picked from a literal step
+// colour's luminance, or `--color-text-primary` for token fills.
 .lc-funnel-chart__label {
   font-size: 0.75rem;
   font-weight: 600;
-  fill: white;
   pointer-events: none;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .lc-funnel-chart__value {
   font-size: 0.625rem;
-  fill: rgba(255, 255, 255, 0.85);
   pointer-events: none;
+}
+
+// A token fill resolves differently per theme, so no single ink is guaranteed
+// to contrast with it. `paint-order: stroke` draws this stroke behind the
+// glyphs — a halo in the page surface that keeps primary text readable on any
+// step colour in both themes.
+.lc-funnel-chart__text--halo {
+  paint-order: stroke;
+  stroke: var(--color-surface);
+  stroke-width: 3px;
+  stroke-linejoin: round;
 }

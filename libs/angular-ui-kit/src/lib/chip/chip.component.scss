@@ -14,11 +14,38 @@
   transition: background-color 0.15s ease, color 0.15s ease, opacity 0.15s ease;
   cursor: default;
   user-select: none;
+  // Gap between content, action and remove button (per-size below).
+  --lc-chip-gap: 0.375rem;
+  gap: var(--lc-chip-gap);
 
   &__content {
     display: inline-flex;
     align-items: center;
-    gap: 0.375rem;
+    gap: var(--lc-chip-gap);
+  }
+
+  // Activate button of a clickable + removable chip: a sibling of the remove
+  // button, restyled to look like plain chip content.
+  &__action {
+    display: inline-flex;
+    align-items: center;
+    padding: 0;
+    margin: 0;
+    background: none;
+    border: none;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+    border-radius: var(--border-radius-full, 9999px);
+
+    &:focus-visible {
+      outline: 2px solid var(--color-primary-500);
+      outline-offset: 2px;
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+    }
   }
 
   &__label {
@@ -44,7 +71,7 @@
       opacity: 1;
     }
 
-    &:focus {
+    &:focus-visible {
       outline: 2px solid currentColor;
       outline-offset: 2px;
       border-radius: 50%;
@@ -61,10 +88,7 @@
     padding: 0.25rem 0.625rem;
     font-size: var(--typography-font-size-sm, 0.875rem);
     height: 1.5rem;
-
-    .lc-chip__content {
-      gap: 0.25rem;
-    }
+    --lc-chip-gap: 0.25rem;
   }
 
   &--md {
@@ -77,10 +101,7 @@
     padding: 0.5rem 1rem;
     font-size: var(--typography-font-size-base, 1rem);
     height: 2.5rem;
-
-    .lc-chip__content {
-      gap: 0.5rem;
-    }
+    --lc-chip-gap: 0.5rem;
   }
 
   // DS2.0: tinted fill + hairline border. Variants only set the theming hooks,
@@ -135,22 +156,17 @@
     --lc-chip-border: rgba(59, 101, 136, 0.42);
   }
 
-  // Removable state
+  // Removable state — the wrapper itself is not interactive (only the remove
+  // button is), so it keeps the default cursor; the class stays as a hook.
   &--removable {
-    cursor: pointer;
-
     &:hover:not(&--disabled) {
       opacity: 0.9;
     }
-
-    &:focus-visible {
-      outline: 2px solid var(--color-primary-500);
-      outline-offset: 2px;
-    }
   }
 
-  // Clickable state — the chip is a real <button>, so reset the UA button
-  // styles back to the chip look and add interaction states.
+  // Clickable state — the chip is a real <button> (or, when also removable, a
+  // pill holding two sibling buttons), so reset the UA button styles back to
+  // the chip look and add interaction states.
   &--clickable {
     font: inherit;
     font-weight: var(--typography-font-weight-medium, 500);

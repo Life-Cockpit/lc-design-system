@@ -1,11 +1,28 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { ChangeDetectorRef } from '@angular/core';
-import { SelectComponent } from './select.component';
+import { Component, signal } from '@angular/core';
+import { By } from '@angular/platform-browser';
+import { SelectComponent, SelectOption, SelectValue } from './select.component';
+
+const threeOptions: SelectOption[] = [
+  { value: '1', label: 'Option 1' },
+  { value: '2', label: 'Option 2' },
+  { value: '3', label: 'Option 3' },
+];
+
+/** The dropdown is rendered through the CDK overlay, i.e. outside the fixture's host element. */
+function overlayPanel(): HTMLElement | null {
+  return document.querySelector('.lc-select__dropdown');
+}
 
 describe('SelectComponent', () => {
   let component: SelectComponent;
   let fixture: ComponentFixture<SelectComponent>;
+
+  const setInput = (name: string, value: unknown) => {
+    fixture.componentRef.setInput(name, value);
+    fixture.detectChanges();
+  };
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -17,52 +34,54 @@ describe('SelectComponent', () => {
     fixture.detectChanges();
   });
 
+  afterEach(() => {
+    fixture.destroy();
+  });
+
   describe('Component Creation', () => {
     it('should create', () => {
       expect(component).toBeTruthy();
     });
 
     it('should have default variant "outline"', () => {
-      expect(component.variant).toBe('outline');
+      expect(component.variant()).toBe('outline');
     });
 
     it('should have default size "md"', () => {
-      expect(component.size).toBe('md');
+      expect(component.size()).toBe('md');
     });
 
     it('should not be disabled by default', () => {
-      expect(component.disabled).toBe(false);
+      expect(component.disabled()).toBe(false);
+      expect(component.isDisabled()).toBe(false);
     });
 
     it('should not have error state by default', () => {
-      expect(component.error).toBe(false);
+      expect(component.error()).toBe(false);
     });
 
     it('should not be required by default', () => {
-      expect(component.required).toBe(false);
+      expect(component.required()).toBe(false);
     });
 
     it('should not be in loading state by default', () => {
-      expect(component.loading).toBe(false);
+      expect(component.loading()).toBe(false);
     });
 
     it('should not be searchable by default', () => {
-      expect(component.searchable).toBe(false);
+      expect(component.searchable()).toBe(false);
     });
 
     it('should not allow multiple selection by default', () => {
-      expect(component.multiple).toBe(false);
+      expect(component.multiple()).toBe(false);
     });
   });
 
   describe('Options Management', () => {
     it('should accept options array', () => {
-      const options = [
-        { value: '1', label: 'Option 1' },
-        { value: '2', label: 'Option 2' },
-      ];
-      component.options = options;
-      expect(component.options).toEqual(options);
+      setInput('options', threeOptions);
+      expect(component.options()).toEqual(threeOptions);
+      expect(component.filteredOptions()).toEqual(threeOptions);
     });
 
     it('should support grouped options', () => {
@@ -70,18 +89,18 @@ describe('SelectComponent', () => {
         { label: 'Group 1', options: [{ value: '1', label: 'Option 1' }] },
         { label: 'Group 2', options: [{ value: '2', label: 'Option 2' }] },
       ];
-      component.options = options;
-      expect(component.options).toEqual(options);
+      setInput('options', options);
+      expect(component.options()).toEqual(options);
+      expect(component.filteredOptions().map((o) => o.value)).toEqual(['1', '2']);
     });
 
     it('should filter options when searchable', () => {
-      const options = [
+      setInput('options', [
         { value: '1', label: 'Apple' },
         { value: '2', label: 'Banana' },
         { value: '3', label: 'Cherry' },
-      ];
-      component.options = options;
-      component.searchable = true;
+      ]);
+      setInput('searchable', true);
       component.searchQuery.set('ban');
 
       const filtered = component.filteredOptions();
@@ -89,122 +108,77 @@ describe('SelectComponent', () => {
       expect(filtered[0].label).toBe('Banana');
     });
 
+    it('should not filter when not searchable', () => {
+      setInput('options', threeOptions);
+      component.searchQuery.set('2');
+      expect(component.filteredOptions()).toEqual(threeOptions);
+    });
+
     it('should return all options when search query is empty', () => {
       const options = [
         { value: '1', label: 'Apple' },
         { value: '2', label: 'Banana' },
       ];
-      component.options = options;
-      component.searchable = true;
+      setInput('options', options);
+      setInput('searchable', true);
       component.searchQuery.set('');
 
       expect(component.filteredOptions()).toEqual(options);
     });
+
+    it('should reset the highlight when the filtered list changes', () => {
+      setInput('options', threeOptions);
+      setInput('searchable', true);
+      component.highlightedIndex.set(2);
+      component.searchQuery.set('Option 1');
+      expect(component.highlightedIndex()).toBe(-1);
+    });
   });
 
   describe('Variant Styles', () => {
-    it('should apply outline variant classes', () => {
-      component.variant = 'outline';
-      fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
-      fixture.detectChanges();
-
-      const compiled = fixture.nativeElement;
-      const select = compiled.querySelector('.lc-select');
-      expect(select.classList.contains('lc-select--outline')).toBe(true);
-    });
-
-    it('should apply filled variant classes', () => {
-      component.variant = 'filled';
-      fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
-      fixture.detectChanges();
-
-      const compiled = fixture.nativeElement;
-      const select = compiled.querySelector('.lc-select');
-      expect(select.classList.contains('lc-select--filled')).toBe(true);
+    it.each(['outline', 'filled'] as const)('should apply %s variant class', (variant) => {
+      setInput('variant', variant);
+      const select = fixture.nativeElement.querySelector('.lc-select');
+      expect(select.classList.contains(`lc-select--${variant}`)).toBe(true);
     });
   });
 
   describe('Size Styles', () => {
-    it('should apply xs size classes', () => {
-      component.size = 'xs';
-      fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
-      fixture.detectChanges();
-
-      const compiled = fixture.nativeElement;
-      const select = compiled.querySelector('.lc-select');
-      expect(select.classList.contains('lc-select--xs')).toBe(true);
-    });
-
-    it('should apply sm size classes', () => {
-      component.size = 'sm';
-      fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
-      fixture.detectChanges();
-
-      const compiled = fixture.nativeElement;
-      const select = compiled.querySelector('.lc-select');
-      expect(select.classList.contains('lc-select--sm')).toBe(true);
-    });
-
-    it('should apply md size classes', () => {
-      component.size = 'md';
-      fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
-      fixture.detectChanges();
-
-      const compiled = fixture.nativeElement;
-      const select = compiled.querySelector('.lc-select');
-      expect(select.classList.contains('lc-select--md')).toBe(true);
-    });
-
-    it('should apply lg size classes', () => {
-      component.size = 'lg';
-      fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
-      fixture.detectChanges();
-
-      const compiled = fixture.nativeElement;
-      const select = compiled.querySelector('.lc-select');
-      expect(select.classList.contains('lc-select--lg')).toBe(true);
+    it.each(['xs', 'sm', 'md', 'lg'] as const)('should apply %s size class', (size) => {
+      setInput('size', size);
+      const select = fixture.nativeElement.querySelector('.lc-select');
+      expect(select.classList.contains(`lc-select--${size}`)).toBe(true);
     });
   });
 
   describe('State Management', () => {
     it('should apply disabled state', () => {
-      component.disabled = true;
-      fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
-      fixture.detectChanges();
-
-      const compiled = fixture.nativeElement;
-      const select = compiled.querySelector('.lc-select');
+      setInput('disabled', true);
+      const select = fixture.nativeElement.querySelector('.lc-select');
       expect(select.classList.contains('lc-select--disabled')).toBe(true);
+      expect(select.getAttribute('tabindex')).toBe('-1');
     });
 
     it('should apply error state', () => {
-      component.error = true;
-      fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
-      fixture.detectChanges();
-
-      const compiled = fixture.nativeElement;
-      const select = compiled.querySelector('.lc-select');
+      setInput('error', true);
+      const select = fixture.nativeElement.querySelector('.lc-select');
       expect(select.classList.contains('lc-select--error')).toBe(true);
     });
 
     it('should apply loading state', () => {
-      component.loading = true;
-      fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
-      fixture.detectChanges();
-
-      const compiled = fixture.nativeElement;
-      const select = compiled.querySelector('.lc-select');
+      setInput('loading', true);
+      const select = fixture.nativeElement.querySelector('.lc-select');
       expect(select.classList.contains('lc-select--loading')).toBe(true);
     });
 
     it('should not open dropdown when disabled', () => {
-      component.disabled = true;
+      setInput('disabled', true);
       component.toggle();
       expect(component.isOpen()).toBe(false);
     });
 
     it('should not open dropdown when loading', () => {
-      component.loading = true;
+      setInput('loading', true);
       component.toggle();
       expect(component.isOpen()).toBe(false);
     });
@@ -235,16 +209,42 @@ describe('SelectComponent', () => {
       component.onClickOutside();
       expect(component.isOpen()).toBe(false);
     });
+
+    it('should emit opened once per open and closed once per close', () => {
+      const opened = jest.fn();
+      const closed = jest.fn();
+      component.opened.subscribe(opened);
+      component.closed.subscribe(closed);
+
+      component.open();
+      component.open(); // no-op while open
+      expect(opened).toHaveBeenCalledTimes(1);
+
+      component.close();
+      component.close(); // idempotent
+      expect(closed).toHaveBeenCalledTimes(1);
+    });
+
+    it('should emit closed exactly once when the overlay detaches', () => {
+      // Regression: close() flipped isOpen, the CDK overlay detached and its
+      // (detach) handler called close() a second time -> two `closed` emissions.
+      const closed = jest.fn();
+      component.closed.subscribe(closed);
+
+      component.open();
+      fixture.detectChanges();
+      expect(overlayPanel()).toBeTruthy();
+
+      component.close();
+      fixture.detectChanges();
+      expect(overlayPanel()).toBeFalsy();
+      expect(closed).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('Selection Behavior', () => {
     beforeEach(() => {
-      const options = [
-        { value: '1', label: 'Option 1' },
-        { value: '2', label: 'Option 2' },
-        { value: '3', label: 'Option 3' },
-      ];
-      component.options = options;
+      setInput('options', threeOptions);
     });
 
     it('should select an option', () => {
@@ -264,7 +264,7 @@ describe('SelectComponent', () => {
     });
 
     it('should keep dropdown open after selection in multiple mode', () => {
-      component.multiple = true;
+      setInput('multiple', true);
       component.open();
       const option = { value: '1', label: 'Option 1' };
       component.selectOption(option);
@@ -273,7 +273,7 @@ describe('SelectComponent', () => {
     });
 
     it('should support multiple selection', () => {
-      component.multiple = true;
+      setInput('multiple', true);
       component.selectOption({ value: '1', label: 'Option 1' });
       component.selectOption({ value: '2', label: 'Option 2' });
 
@@ -282,13 +282,21 @@ describe('SelectComponent', () => {
     });
 
     it('should deselect option in multiple mode', () => {
-      component.multiple = true;
+      setInput('multiple', true);
       component.selectOption({ value: '1', label: 'Option 1' });
       component.selectOption({ value: '2', label: 'Option 2' });
       component.selectOption({ value: '1', label: 'Option 1' }); // Deselect
 
       const value = component.value() as string[];
       expect(value).toEqual(['2']);
+    });
+
+    it('should not select a disabled option', () => {
+      const selectionChange = jest.fn();
+      component.selectionChange.subscribe(selectionChange);
+      component.selectOption({ value: '9', label: 'Nope', disabled: true });
+      expect(component.value()).toBeNull();
+      expect(selectionChange).not.toHaveBeenCalled();
     });
 
     it('should check if option is selected', () => {
@@ -304,6 +312,44 @@ describe('SelectComponent', () => {
 
       expect(component.value()).toBeNull();
       expect(component.selectedLabel()).toBe('');
+    });
+
+    it('should toggle the value and emit once when the checkbox of an option is clicked (multiple)', () => {
+      // Regression: the checkbox stopped propagation, so the option's click
+      // handler never ran — the box flipped visually but the value never changed.
+      setInput('multiple', true);
+      const selectionChange = jest.fn();
+      component.selectionChange.subscribe(selectionChange);
+
+      component.open();
+      fixture.detectChanges();
+
+      const checkbox = overlayPanel()!.querySelector<HTMLInputElement>('.lc-select__checkbox');
+      expect(checkbox).toBeTruthy();
+      checkbox!.click();
+      fixture.detectChanges();
+
+      expect(component.value()).toEqual(['1']);
+      expect(selectionChange).toHaveBeenCalledTimes(1);
+      expect(selectionChange).toHaveBeenCalledWith(['1']);
+      expect(checkbox!.checked).toBe(true);
+      expect(component.isOpen()).toBe(true);
+    });
+
+    it('should select on option click', () => {
+      const selectionChange = jest.fn();
+      component.selectionChange.subscribe(selectionChange);
+
+      component.open();
+      fixture.detectChanges();
+
+      const options = overlayPanel()!.querySelectorAll<HTMLElement>('[role="option"]');
+      options[1].click();
+      fixture.detectChanges();
+
+      expect(component.value()).toBe('2');
+      expect(selectionChange).toHaveBeenCalledTimes(1);
+      expect(component.isOpen()).toBe(false);
     });
   });
 
@@ -335,12 +381,19 @@ describe('SelectComponent', () => {
       expect(onTouched).toHaveBeenCalled();
     });
 
-    it('should set disabled state', () => {
+    it('should set disabled state without touching the disabled input', () => {
       component.setDisabledState(true);
-      expect(component.disabled).toBe(true);
+      expect(component.isDisabled()).toBe(true);
+      expect(component.disabled()).toBe(false);
 
       component.setDisabledState(false);
-      expect(component.disabled).toBe(false);
+      expect(component.isDisabled()).toBe(false);
+    });
+
+    it('should OR the form disabled state with the disabled input', () => {
+      setInput('disabled', true);
+      component.setDisabledState(false);
+      expect(component.isDisabled()).toBe(true);
     });
   });
 
@@ -354,11 +407,11 @@ describe('SelectComponent', () => {
 
     it('should update FormControl on selection', () => {
       const control = new FormControl('');
-      let capturedValue: any;
+      let capturedValue: SelectValue = null;
 
       component.registerOnChange((value) => {
         capturedValue = value;
-        control.setValue(value);
+        control.setValue(value as string);
       });
 
       component.selectOption({ value: '1', label: 'Option 1' });
@@ -382,14 +435,13 @@ describe('SelectComponent', () => {
 
   describe('Accessibility', () => {
     it('should have proper ARIA role', () => {
-      const compiled = fixture.nativeElement;
-      const select = compiled.querySelector('.lc-select');
+      const select = fixture.nativeElement.querySelector('.lc-select');
       expect(select.getAttribute('role')).toBe('combobox');
+      expect(select.getAttribute('aria-haspopup')).toBe('listbox');
     });
 
     it('should have aria-expanded attribute', () => {
-      const compiled = fixture.nativeElement;
-      const select = compiled.querySelector('.lc-select');
+      const select = fixture.nativeElement.querySelector('.lc-select');
       expect(select.getAttribute('aria-expanded')).toBe('false');
 
       component.open();
@@ -398,54 +450,144 @@ describe('SelectComponent', () => {
     });
 
     it('should have aria-label when provided', () => {
-      component.ariaLabel = 'Choose an option';
-      fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
-      fixture.detectChanges();
-
-      const compiled = fixture.nativeElement;
-      const select = compiled.querySelector('.lc-select');
+      setInput('ariaLabel', 'Choose an option');
+      const select = fixture.nativeElement.querySelector('.lc-select');
       expect(select.getAttribute('aria-label')).toBe('Choose an option');
     });
 
     it('should have aria-required when required', () => {
-      component.required = true;
-      fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
-      fixture.detectChanges();
-
-      const compiled = fixture.nativeElement;
-      const select = compiled.querySelector('.lc-select');
+      setInput('required', true);
+      const select = fixture.nativeElement.querySelector('.lc-select');
       expect(select.getAttribute('aria-required')).toBe('true');
     });
 
     it('should have aria-disabled when disabled', () => {
-      component.disabled = true;
-      fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
-      fixture.detectChanges();
-
-      const compiled = fixture.nativeElement;
-      const select = compiled.querySelector('.lc-select');
+      setInput('disabled', true);
+      const select = fixture.nativeElement.querySelector('.lc-select');
       expect(select.getAttribute('aria-disabled')).toBe('true');
     });
 
     it('should have aria-invalid when error', () => {
-      component.error = true;
-      fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
+      setInput('error', true);
+      const select = fixture.nativeElement.querySelector('.lc-select');
+      expect(select.getAttribute('aria-invalid')).toBe('true');
+    });
+
+    it('should link helper and error text via aria-describedby', () => {
+      const select: HTMLElement = fixture.nativeElement.querySelector('.lc-select');
+      expect(select.getAttribute('aria-describedby')).toBeNull();
+
+      setInput('helperText', 'Pick one');
+      const helperId = select.getAttribute('aria-describedby');
+      expect(helperId).toBeTruthy();
+      expect(document.getElementById(helperId!)?.textContent).toContain('Pick one');
+
+      setInput('error', true);
+      setInput('errorMessage', 'Required');
+      const errorId = select.getAttribute('aria-describedby');
+      expect(errorId).not.toBe(helperId);
+      expect(document.getElementById(errorId!)?.textContent).toContain('Required');
+    });
+
+    it('should render a listbox with role=option children and wire aria-controls', () => {
+      setInput('options', threeOptions);
+      component.open();
       fixture.detectChanges();
 
-      const compiled = fixture.nativeElement;
-      const select = compiled.querySelector('.lc-select');
-      expect(select.getAttribute('aria-invalid')).toBe('true');
+      const trigger: HTMLElement = fixture.nativeElement.querySelector('.lc-select');
+      const listbox = document.getElementById(component.listboxId);
+      expect(listbox).toBeTruthy();
+      expect(listbox!.getAttribute('role')).toBe('listbox');
+      expect(trigger.getAttribute('aria-controls')).toBe(component.listboxId);
+
+      const options = listbox!.querySelectorAll('[role="option"]');
+      expect(options.length).toBe(3);
+      options.forEach((opt, i) => {
+        expect(opt.id).toBe(component.optionId(i));
+        expect(opt.getAttribute('aria-selected')).toBe('false');
+      });
+    });
+
+    it('should mark the selected option and set aria-multiselectable in multiple mode', () => {
+      setInput('options', threeOptions);
+      setInput('multiple', true);
+      component.writeValue(['2']);
+      component.open();
+      fixture.detectChanges();
+
+      const listbox = document.getElementById(component.listboxId)!;
+      expect(listbox.getAttribute('aria-multiselectable')).toBe('true');
+      const options = listbox.querySelectorAll('[role="option"]');
+      expect(options[1].getAttribute('aria-selected')).toBe('true');
+      // The visual checkbox must not be exposed as a second control.
+      const checkbox = options[1].querySelector('input[type="checkbox"]')!;
+      expect(checkbox.getAttribute('aria-hidden')).toBe('true');
+      expect(checkbox.getAttribute('tabindex')).toBe('-1');
+    });
+
+    it('should point aria-activedescendant at the highlighted option', () => {
+      setInput('options', threeOptions);
+      component.open();
+      fixture.detectChanges();
+
+      const trigger: HTMLElement = fixture.nativeElement.querySelector('.lc-select');
+      expect(trigger.getAttribute('aria-activedescendant')).toBeNull();
+
+      component.onKeyDown(new KeyboardEvent('keydown', { key: 'ArrowDown' }));
+      fixture.detectChanges();
+      expect(trigger.getAttribute('aria-activedescendant')).toBe(component.optionId(0));
+      expect(document.getElementById(component.optionId(0))).toBeTruthy();
+    });
+
+    it('should wire the search input to the listbox and keep keyboard navigation working from it', () => {
+      setInput('options', threeOptions);
+      setInput('searchable', true);
+      component.open();
+      fixture.detectChanges();
+
+      const search = overlayPanel()!.querySelector<HTMLInputElement>('.lc-select__search-input')!;
+      expect(search.getAttribute('aria-controls')).toBe(component.listboxId);
+
+      search.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+      fixture.detectChanges();
+      expect(component.highlightedIndex()).toBe(0);
+      expect(search.getAttribute('aria-activedescendant')).toBe(component.optionId(0));
+
+      search.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }));
+      expect(component.highlightedIndex()).toBe(2);
+      search.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true }));
+      expect(component.highlightedIndex()).toBe(0);
+
+      // Space must type into the search box, not select.
+      search.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
+      expect(component.value()).toBeNull();
+
+      search.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      expect(component.value()).toBe('1');
+      expect(component.isOpen()).toBe(false);
+    });
+
+    it('should return focus to the trigger when closing from the search input', () => {
+      setInput('options', threeOptions);
+      setInput('searchable', true);
+      component.open();
+      fixture.detectChanges();
+
+      const search = overlayPanel()!.querySelector<HTMLInputElement>('.lc-select__search-input')!;
+      search.focus();
+      expect(document.activeElement).toBe(search);
+
+      search.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+      fixture.detectChanges();
+
+      expect(component.isOpen()).toBe(false);
+      expect(document.activeElement).toBe(fixture.nativeElement.querySelector('.lc-select'));
     });
   });
 
   describe('Keyboard Navigation', () => {
     beforeEach(() => {
-      const options = [
-        { value: '1', label: 'Option 1' },
-        { value: '2', label: 'Option 2' },
-        { value: '3', label: 'Option 3' },
-      ];
-      component.options = options;
+      setInput('options', threeOptions);
     });
 
     it('should open dropdown on Enter key', () => {
@@ -465,6 +607,20 @@ describe('SelectComponent', () => {
       const event = new KeyboardEvent('keydown', { key: 'Escape' });
       component.onKeyDown(event);
       expect(component.isOpen()).toBe(false);
+    });
+
+    it('should stop Escape from propagating only while open', () => {
+      const closedEvent = new KeyboardEvent('keydown', { key: 'Escape' });
+      const stopClosed = jest.spyOn(closedEvent, 'stopPropagation');
+      component.onKeyDown(closedEvent);
+      expect(stopClosed).not.toHaveBeenCalled();
+
+      component.open();
+      const openEvent = new KeyboardEvent('keydown', { key: 'Escape', cancelable: true });
+      const stopOpen = jest.spyOn(openEvent, 'stopPropagation');
+      component.onKeyDown(openEvent);
+      expect(stopOpen).toHaveBeenCalled();
+      expect(openEvent.defaultPrevented).toBe(true);
     });
 
     it('should navigate down with ArrowDown', () => {
@@ -505,6 +661,14 @@ describe('SelectComponent', () => {
       expect(component.highlightedIndex()).toBe(0);
     });
 
+    it('should jump with Home and End', () => {
+      component.open();
+      component.onKeyDown(new KeyboardEvent('keydown', { key: 'End' }));
+      expect(component.highlightedIndex()).toBe(2);
+      component.onKeyDown(new KeyboardEvent('keydown', { key: 'Home' }));
+      expect(component.highlightedIndex()).toBe(0);
+    });
+
     it('should select highlighted option on Enter', () => {
       component.open();
       component.highlightedIndex.set(1);
@@ -514,40 +678,35 @@ describe('SelectComponent', () => {
 
       expect(component.value()).toBe('2');
     });
+
+    it('should ignore keys while disabled', () => {
+      setInput('disabled', true);
+      component.onKeyDown(new KeyboardEvent('keydown', { key: 'Enter' }));
+      expect(component.isOpen()).toBe(false);
+    });
   });
 
   describe('Helper Text', () => {
     it('should display helper text', () => {
-      component.helperText = 'This is helpful';
-      fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
-      fixture.detectChanges();
-
-      const compiled = fixture.nativeElement;
-      const helper = compiled.querySelector('.lc-select__helper');
+      setInput('helperText', 'This is helpful');
+      const helper = fixture.nativeElement.querySelector('.lc-select__helper');
       expect(helper?.textContent).toContain('This is helpful');
     });
 
     it('should display error message when in error state', () => {
-      component.error = true;
-      component.errorMessage = 'This is an error';
-      fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
-      fixture.detectChanges();
-
-      const compiled = fixture.nativeElement;
-      const error = compiled.querySelector('.lc-select__error');
+      setInput('error', true);
+      setInput('errorMessage', 'This is an error');
+      const error = fixture.nativeElement.querySelector('.lc-select__error');
       expect(error?.textContent).toContain('This is an error');
     });
 
     it('should prioritize error message over helper text', () => {
-      component.helperText = 'This is helpful';
-      component.error = true;
-      component.errorMessage = 'This is an error';
-      fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
-      fixture.detectChanges();
+      setInput('helperText', 'This is helpful');
+      setInput('error', true);
+      setInput('errorMessage', 'This is an error');
 
-      const compiled = fixture.nativeElement;
-      const error = compiled.querySelector('.lc-select__error');
-      const helper = compiled.querySelector('.lc-select__helper');
+      const error = fixture.nativeElement.querySelector('.lc-select__error');
+      const helper = fixture.nativeElement.querySelector('.lc-select__helper');
 
       expect(error).toBeTruthy();
       expect(helper).toBeFalsy();
@@ -556,24 +715,34 @@ describe('SelectComponent', () => {
 
   describe('Placeholder', () => {
     beforeEach(() => {
-      const options = [
+      setInput('options', [
         { value: '1', label: 'Option 1' },
         { value: '2', label: 'Option 2' },
-      ];
-      component.options = options;
+      ]);
     });
 
     it('should display placeholder when no selection', () => {
-      component.placeholder = 'Select an option';
-      fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
-      fixture.detectChanges();
-
+      setInput('placeholder', 'Select an option');
       expect(component.displayValue()).toBe('Select an option');
+      expect(fixture.nativeElement.querySelector('.lc-select__placeholder').textContent).toContain(
+        'Select an option',
+      );
+    });
+
+    it('should reflect a placeholder change after init', () => {
+      // Regression: displayValue() read a plain @Input, so a later placeholder
+      // change was never recomputed.
+      setInput('placeholder', 'First');
+      expect(component.displayValue()).toBe('First');
+      setInput('placeholder', 'Second');
+      expect(component.displayValue()).toBe('Second');
+      expect(fixture.nativeElement.querySelector('.lc-select__value').textContent).toContain(
+        'Second',
+      );
     });
 
     it('should display selected value instead of placeholder', () => {
-      component.placeholder = 'Select an option';
-      fixture.debugElement.injector.get(ChangeDetectorRef).markForCheck();
+      setInput('placeholder', 'Select an option');
       component.selectOption({ value: '1', label: 'Option 1' });
       fixture.detectChanges();
 
@@ -581,11 +750,83 @@ describe('SelectComponent', () => {
     });
 
     it('should display count in multiple mode', () => {
-      component.multiple = true;
+      setInput('multiple', true);
       component.selectOption({ value: '1', label: 'Option 1' });
       component.selectOption({ value: '2', label: 'Option 2' });
 
       expect(component.displayValue()).toContain('2 selected');
     });
+  });
+});
+
+@Component({
+  standalone: true,
+  imports: [SelectComponent, ReactiveFormsModule],
+  template: `
+    <lc-select
+      [options]="options()"
+      [placeholder]="placeholder()"
+      [formControl]="control"
+      ariaLabel="Host select"
+    />
+  `,
+})
+class HostComponent {
+  readonly options = signal<SelectOption[]>(threeOptions);
+  readonly placeholder = signal('Pick');
+  readonly control = new FormControl<SelectValue>(null);
+}
+
+describe('SelectComponent in a reactive form', () => {
+  let fixture: ComponentFixture<HostComponent>;
+  let host: HostComponent;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({ imports: [HostComponent] }).compileComponents();
+    fixture = TestBed.createComponent(HostComponent);
+    host = fixture.componentInstance;
+    fixture.detectChanges();
+  });
+
+  afterEach(() => fixture.destroy());
+
+  const trigger = (): HTMLElement => fixture.nativeElement.querySelector('.lc-select');
+  const select = (): SelectComponent =>
+    fixture.debugElement.query(By.directive(SelectComponent)).componentInstance;
+
+  it('should disable the trigger when the control is disabled', () => {
+    expect(trigger().getAttribute('aria-disabled')).toBeNull();
+    expect(trigger().getAttribute('tabindex')).toBe('0');
+
+    host.control.disable();
+    fixture.detectChanges();
+
+    expect(trigger().getAttribute('aria-disabled')).toBe('true');
+    expect(trigger().getAttribute('tabindex')).toBe('-1');
+    expect(trigger().classList.contains('lc-select--disabled')).toBe(true);
+
+    trigger().click();
+    fixture.detectChanges();
+    expect(select().isOpen()).toBe(false);
+
+    host.control.enable();
+    fixture.detectChanges();
+    expect(trigger().getAttribute('aria-disabled')).toBeNull();
+  });
+
+  it('should propagate selections to the control and control values to the view', () => {
+    host.control.setValue('2');
+    fixture.detectChanges();
+    expect(trigger().textContent).toContain('Option 2');
+
+    select().selectOption(threeOptions[2]);
+    expect(host.control.value).toBe('3');
+  });
+
+  it('should reflect placeholder changes from the host', () => {
+    expect(trigger().textContent).toContain('Pick');
+    host.placeholder.set('Choose one');
+    fixture.detectChanges();
+    expect(trigger().textContent).toContain('Choose one');
   });
 });

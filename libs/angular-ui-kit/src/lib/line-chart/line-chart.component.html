@@ -4,9 +4,11 @@
     [attr.height]="height()"
     [attr.viewBox]="viewBox()"
     role="img"
-    aria-label="Line chart"
+    [attr.aria-label]="effectiveAriaLabel()"
     class="lc-line-chart__svg"
   >
+    <title>{{ effectiveAriaLabel() }}</title>
+
     <!-- Grid lines -->
     @for (line of gridLines(); track line.y) {
       <line
@@ -70,7 +72,7 @@
     </defs>
 
     <!-- Series -->
-    @for (ser of renderedSeries(); track ser.label) {
+    @for (ser of renderedSeries(); track $index) {
       @if (ser.areaD) {
         <path
           [attr.d]="ser.areaD"
@@ -97,7 +99,7 @@
           [attr.cy]="pt.y"
           r="3"
           [attr.fill]="ser.color"
-          stroke="white"
+          stroke="var(--color-surface)"
           stroke-width="1.5"
           class="lc-line-chart__dot"
         />
@@ -107,7 +109,7 @@
 
   @if (legendItems().length > 0) {
     <div class="lc-line-chart__legend">
-      @for (item of legendItems(); track item.label) {
+      @for (item of legendItems(); track $index) {
         <div class="lc-line-chart__legend-item">
           <span class="lc-line-chart__legend-line" [style.background-color]="item.color"></span>
           <span class="lc-line-chart__legend-label">{{ item.label }}</span>

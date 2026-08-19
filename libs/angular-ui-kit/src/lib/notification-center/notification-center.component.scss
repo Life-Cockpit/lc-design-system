@@ -198,13 +198,29 @@
   gap: 6px;
 }
 
+// The title is a <button> (keyboard entry point of the row) styled as plain text
 .lc-nc__item-title {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
   font-size: var(--typography-font-size-sm, 0.875rem);
   font-weight: 500;
+  text-align: left;
   color: var(--color-text-primary);
+  cursor: pointer;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+
+  &:focus-visible {
+    outline: none;
+    border-radius: var(--border-radius-sm);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary-500) 20%, transparent);
+  }
 
   .lc-nc__item--unread & {
     font-weight: 600;
@@ -296,13 +312,20 @@
   transition: background 0.1s, color 0.1s;
   opacity: 0;
 
-  .lc-nc__item:hover & {
+  // Revealed on hover and whenever keyboard focus is inside the row
+  .lc-nc__item:hover &,
+  .lc-nc__item:focus-within & {
     opacity: 1;
   }
 
   &:hover {
     background: var(--color-surface-hover);
     color: var(--color-text-secondary);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary-500) 20%, transparent);
   }
 }
 

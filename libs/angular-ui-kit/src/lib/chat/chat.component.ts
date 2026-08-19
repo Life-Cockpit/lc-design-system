@@ -1,15 +1,21 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
+  ElementRef,
+  Injector,
+  NgZone,
+  TemplateRef,
+  ContentChild,
+  ViewChild,
+  afterNextRender,
+  computed,
+  effect,
+  inject,
   input,
   output,
   signal,
-  computed,
-  ElementRef,
-  ViewChild,
-  AfterViewChecked,
-  TemplateRef,
-  ContentChild,
+  viewChild,
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { MarkdownComponent } from '../markdown/markdown.component';
@@ -111,7 +117,8 @@ export interface ChatFileAttachEvent {
  * - Agent/system turns on a left rail with a status dot, avatar or semantic icon
  * - Streaming cursor indicator for AI responses
  * - Typing indicator with animated dots
- * - Auto-scroll to latest message
+ * - Auto-scroll to the latest message (new turns, streamed tokens, history
+ *   loads) — only while the reader is at the bottom; scrolling up pauses it
  * - Optional avatars and timestamps
  * - Configurable header with title
  * - Send on Enter with Shift+Enter for newline
@@ -134,12 +141,19 @@ export interface ChatFileAttachEvent {
  *   (fileAttach)="onAttach($event)" />
  * ```
  */
-export class ChatComponent implements AfterViewChecked {
+export class ChatComponent {
+  private static nextId = 0;
+  /** Id of the composer textarea (links the visually-hidden label). */
+  protected readonly inputId = `lc-chat-input-${++ChatComponent.nextId}`;
+
   /** Messages to display. */
   messages = input<ChatMessage[]>([]);
 
   /** Placeholder text for the input. */
   placeholder = input<string>('Nachricht eingeben…');
+
+  /** Accessible name of the composer textarea (visually hidden label). */
+  inputLabel = input<string>('Nachricht');
 
   /** Title displayed in the header. */
   title = input<string>('Chat');
@@ -216,10 +230,24 @@ export class ChatComponent implements AfterViewChecked {
 
   protected readonly inputValue = signal('');
   protected readonly pendingAttachments = signal<ChatAttachment[]>([]);
-  private shouldScroll = false;
   private attachmentCounter = 0;
 
-  @ViewChild('scrollContainer') private scrollContainer!: ElementRef<HTMLDivElement>;
+  private readonly injector = inject(Injector);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly ngZone = inject(NgZone);
+
+  /**
+   * Whether the reader is (near) the bottom of the thread. Auto-scroll only
+   * follows new content while this is true, so scrolling up to re-read is
+   * never fought. Plain field: updated from a passive scroll listener outside
+   * the zone, read untracked by the follow effect.
+   */
+  private atBottom = true;
+
+  /** Distance from the bottom (px) still counted as "at the bottom". */
+  private static readonly AT_BOTTOM_THRESHOLD = 32;
+
+  private readonly scrollContainer = viewChild.required<ElementRef<HTMLDivElement>>('scrollContainer');
   @ViewChild('fileInput') private fileInput?: ElementRef<HTMLInputElement>;
   @ViewChild('composerInput') private composerInput?: ElementRef<HTMLTextAreaElement>;
 
@@ -233,11 +261,44 @@ export class ChatComponent implements AfterViewChecked {
     }))
   );
 
-  ngAfterViewChecked(): void {
-    if (this.shouldScroll) {
-      this.scrollToBottom();
-      this.shouldScroll = false;
+  /**
+   * Text for the visually-hidden live region: the most recent *completed*
+   * non-user message. Streaming turns are announced once they finish (a
+   * token-by-token live region would be unusable); user turns were typed by
+   * the reader; semantic-status messages carry their own `aria-live`/`alert`.
+   */
+  protected readonly announcement = computed(() => {
+    const msgs = this.messages();
+    for (let i = msgs.length - 1; i >= 0; i--) {
+      const m = msgs[i];
+      if (m.role === 'user' || m.streaming || this.isSemanticStatus(m.status)) continue;
+      return m.name ? `${m.name}: ${m.content}` : m.content;
     }
+    return '';
+  });
+
+  constructor() {
+    // Passive scroll tracking outside the zone — no CD per scroll frame.
+    afterNextRender(() => {
+      const el = this.scrollContainer().nativeElement;
+      const onScroll = () => {
+        this.atBottom =
+          el.scrollHeight - el.scrollTop - el.clientHeight < ChatComponent.AT_BOTTOM_THRESHOLD;
+      };
+      this.ngZone.runOutsideAngular(() => el.addEventListener('scroll', onScroll, { passive: true }));
+      this.destroyRef.onDestroy(() => el.removeEventListener('scroll', onScroll));
+    });
+
+    // Follow the conversation: a new turn, a streamed token on the last turn
+    // (the parent hands in a new `messages` array), a history load or the
+    // typing indicator appearing all grow the thread — scroll after render,
+    // but only if the reader was already at the bottom.
+    effect(() => {
+      this.messages();
+      this.isStreaming();
+      if (!this.atBottom) return;
+      afterNextRender(() => this.scrollToBottom(), { injector: this.injector });
+    });
   }
 
   protected onInput(event: Event): void {
@@ -253,7 +314,8 @@ export class ChatComponent implements AfterViewChecked {
   }
 
   protected onKeydown(event: KeyboardEvent): void {
-    if (event.key === 'Enter' && !event.shiftKey) {
+    // Enter while an IME composition is open commits the composition, not the message.
+    if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
       event.preventDefault();
       this.send();
     }
@@ -269,7 +331,10 @@ export class ChatComponent implements AfterViewChecked {
     });
     this.inputValue.set('');
     this.pendingAttachments.set([]);
-    this.shouldScroll = true;
+    // Sending re-engages follow mode: the reader wants to see their own turn
+    // and the reply, even if they had scrolled up before.
+    this.atBottom = true;
+    afterNextRender(() => this.scrollToBottom(), { injector: this.injector });
     // Collapse the auto-grown textarea back to a single row.
     const el = this.composerInput?.nativeElement;
     if (el) el.style.height = 'auto';
@@ -457,9 +522,7 @@ export class ChatComponent implements AfterViewChecked {
   }
 
   private scrollToBottom(): void {
-    if (this.scrollContainer) {
-      const el = this.scrollContainer.nativeElement;
-      el.scrollTop = el.scrollHeight;
-    }
+    const el = this.scrollContainer().nativeElement;
+    el.scrollTop = el.scrollHeight;
   }
 }

@@ -143,9 +143,10 @@ export * from './lib/alert/alert.component';
 // Error Display Component
 export * from './lib/error-display/error-display.component';
 
-// Toast Service and Component
+// Toast Service, Component and Outlet
 export * from './lib/toast/toast.service';
 export * from './lib/toast/toast.component';
+export * from './lib/toast/toast-outlet.component';
 
 // Modal Component
 export * from './lib/modal/modal.component';

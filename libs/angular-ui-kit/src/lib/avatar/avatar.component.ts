@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, input, computed, signal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, input, computed, linkedSignal } from '@angular/core';
 
 export type AvatarSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 export type AvatarStatus = 'online' | 'offline' | 'away' | 'busy';
@@ -104,8 +104,14 @@ export class AvatarComponent {
     return this.src() && !this.imageError();
   });
 
-  /** Track if image failed to load */
-  protected imageError = signal(false);
+  /**
+   * Track if image failed to load. Resets whenever `src` changes so a new
+   * image gets a fresh attempt instead of staying stuck on the initials.
+   */
+  protected imageError = linkedSignal<string | undefined, boolean>({
+    source: this.src,
+    computation: () => false,
+  });
 
   /**
    * Handle image load error

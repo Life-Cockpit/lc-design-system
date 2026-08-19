@@ -65,6 +65,28 @@ describe('AccordionComponent', () => {
       expect(btn.getAttribute('aria-controls')).toBe(panel.id);
       expect(panel.getAttribute('aria-labelledby')).toBe(btn.id);
     });
+
+    it('wraps the header button in a heading with the configured level', () => {
+      const heading = fixture.nativeElement.querySelector('.lc-accordion__heading');
+      expect(heading.getAttribute('role')).toBe('heading');
+      expect(heading.getAttribute('aria-level')).toBe('3');
+      expect(heading.querySelector('.lc-accordion__header')).toBe(header(fixture));
+      expect(header(fixture).getAttribute('type')).toBe('button');
+    });
+
+    it('makes the collapsed panel inert so the eager body is not focusable, and lifts it when expanded', () => {
+      const panel = fixture.nativeElement.querySelector('.lc-accordion__panel');
+      expect(panel.hasAttribute('inert')).toBe(true);
+      expect(panel.getAttribute('aria-hidden')).toBe('true');
+      // The eager body is still in the DOM (needed for the height animation).
+      expect(fixture.nativeElement.querySelector('.body-text')).toBeTruthy();
+
+      header(fixture).click();
+      TestBed.flushEffects();
+      fixture.detectChanges();
+      expect(panel.hasAttribute('inert')).toBe(false);
+      expect(panel.getAttribute('aria-hidden')).toBe('false');
+    });
   });
 
   describe('rich header (lcAccordionHeader)', () => {

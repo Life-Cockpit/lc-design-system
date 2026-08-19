@@ -90,6 +90,22 @@ export const Downtrend: Story = {
   },
 };
 
+export const Fluid: Story = {
+  parameters: {
+    docs: { description: { story: 'With `fluid` the sparkline stretches to its container instead of its fixed `width`.' } },
+  },
+  render: (args) => ({
+    props: args,
+    template: `
+      <div style="width: 100%; max-width: 480px; border: 1px dashed var(--color-border); padding: 8px;">
+        <lc-sparkline [data]="data" [fluid]="true" [filled]="true" [showEndDot]="true" color="primary"></lc-sparkline>
+      </div>
+    `,
+    moduleMetadata: { imports: [SparklineComponent] },
+  }),
+  args: { data: sampleData },
+};
+
 export const AllColors: Story = {
   render: () => ({
     template: `

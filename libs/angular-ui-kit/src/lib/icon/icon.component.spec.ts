@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { IconComponent, resetIconWarnings } from './icon.component';
+import { IconComponent, resetIconCache, resetIconWarnings } from './icon.component';
 import { HttpTestingController } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
@@ -21,6 +21,8 @@ describe('IconComponent', () => {
     }).compileComponents();
 
     resetIconWarnings();
+    // The fetch cache is module-level and outlives the per-test HttpTestingController.
+    resetIconCache();
     fixture = TestBed.createComponent(IconComponent);
     component = fixture.componentInstance;
     httpMock = TestBed.inject(HttpTestingController);
@@ -40,13 +42,19 @@ describe('IconComponent', () => {
   /**
    * Helper to mock successful icon load
    */
-  function mockIconLoad(iconName = 'user', variant = 'outline'): void {
+  function mockIconLoad(iconName = 'user', variant = 'outline', svg = MOCK_SVG): void {
     const folder = variant === 'solid' ? 'filled' : 'outline';
     const req = httpMock.expectOne(`/tabler-icons/${folder}/${iconName}.svg`);
     expect(req.request.method).toBe('GET');
-    req.flush(MOCK_SVG);
+    req.flush(svg);
     fixture.detectChanges();
   }
+
+  // A second, distinguishable asset body (identical markup is memoised — the
+  // rendered SafeHtml only changes when the markup does).
+  const OTHER_SVG =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" data-icon="other">' +
+    '<circle cx="12" cy="12" r="9" /></svg>';
 
   /**
    * Helper to wait for async operations
@@ -275,11 +283,12 @@ describe('IconComponent', () => {
 
       fixture.componentRef.setInput('name', 'settings');
       fixture.detectChanges();
-      mockIconLoad('settings');
+      mockIconLoad('settings', 'outline', OTHER_SVG);
       await waitForAsync();
       const secondContent = component.svgContent();
 
       expect(firstContent).not.toBe(secondContent);
+      expect(fixture.nativeElement.querySelector('svg[data-icon="other"]')).toBeTruthy();
     });
 
     it('should update SVG when variant changes', async () => {
@@ -292,11 +301,135 @@ describe('IconComponent', () => {
 
       fixture.componentRef.setInput('variant', 'solid');
       fixture.detectChanges();
-      mockIconLoad('anchor', 'solid');
+      mockIconLoad('anchor', 'solid', OTHER_SVG);
       await waitForAsync();
       const solidContent = component.svgContent();
 
       expect(outlineContent).not.toBe(solidContent);
+      expect(fixture.nativeElement.querySelector('svg[data-icon="other"]')).toBeTruthy();
+    });
+  });
+
+  describe('Fetch cache and cancellation', () => {
+    const SECOND_SVG =
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" data-icon="second">' +
+      '<circle cx="12" cy="12" r="9" /></svg>';
+
+    it('shares one request between instances of the same icon', async () => {
+      const second = TestBed.createComponent(IconComponent);
+      fixture.componentRef.setInput('name', 'anchor');
+      second.componentRef.setInput('name', 'anchor');
+      fixture.detectChanges();
+      second.detectChanges();
+
+      httpMock.expectOne('/tabler-icons/outline/anchor.svg').flush(MOCK_SVG);
+      httpMock.expectNone('/tabler-icons/outline/anchor.svg');
+      await waitForAsync();
+      second.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('svg')).toBeTruthy();
+      expect(second.nativeElement.querySelector('svg')).toBeTruthy();
+      expect(second.nativeElement.innerHTML).not.toContain('stroke-dasharray');
+    });
+
+    it('serves a later instance from the cache without a new request', async () => {
+      fixture.componentRef.setInput('name', 'anchor');
+      fixture.detectChanges();
+      httpMock.expectOne('/tabler-icons/outline/anchor.svg').flush(MOCK_SVG);
+      await waitForAsync();
+
+      const later = TestBed.createComponent(IconComponent);
+      later.componentRef.setInput('name', 'anchor');
+      later.detectChanges();
+
+      httpMock.expectNone('/tabler-icons/outline/anchor.svg');
+      expect(later.nativeElement.querySelector('svg')).toBeTruthy();
+    });
+
+    it('does not cache a failed load — the next instance retries the asset', async () => {
+      fixture.componentRef.setInput('name', 'anchor');
+      fixture.detectChanges();
+      httpMock
+        .expectOne('/tabler-icons/outline/anchor.svg')
+        .flush('Not Found', { status: 404, statusText: 'Not Found' });
+      await waitForAsync();
+      expect(fixture.nativeElement.innerHTML).toContain('stroke-dasharray');
+
+      const retryInstance = TestBed.createComponent(IconComponent);
+      retryInstance.componentRef.setInput('name', 'anchor');
+      retryInstance.detectChanges();
+
+      httpMock.expectOne('/tabler-icons/outline/anchor.svg').flush(MOCK_SVG);
+      await waitForAsync();
+      retryInstance.detectChanges();
+      expect(retryInstance.nativeElement.querySelector('svg')).toBeTruthy();
+      expect(retryInstance.nativeElement.innerHTML).not.toContain('stroke-dasharray');
+    });
+
+    it('ignores a slow response for the previous name once the name has changed', async () => {
+      fixture.componentRef.setInput('name', 'anchor');
+      fixture.detectChanges();
+      const slowOld = httpMock.expectOne('/tabler-icons/outline/anchor.svg');
+
+      fixture.componentRef.setInput('name', 'settings');
+      fixture.detectChanges();
+      httpMock.expectOne('/tabler-icons/outline/settings.svg').flush(SECOND_SVG);
+      await waitForAsync();
+      expect(fixture.nativeElement.querySelector('svg[data-icon="second"]')).toBeTruthy();
+
+      // The old request completes late — it must not overwrite the newer icon.
+      slowOld.flush(MOCK_SVG);
+      await waitForAsync();
+      expect(fixture.nativeElement.querySelector('svg[data-icon="second"]')).toBeTruthy();
+      expect(fixture.nativeElement.querySelector('svg circle')).toBeTruthy();
+      expect(fixture.nativeElement.querySelector('svg path')).toBeNull();
+    });
+
+    it('re-applies a color change to an already loaded (fetched) icon without refetching', async () => {
+      fixture.componentRef.setInput('name', 'anchor');
+      fixture.detectChanges();
+      mockIconLoad('anchor');
+      await waitForAsync();
+      expect(fixture.nativeElement.querySelector('svg')?.style.color).toBe('currentcolor');
+
+      fixture.componentRef.setInput('color', '#FF5733');
+      fixture.detectChanges();
+
+      httpMock.expectNone('/tabler-icons/outline/anchor.svg');
+      expect(fixture.nativeElement.querySelector('svg')?.style.color).toBe('rgb(255, 87, 51)');
+    });
+
+    it('re-applies size and accessibility changes to a loaded icon', async () => {
+      fixture.componentRef.setInput('name', 'anchor');
+      fixture.detectChanges();
+      mockIconLoad('anchor');
+      await waitForAsync();
+
+      fixture.componentRef.setInput('size', 'xl');
+      fixture.componentRef.setInput('ariaLabel', 'Anchor');
+      fixture.detectChanges();
+      let svg = fixture.nativeElement.querySelector('svg');
+      expect(svg?.getAttribute('width')).toBe('40px');
+      expect(svg?.getAttribute('aria-label')).toBe('Anchor');
+      expect(svg?.getAttribute('role')).toBe('img');
+
+      fixture.componentRef.setInput('decorative', true);
+      fixture.detectChanges();
+      svg = fixture.nativeElement.querySelector('svg');
+      expect(svg?.getAttribute('aria-hidden')).toBe('true');
+      expect(svg?.hasAttribute('aria-label')).toBe(false);
+      httpMock.expectNone('/tabler-icons/outline/anchor.svg');
+    });
+
+    it('re-applies a color change to an inline icon', () => {
+      fixture.componentRef.setInput('name', 'home');
+      fixture.detectChanges();
+      httpMock.expectNone('/tabler-icons/outline/home.svg');
+      expect(fixture.nativeElement.querySelector('svg')?.style.color).toBe('currentcolor');
+
+      fixture.componentRef.setInput('color', '#FF5733');
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('svg')?.style.color).toBe('rgb(255, 87, 51)');
     });
   });
 

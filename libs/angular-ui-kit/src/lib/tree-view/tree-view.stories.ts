@@ -34,7 +34,7 @@ Tree view component for visualizing file / folder hierarchies such as a complete
 - Expand / collapse folders, plus expand-all / collapse-all
 - Two-way bound selection and a \`nodeClick\` event
 - Indentation guide lines and optional git-style status badges
-- Keyboard accessible and theme-aware
+- Keyboard accessible (single tab stop, Arrow keys / Home / End move focus, Enter / Space select, Left / Right collapse / expand) and theme-aware
 `,
       },
     },

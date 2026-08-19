@@ -21,10 +21,11 @@ Rating component for star-based value selection.
 
 **Key Features:**
 - Configurable maximum star count
-- Half-star rating support
+- Half-star rating support (click the left half of a star; arrow keys step by 0.5)
 - Multiple size variants (sm, md, lg)
-- Read-only and disabled states
+- Read-only (still focusable, \`aria-readonly\`) and disabled states
 - Hover preview with visual feedback
+- Keyboard: stars form a radiogroup — Arrow keys step, Home/End jump to the ends
 - ControlValueAccessor integration for reactive forms
 `,
       },
@@ -45,6 +46,10 @@ export const Large: Story = {
 
 export const Small: Story = {
   args: { max: 5, size: 'sm' },
+};
+
+export const HalfStars: Story = {
+  args: { max: 5, size: 'lg', allowHalf: true, label: 'Bewertung', showValue: true },
 };
 
 export const Readonly: Story = {

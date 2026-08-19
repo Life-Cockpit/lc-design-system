@@ -5,6 +5,7 @@ import {
   input,
   ViewEncapsulation,
 } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 
 /**
  * Typography component for consistent text styling.
@@ -30,8 +31,8 @@ import {
   templateUrl: './typography.component.html',
   styleUrl: './typography.component.scss',
   standalone: true,
+  imports: [NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  // eslint-disable-next-line @angular-eslint/use-component-view-encapsulation
   encapsulation: ViewEncapsulation.None, // Required for global typography utilities
 })
 export class TypographyComponent {
@@ -76,10 +77,11 @@ export class TypographyComponent {
   );
 
   /**
-   * Font weight
-   * @default 'regular'
+   * Font weight override. When unset, the variant's own weight applies
+   * (e.g. h1 is bold, body1 is regular); setting it wins over the variant.
+   * @default undefined
    */
-  weight = input<'regular' | 'medium' | 'semibold' | 'bold'>('regular');
+  weight = input<'regular' | 'medium' | 'semibold' | 'bold' | undefined>(undefined);
 
   /**
    * Text transform
@@ -121,7 +123,11 @@ export class TypographyComponent {
   });
 
   /**
-   * Compute all CSS classes based on inputs
+   * Compute all CSS classes based on inputs.
+   *
+   * Modifier classes are prefixed (`lc-typography--…`): the component renders
+   * with `ViewEncapsulation.None`, so unprefixed names such as `.uppercase` or
+   * `.mb-4` would become app-global rules that shadow Tailwind utilities.
    */
   readonly typographyClasses = computed<string>(() => {
     const classes: string[] = ['typography'];
@@ -130,49 +136,37 @@ export class TypographyComponent {
     classes.push(`typography-${this.variant()}`);
 
     // Alignment
-    const alignValue = this.align();
-    if (alignValue === 'left') classes.push('text-left');
-    if (alignValue === 'center') classes.push('text-center');
-    if (alignValue === 'right') classes.push('text-right');
-    if (alignValue === 'justify') classes.push('text-justify');
+    classes.push(`lc-typography--align-${this.align()}`);
 
     // Color
-    const colorValue = this.color();
-    if (colorValue === 'primary') classes.push('text-primary');
-    if (colorValue === 'secondary') classes.push('text-secondary');
-    if (colorValue === 'disabled') classes.push('text-disabled');
-    if (colorValue === 'error') classes.push('text-error');
-    if (colorValue === 'success') classes.push('text-success');
-    if (colorValue === 'warning') classes.push('text-warning');
-    if (colorValue === 'info') classes.push('text-info');
+    classes.push(`lc-typography--color-${this.color()}`);
 
-    // Weight
+    // Weight (only when explicitly set — otherwise the variant's weight applies)
     const weightValue = this.weight();
-    if (weightValue === 'regular') classes.push('font-regular');
-    if (weightValue === 'medium') classes.push('font-medium');
-    if (weightValue === 'semibold') classes.push('font-semibold');
-    if (weightValue === 'bold') classes.push('font-bold');
+    if (weightValue) {
+      classes.push(`lc-typography--weight-${weightValue}`);
+    }
 
     // Transform
     const transformValue = this.transform();
-    if (transformValue === 'uppercase') classes.push('uppercase');
-    if (transformValue === 'lowercase') classes.push('lowercase');
-    if (transformValue === 'capitalize') classes.push('capitalize');
+    if (transformValue !== 'none') {
+      classes.push(`lc-typography--${transformValue}`);
+    }
 
     // No wrap
     if (this.noWrap()) {
-      classes.push('whitespace-nowrap', 'overflow-hidden', 'text-ellipsis');
+      classes.push('lc-typography--nowrap');
     }
 
     // Line clamp
     const lineClampValue = this.lineClamp();
     if (lineClampValue !== undefined && lineClampValue >= 1 && lineClampValue <= 6) {
-      classes.push(`line-clamp-${lineClampValue}`);
+      classes.push(`lc-typography--clamp-${lineClampValue}`);
     }
 
     // Gutter bottom
     if (this.gutterBottom()) {
-      classes.push('mb-4');
+      classes.push('lc-typography--gutter-bottom');
     }
 
     return classes.join(' ');

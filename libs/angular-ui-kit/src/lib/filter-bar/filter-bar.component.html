@@ -2,7 +2,13 @@
   @for (filter of filters(); track filter.key) {
     <div class="lc-filter-bar__item">
       @if (filter.label) {
-        <label class="lc-filter-bar__label">{{ filter.label }}</label>
+        @if (filter.type === 'search') {
+          <label class="lc-filter-bar__label" [id]="labelId(filter.key)" [for]="fieldId(filter.key)">
+            {{ filter.label }}
+          </label>
+        } @else {
+          <span class="lc-filter-bar__label" [id]="labelId(filter.key)">{{ filter.label }}</span>
+        }
       }
 
       @switch (filter.type) {
@@ -11,7 +17,7 @@
             class="lc-filter-bar__select"
             [size]="size() === 'sm' ? 'sm' : 'md'"
             [placeholder]="filter.placeholder ?? 'Select an option'"
-            [options]="getSelectOptions(filter.options)"
+            [options]="selectOptions(filter.key)"
             [ariaLabel]="filter.label || filter.placeholder || filter.key"
             [ngModel]="getValue(filter.key)"
             (ngModelChange)="onFilterChange(filter.key, normalizeSelectValue($event))"
@@ -19,12 +25,18 @@
         }
 
         @case ('toggle') {
-          <div class="lc-filter-bar__toggle-group">
+          <div
+            class="lc-filter-bar__toggle-group"
+            role="group"
+            [attr.aria-labelledby]="filter.label ? labelId(filter.key) : null"
+            [attr.aria-label]="filter.label ? null : filter.key"
+          >
             @for (opt of filter.options; track opt.value) {
               <button
                 type="button"
                 [class]="getToggleClasses(filter.key, opt)"
                 [disabled]="opt.disabled ?? false"
+                [attr.aria-pressed]="isToggleActive(filter.key, opt.value)"
                 (click)="onFilterChange(filter.key, opt.value)"
               >
                 {{ opt.label }}
@@ -36,9 +48,13 @@
         @case ('search') {
           <lc-search-input
             class="lc-filter-bar__search"
+            [inputId]="fieldId(filter.key)"
+            [ariaLabelledBy]="filter.label ? labelId(filter.key) : undefined"
+            [ariaLabel]="filter.label ? undefined : filter.placeholder || filter.key"
             [placeholder]="filter.placeholder ?? 'Search...'"
             [size]="size() === 'sm' ? 'sm' : 'md'"
             [debounceMs]="0"
+            [value]="getValue(filter.key)"
             (searchChange)="onSearchInput(filter.key, $event)"
           />
         }

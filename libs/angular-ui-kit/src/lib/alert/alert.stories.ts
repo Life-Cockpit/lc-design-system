@@ -18,7 +18,7 @@ Use it to inform users about important state changes, errors, warnings, or confi
 - Optional title and icon
 - Dismissible option with close button
 - Action slot (\`slot="action"\`) for a button right of the body, e.g. retry
-- Accessible with ARIA role="alert"
+- Accessible: role="alert" for error / warning, role="status" otherwise; \`visible\` is two-way bindable
         `,
       },
     },
@@ -58,7 +58,7 @@ export const Error: Story = {
 
 export const Dismissible: Story = {
   parameters: {
-    docs: { description: { story: 'Dismissible alerts show a close button. The `dismissed` event fires when clicked.' } },
+    docs: { description: { story: 'Dismissible alerts show a close button. The `dismissed` event fires when clicked; bind `[(visible)]` to show the alert again later.' } },
   },
   args: { variant: 'info', title: 'Cookie Consent', message: 'We use cookies to improve your experience. By continuing, you agree to our privacy policy.', dismissible: true },
 };

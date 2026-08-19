@@ -1,12 +1,64 @@
+// lc-container — centred, max-width content column. Pure component CSS: the
+// library doesn't ship Tailwind, so the old `mx-auto max-w-screen-* px-4 …`
+// utilities never applied in consuming apps without it.
+
 :host {
   display: block;
+  box-sizing: border-box;
+  width: 100%;
+  margin-inline: auto;
+  // Horizontal padding steps up with the viewport (was px-4 / sm:px-6 / lg:px-8)
+  // and follows the density scale.
+  padding-inline: var(--lc-density-padding-md, 1rem);
 }
 
-// sm…xl and full rely entirely on Tailwind utilities. `xxl` is the exception:
-// it reads the --lc-content-max-width token instead of a Tailwind class, so the
-// cap has a single source of truth that an app shell can reference (or override)
-// and stay in lockstep with the container. The fallback keeps xxl working when
-// the DS global styles aren't imported.
+@media (min-width: 640px) {
+  :host {
+    padding-inline: var(--lc-density-padding-lg, 1.5rem);
+  }
+}
+
+@media (min-width: 1024px) {
+  :host {
+    padding-inline: var(--lc-density-padding-xl, 2rem);
+  }
+}
+
+// ── Max-width presets (Tailwind screen scale) ────────────────────────────────
+:host(.container-sm) {
+  max-width: 640px;
+}
+
+:host(.container-md) {
+  max-width: 768px;
+}
+
+:host(.container-lg) {
+  max-width: 1024px;
+}
+
+:host(.container-xl) {
+  max-width: 1280px;
+}
+
+// `xxl` reads the --lc-content-max-width token so the cap has a single source
+// of truth that an app shell can reference (or override) and stay in lockstep
+// with the container. The fallback keeps xxl working when the DS global styles
+// aren't imported.
 :host(.container-xxl) {
   max-width: var(--lc-content-max-width, 1536px);
+}
+
+:host(.container-full) {
+  max-width: none;
+}
+
+// ── Padding modifiers ────────────────────────────────────────────────────────
+// `:host(.x)` (0,2,0) beats the bare `:host` media rules above (0,1,0).
+:host(.container--no-padding) {
+  padding-inline: 0;
+}
+
+:host(.container--padding-y) {
+  padding-block: var(--lc-density-padding-lg, 1.5rem);
 }

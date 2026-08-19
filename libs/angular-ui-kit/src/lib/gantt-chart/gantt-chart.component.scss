@@ -156,6 +156,12 @@
 
   &:hover { filter: brightness(1.1); }
 
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--color-surface), 0 0 0 4px var(--color-primary-500);
+    z-index: 2;
+  }
+
   &--primary { background: var(--color-primary-500); }
   &--secondary { background: var(--color-secondary-500); }
   &--success { background: var(--color-success-default); }

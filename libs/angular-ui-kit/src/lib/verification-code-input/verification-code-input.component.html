@@ -1,39 +1,54 @@
 <div class="lc-verification-code-input">
-  <label class="lc-label">
-    {{ label }}
-    @if (required) {
-      <span class="lc-required">*</span>
-    }
-  </label>
+  <!-- The label names the whole group of digit inputs (aria-labelledby), not a single control -->
+  @if (label()) {
+    <span [id]="labelId" class="lc-label">
+      {{ label() }}
+      @if (required()) {
+        <span class="lc-required" aria-hidden="true">*</span>
+      }
+    </span>
+  }
 
-  <div class="lc-digit-inputs" (paste)="onPaste($event)">
-    @for (digit of digits; track $index; let i = $index) {
+  <div
+    [id]="groupId"
+    class="lc-digit-inputs"
+    role="group"
+    [attr.aria-labelledby]="label() ? labelId : null"
+    [attr.aria-describedby]="describedBy()"
+    (paste)="onPaste($event)"
+  >
+    @for (digit of digits(); track $index; let i = $index) {
       <input
         #digitInput
         type="text"
         inputmode="numeric"
+        [attr.autocomplete]="i === 0 ? 'one-time-code' : 'off'"
         maxlength="1"
         [value]="digit"
-        [disabled]="disabled"
-        [required]="required"
-        [attr.aria-label]="'Digit ' + (i + 1)"
-        [attr.aria-invalid]="error ? 'true' : 'false'"
+        [disabled]="isDisabled()"
+        [required]="required()"
+        [attr.aria-label]="'Digit ' + (i + 1) + ' of ' + length()"
+        [attr.aria-required]="required() || null"
+        [attr.aria-invalid]="error() ? 'true' : null"
+        [attr.aria-describedby]="error() ? errorId : null"
         (input)="onDigitInput($event, i)"
         (keydown)="onKeyDown($event, i)"
         class="lc-digit-input"
-        [class.lc-digit-input-error]="error"
+        [class.lc-digit-input-error]="error()"
         [class.lc-digit-input-filled]="digit"
       />
     }
   </div>
 
-  @if (error) {
-    <div class="lc-error" role="alert">
-      {{ error }}
+  @if (error()) {
+    <div [id]="errorId" class="lc-error" role="alert">
+      {{ error() }}
     </div>
   }
 
-  <div class="lc-hint">
-    Enter the 6-digit code sent to your email
-  </div>
+  @if (hintText()) {
+    <div [id]="hintId" class="lc-hint">
+      {{ hintText() }}
+    </div>
+  }
 </div>

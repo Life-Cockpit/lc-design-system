@@ -51,7 +51,10 @@
     font-weight: var(--font-weight-medium);
     color: var(--color-text-secondary);
     border-bottom: 2px solid transparent;
-    transition: all var(--transition-fast);
+    transition:
+      color var(--animation-duration-base) var(--animation-timing-ease),
+      background-color var(--animation-duration-base) var(--animation-timing-ease),
+      border-color var(--animation-duration-base) var(--animation-timing-ease);
     white-space: nowrap;
 
     &:hover:not(&--disabled) {
@@ -114,7 +117,7 @@
   &__panel {
     display: none;
     padding: var(--lc-density-padding-md, var(--spacing-4));
-    animation: fadeIn var(--transition-fast);
+    animation: fadeIn var(--animation-duration-base) var(--animation-timing-ease);
 
     &--active {
       display: block;

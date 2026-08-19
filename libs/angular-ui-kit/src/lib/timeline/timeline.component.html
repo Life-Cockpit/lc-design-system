@@ -1,9 +1,9 @@
 <div [class]="timelineClasses()">
-  @for (item of items(); track item.title; let last = $last) {
+  @for (item of items(); track item.id ?? $index; let last = $last) {
     <div class="timeline__item" [class.timeline__item--last]="last">
       <div class="timeline__marker" [class]="'timeline__marker--' + (item.color || 'primary')">
         @if (item.icon) {
-          <lc-icon [name]="item.icon" class="timeline__icon"></lc-icon>
+          <lc-icon [name]="item.icon" class="timeline__icon" [decorative]="true"></lc-icon>
         } @else {
           <span class="timeline__dot"></span>
         }

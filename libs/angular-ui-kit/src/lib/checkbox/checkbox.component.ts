@@ -1,7 +1,7 @@
 import {
   Component,
   input,
-  output,
+  model,
   signal,
   computed,
   ChangeDetectionStrategy,
@@ -42,6 +42,7 @@ let nextUniqueId = 0;
  * @example
  * ```html
  * <lc-checkbox label="Accept terms" />
+ * <lc-checkbox label="Select all" [(checked)]="allSelected" [indeterminate]="someSelected" />
  * ```
  */
 export class CheckboxComponent implements ControlValueAccessor {
@@ -53,35 +54,41 @@ export class CheckboxComponent implements ControlValueAccessor {
   readonly helpText = input<string>('');
   readonly size = input<CheckboxSize>('md');
   readonly required = input<boolean>(false);
+  readonly disabled = input<boolean>(false);
   readonly ariaLabel = input<string>('');
   readonly ariaLabelledBy = input<string>('');
   readonly ariaDescribedBy = input<string>('');
 
-  // Outputs
-  readonly checkedChange = output<boolean>();
+  /**
+   * Checked state (two-way bindable). Emits `checkedChange` whenever the
+   * value changes — on user toggle as well as on form writes.
+   */
+  readonly checked = model<boolean>(false);
 
-  // Internal state (exposed as signals for testing/external access)
-  readonly checked = signal(false);
-  readonly disabled = signal(false);
-  readonly indeterminate = signal(false);
+  /**
+   * Indeterminate ("partially checked") state (two-way bindable). Cleared
+   * automatically on the next user interaction; emits `indeterminateChange`.
+   */
+  readonly indeterminate = model<boolean>(false);
 
-  // Computed values
-  readonly computedChecked = computed(() => this.checked());
-  readonly computedDisabled = computed(() => this.disabled());
-  readonly computedIndeterminate = computed(() => this.indeterminate());
+  /** Disabled state pushed by a form control (`setDisabledState`). */
+  private readonly formDisabled = signal(false);
+
+  /** Effective disabled state: `disabled` input OR form control disabled. */
+  readonly isDisabled = computed(() => this.disabled() || this.formDisabled());
 
   readonly labelClasses = computed(() => {
     const classes = ['checkbox-label', `checkbox-${this.size()}`];
 
-    if (this.computedChecked()) {
+    if (this.checked()) {
       classes.push('checkbox-checked');
     }
 
-    if (this.computedDisabled()) {
+    if (this.isDisabled()) {
       classes.push('checkbox-disabled');
     }
 
-    if (this.computedIndeterminate()) {
+    if (this.indeterminate()) {
       classes.push('checkbox-indeterminate');
     }
 
@@ -94,6 +101,22 @@ export class CheckboxComponent implements ControlValueAccessor {
     }
 
     return classes.join(' ');
+  });
+
+  /** id of the rendered help text (only while it is shown). */
+  readonly helpTextId = computed(() =>
+    this.helpText() && !this.error() ? `${this.id()}-help` : null,
+  );
+
+  /** id of the rendered error message (only while it is shown). */
+  readonly errorMessageId = computed(() =>
+    this.error() && this.errorMessage() ? `${this.id()}-error` : null,
+  );
+
+  /** aria-describedby: consumer-supplied ids plus the rendered help/error text. */
+  readonly describedBy = computed(() => {
+    const ids = [this.ariaDescribedBy(), this.helpTextId(), this.errorMessageId()].filter(Boolean);
+    return ids.length ? ids.join(' ') : null;
   });
 
   // ControlValueAccessor implementation
@@ -110,12 +133,12 @@ export class CheckboxComponent implements ControlValueAccessor {
   }
 
   setDisabledState(isDisabled: boolean): void {
-    this.disabled.set(isDisabled);
+    this.formDisabled.set(isDisabled);
   }
 
   // Event handlers
   handleChange(event: Event): void {
-    if (this.computedDisabled()) {
+    if (this.isDisabled()) {
       event.preventDefault();
       return;
     }
@@ -124,13 +147,11 @@ export class CheckboxComponent implements ControlValueAccessor {
     const newValue = target.checked;
 
     // Clear indeterminate state when user interacts
-    if (this.computedIndeterminate()) {
-      this.indeterminate.set(false);
-    }
+    this.indeterminate.set(false);
 
+    // model.set() emits `checkedChange` exactly once per actual change
     this.checked.set(newValue);
     this.onChange(newValue);
-    this.checkedChange.emit(newValue);
   }
 
   handleBlur(): void {
@@ -138,6 +159,6 @@ export class CheckboxComponent implements ControlValueAccessor {
   }
 
   // Control Value Accessor callbacks (private)
-  private onChange: (value: boolean) => void = () => {};
-  private onTouched: () => void = () => {};
+  private onChange: (value: boolean) => void = () => undefined;
+  private onTouched: () => void = () => undefined;
 }

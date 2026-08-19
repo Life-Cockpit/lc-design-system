@@ -7,11 +7,13 @@ import {
   output,
   model,
   effect,
+  untracked,
   HostListener,
   OnDestroy,
 } from '@angular/core';
 import { NgTemplateOutlet, NgStyle } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { A11yModule } from '@angular/cdk/a11y';
 import { NavigationItem } from '../models/navigation-item.interface';
 import { IconComponent } from '../icon/icon.component';
 import { BadgeComponent } from '../badge/badge.component';
@@ -37,7 +39,9 @@ export type SidenavMode = 'drawer' | 'docked';
  * - Configurable width and position (left/right)
  * - Optional backdrop overlay
  * - Theme variants: auto, light, dark (with teal accent for dark mode)
- * - Accessible with ARIA navigation role
+ * - Accessible: the inner `<nav>` is the navigation landmark; in drawer mode
+ *   the panel is a modal dialog (`role="dialog"`, focus moved to the close
+ *   button on open, trapped while open, restored on close)
  *
  * @example
  * ```html
@@ -59,7 +63,7 @@ export type SidenavMode = 'drawer' | 'docked';
 @Component({
   selector: 'lc-sidenav',
   standalone: true,
-  imports: [NgTemplateOutlet, NgStyle, RouterModule, IconComponent, BadgeComponent, LogoComponent],
+  imports: [NgTemplateOutlet, NgStyle, RouterModule, A11yModule, IconComponent, BadgeComponent, LogoComponent],
   templateUrl: './sidenav.component.html',
   styleUrl: './sidenav.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -119,7 +123,10 @@ export class SidenavComponent implements OnDestroy {
   /** Width of the sidenav drawer */
   readonly width = input('320px');
 
-  /** ARIA label for the sidenav */
+  /**
+   * ARIA label of the navigation landmark (the inner `<nav>`) and, in drawer
+   * mode, of the dialog panel.
+   */
   readonly ariaLabel = input('Side navigation');
 
   /** Whether to show the overlay backdrop */
@@ -134,8 +141,30 @@ export class SidenavComponent implements OnDestroy {
   /** Theme variant for the sidenav */
   readonly theme = input<'light' | 'dark' | 'auto'>('auto');
 
-  /** Track which parent items are expanded */
+  /**
+   * Ids of the expanded parent items — the single source of truth for
+   * `isExpanded`. Seeded with the active child's parent whenever `activeRoute`
+   * changes (see constructor), so a group opens on navigation but can still
+   * be collapsed by the user. (It used to be OR-ed with `hasActiveChild` at
+   * read time, so toggling such a group flipped the set without ever closing
+   * it — the set drifted out of sync with what was on screen.)
+   */
   readonly expandedItems = signal<Set<string>>(new Set());
+
+  /** Ids of the collapsible parents (top-level groups, section sub-groups) that contain the active route. */
+  private readonly activeChildParents = computed(() => {
+    const route = this.activeRoute();
+    const ids: string[] = [];
+    for (const item of this.items()) {
+      const collapsibles = item.isSection ? (item.children ?? []) : [item];
+      for (const parent of collapsibles) {
+        if (parent.children?.some((child) => child.route === route)) {
+          ids.push(parent.id);
+        }
+      }
+    }
+    return ids;
+  });
 
   /**
    * Computed sorted navigation items by displayOrder
@@ -164,6 +193,17 @@ export class SidenavComponent implements OnDestroy {
     effect(() => {
       this.mobileBreakpoint(); // track dependency
       this.setupMediaQuery();
+    });
+
+    // Navigating into a group opens it: add the active child's parent(s) to
+    // the expanded set. Only additive — the user's own collapses/expands of
+    // other groups survive a route change.
+    effect(() => {
+      const parents = this.activeChildParents();
+      if (parents.length === 0) return;
+      const expanded = untracked(this.expandedItems);
+      if (parents.every((id) => expanded.has(id))) return;
+      this.expandedItems.set(new Set([...expanded, ...parents]));
     });
   }
 
@@ -284,15 +324,17 @@ export class SidenavComponent implements OnDestroy {
    * Check if an item is expanded
    */
   isExpanded(item: NavigationItem): boolean {
-    return this.expandedItems().has(item.id) || this.hasActiveChild(item);
+    return this.expandedItems().has(item.id);
   }
 
   /**
-   * Handle keyboard navigation
+   * Handle keyboard navigation. Keyed on the EFFECTIVE mode: a docked sidenav
+   * that has become a drawer below the mobile breakpoint must close on Escape
+   * like any drawer.
    */
   @HostListener('document:keydown', ['$event'])
   handleKeydown(event: KeyboardEvent): void {
-    if (event.key === 'Escape' && this.isOpen() && this.mode() === 'drawer') {
+    if (event.key === 'Escape' && this.isOpen() && this.effectiveMode() === 'drawer') {
       this.handleClose();
     }
   }

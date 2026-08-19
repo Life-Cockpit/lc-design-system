@@ -1,14 +1,24 @@
 .code-block {
-  // Code blocks are a consistently DARK terminal surface in both themes.
-  border: 1px solid var(--color-border);
+  // Code blocks are a consistently DARK terminal surface in both themes, so
+  // the chrome (label, copy button, line numbers, border) must NOT follow the
+  // page's ink tokens: in the light theme those resolve to dark greys and drop
+  // below 3:1 on #0c1722. Component-local, theme-independent light-on-dark ink
+  // instead — the values mirror the dark theme's tertiary/secondary ink.
+  --lc-code-block-bg: #0c1722;
+  --lc-code-block-ink: #eef4f6;
+  --lc-code-block-muted: #93a4ad;
+  --lc-code-block-muted-strong: #c4d2d9;
+  --lc-code-block-border: #24343f;
+
+  position: relative;
+  border: 1px solid var(--lc-code-block-border);
   border-radius: var(--border-radius-md);
   overflow: hidden;
   font-family: var(--typography-font-family-mono, 'SF Mono', 'Fira Code', 'Fira Mono', monospace);
   font-size: var(--typography-font-size-sm, 0.875rem);
   line-height: 1.1;
-  background-color: #0c1722;
-  color: #eef4f6;
-
+  background-color: var(--lc-code-block-bg);
+  color: var(--lc-code-block-ink);
 
   &__header {
     display: flex;
@@ -16,13 +26,12 @@
     align-items: center;
     padding: 0.5rem 1rem;
     background-color: rgba(0, 0, 0, 0.25);
-    border-bottom: 1px solid var(--color-border);
-
+    border-bottom: 1px solid var(--lc-code-block-border);
   }
 
   &__language {
     font-size: var(--typography-font-size-xs, 0.75rem);
-    color: var(--color-text-tertiary);
+    color: var(--lc-code-block-muted);
     text-transform: lowercase;
     user-select: none;
   }
@@ -35,16 +44,35 @@
     border: none;
     border-radius: var(--border-radius-sm);
     background: transparent;
-    color: var(--color-text-tertiary);
+    color: var(--lc-code-block-muted);
     font-size: var(--typography-font-size-xs, 0.75rem);
     font-family: inherit;
     cursor: pointer;
     transition: color 0.15s ease, background-color 0.15s ease;
 
     &:hover {
-      color: #c4d2d9;
-      background-color: rgba(255,255,255,0.06);
+      color: var(--lc-code-block-muted-strong);
+      background-color: rgba(255, 255, 255, 0.06);
     }
+
+    &:focus-visible {
+      outline: none;
+      color: var(--lc-code-block-muted-strong);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary-500) 40%, transparent);
+    }
+  }
+
+  // Visually hidden live region announcing the copy confirmation.
+  &__live {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
 
   &__body {
@@ -54,6 +82,11 @@
   &__pre {
     margin: 0;
     padding: 1rem;
+    // The block paints its own surface; never inherit the page's global `pre`
+    // background/ink (which follow the theme).
+    background: transparent;
+    color: inherit;
+    border-radius: 0;
   }
 
   &__code {
@@ -69,7 +102,7 @@
     min-width: 2.5rem;
     padding-right: 1rem;
     text-align: right;
-    color: var(--color-text-secondary);
+    color: var(--lc-code-block-muted);
     user-select: none;
     flex-shrink: 0;
   }

@@ -2,30 +2,61 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { SidenavComponent } from './sidenav.component';
 import { By } from '@angular/platform-browser';
 import { provideRouter } from '@angular/router';
+import { InteractivityChecker } from '@angular/cdk/a11y';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
+import { NavigationItem } from '../models/navigation-item.interface';
 
-// JSDOM does not implement matchMedia
+// JSDOM does not implement matchMedia. The mock keeps its `change` listeners so
+// a test can flip the viewport below the mobile breakpoint.
+let mediaListeners: Array<(e: MediaQueryListEvent) => void> = [];
+let mediaMatches = false;
+function emitViewportChange(matches: boolean): void {
+  mediaMatches = matches;
+  mediaListeners.forEach((listener) => listener({ matches } as MediaQueryListEvent));
+}
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
   value: jest.fn().mockImplementation((query: string) => ({
-    matches: false,
+    matches: mediaMatches,
     media: query,
     onchange: null,
     addListener: jest.fn(),
     removeListener: jest.fn(),
-    addEventListener: jest.fn(),
-    removeEventListener: jest.fn(),
+    addEventListener: jest.fn((_type: string, listener: (e: MediaQueryListEvent) => void) => {
+      mediaListeners.push(listener);
+    }),
+    removeEventListener: jest.fn((_type: string, listener: (e: MediaQueryListEvent) => void) => {
+      mediaListeners = mediaListeners.filter((l) => l !== listener);
+    }),
     dispatchEvent: jest.fn(),
   })),
 });
+
+// jsdom has no layout, so the CDK's InteractivityChecker (offsetWidth /
+// getClientRects based) deems every element invisible and the focus trap
+// would never move focus. Treat elements as visible/focusable the way a
+// browser would.
+const jsdomInteractivityChecker: Partial<InteractivityChecker> = {
+  isDisabled: (element: HTMLElement) => element.hasAttribute('disabled'),
+  isVisible: () => true,
+  isFocusable: (element: HTMLElement) => !element.hasAttribute('disabled'),
+  isTabbable: (element: HTMLElement) => !element.hasAttribute('disabled') && element.tabIndex >= 0,
+};
 
 describe('SidenavComponent', () => {
   let component: SidenavComponent;
   let fixture: ComponentFixture<SidenavComponent>;
 
   beforeEach(async () => {
+    mediaListeners = [];
+    mediaMatches = false;
     await TestBed.configureTestingModule({
       imports: [SidenavComponent],
-      providers: [provideRouter([])],
+      providers: [
+        provideRouter([]),
+        { provide: InteractivityChecker, useValue: jsdomInteractivityChecker },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(SidenavComponent);
@@ -150,9 +181,10 @@ describe('SidenavComponent', () => {
       fixture.detectChanges();
     });
 
-    it('should have navigation role', () => {
+    it('should expose the drawer panel as a modal dialog', () => {
       const aside = fixture.debugElement.query(By.css('aside'));
-      expect(aside.nativeElement.getAttribute('role')).toBe('navigation');
+      expect(aside.nativeElement.getAttribute('role')).toBe('dialog');
+      expect(aside.nativeElement.getAttribute('aria-modal')).toBe('true');
     });
 
     it('should have aria-label', () => {
@@ -166,6 +198,34 @@ describe('SidenavComponent', () => {
 
       const aside = fixture.debugElement.query(By.css('aside'));
       expect(aside.nativeElement.getAttribute('aria-label')).toBe('Custom navigation');
+    });
+
+    it('should make the inner <nav> the (only) navigation landmark, labelled with ariaLabel', () => {
+      fixture.componentRef.setInput('items', [
+        { id: 'home', icon: 'home', label: 'Home', route: '/', displayOrder: 1 },
+      ]);
+      fixture.componentRef.setInput('ariaLabel', 'Main menu');
+      fixture.detectChanges();
+
+      const aside: HTMLElement = fixture.nativeElement.querySelector('aside');
+      const nav: HTMLElement = fixture.nativeElement.querySelector('nav');
+      expect(aside.getAttribute('role')).not.toBe('navigation');
+      expect(nav.getAttribute('aria-label')).toBe('Main menu');
+      expect(fixture.nativeElement.querySelectorAll('[role="navigation"], nav').length).toBe(1);
+    });
+
+    it('docked: aside is a plain complementary region (no dialog role, no duplicate label)', () => {
+      fixture.componentRef.setInput('mode', 'docked');
+      fixture.componentRef.setInput('items', [
+        { id: 'home', icon: 'home', label: 'Home', route: '/', displayOrder: 1 },
+      ]);
+      fixture.detectChanges();
+
+      const aside: HTMLElement = fixture.nativeElement.querySelector('aside');
+      expect(aside.hasAttribute('role')).toBe(false);
+      expect(aside.hasAttribute('aria-modal')).toBe(false);
+      expect(aside.hasAttribute('aria-label')).toBe(false);
+      expect(fixture.nativeElement.querySelector('nav').getAttribute('aria-label')).toBe('Side navigation');
     });
 
     it('should have close button with aria-label', () => {
@@ -195,6 +255,78 @@ describe('SidenavComponent', () => {
       component.handleKeydown(event);
 
       expect(closeSpy).not.toHaveBeenCalled();
+    });
+
+    it('should not close a docked sidenav on Escape', () => {
+      const closeSpy = jest.spyOn(component.closed, 'emit');
+      fixture.componentRef.setInput('isOpen', true);
+      fixture.componentRef.setInput('mode', 'docked');
+      fixture.detectChanges();
+
+      component.handleKeydown(new KeyboardEvent('keydown', { key: 'Escape' }));
+
+      expect(closeSpy).not.toHaveBeenCalled();
+    });
+
+    it('should close a docked sidenav that became a drawer on mobile (effective mode)', () => {
+      const closeSpy = jest.spyOn(component.closed, 'emit');
+      fixture.componentRef.setInput('isOpen', true);
+      fixture.componentRef.setInput('mode', 'docked');
+      fixture.detectChanges();
+
+      emitViewportChange(true);
+      fixture.detectChanges();
+      expect(component.effectiveMode()).toBe('drawer');
+
+      component.handleKeydown(new KeyboardEvent('keydown', { key: 'Escape' }));
+
+      expect(closeSpy).toHaveBeenCalled();
+    });
+  });
+
+  describe('Drawer focus management', () => {
+    let opener: HTMLButtonElement;
+
+    beforeEach(() => {
+      opener = document.createElement('button');
+      opener.textContent = 'open';
+      document.body.appendChild(opener);
+      opener.focus();
+    });
+
+    afterEach(() => {
+      opener.remove();
+    });
+
+    it('moves focus to the close button when the drawer opens and traps it', () => {
+      expect(document.activeElement).toBe(opener);
+      fixture.componentRef.setInput('isOpen', true);
+      fixture.detectChanges();
+
+      const aside: HTMLElement = fixture.nativeElement.querySelector('aside');
+      const closeButton: HTMLElement = fixture.nativeElement.querySelector('.lc-sidenav__close');
+      expect(document.activeElement).toBe(closeButton);
+      // CDK focus trap anchors are attached around the panel
+      expect(aside.previousElementSibling?.classList.contains('cdk-focus-trap-anchor')).toBe(true);
+      expect(aside.nextElementSibling?.classList.contains('cdk-focus-trap-anchor')).toBe(true);
+    });
+
+    it('restores focus to the opener when the drawer closes', () => {
+      fixture.componentRef.setInput('isOpen', true);
+      fixture.detectChanges();
+      expect(document.activeElement).not.toBe(opener);
+
+      fixture.componentRef.setInput('isOpen', false);
+      fixture.detectChanges();
+      expect(document.activeElement).toBe(opener);
+    });
+
+    it('does not steal focus in docked mode', () => {
+      fixture.componentRef.setInput('mode', 'docked');
+      fixture.componentRef.setInput('isOpen', true);
+      fixture.detectChanges();
+
+      expect(document.activeElement).toBe(opener);
     });
   });
 
@@ -313,17 +445,17 @@ describe('SidenavComponent', () => {
     const mockNavItems = [
       {
         id: 'home',
-        icon: 'lc-icon-home',
+        icon: 'home',
         label: 'Home',
         route: '/',
         displayOrder: 1,
       },
       {
         id: 'trading',
-        icon: 'lc-icon-chart',
+        icon: 'chart-bar',
         label: 'Trading',
         route: '/trading',
-        requiredRole: 'LC.Trader',
+        requiredRole: 'Trader',
         displayOrder: 2,
       },
     ];
@@ -410,6 +542,140 @@ describe('SidenavComponent', () => {
       const labels = fixture.nativeElement.querySelectorAll('.lc-sidenav__nav-label');
       expect(labels[0].textContent.trim()).toBe('Trading');
       expect(labels[1].textContent.trim()).toBe('Home');
+    });
+  });
+
+  describe('Group expansion', () => {
+    const group: NavigationItem = {
+      id: 'reports',
+      icon: 'chart-bar',
+      label: 'Reports',
+      route: '',
+      displayOrder: 1,
+      children: [
+        { id: 'r1', icon: 'document', label: 'Monthly', route: '/reports/monthly', displayOrder: 1 },
+        { id: 'r2', icon: 'document', label: 'Yearly', route: '/reports/yearly', displayOrder: 2 },
+      ],
+    };
+    const section: NavigationItem = {
+      id: 'sec',
+      icon: '',
+      label: 'Section',
+      route: '',
+      displayOrder: 2,
+      isSection: true,
+      children: [
+        {
+          id: 'sub',
+          icon: 'folder',
+          label: 'Sub group',
+          route: '',
+          displayOrder: 1,
+          children: [{ id: 's1', icon: 'file', label: 'Leaf', route: '/section/leaf', displayOrder: 1 }],
+        },
+      ],
+    };
+
+    function parentButton(): HTMLButtonElement {
+      return fixture.nativeElement.querySelector('.lc-sidenav__nav-item--parent');
+    }
+
+    beforeEach(() => {
+      fixture.componentRef.setInput('isOpen', true);
+      fixture.componentRef.setInput('items', [group, section]);
+    });
+
+    it('opens the group that contains the active route', () => {
+      fixture.componentRef.setInput('activeRoute', '/reports/monthly');
+      fixture.detectChanges();
+
+      expect(component.isExpanded(group)).toBe(true);
+      expect(component.expandedItems().has('reports')).toBe(true);
+      expect(parentButton().getAttribute('aria-expanded')).toBe('true');
+      expect(fixture.nativeElement.querySelector('.lc-sidenav__nav-children')).toBeTruthy();
+    });
+
+    it('opens a section sub-group that contains the active route', () => {
+      fixture.componentRef.setInput('activeRoute', '/section/leaf');
+      fixture.detectChanges();
+
+      expect(component.expandedItems().has('sub')).toBe(true);
+      expect(component.expandedItems().has('reports')).toBe(false);
+    });
+
+    it('lets the user collapse a group with the active child, and the set stays in sync', () => {
+      fixture.componentRef.setInput('activeRoute', '/reports/monthly');
+      fixture.detectChanges();
+      expect(component.isExpanded(group)).toBe(true);
+
+      component.toggleExpanded(group);
+      fixture.detectChanges();
+      expect(component.isExpanded(group)).toBe(false);
+      expect(component.expandedItems().has('reports')).toBe(false);
+      expect(parentButton().getAttribute('aria-expanded')).toBe('false');
+      expect(fixture.nativeElement.querySelector('.lc-sidenav__nav-children')).toBeNull();
+
+      component.toggleExpanded(group);
+      fixture.detectChanges();
+      expect(component.isExpanded(group)).toBe(true);
+      expect(parentButton().getAttribute('aria-expanded')).toBe('true');
+    });
+
+    it('re-opens the group when the route changes to another of its children', () => {
+      fixture.componentRef.setInput('activeRoute', '/reports/monthly');
+      fixture.detectChanges();
+      component.toggleExpanded(group);
+      fixture.detectChanges();
+      expect(component.isExpanded(group)).toBe(false);
+
+      fixture.componentRef.setInput('activeRoute', '/reports/yearly');
+      fixture.detectChanges();
+      expect(component.isExpanded(group)).toBe(true);
+    });
+
+    it('keeps a manually opened group open across a route change elsewhere', () => {
+      fixture.detectChanges();
+      component.toggleExpanded(group);
+      fixture.detectChanges();
+      expect(component.isExpanded(group)).toBe(true);
+
+      fixture.componentRef.setInput('activeRoute', '/section/leaf');
+      fixture.detectChanges();
+      expect(component.isExpanded(group)).toBe(true);
+      expect(component.expandedItems().has('sub')).toBe(true);
+    });
+
+    it('un-collapses the rail and opens the clicked group', () => {
+      fixture.componentRef.setInput('mode', 'docked');
+      component.collapsed.set(true);
+      fixture.detectChanges();
+
+      component.toggleExpanded(group);
+      fixture.detectChanges();
+      expect(component.collapsed()).toBe(false);
+      expect(component.isExpanded(group)).toBe(true);
+    });
+  });
+
+  describe('Collapsed rail tooltip (stylesheet contract)', () => {
+    // jsdom does not apply component styles; the tooltip rule is checked
+    // against the source. The bubble floats over the content area, which
+    // follows the root theme, so it must use the semantic surface/ink tokens —
+    // `--color-neutral-900` + `#fff` inverted to white-on-white in dark.
+    const scss = readFileSync(resolve(__dirname, 'sidenav.component.scss'), 'utf-8');
+    const start = scss.indexOf('content: attr(title);');
+    const ruleStart = scss.lastIndexOf('&:hover::after', start);
+    const rule = scss.slice(ruleStart, scss.indexOf('}', start));
+
+    it('is shown on keyboard focus as well as on hover', () => {
+      expect(rule).toContain('&:focus-visible::after');
+    });
+
+    it('uses non-inverting surface and ink tokens', () => {
+      expect(rule).toContain('var(--color-surface-raised)');
+      expect(rule).toContain('var(--color-text-primary)');
+      expect(rule).not.toMatch(/--color-neutral-/);
+      expect(rule).not.toMatch(/color:\s*#fff\b/);
     });
   });
 });

@@ -1,5 +1,7 @@
 <div class="lc-area-chart">
-  <svg width="100%" [attr.height]="height()" [attr.viewBox]="viewBox()" role="img" aria-label="Area chart" class="lc-area-chart__svg">
+  <svg width="100%" [attr.height]="height()" [attr.viewBox]="viewBox()" role="img" [attr.aria-label]="effectiveAriaLabel()" class="lc-area-chart__svg">
+    <title>{{ effectiveAriaLabel() }}</title>
+
     @for (line of gridLines(); track line.y) {
       <line [attr.x1]="axisLine().hx1" [attr.y1]="line.y" [attr.x2]="axisLine().hx2" [attr.y2]="line.y" class="lc-area-chart__grid" />
       @if (showYLabels()) {
@@ -14,7 +16,7 @@
       <text [attr.x]="lbl.x" [attr.y]="lbl.y" text-anchor="middle" class="lc-area-chart__axis-label">{{ lbl.label }}</text>
     }
 
-    @for (ser of renderedSeries(); track ser.label) {
+    @for (ser of renderedSeries(); track $index) {
       @if (ser.areaD) {
         <path [attr.d]="ser.areaD" [attr.fill]="ser.color" [attr.opacity]="fillOpacity()" class="lc-area-chart__area" />
       }
@@ -22,14 +24,14 @@
         <path [attr.d]="ser.lineD" [attr.stroke]="ser.color" [attr.stroke-width]="strokeWidth()" fill="none" stroke-linecap="round" stroke-linejoin="round" class="lc-area-chart__line" />
       }
       @for (pt of ser.points; track $index) {
-        <circle [attr.cx]="pt.x" [attr.cy]="pt.y" r="3" [attr.fill]="ser.color" stroke="white" stroke-width="1.5" class="lc-area-chart__dot" />
+        <circle [attr.cx]="pt.x" [attr.cy]="pt.y" r="3" [attr.fill]="ser.color" stroke="var(--color-surface)" stroke-width="1.5" class="lc-area-chart__dot" />
       }
     }
   </svg>
 
   @if (legendItems().length) {
     <div class="lc-area-chart__legend">
-      @for (item of legendItems(); track item.label) {
+      @for (item of legendItems(); track $index) {
         <div class="lc-area-chart__legend-item">
           <span class="lc-area-chart__legend-swatch" [style.background-color]="item.color"></span>
           <span class="lc-area-chart__legend-text">{{ item.label }}</span>

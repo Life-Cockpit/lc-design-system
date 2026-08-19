@@ -69,19 +69,20 @@
   justify-content: center;
   flex-shrink: 0;
   border: 2px solid var(--color-neutral-400);
-  border-radius: var(--border-radius-sm);
+  // The radius scale starts at 10px (--border-radius-sm), which rounds a 16–20px
+  // box into a circle and makes it indistinguishable from a radio. A literal
+  // small radius keeps it recognisably square.
+  border-radius: 4px;
   background-color: var(--color-surface);
   transition: all 150ms ease-in-out;
   box-sizing: border-box;
 
-  .checkbox-checked & {
-    background-color: var(--color-primary-500);
-    border-color: var(--color-primary-500);
-  }
-
+  // primary-fill / on-primary keep the check legible in both themes
+  // (primary-500 + white is ~1.9:1 in dark)
+  .checkbox-checked &,
   .checkbox-indeterminate & {
-    background-color: var(--color-primary-500);
-    border-color: var(--color-primary-500);
+    background-color: var(--color-primary-fill);
+    border-color: var(--color-primary-fill);
   }
 
   .checkbox-error & {
@@ -96,7 +97,7 @@
 .checkbox-icon {
   width: 100%;
   height: 100%;
-  color: white;
+  color: var(--color-on-primary);
   opacity: 0;
   transform: scale(0.8);
   transition: all 150ms ease-in-out;
@@ -124,7 +125,7 @@
 .checkbox-error-message {
   font-size: 0.875rem;
   line-height: 1.25rem;
-  color: var(--color-error);
+  color: var(--color-text-error);
   margin-top: 0.25rem;
   margin-left: calc(var(--checkbox-size) + 0.5rem);
 }
@@ -173,7 +174,7 @@
 // Required indicator
 .checkbox-required .checkbox-label-text::after {
   content: ' *';
-  color: var(--color-error);
+  color: var(--color-text-error);
 }
 
 // Animation for state changes

@@ -480,22 +480,227 @@ describe('DependencyViewerComponent', () => {
     expect(crossingsOf(crossRef, ['Near', 'Far'])).toEqual([]);
   });
 
-  it('should leave a clear cross-reference on its direct route', () => {
+  it('should leave a clear cross-reference to a later column on its direct route', () => {
+    // 'b1' depends on 'a', one column back and nothing in between: the gutter
+    // S-curve is the route, and it must not detour over or under the rows.
     host.root.set({
       id: 'root',
       label: 'Root',
       children: [
         { id: 'a', label: 'A' },
-        { id: 'b', label: 'B', dependsOn: [{ id: 'a', relation: 'blocks' }] },
+        { id: 'b', label: 'B', children: [{ id: 'b1', label: 'B1', dependsOn: [{ id: 'a', relation: 'blocks' }] }] },
       ],
     });
     fixture.detectChanges();
 
     const crossRef = el.querySelector('.dep-viewer__edge--cross-ref') as SVGPathElement;
-    // No obstacle between them, so no detour: the path must not dip below the row.
-    const lowest = Math.max(...nodeBoxes().map(b => b.y + b.h));
+    const boxes = nodeBoxes();
+    const lowest = Math.max(...boxes.map(b => b.y + b.h));
+    const highest = Math.min(...boxes.map(b => b.y));
     const pts = sampleCubic(crossRef.getAttribute('d') ?? '');
     expect(Math.max(...pts.map(p => p.y))).toBeLessThanOrEqual(lowest + 1);
+    expect(Math.min(...pts.map(p => p.y))).toBeGreaterThanOrEqual(highest - 1);
+  });
+
+  // ── Sibling cross-references ─────────────────────────────────
+  // Two nodes in the same column have no gutter between them. The old "direct"
+  // S-curve ran backwards through both endpoints and surfaced only in the gap
+  // between them — a diagonal stub that read as an edge from nowhere to nowhere.
+
+  const box = (label: string) => nodeBoxes().find(b => b.id === label)!;
+
+  it('should route a cross-reference between siblings beside the column, not through it', () => {
+    host.root.set({
+      id: 'root',
+      label: 'Root',
+      children: [
+        { id: 'a', label: 'A' },
+        { id: 'b', label: 'B', dependsOn: [{ id: 'a', relation: 'requires' }] },
+      ],
+    });
+    fixture.detectChanges();
+
+    const crossRef = el.querySelector('.dep-viewer__edge--cross-ref') as SVGPathElement;
+    const pts = sampleCubic(crossRef.getAttribute('d') ?? '');
+    const a = box('A');
+    const b = box('B');
+    // Every point of the path lies on or beyond the column's right edge…
+    const columnRight = Math.max(a.x + a.w, b.x + b.w);
+    for (const p of pts) expect(p.x).toBeGreaterThanOrEqual(columnRight - 0.01);
+    // …and it clears the boxes by a visible margin at its apex.
+    expect(Math.max(...pts.map(p => p.x))).toBeGreaterThan(columnRight + 20);
+    // It stays within the rows it connects — no dip below or rise above them.
+    expect(Math.min(...pts.map(p => p.y))).toBeGreaterThanOrEqual(a.y);
+    expect(Math.max(...pts.map(p => p.y))).toBeLessThanOrEqual(b.y + b.h);
+  });
+
+  it('should spread overlapping sibling bows into distinct lanes', () => {
+    // Three siblings all depending on the first: three bows down the same side,
+    // sharing a start point. Drawn at one clearance they'd lie on top of each
+    // other and read as one edge with three arrowheads.
+    host.root.set({
+      id: 'root',
+      label: 'Root',
+      children: [
+        { id: 'a', label: 'A' },
+        { id: 'b', label: 'B', dependsOn: [{ id: 'a', relation: 'requires' }] },
+        { id: 'c', label: 'C', dependsOn: [{ id: 'a', relation: 'requires' }] },
+        { id: 'd', label: 'D', dependsOn: [{ id: 'a', relation: 'requires' }] },
+      ],
+    });
+    fixture.detectChanges();
+
+    const crossRefs = Array.from(el.querySelectorAll('.dep-viewer__edge--cross-ref'));
+    expect(crossRefs.length).toBe(3);
+    const apexes = crossRefs.map(e => Math.max(...sampleCubic(e.getAttribute('d') ?? '').map(p => p.x)));
+    // Every apex is its own — no two bows peak at the same distance…
+    expect(new Set(apexes.map(x => Math.round(x))).size).toBe(3);
+    // …and they nest: at least a lane's width between neighbours.
+    const sorted = [...apexes].sort((x, y) => x - y);
+    expect(sorted[1] - sorted[0]).toBeGreaterThanOrEqual(12);
+    expect(sorted[2] - sorted[1]).toBeGreaterThanOrEqual(12);
+    // Nothing runs through the sibling in between.
+    for (const e of crossRefs) {
+      const through = crossingsOf(e, ['A', 'B', 'C', 'D']);
+      expect(through).toEqual([]);
+    }
+  });
+
+  it('should attach a sideways bow beside the collapse toggle of a node with children', () => {
+    // 'B' has children, so its right side carries the toggle disc at its midpoint.
+    // An arrowhead delivered under the disc is invisible — the bow attaches beside it.
+    host.root.set({
+      id: 'root',
+      label: 'Root',
+      children: [
+        { id: 'a', label: 'A' },
+        { id: 'b', label: 'B', children: [{ id: 'b1', label: 'B1' }], dependsOn: [{ id: 'a', relation: 'requires' }] },
+      ],
+    });
+    fixture.detectChanges();
+
+    const crossRef = el.querySelector('.dep-viewer__edge--cross-ref') as SVGPathElement;
+    const nums = (crossRef.getAttribute('d') ?? '').match(/-?\d+(\.\d+)?/g)!.map(Number);
+    const endY = nums[nums.length - 1];
+    const b = box('B');
+    const midY = b.y + b.h / 2;
+    // Beside the disc (radius 8), still on the box's edge.
+    expect(Math.abs(endY - midY)).toBeGreaterThan(8);
+    expect(endY).toBeGreaterThan(b.y);
+    expect(endY).toBeLessThan(b.y + b.h);
+  });
+
+  it('should widen the gutter when sibling bows would reach the next column', () => {
+    // 'A' has a child in the next column, so its bows swing into an inner gutter.
+    // Three nested lanes plus the toggle disc need more than the default 80px —
+    // the next column has to move over rather than have the bows run into it.
+    const roomy = (deps: number) => ({
+      id: 'root',
+      label: 'Root',
+      children: [
+        { id: 'a', label: 'A', children: [{ id: 'a1', label: 'A1' }] },
+        ...Array.from({ length: deps }, (_, i) => ({
+          id: `s${i}`, label: `S${i}`, dependsOn: [{ id: 'a', relation: 'requires' as const }],
+        })),
+      ],
+    });
+
+    host.root.set(roomy(0));
+    fixture.detectChanges();
+    const plain = box('A1').x - (box('A').x + box('A').w);
+
+    host.root.set(roomy(3));
+    fixture.detectChanges();
+    const widened = box('A1').x - (box('A').x + box('A').w);
+    expect(widened).toBeGreaterThan(plain);
+
+    // And the bows do stay out of the next column.
+    for (const e of Array.from(el.querySelectorAll('.dep-viewer__edge--cross-ref'))) {
+      expect(crossingsOf(e, ['A', 'S0', 'S1', 'S2'])).toEqual([]);
+    }
+  });
+
+  // ── Label fitting ────────────────────────────────────────────
+  // Boxes are one size per graph. Short labels keep the 160px box; a long one
+  // widens every box up to a cap, and past the cap labels wrap and then truncate.
+
+  // The node group whose label starts with `prefix` — a wrapped label's text is
+  // its lines run together, so match on the start rather than the whole.
+  const labelOf = (prefix: string) =>
+    Array.from(el.querySelectorAll('.dep-viewer__node')).find(n =>
+      n.querySelector('.dep-viewer__node-label')?.textContent?.startsWith(prefix),
+    )!;
+
+  it('should keep the default box for short labels', () => {
+    const r = el.querySelector('.dep-viewer__node-fill') as SVGRectElement;
+    expect(r.getAttribute('width')).toBe('160');
+    expect(r.getAttribute('height')).toBe('40');
+  });
+
+  it('should widen every box for a long label, up to a cap', () => {
+    host.root.set({
+      id: 'root',
+      label: 'Root',
+      children: [{ id: 'long', label: 'A label that is a good deal longer than the box' }],
+    });
+    fixture.detectChanges();
+
+    const widths = Array.from(el.querySelectorAll('.dep-viewer__node-fill')).map(r => +(r.getAttribute('width') ?? 0));
+    expect(new Set(widths).size).toBe(1); // one size per graph
+    expect(widths[0]).toBeGreaterThan(160);
+    expect(widths[0]).toBeLessThanOrEqual(240);
+  });
+
+  it('should wrap a label the widest box cannot hold onto a second line', () => {
+    host.root.set({
+      id: 'root',
+      label: 'Root',
+      children: [{ id: 'long', label: 'A very long label that certainly exceeds the widest box the viewer allows' }],
+    });
+    fixture.detectChanges();
+
+    const g = labelOf('A very long');
+    const spans = g.querySelectorAll('.dep-viewer__node-label tspan');
+    expect(spans.length).toBe(2);
+    // Two lines: the graph switches to the taller box.
+    const r = g.querySelector('.dep-viewer__node-fill') as SVGRectElement;
+    expect(r.getAttribute('width')).toBe('240');
+    expect(+(r.getAttribute('height') ?? 0)).toBeGreaterThan(40);
+    // The second line continues below the first, both centred on the box.
+    expect(spans[1].getAttribute('dy')).not.toBe('0');
+    expect(spans[0].getAttribute('x')).toBe(spans[1].getAttribute('x'));
+  });
+
+  it('should ellipsise what two lines cannot hold and offer the full label as a tooltip', () => {
+    const label = 'An extremely long label that goes on and on well past what even two lines of the widest box could ever hold';
+    host.root.set({ id: 'root', label: 'Root', children: [{ id: 'long', label }] });
+    fixture.detectChanges();
+
+    const g = labelOf('An extremely');
+    const spans = Array.from(g.querySelectorAll('.dep-viewer__node-label tspan'));
+    expect(spans.length).toBe(2);
+    expect(spans[1].textContent?.endsWith('…')).toBe(true);
+    expect(g.querySelector('title')?.textContent).toBe(label);
+  });
+
+  it('should not add a tooltip to a label that fits', () => {
+    expect(el.querySelector('.dep-viewer__node title')).toBeNull();
+  });
+
+  it('should keep the box size stable when a subtree is collapsed', () => {
+    host.root.set({
+      id: 'root',
+      label: 'Root',
+      children: [{ id: 'p', label: 'P', children: [{ id: 'long', label: 'A label that is a good deal longer than the box' }] }],
+    });
+    fixture.detectChanges();
+    const before = (el.querySelector('.dep-viewer__node-fill') as SVGRectElement).getAttribute('width');
+
+    viewerOf().collapse('p');
+    fixture.detectChanges();
+    const after = (el.querySelector('.dep-viewer__node-fill') as SVGRectElement).getAttribute('width');
+    expect(after).toBe(before);
+    expect(before).not.toBe('160');
   });
 
   it('should never route a parent→child edge through another node', () => {

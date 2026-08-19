@@ -37,6 +37,7 @@ validation, accessibility, and customization features.
       table: { defaultValue: { summary: 'md' } },
     },
     label: { control: 'text', description: 'Label displayed above the input' },
+    value: { control: 'text', description: 'Current value (two-way bindable via [(value)])' },
     placeholder: { control: 'text', description: 'Placeholder text' },
     helperText: { control: 'text', description: 'Helper text below the input' },
     error: { control: 'text', description: 'Error message (activates error state)' },
@@ -116,7 +117,7 @@ export const LoginForm: Story = {
     template: `
       <div style="max-width: 360px; padding: 24px; border: 1px solid #e5e7eb; border-radius: 12px;">
         <h2 style="margin: 0 0 4px; font-size: 20px; font-weight: 600;">Welcome back</h2>
-        <p style="margin: 0 0 20px; font-size: 14px; color: #6b7280;">Sign in to your account</p>
+        <p style="margin: 0 0 20px; font-size: 14px; color: var(--color-text-secondary);">Sign in to your account</p>
         <div style="display: flex; flex-direction: column; gap: 16px;">
           <lc-input label="Email" type="email" placeholder="you@company.com" iconBefore="envelope" [required]="true"></lc-input>
           <lc-input label="Password" type="password" placeholder="••••••••" [required]="true"></lc-input>

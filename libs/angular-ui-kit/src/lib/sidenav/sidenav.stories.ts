@@ -83,18 +83,18 @@ Sidenav component for application navigation sidebar.
 | Input | Type | Default | Description |
 |---|---|---|---|
 | \`isOpen\` | \`boolean\` | \`false\` | Whether the sidenav is visible |
-| \`mode\` | \`'drawer' \| 'docked'\` | \`'drawer'\` | Overlay or persistent sidebar |
-| \`position\` | \`'left' \| 'right'\` | \`'left'\` | Side of viewport |
+| \`mode\` | \`'drawer' \\| 'docked'\` | \`'drawer'\` | Overlay or persistent sidebar |
+| \`position\` | \`'left' \\| 'right'\` | \`'left'\` | Side of viewport |
 | \`width\` | \`string\` | \`'320px'\` | CSS width |
 | \`collapsed\` | \`boolean\` | \`false\` | Icon-rail mode |
 | \`showLogo\` | \`boolean\` | \`false\` | Show logo area at top |
-| \`logoSize\` | \`'xs' \| 'sm' \| 'md' \| 'lg' \| 'xl'\` | \`'md'\` | Size of the brand logo (logo area grows automatically) |
+| \`logoSize\` | \`'xs' \\| 'sm' \\| 'md' \\| 'lg' \\| 'xl'\` | \`'md'\` | Size of the brand logo (logo area grows automatically) |
 | \`mobileBreakpoint\` | \`number\` | \`768\` | Viewport width (px) below which docked → drawer |
 | \`items\` | \`NavigationItem[]\` | \`[]\` | Navigation items |
 | \`activeRoute\` | \`string\` | \`''\` | Currently active route |
 | \`hasOverlay\` | \`boolean\` | \`true\` | Show backdrop in drawer mode |
 | \`ariaLabel\` | \`string\` | \`'Side navigation'\` | ARIA label |
-| \`theme\` | \`'auto' \| 'light' \| 'dark'\` | \`'auto'\` | Theme variant |
+| \`theme\` | \`'auto' \\| 'light' \\| 'dark'\` | \`'auto'\` | Theme variant |
 
 **Outputs:**
 | Output | Payload | Description |
@@ -481,13 +481,13 @@ export const CollapsedRailBadges: Story = {
     template: `
       <div style="display: flex; gap: 32px; align-items: flex-start;">
         <div>
-          <p style="margin: 0 0 8px; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #6b7280;">Dark (default)</p>
+          <p style="margin: 0 0 8px; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--color-text-secondary);">Dark (default)</p>
           <div style="height: 340px; border-radius: 8px; overflow: hidden;">
             <lc-sidenav [isOpen]="true" mode="docked" [collapsed]="true" theme="dark" [items]="items" activeRoute="/b"></lc-sidenav>
           </div>
         </div>
         <div>
-          <p style="margin: 0 0 8px; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: #6b7280;">Light</p>
+          <p style="margin: 0 0 8px; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--color-text-secondary);">Light</p>
           <div style="height: 340px; border-radius: 8px; overflow: hidden;">
             <lc-sidenav [isOpen]="true" mode="docked" [collapsed]="true" theme="light" [items]="items" activeRoute="/b"></lc-sidenav>
           </div>
@@ -697,8 +697,8 @@ export const SidebarFirstProminentBrand: Story = {
               isSection: true,
               action: { icon: 'plus', ariaLabel: 'Add project' },
               children: [
-                { id: 'p1', icon: 'folder', label: 'LC Factory', route: '/projects/factory', displayOrder: 1 },
-                { id: 'p2', icon: 'folder', label: 'LC Design', route: '/projects/design', displayOrder: 2 }
+                { id: 'p1', icon: 'folder', label: 'Project Alpha', route: '/projects/alpha', displayOrder: 1 },
+                { id: 'p2', icon: 'folder', label: 'Project Beta', route: '/projects/beta', displayOrder: 2 }
               ]
             },
             { id: '10', icon: 'cog-6-tooth', label: 'Org Settings', route: '/settings', displayOrder: 10 }

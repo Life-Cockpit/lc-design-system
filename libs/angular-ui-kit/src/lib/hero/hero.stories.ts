@@ -78,8 +78,8 @@ const statValueStyle = 'font-size: 14px; font-weight: 500;';
 
 export const Default: Story = {
   args: {
-    label: 'LIFE-COCKPIT FACTORY',
-    title: 'Software wird spec-driven gebaut. Nicht prompt-driven.',
+    label: 'PROJEKT ALPHA',
+    title: 'Ein Hero-Bereich für die wichtigste Aussage der Seite.',
     color: 'primary',
     size: 'md',
     borderRadius: 'lg',
@@ -89,26 +89,25 @@ export const Default: Story = {
     template: `
       <lc-hero [label]="label" [title]="title" [color]="color" [size]="size" [borderRadius]="borderRadius">
         <p style="margin: 0;">
-          Eine industrialisierte Plattform für AI-getriebene Softwareentwicklung.
-          Aus einer Spezifikation entstehen vollständige Features — UI, Backend, Tests, Doku —
-          durch orchestrierte KI-Agenten mit menschlicher Kontrolle an jedem kritischen Punkt.
+          Ein bis zwei Sätze erläuternder Text unter der Überschrift. Der Hero trägt
+          die Kernaussage und eine Handvoll Kennzahlen im Footer-Slot.
         </p>
         <div hero-footer>
           <div style="${footerStatStyle}">
             <span style="${statLabelStyle}">STAND</span>
-            <span style="${statValueStyle}">Mai 2026 · Production-Ready Core</span>
+            <span style="${statValueStyle}">Q2 · Phase zwei</span>
           </div>
           <div style="${footerStatStyle}">
-            <span style="${statLabelStyle}">STACK</span>
-            <span style="${statValueStyle}">Python 3.13 · FastAPI · PostgreSQL · Bedrock</span>
+            <span style="${statLabelStyle}">TEAM</span>
+            <span style="${statValueStyle}">4 Personen · 2 Standorte</span>
           </div>
           <div style="${footerStatStyle}">
             <span style="${statLabelStyle}">TESTABDECKUNG</span>
-            <span style="${statValueStyle}">1.384 Tests grün</span>
+            <span style="${statValueStyle}">1.200 Tests grün</span>
           </div>
           <div style="${footerStatStyle}">
-            <span style="${statLabelStyle}">MULTI-TENANCY</span>
-            <span style="${statValueStyle}">RLS-isoliert · audit-ready</span>
+            <span style="${statLabelStyle}">STATUS</span>
+            <span style="${statValueStyle}">Im Plan · Review offen</span>
           </div>
         </div>
       </lc-hero>`,

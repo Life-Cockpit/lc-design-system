@@ -9,6 +9,9 @@ const meta: Meta<NumberInputComponent> = {
     max: { control: 'number' },
     step: { control: 'number' },
     disabled: { control: 'boolean' },
+    helperText: { control: 'text' },
+    error: { control: 'text' },
+    ariaLabel: { control: 'text' },
   },
 
   parameters: {
@@ -18,9 +21,10 @@ const meta: Meta<NumberInputComponent> = {
 Number input component with increment/decrement controls.
 
 **Key Features:**
-- Increment and decrement buttons
-- Configurable min, max, and step values
-- Value clamping within bounds
+- Increment and decrement buttons (ArrowUp / ArrowDown on the field do the same)
+- Configurable min, max, and step values; stepping is rounded to the step's precision
+- Non-numeric characters are rejected while typing; the value is clamped on blur
+- Helper text and error message linked via \`aria-describedby\`
 - Disabled state support
 - ControlValueAccessor integration for reactive forms
 `,
@@ -48,6 +52,18 @@ export const NoLimits: Story = {
   args: { label: 'Value', step: 1 },
 };
 
+export const DecimalStep: Story = {
+  args: { label: 'Weight', min: 0, max: 5, step: 0.1 },
+};
+
+export const WithHelperText: Story = {
+  args: { label: 'Seats', min: 1, max: 8, step: 1, helperText: 'Between 1 and 8' },
+};
+
+export const WithError: Story = {
+  args: { label: 'Seats', min: 1, max: 8, step: 1, error: 'Please enter a value' },
+};
+
 export const NoLabel: Story = {
-  args: { min: 1, max: 10, step: 1 },
+  args: { min: 1, max: 10, step: 1, ariaLabel: 'Amount' },
 };

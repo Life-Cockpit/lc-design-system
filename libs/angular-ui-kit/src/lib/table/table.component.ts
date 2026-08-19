@@ -1,11 +1,13 @@
 import {
   Component,
   ChangeDetectionStrategy,
+  ElementRef,
   input,
   output,
   computed,
   signal,
   linkedSignal,
+  viewChildren,
   ContentChildren,
   QueryList,
 } from '@angular/core';
@@ -98,6 +100,7 @@ export interface CellEditEvent {
   column: string;
   oldValue: unknown;
   newValue: unknown;
+  /** Index of `row` in the `data` input (not its position on screen). */
   rowIndex: number;
 }
 
@@ -136,11 +139,20 @@ interface DisplayRow {
   /** The underlying data object. */
   row: Record<string, unknown>;
   /**
-   * Absolute index used for selection, inline editing and action callbacks.
-   * Flat mode: the positional absolute index (page offset + relative index),
-   * preserving today's behavior. Tree mode: the row's index into `data()`.
+   * The row's index into `data()` — in both modes. It is what action, class,
+   * style and formatter callbacks receive as `rowIndex`, and what identifies
+   * the row in `CellEditEvent`. (It used to be the *positional* index in flat
+   * mode — page offset plus row position — which, once a sort or filter was
+   * active, pointed at a different row of `data()` than the one on screen.)
    */
   absIndex: number;
+  /**
+   * What selection and inline editing are keyed by: the row's `idKey` value
+   * when the table has one, otherwise the row object itself. Either survives a
+   * re-sort, a filter and a page change; an id also survives the parent
+   * replacing its data array with fresh objects.
+   */
+  key: unknown;
   /** Row id (tree mode only; `null` in flat mode). */
   id: string | null;
   /** Tree depth — 0 for roots and for every row in flat mode. */
@@ -319,16 +331,44 @@ export class TableComponent {
 
   // -- Internal state --
   protected currentSort = signal<{ column: string; direction: 'asc' | 'desc' } | null>(null);
-  protected currentPage = signal(0);
   /**
    * Effective page size. Seeded from the `pageSize` input (resetting if it
    * changes) and overridable by the user via the page-size dropdown.
    */
   protected internalPageSize = linkedSignal(() => this.pageSize());
-  protected selectedRows = signal<Set<number>>(new Set());
+  /**
+   * Current page, kept within range: when the data shrinks or the page size
+   * grows so that the page no longer exists, it moves back to the last one
+   * (rather than showing an empty page captioned "31–30 of 30").
+   */
+  protected currentPage = linkedSignal<number, number>({
+    source: () => this.totalPages(),
+    computation: (total, previous) => Math.min(previous?.value ?? 0, total - 1),
+  });
+  /**
+   * Selected row keys (see `DisplayRow.key`). Pruned when `data` changes, so
+   * a key whose row is gone doesn't linger and count towards "all selected".
+   */
+  protected selectedRows = linkedSignal<Set<unknown>, Set<unknown>>({
+    source: () => this.rowKeys(),
+    computation: (keys, previous) => {
+      if (!previous) return new Set<unknown>();
+      const kept = new Set([...previous.value].filter((k) => keys.has(k)));
+      return kept.size === previous.value.size ? previous.value : kept;
+    },
+  });
   protected columnFilters = signal<Record<string, string>>({});
-  protected editingCell = signal<{ rowIndex: number; column: string } | null>(null);
+  protected editingCell = signal<{ key: unknown; column: string } | null>(null);
   protected editValue = signal<string>('');
+
+  /** The key of every row currently in `data()`. */
+  private readonly rowKeys = computed(() => new Set(this.data().map((row) => this.rowKey(row))));
+
+  /** See `DisplayRow.key`. */
+  private rowKey(row: Record<string, unknown>): unknown {
+    const idKey = this.idKey();
+    return idKey ? String(row[idKey] ?? '') : row;
+  }
   /** User expand/collapse overrides keyed by row id (uncontrolled mode). */
   private readonly expandOverrides = signal<Map<string, boolean>>(new Map());
 
@@ -505,10 +545,12 @@ export class TableComponent {
    * tree mode it paginates roots and flattens each visible (expanded) subtree.
    */
   protected readonly displayRows = computed<DisplayRow[]>(() => {
+    const dataIndex = this.dataIndexMap();
     if (!this.treeMode()) {
-      return this.displayData().map((row, i) => ({
+      return this.displayData().map((row) => ({
         row,
-        absIndex: this.getAbsoluteIndex(i),
+        absIndex: dataIndex.get(row) ?? -1,
+        key: this.rowKey(row),
         id: null,
         depth: 0,
         level: 0,
@@ -528,7 +570,6 @@ export class TableComponent {
       roots = roots.slice(start, start + ps);
     }
 
-    const dataIndex = this.dataIndexMap();
     const out: DisplayRow[] = [];
     const walk = (group: Record<string, unknown>[], depth: number): void => {
       group.forEach((row, idx) => {
@@ -539,6 +580,7 @@ export class TableComponent {
         out.push({
           row,
           absIndex: dataIndex.get(row) ?? -1,
+          key: this.rowKey(row),
           id,
           depth,
           level: depth + 1,
@@ -574,7 +616,13 @@ export class TableComponent {
     const rows = this.displayRows();
     if (rows.length === 0) return false;
     const selected = this.selectedRows();
-    return rows.every((r) => selected.has(r.absIndex));
+    return rows.every((r) => selected.has(r.key));
+  });
+
+  /** Whether some, but not all, visible rows are selected — the header box's mixed state. */
+  protected readonly someSelected = computed(() => {
+    const selected = this.selectedRows();
+    return !this.allSelected() && this.displayRows().some((r) => selected.has(r.key));
   });
 
   protected readonly pageSizeSelectOptions = computed(() =>
@@ -761,6 +809,92 @@ export class TableComponent {
     });
   }
 
+  // -- Tree keyboard model -----------------------------------------------------
+  // `role="treegrid"` promises a composite widget: one tab stop, arrows to move
+  // between rows, Right/Left to open/close a group or step into/out of it. The
+  // rows carry a roving tabindex; the focused row is remembered by key so it
+  // survives re-renders, and falls back to the first row when it is gone.
+
+  private readonly rowEls = viewChildren<ElementRef<HTMLTableRowElement>>('dataRow');
+  private readonly focusedRowKey = signal<unknown>(null);
+
+  /** Key of the row that holds the tab stop. */
+  private readonly effectiveFocusedKey = computed(() => {
+    const rows = this.displayRows();
+    const key = this.focusedRowKey();
+    return rows.some((r) => r.key === key) ? key : rows[0]?.key;
+  });
+
+  protected rowTabindex(dr: DisplayRow): number | null {
+    if (!this.treeMode()) return null;
+    return dr.key === this.effectiveFocusedKey() ? 0 : -1;
+  }
+
+  protected onRowFocus(dr: DisplayRow): void {
+    if (this.treeMode()) this.focusedRowKey.set(dr.key);
+  }
+
+  protected onRowKeydown(event: KeyboardEvent, dr: DisplayRow): void {
+    if (!this.treeMode()) return;
+    // Keys typed into an inline editor or the row's own controls are theirs.
+    if ((event.target as HTMLElement).tagName === 'INPUT') return;
+    const rows = this.displayRows();
+    const index = rows.findIndex((r) => r.key === dr.key);
+    if (index < 0) return;
+
+    switch (event.key) {
+      case 'ArrowDown':
+        this.focusRow(index + 1);
+        break;
+      case 'ArrowUp':
+        this.focusRow(index - 1);
+        break;
+      case 'Home':
+        this.focusRow(0);
+        break;
+      case 'End':
+        this.focusRow(rows.length - 1);
+        break;
+      case 'ArrowRight':
+        if (!dr.hasChildren) return;
+        if (dr.expanded) this.focusRow(index + 1); // first child
+        else if (dr.id) this.toggleRow(dr.id, dr.row);
+        break;
+      case 'ArrowLeft':
+        if (dr.hasChildren && dr.expanded && dr.id) {
+          this.toggleRow(dr.id, dr.row);
+        } else if (dr.depth > 0) {
+          // Step out to the parent: the nearest row above with a smaller depth.
+          for (let i = index - 1; i >= 0; i--) {
+            if (rows[i].depth < dr.depth) {
+              this.focusRow(i);
+              break;
+            }
+          }
+        } else {
+          return;
+        }
+        break;
+      case 'Enter':
+        this.rowClick.emit(dr.row);
+        break;
+      case ' ':
+        if (!this.selectable()) return;
+        this.toggleRowSelect(dr.row);
+        break;
+      default:
+        return;
+    }
+    event.preventDefault();
+  }
+
+  private focusRow(index: number): void {
+    const rows = this.displayRows();
+    if (index < 0 || index >= rows.length) return;
+    this.focusedRowKey.set(rows[index].key);
+    this.rowEls()[index]?.nativeElement.focus();
+  }
+
   // -- Tree expand / collapse --------------------------------------------------
 
   /** Whether the parent row with the given id is currently expanded. */
@@ -828,6 +962,7 @@ export class TableComponent {
   }
 
   protected get paginationStart(): number {
+    if (this.totalRows() === 0) return 0;
     return this.currentPage() * this.internalPageSize() + 1;
   }
 
@@ -836,40 +971,39 @@ export class TableComponent {
   }
 
   // -- Selection --
+  // Keyed by row identity (see `DisplayRow.key`), never by position: a sort or
+  // filter changes where a row is shown, not which row it is.
   protected toggleSelectAll(): void {
     const selected = new Set(this.selectedRows());
     const rows = this.displayRows();
     const allSelected = this.allSelected();
 
     rows.forEach((r) => {
-      if (allSelected) selected.delete(r.absIndex);
-      else selected.add(r.absIndex);
+      if (allSelected) selected.delete(r.key);
+      else selected.add(r.key);
     });
 
     this.selectedRows.set(selected);
     this.emitSelectionChange();
   }
 
-  protected toggleRowSelect(absIndex: number): void {
+  protected toggleRowSelect(row: Record<string, unknown>): void {
+    const key = this.rowKey(row);
     const selected = new Set(this.selectedRows());
-    if (selected.has(absIndex)) selected.delete(absIndex);
-    else selected.add(absIndex);
+    if (selected.has(key)) selected.delete(key);
+    else selected.add(key);
     this.selectedRows.set(selected);
     this.emitSelectionChange();
   }
 
-  protected isRowSelected(absIndex: number): boolean {
-    return this.selectedRows().has(absIndex);
-  }
-
-  private getAbsoluteIndex(relativeIndex: number): number {
-    if (!this.paginate()) return relativeIndex;
-    return this.currentPage() * this.internalPageSize() + relativeIndex;
+  protected isRowSelected(row: Record<string, unknown>): boolean {
+    return this.selectedRows().has(this.rowKey(row));
   }
 
   private emitSelectionChange(): void {
-    const data = this.data();
-    const selected = Array.from(this.selectedRows()).map(i => data[i]).filter(Boolean);
+    const keys = this.selectedRows();
+    // In data order, so the consumer gets a stable list whatever the sort.
+    const selected = this.data().filter((row) => keys.has(this.rowKey(row)));
     this.selectionChange.emit({ selected, allSelected: this.allSelected() });
   }
 
@@ -885,39 +1019,53 @@ export class TableComponent {
   }
 
   // -- Inline Editing --
-  protected startEdit(absIndex: number, column: string, currentValue: unknown): void {
+  // Keyed by row identity too — the edited cell is the one the user clicked,
+  // whichever position sorting put it in.
+  protected startEdit(row: Record<string, unknown>, column: string, currentValue: unknown): void {
     if (!this.editable()) return;
     const col = this.columns().find(c => c.key === column);
     if (col && col.editable === false) return;
-    this.editingCell.set({ rowIndex: absIndex, column });
+    this.editingCell.set({ key: this.rowKey(row), column });
     this.editValue.set(String(currentValue ?? ''));
   }
 
-  protected isEditing(absIndex: number, column: string): boolean {
+  protected isEditing(row: Record<string, unknown>, column: string): boolean {
     const cell = this.editingCell();
-    return cell !== null && cell.rowIndex === absIndex && cell.column === column;
+    return cell !== null && cell.key === this.rowKey(row) && cell.column === column;
   }
 
-  protected commitEdit(absIndex: number, column: string): void {
-    const row = this.data()[absIndex];
-    if (!row) return;
+  protected commitEdit(row: Record<string, unknown>, column: string): void {
+    // Only the cell being edited commits: the input's blur arrives after Enter
+    // or Escape already ended the edit, and must not commit (or re-commit).
+    if (!this.isEditing(row, column)) return;
     const oldValue = row[column];
     const newValue = this.editValue();
     this.editingCell.set(null);
+    this.editValue.set('');
     if (String(oldValue ?? '') !== newValue) {
-      this.cellEdit.emit({ row, column, oldValue, newValue, rowIndex: absIndex });
+      const rowIndex = this.dataIndexMap().get(row) ?? -1;
+      this.cellEdit.emit({ row, column, oldValue, newValue, rowIndex });
     }
   }
 
   protected cancelEdit(): void {
     this.editingCell.set(null);
+    this.editValue.set('');
   }
 
-  protected onEditKeydown(event: KeyboardEvent, absIndex: number, column: string): void {
+  protected onEditKeydown(event: KeyboardEvent, row: Record<string, unknown>, column: string): void {
     if (event.key === 'Enter') {
-      this.commitEdit(absIndex, column);
+      this.commitEdit(row, column);
     } else if (event.key === 'Escape') {
       this.cancelEdit();
+    }
+  }
+
+  /** Enter/Space on a focused sortable header sorts, like a click does. */
+  protected onHeaderKeydown(event: KeyboardEvent, columnKey: string): void {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      this.handleSort(columnKey);
     }
   }
 

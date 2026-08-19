@@ -3,8 +3,8 @@ import {
   ChangeDetectionStrategy,
   input,
   computed,
+  contentChild,
   output,
-  ContentChild,
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { IconComponent } from '../icon/icon.component';
@@ -70,7 +70,7 @@ export type ListSize = 'sm' | 'md' | 'lg';
  * - Optional dividers between items
  * - Icon and avatar support per item
  * - Action buttons with click events
- * - Accessible with ARIA list role
+ * - Accessible with ARIA list role; `clickable` rows are keyboard-operable
  *
  * @example
  * ```html
@@ -92,7 +92,7 @@ export type ListSize = 'sm' | 'md' | 'lg';
 })
 export class ListComponent {
   /** Custom item template provided via lcListItem directive */
-  @ContentChild(ListItemTemplateDirective) itemTemplate?: ListItemTemplateDirective;
+  readonly itemTemplate = contentChild(ListItemTemplateDirective);
 
   /** Array of list items to display */
   items = input<ListItem[]>([]);
@@ -108,6 +108,13 @@ export class ListComponent {
 
   /** Whether to show dividers between items */
   showDividers = input<boolean>(false);
+
+  /**
+   * Whether rows are interactive. When set, each row is rendered as a
+   * focusable button (Enter / Space emit `itemClick`) so `itemClick` is
+   * reachable from the keyboard. Set this whenever you handle `itemClick`.
+   */
+  clickable = input<boolean>(false);
 
   /** Event emitted when an item is clicked */
   readonly itemClick = output<ListItem>();
@@ -155,6 +162,18 @@ export class ListComponent {
   onItemClick(item: ListItem): void {
     if (!item.disabled) {
       this.itemClick.emit(item);
+    }
+  }
+
+  /**
+   * Keyboard activation of a clickable row. Only reacts to keys on the row
+   * itself: a nested control (e.g. the action button) handles its own Enter.
+   */
+  onItemKeydown(event: KeyboardEvent, item: ListItem): void {
+    if (event.target !== event.currentTarget) return;
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      this.onItemClick(item);
     }
   }
 

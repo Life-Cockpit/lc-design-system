@@ -5,18 +5,22 @@
       <div
         class="lc-drawer__overlay"
         [class.lc-drawer__overlay--visible]="open()"
-        (click)="onOverlayClick()"
+        (click)="onOverlayClick($event)"
         aria-hidden="true"
       ></div>
     }
 
-    <!-- Panel -->
+    <!-- Panel. Focus moves in on open and back to the opener when the panel
+         is torn down (cdkTrapFocusAutoCapture); focus is only trapped while
+         the backdrop makes the page behind inert. -->
     <aside
-      [class]="panelClasses"
-      [style.width]="widthValue"
+      [class]="panelClasses()"
+      [style.width]="widthValue()"
       role="dialog"
       [attr.aria-label]="ariaLabel() || heading() || 'Drawer'"
-      [attr.aria-modal]="true"
+      [attr.aria-modal]="hasOverlay() ? 'true' : null"
+      [cdkTrapFocus]="hasOverlay()"
+      [cdkTrapFocusAutoCapture]="true"
     >
       <!-- Header -->
       @if (heading()) {

@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { provideHttpClient } from '@angular/common/http';
 import { HeaderComponent } from './header.component';
+import { ThemeService } from '../theme/theme.service';
 
 describe('HeaderComponent', () => {
   let component: HeaderComponent;
@@ -54,6 +55,106 @@ describe('HeaderComponent', () => {
         done();
       });
       component.onLogoutClick();
+    });
+  });
+
+  describe('Theme toggle button', () => {
+    let themeService: ThemeService;
+
+    beforeEach(() => {
+      themeService = TestBed.inject(ThemeService);
+      themeService.setTheme('dark');
+    });
+
+    it('toggles the theme itself and emits by default (autoToggleTheme = true)', () => {
+      const emitted = jest.fn();
+      component.themeToggleClick.subscribe(emitted);
+
+      component.onThemeButtonClick();
+
+      expect(themeService.isDark()).toBe(false);
+      expect(emitted).toHaveBeenCalledTimes(1);
+    });
+
+    it('only emits when autoToggleTheme is false (the app owns the switch)', () => {
+      fixture.componentRef.setInput('autoToggleTheme', false);
+      const emitted = jest.fn();
+      component.themeToggleClick.subscribe(emitted);
+
+      component.onThemeButtonClick();
+
+      expect(themeService.isDark()).toBe(true);
+      expect(emitted).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not undo the switch when the app toggles in the handler with autoToggleTheme = false', () => {
+      fixture.componentRef.setInput('autoToggleTheme', false);
+      component.themeToggleClick.subscribe(() => themeService.toggleTheme());
+
+      component.onThemeButtonClick();
+
+      expect(themeService.isDark()).toBe(false);
+    });
+
+    it('clicking the rendered button goes through onThemeButtonClick', () => {
+      fixture.componentRef.setInput('showThemeButton', true);
+      fixture.detectChanges();
+      const button: HTMLButtonElement = fixture.nativeElement.querySelector('.lc-header__theme-toggle button');
+      expect(button).toBeTruthy();
+
+      button.click();
+      expect(themeService.isDark()).toBe(false);
+    });
+  });
+
+  describe('Hamburger ARIA state', () => {
+    function hamburgerButton(): HTMLButtonElement | null {
+      return fixture.nativeElement.querySelector('.lc-header__hamburger button');
+    }
+
+    beforeEach(() => {
+      fixture.componentRef.setInput('showHamburger', true);
+      fixture.detectChanges();
+    });
+
+    it('omits aria-expanded / aria-controls while the sidenav state is unknown', () => {
+      const button = hamburgerButton();
+      expect(button).toBeTruthy();
+      expect(button?.hasAttribute('aria-expanded')).toBe(false);
+      expect(button?.hasAttribute('aria-controls')).toBe(false);
+    });
+
+    it('reflects sidenavOpen as aria-expanded on the native button and follows changes', () => {
+      fixture.componentRef.setInput('sidenavOpen', false);
+      fixture.detectChanges();
+      expect(hamburgerButton()?.getAttribute('aria-expanded')).toBe('false');
+
+      fixture.componentRef.setInput('sidenavOpen', true);
+      fixture.detectChanges();
+      expect(hamburgerButton()?.getAttribute('aria-expanded')).toBe('true');
+    });
+
+    it('reflects sidenavId as aria-controls', () => {
+      fixture.componentRef.setInput('sidenavId', 'app-sidenav');
+      fixture.detectChanges();
+      expect(hamburgerButton()?.getAttribute('aria-controls')).toBe('app-sidenav');
+
+      fixture.componentRef.setInput('sidenavId', '');
+      fixture.detectChanges();
+      expect(hamburgerButton()?.hasAttribute('aria-controls')).toBe(false);
+    });
+
+    it('applies the state when the hamburger appears after the inputs were set', () => {
+      fixture.componentRef.setInput('showHamburger', false);
+      fixture.componentRef.setInput('sidenavOpen', true);
+      fixture.componentRef.setInput('sidenavId', 'app-sidenav');
+      fixture.detectChanges();
+      expect(hamburgerButton()).toBeNull();
+
+      fixture.componentRef.setInput('showHamburger', true);
+      fixture.detectChanges();
+      expect(hamburgerButton()?.getAttribute('aria-expanded')).toBe('true');
+      expect(hamburgerButton()?.getAttribute('aria-controls')).toBe('app-sidenav');
     });
   });
 

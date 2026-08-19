@@ -15,7 +15,7 @@ Scatter plot for visualizing correlations between two variables.
 - Multiple data series with automatic color assignment
 - Variable dot sizes for bubble-chart style (size property on data points)
 - Configurable axis labels (X / Y)
-- Interactive tooltips on hover
+- Interactive dots: tooltip on hover/focus, \`pointClick\` on click or Enter/Space (keyboard reachable)
 - Optional legend for multi-series data
 - Grid lines and axis labels toggles
 - Adjustable dot radius
@@ -31,7 +31,8 @@ Scatter plot for visualizing correlations between two variables.
     showGrid: { control: 'boolean', description: 'Show background grid lines', table: { defaultValue: { summary: 'true' } } },
     showXLabels: { control: 'boolean', description: 'Show X axis labels', table: { defaultValue: { summary: 'true' } } },
     showYLabels: { control: 'boolean', description: 'Show Y axis labels', table: { defaultValue: { summary: 'true' } } },
-    dotRadius: { control: 'number', description: 'Default dot radius in pixels', table: { defaultValue: { summary: '5' } } },
+    dotRadius: { control: 'number', description: 'Default dot radius in pixels', table: { defaultValue: { summary: '4' } } },
+    interactive: { control: 'boolean', description: 'Dots are focusable buttons that emit pointClick', table: { defaultValue: { summary: 'true' } } },
     width: { control: 'number', description: 'Chart width in px' },
     height: { control: 'number', description: 'Chart height in px' },
   },
@@ -118,7 +119,7 @@ export const Compact: Story = {
     series: [
       {
         label: 'Data',
-        data: Array.from({ length: 30 }, (_, i) => ({
+        data: Array.from({ length: 30 }, () => ({
           x: Math.random() * 100,
           y: Math.random() * 100,
         })),

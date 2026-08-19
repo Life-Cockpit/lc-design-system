@@ -1,10 +1,13 @@
 import {
   Component,
+  ElementRef,
   input,
   output,
   signal,
   computed,
   inject,
+  viewChild,
+  afterRenderEffect,
   ChangeDetectionStrategy,
   ViewEncapsulation,
 } from '@angular/core';
@@ -23,8 +26,13 @@ import { ThemeService } from '../theme/theme.service';
  * - Clickable logo for home navigation
  * - Optional title and subtitle display
  * - User profile dropdown with avatar, name, email, optional Profile link, and Logout
- * - Optional theme toggle button in header
- * - Hamburger menu toggle for mobile sidebar
+ * - Optional theme toggle button in header. By default the button toggles the
+ *   `ThemeService` itself and additionally emits `themeToggleClick`, so the
+ *   handler must NOT toggle again (that would undo the switch). To own the
+ *   toggling in the app, set `[autoToggleTheme]="false"` and toggle in the
+ *   handler.
+ * - Hamburger menu toggle for mobile sidebar; bind `sidenavOpen` (and
+ *   `sidenavId`) so the toggle exposes `aria-expanded` / `aria-controls`.
  * - OnPush change detection for performance
  *
  * @example
@@ -36,12 +44,21 @@ import { ThemeService } from '../theme/theme.service';
  *   [userName]="'John Doe'"
  *   [userEmail]="'user@example.com'"
  *   [showHamburger]="true"
+ *   [sidenavOpen]="sidenavOpen"
+ *   sidenavId="app-sidenav"
  *   [showThemeButton]="true"
  *   [showProfileMenuItem]="true"
  *   (hamburgerClick)="toggleSidebar()"
- *   (themeToggleClick)="toggleTheme()"
+ *   (themeToggleClick)="trackThemeToggle()"
  *   (profileClick)="navigateToProfile()"
  *   (logoutClick)="handleLogout()"
+ * />
+ *
+ * <!-- App-controlled theme: the header only reports the click -->
+ * <lc-header
+ *   [showThemeButton]="true"
+ *   [autoToggleTheme]="false"
+ *   (themeToggleClick)="toggleTheme()"
  * />
  * ```
  */
@@ -58,7 +75,6 @@ import { ThemeService } from '../theme/theme.service';
   ],
   templateUrl: './header.component.html',
   styleUrl: './header.component.scss',
-  // eslint-disable-next-line @angular-eslint/use-component-view-encapsulation
   encapsulation: ViewEncapsulation.None,
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
@@ -98,7 +114,22 @@ export class HeaderComponent {
   readonly userEmail = input('');
   readonly userName = input('');
   readonly showHamburger = input(false);
+  /**
+   * Open state of the sidenav the hamburger controls. When bound, the toggle
+   * announces it via `aria-expanded`; leave `undefined` when the header does
+   * not know (the attribute is then omitted rather than lying).
+   */
+  readonly sidenavOpen = input<boolean | undefined>(undefined);
+  /** DOM id of the sidenav the hamburger controls (`aria-controls`). */
+  readonly sidenavId = input('');
   readonly showThemeButton = input(false);
+  /**
+   * Whether the theme button toggles the `ThemeService` itself before emitting
+   * `themeToggleClick`. Set to `false` when the app owns the theme switch and
+   * toggles in the `(themeToggleClick)` handler — otherwise both would toggle
+   * and the click would be a no-op.
+   */
+  readonly autoToggleTheme = input(true);
   readonly contextName = input('');
   readonly contextLabel = input('');
   readonly menuSize = input<'sm' | 'md' | 'lg'>('sm');
@@ -111,6 +142,31 @@ export class HeaderComponent {
   readonly contextClick = output<void>();
 
   protected readonly themeService = inject(ThemeService);
+
+  private readonly hamburger = viewChild('hamburger', { read: ElementRef<HTMLElement> });
+
+  constructor() {
+    // The hamburger is an <lc-button>; the ARIA state belongs on its native
+    // <button> (the element that has the button role), not on the custom
+    // element host — so it is reflected after render rather than bound in the
+    // template.
+    afterRenderEffect(() => {
+      const button = this.hamburger()?.nativeElement.querySelector('button');
+      if (!button) return;
+      const open = this.sidenavOpen();
+      const controls = this.sidenavId();
+      if (open === undefined) {
+        button.removeAttribute('aria-expanded');
+      } else {
+        button.setAttribute('aria-expanded', String(open));
+      }
+      if (controls) {
+        button.setAttribute('aria-controls', controls);
+      } else {
+        button.removeAttribute('aria-controls');
+      }
+    });
+  }
 
   /**
    * Get menu items for profile dropdown
@@ -173,10 +229,13 @@ export class HeaderComponent {
   }
 
   /**
-   * Handle theme button click (separate button, not in menu)
+   * Handle theme button click (separate button, not in menu). Toggles the
+   * theme unless the app opted out via `autoToggleTheme`, then emits.
    */
   onThemeButtonClick(): void {
-    this.themeService.toggleTheme();
+    if (this.autoToggleTheme()) {
+      this.themeService.toggleTheme();
+    }
     this.themeToggleClick.emit();
   }
 

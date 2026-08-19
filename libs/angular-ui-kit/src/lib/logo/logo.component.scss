@@ -41,11 +41,35 @@
     filter: invert(1) hue-rotate(180deg);
   }
 
-  // Auto mode: invert only when global dark theme is active
+  // Auto mode: invert whenever the app theme is dark. DS2.0 is dark-first —
+  // dark applies to a root WITHOUT any theme class (`:root:not(.light)`, see
+  // _theme-dark.scss), so keying this on `:root.dark` alone left the built-in
+  // logo un-inverted on the default dark shell. Ancestors are matched via
+  // `:host-context`: under emulated encapsulation a plain `:root.dark &` is
+  // scoped to `[_ngcontent]:root.dark` and can never match the document root.
   &.lc-logo--auto {
-    :root.dark &,
-    .dark & {
+    :host-context(:root:not(.light)) &,
+    :host-context(.dark) & {
       filter: invert(1) hue-rotate(180deg);
     }
+  }
+}
+
+// Light/dark source pair (custom `darkSrc`, `colorMode="auto"`): both images
+// are rendered and the ROOT THEME CLASS picks one — the same `:root.light`
+// opt-in / dark-first default the theme stylesheets use. The previous
+// `<picture>` + `prefers-color-scheme` keyed the swap on the OS setting, which
+// the app theme routinely contradicts.
+.lc-logo--dark-src {
+  display: none;
+}
+
+:host-context(:root:not(.light)) {
+  .lc-logo--light-src {
+    display: none;
+  }
+
+  .lc-logo--dark-src {
+    display: block;
   }
 }

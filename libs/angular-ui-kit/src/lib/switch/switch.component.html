@@ -1,32 +1,36 @@
-<div 
-  class="lc-switch-wrapper" 
-  [class.lc-switch-wrapper--label-left]="labelPosition === 'left'"
-  [class.lc-switch-wrapper--label-right]="labelPosition === 'right'"
+<div
+  class="lc-switch-wrapper"
+  [class.lc-switch-wrapper--label-left]="labelPosition() === 'left'"
+  [class.lc-switch-wrapper--label-right]="labelPosition() === 'right'"
 >
-  @if (label && labelPosition === 'left') {
-    <label class="lc-switch-label">{{ label }}</label>
+  @if (label() && labelPosition() === 'left') {
+    <label [for]="switchId" class="lc-switch-label">{{ label() }}</label>
   }
 
-  <div
-    [class]="switchClasses"
+  <!-- Native button: labelable (label for/id works), focusable and Space/Enter toggle it without custom key handling -->
+  <button
+    type="button"
+    [id]="switchId"
+    [class]="switchClasses()"
     role="switch"
-    [attr.aria-checked]="checked"
-    [attr.aria-label]="ariaLabel || label"
-    [attr.aria-required]="required"
-    [attr.tabindex]="disabled || loading ? -1 : 0"
+    [attr.aria-checked]="checkedState()"
+    [attr.aria-label]="ariaLabel() || null"
+    [attr.aria-required]="required() || null"
+    [attr.aria-busy]="loading() || null"
+    [attr.aria-disabled]="loading() && !isDisabled() ? true : null"
+    [disabled]="isDisabled()"
     (click)="onClick()"
-    (keydown)="onKeyDown($event)"
   >
-    <div class="lc-switch-track">
-      <div class="lc-switch-thumb">
-        @if (loading) {
-          <div class="lc-switch-loading-spinner"></div>
+    <span class="lc-switch-track">
+      <span class="lc-switch-thumb">
+        @if (loading()) {
+          <span class="lc-switch-loading-spinner"></span>
         }
-      </div>
-    </div>
-  </div>
+      </span>
+    </span>
+  </button>
 
-  @if (label && labelPosition === 'right') {
-    <label class="lc-switch-label">{{ label }}</label>
+  @if (label() && labelPosition() === 'right') {
+    <label [for]="switchId" class="lc-switch-label">{{ label() }}</label>
   }
 </div>

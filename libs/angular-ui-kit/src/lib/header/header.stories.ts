@@ -43,7 +43,19 @@ const meta: Meta<HeaderComponent> = {
     userName: { description: 'Displayed user name (for the profile area)' },
     userEmail: { description: 'User email shown in the profile dropdown' },
     showHamburger: { description: 'Shows a hamburger menu button (for mobile/sidebar toggle)' },
+    sidenavOpen: {
+      control: 'boolean',
+      description:
+        'Open state of the sidenav the hamburger controls — reflected as `aria-expanded` on the toggle. Leave unset when the header does not know it.',
+    },
+    sidenavId: { description: 'DOM id of the controlled sidenav (`aria-controls` on the hamburger)' },
     showThemeButton: { description: 'Shows a dark/light theme toggle button' },
+    autoToggleTheme: {
+      control: 'boolean',
+      description:
+        'Whether the theme button toggles the ThemeService itself before emitting `themeToggleClick`. Set to `false` when the app toggles in the handler.',
+      table: { defaultValue: { summary: 'true' } },
+    },
     showProfileMenuItem: { description: 'Whether to show a "Profile" item in the user menu' },
     contextName: { description: 'Contextual name displayed in the header (e.g. tenant, organization, project)' },
     contextLabel: { description: 'Label displayed above the context name (e.g. "Tenant", "Organization", "Project")' },
@@ -70,7 +82,7 @@ AppHeaderComponent - Global application header for Life-Cockpit shell
 - Clickable logo for home navigation
 - Configurable brand logo size via \`logoSize\` (\`xs | sm | md | lg | xl\`);
   the header grows automatically for \`lg\` / \`xl\` so the logo isn't clipped.
-  Set \`[showLogo]=\"false\"\` when the brand lives in the sidenav (sidebar-first layout).
+  Set \`[showLogo]="false"\` when the brand lives in the sidenav (sidebar-first layout).
 - Overall header height via \`size\` (\`sm | md | lg | xl\`) — use this to align the header
   with a sidenav brand block (same height scale as \`lc-sidenav\` logo area).
 - Optional title and subtitle display
@@ -119,8 +131,8 @@ export const AboveSidenav: Story = {
     props: {
       collapsed: true,
       items: [
-        { id: '1', icon: 'chart-bar', label: 'Cockpit', route: '/cockpit', displayOrder: 1 },
-        { id: '2', icon: 'home', label: 'Factory', route: '/factory', displayOrder: 2 },
+        { id: '1', icon: 'chart-bar', label: 'Dashboard', route: '/dashboard', displayOrder: 1 },
+        { id: '2', icon: 'home', label: 'Projects', route: '/projects', displayOrder: 2 },
         { id: '3', icon: 'bell', label: 'Benachrichtigungen', route: '/notifications', displayOrder: 3 },
         { id: '4', icon: 'currency-dollar', label: 'Kosten', route: '/costs', displayOrder: 4 },
       ],
@@ -130,17 +142,20 @@ export const AboveSidenav: Story = {
         <lc-header
           title="Life-Cockpit"
           [showHamburger]="true"
+          [sidenavOpen]="!collapsed"
+          sidenavId="story-sidenav"
           userName="Sarah Connor"
           (hamburgerClick)="collapsed = !collapsed"
         ></lc-header>
         <div style="display: flex; flex: 1; min-height: 0;">
           <lc-sidenav
+            id="story-sidenav"
             mode="docked"
             [isOpen]="true"
             [collapsed]="collapsed"
             (collapsedChange)="collapsed = $event"
             [items]="items"
-            activeRoute="/factory"
+            activeRoute="/projects"
             width="280px"
           ></lc-sidenav>
           <div style="flex: 1; background: var(--color-background);"></div>
@@ -241,7 +256,7 @@ export const LogoSizes: Story = {
       <div style="display: flex; flex-direction: column; gap: 12px;">
         @for (size of sizes; track size) {
           <div>
-            <div style="font-size: 12px; color: #6b7280; margin: 0 24px 4px;">logoSize="{{ size }}"</div>
+            <div style="font-size: 12px; color: var(--color-text-secondary); margin: 0 24px 4px;">logoSize="{{ size }}"</div>
             <lc-header
               title="Life-Cockpit"
               subtitle="Design System"

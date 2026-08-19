@@ -1,6 +1,6 @@
 @if (visible()) {
-  <div [class]="calloutClasses()" role="alert">
-    <lc-icon class="callout__icon" [name]="iconName()" size="md" />
+  <div [class]="calloutClasses()" [attr.role]="role()">
+    <lc-icon class="callout__icon" [name]="iconName()" size="md" [ariaLabel]="iconLabel()" />
     <div class="callout__content">
       @if (title()) {
         <strong class="callout__title">{{ title() }}</strong>
@@ -16,7 +16,7 @@
         aria-label="Dismiss"
         (click)="dismiss()"
       >
-        <lc-icon name="x-mark" size="sm" />
+        <lc-icon name="x-mark" size="sm" [decorative]="true" />
       </button>
     }
   </div>

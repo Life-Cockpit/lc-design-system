@@ -33,7 +33,7 @@ type Story = StoryObj<PopoverComponent>;
 const panelStyle =
   'padding: 8px 0; display: flex; flex-direction: column;';
 const itemStyle =
-  'padding: 6px 16px; font-size: 14px; cursor: pointer; color: #374151;';
+  'padding: 6px 16px; font-size: 14px; cursor: pointer; color: var(--color-text-primary);';
 
 export const Default: Story = {
   args: { position: 'bottom', trigger: 'click', showArrow: true },
@@ -69,7 +69,7 @@ export const HoverTrigger: Story = {
             Hover me for details
           </span>
           <div popover-content>
-            <p style="margin: 0; font-size: 14px; color: #374151;">
+            <p style="margin: 0; font-size: 14px; color: var(--color-text-primary);">
               This popover appears on hover and disappears when you move away.
             </p>
           </div>
@@ -113,7 +113,7 @@ export const NoArrow: Story = {
             No Arrow
           </button>
           <div popover-content>
-            <p style="margin: 0; font-size: 14px; color: #374151;">
+            <p style="margin: 0; font-size: 14px; color: var(--color-text-primary);">
               A popover without the arrow indicator.
             </p>
           </div>

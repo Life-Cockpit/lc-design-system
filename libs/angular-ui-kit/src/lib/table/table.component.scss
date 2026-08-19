@@ -50,7 +50,13 @@
           position: relative;
           padding-right: var(--spacing-8);
           transition: background-color 0.2s ease;
-          
+
+          // Sortable headers are keyboard stops (tabindex 0): show where focus is.
+          &:focus-visible {
+            outline: 2px solid var(--color-primary-500);
+            outline-offset: -2px;
+          }
+
           &:hover {
             background-color: var(--color-surface-hover);
             color: var(--color-text-primary);
@@ -106,6 +112,12 @@
   }
   
   &--striped {
+    // Tree-mode rows are keyboard stops (roving tabindex).
+    tbody tr:focus-visible {
+      outline: 2px solid var(--color-primary-500);
+      outline-offset: -2px;
+    }
+
     tbody tr:nth-child(even) {
       background-color: var(--color-surface-2);
     }

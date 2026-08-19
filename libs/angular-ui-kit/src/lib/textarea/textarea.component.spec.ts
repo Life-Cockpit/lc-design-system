@@ -1,483 +1,338 @@
+import { Component, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { TextareaComponent } from './textarea.component';
 
+@Component({
+  standalone: true,
+  imports: [TextareaComponent, ReactiveFormsModule],
+  template: `
+    <lc-textarea
+      [formControl]="control"
+      [label]="label()"
+      [placeholder]="placeholder()"
+      [variant]="variant()"
+      [size]="size()"
+      [error]="error()"
+      [errorMessage]="errorMessage()"
+      [helperText]="helperText()"
+      [required]="required()"
+      [readonly]="readonly()"
+      [rows]="rows()"
+      [maxLength]="maxLength()"
+      [showCharacterCount]="showCharacterCount()"
+      [autoResize]="autoResize()"
+      [ariaLabel]="ariaLabel()"
+      (valueChange)="changes.push($event)"
+    />
+  `,
+})
+class FormHostComponent {
+  readonly control = new FormControl<string>('', { nonNullable: true });
+  readonly label = signal('Description');
+  readonly placeholder = signal('Enter text');
+  readonly variant = signal<'outline' | 'filled'>('outline');
+  readonly size = signal<'xs' | 'sm' | 'md' | 'lg'>('md');
+  readonly error = signal(false);
+  readonly errorMessage = signal('');
+  readonly helperText = signal('');
+  readonly required = signal(false);
+  readonly readonly = signal(false);
+  readonly rows = signal(3);
+  readonly maxLength = signal<number | undefined>(undefined);
+  readonly showCharacterCount = signal(false);
+  readonly autoResize = signal(false);
+  readonly ariaLabel = signal<string | undefined>(undefined);
+  readonly changes: string[] = [];
+}
+
+@Component({
+  standalone: true,
+  imports: [TextareaComponent],
+  template: `
+    <lc-textarea label="First" [disabled]="disabled()" />
+    <lc-textarea label="Second" />
+  `,
+})
+class TwoInstancesHostComponent {
+  readonly disabled = signal(false);
+}
+
 describe('TextareaComponent', () => {
-  let component: TextareaComponent;
-  let fixture: ComponentFixture<TextareaComponent>;
+  describe('with a FormControl host', () => {
+    let fixture: ComponentFixture<FormHostComponent>;
+    let host: FormHostComponent;
 
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [TextareaComponent, ReactiveFormsModule],
-    }).compileComponents();
+    const textarea = (): HTMLTextAreaElement => fixture.nativeElement.querySelector('textarea');
+    const label = (): HTMLLabelElement | null => fixture.nativeElement.querySelector('label.lc-textarea-label');
+    const errorEl = (): HTMLElement | null => fixture.nativeElement.querySelector('.lc-textarea-error-message');
+    const helperEl = (): HTMLElement | null => fixture.nativeElement.querySelector('.lc-textarea-helper-text');
+    const countEl = (): HTMLElement | null => fixture.nativeElement.querySelector('.lc-textarea-character-count');
 
-    fixture = TestBed.createComponent(TextareaComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
-  });
-
-  describe('Component Creation', () => {
-    it('should create', () => {
-      expect(component).toBeTruthy();
-    });
-
-    it('should have default variant as outline', () => {
-      expect(component.variant).toBe('outline');
-    });
-
-    it('should have default size as md', () => {
-      expect(component.size).toBe('md');
-    });
-
-    it('should not be disabled by default', () => {
-      expect(component.disabled).toBe(false);
-    });
-
-    it('should not be in error state by default', () => {
-      expect(component.error).toBe(false);
-    });
-
-    it('should not be required by default', () => {
-      expect(component.required).toBe(false);
-    });
-
-    it('should not be readonly by default', () => {
-      expect(component.readonly).toBe(false);
-    });
-
-    it('should have default rows as 3', () => {
-      expect(component.rows).toBe(3);
-    });
-
-    it('should not have autoResize enabled by default', () => {
-      expect(component.autoResize).toBe(false);
-    });
-  });
-
-  describe('Variant', () => {
-    it('should set variant to outline', () => {
-      component.variant = 'outline';
-      fixture.changeDetectorRef.markForCheck();
+    const type = (text: string): void => {
+      const el = textarea();
+      el.value = text;
+      el.dispatchEvent(new Event('input'));
       fixture.detectChanges();
-      expect(component.variant).toBe('outline');
-    });
+    };
 
-    it('should set variant to filled', () => {
-      component.variant = 'filled';
-      fixture.changeDetectorRef.markForCheck();
+    beforeEach(async () => {
+      await TestBed.configureTestingModule({
+        imports: [FormHostComponent],
+      }).compileComponents();
+
+      fixture = TestBed.createComponent(FormHostComponent);
+      host = fixture.componentInstance;
       fixture.detectChanges();
-      expect(component.variant).toBe('filled');
     });
 
-    it('should apply correct CSS class for outline variant', () => {
-      component.variant = 'outline';
-      fixture.changeDetectorRef.markForCheck();
+    it('renders default variant/size classes and the placeholder', () => {
+      expect(textarea().classList).toContain('lc-textarea--outline');
+      expect(textarea().classList).toContain('lc-textarea--md');
+      expect(textarea().placeholder).toBe('Enter text');
+      expect(textarea().rows).toBe(3);
+    });
+
+    it('updates variant, size and rows when inputs change', () => {
+      host.variant.set('filled');
+      host.size.set('lg');
+      host.rows.set(5);
       fixture.detectChanges();
-      expect(component.textareaClasses).toContain('lc-textarea--outline');
+      expect(textarea().classList).toContain('lc-textarea--filled');
+      expect(textarea().classList).toContain('lc-textarea--lg');
+      expect(textarea().rows).toBe(5);
     });
 
-    it('should apply correct CSS class for filled variant', () => {
-      component.variant = 'filled';
-      fixture.changeDetectorRef.markForCheck();
+    it('associates the label with the textarea via for/id', () => {
+      const id = textarea().id;
+      expect(id).toMatch(/^lc-textarea-\d+$/);
+      expect(label()?.getAttribute('for')).toBe(id);
+      expect(label()?.textContent).toContain('Description');
+    });
+
+    it('renders the required indicator exactly once, hidden from AT', () => {
+      host.required.set(true);
       fixture.detectChanges();
-      expect(component.textareaClasses).toContain('lc-textarea--filled');
+      const indicators = fixture.nativeElement.querySelectorAll('.lc-textarea-required-indicator');
+      expect(indicators).toHaveLength(1);
+      expect(indicators[0].getAttribute('aria-hidden')).toBe('true');
+      expect(label()?.classList.contains('lc-textarea-label--required')).toBe(false);
+      expect(textarea().required).toBe(true);
+      expect(textarea().getAttribute('aria-required')).toBe('true');
     });
-  });
 
-  describe('Size', () => {
-    it('should set size to xs', () => {
-      component.size = 'xs';
-      fixture.changeDetectorRef.markForCheck();
+    it('reflects control.setValue() in the DOM without manual markForCheck', () => {
+      host.control.setValue('Hello from the form');
       fixture.detectChanges();
-      expect(component.size).toBe('xs');
+      expect(textarea().value).toBe('Hello from the form');
+      expect(host.changes).toEqual([]);
     });
 
-    it('should set size to sm', () => {
-      component.size = 'sm';
-      fixture.changeDetectorRef.markForCheck();
+    it('reflects control.disable()/enable() in the DOM without manual markForCheck', () => {
+      host.control.disable();
       fixture.detectChanges();
-      expect(component.size).toBe('sm');
-    });
+      expect(textarea().disabled).toBe(true);
+      expect(textarea().classList).toContain('lc-textarea--disabled');
 
-    it('should set size to md', () => {
-      component.size = 'md';
-      fixture.changeDetectorRef.markForCheck();
+      host.control.enable();
       fixture.detectChanges();
-      expect(component.size).toBe('md');
+      expect(textarea().disabled).toBe(false);
+      expect(textarea().classList).not.toContain('lc-textarea--disabled');
     });
 
-    it('should set size to lg', () => {
-      component.size = 'lg';
-      fixture.changeDetectorRef.markForCheck();
+    it('propagates typed input to the control and emits valueChange', () => {
+      type('Typed text');
+      expect(host.control.value).toBe('Typed text');
+      expect(host.changes).toEqual(['Typed text']);
+    });
+
+    it('marks the control touched on blur', () => {
+      textarea().dispatchEvent(new Event('blur'));
       fixture.detectChanges();
-      expect(component.size).toBe('lg');
+      expect(host.control.touched).toBe(true);
     });
 
-    it('should apply correct CSS class for xs size', () => {
-      component.size = 'xs';
-      fixture.changeDetectorRef.markForCheck();
+    it('ignores input while readonly', () => {
+      host.readonly.set(true);
       fixture.detectChanges();
-      expect(component.textareaClasses).toContain('lc-textarea--xs');
+      expect(textarea().readOnly).toBe(true);
+      expect(textarea().classList).toContain('lc-textarea--readonly');
+      type('should be ignored');
+      expect(host.control.value).toBe('');
+      expect(host.changes).toEqual([]);
     });
 
-    it('should apply correct CSS class for lg size', () => {
-      component.size = 'lg';
-      fixture.changeDetectorRef.markForCheck();
+    it('links the error message via aria-describedby and sets aria-invalid', () => {
+      expect(textarea().hasAttribute('aria-invalid')).toBe(false);
+      expect(textarea().hasAttribute('aria-describedby')).toBe(false);
+
+      host.error.set(true);
+      host.errorMessage.set('Too short');
       fixture.detectChanges();
-      expect(component.textareaClasses).toContain('lc-textarea--lg');
-    });
-  });
 
-  describe('States', () => {
-    it('should set disabled state', () => {
-      component.disabled = true;
-      fixture.changeDetectorRef.markForCheck();
+      expect(textarea().getAttribute('aria-invalid')).toBe('true');
+      expect(textarea().classList).toContain('lc-textarea--error');
+      expect(errorEl()?.textContent?.trim()).toBe('Too short');
+      expect(errorEl()?.getAttribute('role')).toBe('alert');
+      expect(errorEl()?.id).toBe(`${textarea().id}-error`);
+      expect(textarea().getAttribute('aria-describedby')).toBe(errorEl()?.id);
+    });
+
+    it('links the helper text via aria-describedby and hides it while an error shows', () => {
+      host.helperText.set('Be descriptive');
       fixture.detectChanges();
-      expect(component.disabled).toBe(true);
-    });
+      expect(helperEl()?.textContent?.trim()).toBe('Be descriptive');
+      expect(helperEl()?.id).toBe(`${textarea().id}-helper`);
+      expect(textarea().getAttribute('aria-describedby')).toBe(helperEl()?.id);
 
-    it('should set error state', () => {
-      component.error = true;
-      fixture.changeDetectorRef.markForCheck();
+      host.error.set(true);
+      host.errorMessage.set('Nope');
       fixture.detectChanges();
-      expect(component.error).toBe(true);
+      expect(helperEl()).toBeNull();
+      expect(textarea().getAttribute('aria-describedby')).toBe(errorEl()?.id);
     });
 
-    it('should set required state', () => {
-      component.required = true;
-      fixture.changeDetectorRef.markForCheck();
+    it('sets aria-label when provided', () => {
+      host.ariaLabel.set('Notes field');
       fixture.detectChanges();
-      expect(component.required).toBe(true);
+      expect(textarea().getAttribute('aria-label')).toBe('Notes field');
     });
 
-    it('should set readonly state', () => {
-      component.readonly = true;
-      fixture.changeDetectorRef.markForCheck();
-      fixture.detectChanges();
-      expect(component.readonly).toBe(true);
-    });
-
-    it('should apply disabled CSS class', () => {
-      component.disabled = true;
-      fixture.changeDetectorRef.markForCheck();
-      fixture.detectChanges();
-      expect(component.textareaClasses).toContain('lc-textarea--disabled');
-    });
-
-    it('should apply error CSS class', () => {
-      component.error = true;
-      fixture.changeDetectorRef.markForCheck();
-      fixture.detectChanges();
-      expect(component.textareaClasses).toContain('lc-textarea--error');
-    });
-
-    it('should apply readonly CSS class', () => {
-      component.readonly = true;
-      fixture.changeDetectorRef.markForCheck();
-      fixture.detectChanges();
-      expect(component.textareaClasses).toContain('lc-textarea--readonly');
-    });
-  });
-
-  describe('Text Properties', () => {
-    it('should set placeholder', () => {
-      component.placeholder = 'Enter text';
-      fixture.changeDetectorRef.markForCheck();
-      fixture.detectChanges();
-      expect(component.placeholder).toBe('Enter text');
-    });
-
-    it('should set label', () => {
-      component.label = 'Description';
-      fixture.changeDetectorRef.markForCheck();
-      fixture.detectChanges();
-      expect(component.label).toBe('Description');
-    });
-
-    it('should set helper text', () => {
-      component.helperText = 'Enter a description';
-      fixture.changeDetectorRef.markForCheck();
-      fixture.detectChanges();
-      expect(component.helperText).toBe('Enter a description');
-    });
-
-    it('should set error message', () => {
-      component.errorMessage = 'This field is required';
-      fixture.changeDetectorRef.markForCheck();
-      fixture.detectChanges();
-      expect(component.errorMessage).toBe('This field is required');
-    });
-
-    it('should set aria label', () => {
-      component.ariaLabel = 'Description field';
-      fixture.changeDetectorRef.markForCheck();
-      fixture.detectChanges();
-      expect(component.ariaLabel).toBe('Description field');
-    });
-  });
-
-  describe('Value Handling', () => {
-    it('should update value on input', () => {
-      const newValue = 'Hello World';
-      component.onInput(newValue);
-      expect(component.value()).toBe(newValue);
-    });
-
-    it('should emit valueChange on input', (done) => {
-      const newValue = 'Test';
-      component.valueChange.subscribe((value) => {
-        expect(value).toBe(newValue);
-        done();
+    describe('character count', () => {
+      it('is hidden by default', () => {
+        expect(countEl()).toBeNull();
       });
-      component.onInput(newValue);
+
+      it('shows the count without maxLength', () => {
+        host.showCharacterCount.set(true);
+        fixture.detectChanges();
+        type('Hello World');
+        expect(countEl()?.textContent?.trim()).toBe('11');
+      });
+
+      it('shows the count with maxLength and reacts to maxLength changes', () => {
+        host.showCharacterCount.set(true);
+        host.maxLength.set(100);
+        fixture.detectChanges();
+        expect(textarea().getAttribute('maxlength')).toBe('100');
+        type('Hello');
+        expect(countEl()?.textContent?.trim()).toBe('5 / 100');
+
+        host.maxLength.set(20);
+        fixture.detectChanges();
+        expect(countEl()?.textContent?.trim()).toBe('5 / 20');
+      });
+
+      it('marks the count as over limit when the maxLength input drops below the value length', () => {
+        host.showCharacterCount.set(true);
+        host.maxLength.set(20);
+        fixture.detectChanges();
+        host.control.setValue('Hello World');
+        fixture.detectChanges();
+        expect(countEl()?.classList.contains('lc-textarea-character-count--over-limit')).toBe(false);
+
+        host.maxLength.set(5);
+        fixture.detectChanges();
+        expect(countEl()?.classList.contains('lc-textarea-character-count--over-limit')).toBe(true);
+      });
     });
 
-    it('should not update value when disabled', () => {
-      component.disabled = true;
-      component.value.set('initial');
-      component.onInput('new value');
-      expect(component.value()).toBe('initial');
-    });
+    describe('auto resize', () => {
+      it('drops the rows attribute and adds the auto-resize class', () => {
+        host.autoResize.set(true);
+        fixture.detectChanges();
+        expect(textarea().classList).toContain('lc-textarea--auto-resize');
+        expect(textarea().hasAttribute('rows')).toBe(false);
+      });
 
-    it('should not update value when readonly', () => {
-      component.readonly = true;
-      component.value.set('initial');
-      component.onInput('new value');
-      expect(component.value()).toBe('initial');
-    });
-
-    it('should call onChange callback on input', () => {
-      const onChangeSpy = jest.fn();
-      component.registerOnChange(onChangeSpy);
-      component.onInput('test');
-      expect(onChangeSpy).toHaveBeenCalledWith('test');
-    });
-
-    it('should call onTouched on blur', () => {
-      const onTouchedSpy = jest.fn();
-      component.registerOnTouched(onTouchedSpy);
-      component.onBlur();
-      expect(onTouchedSpy).toHaveBeenCalled();
+      it('sets an explicit height after a form write', () => {
+        host.autoResize.set(true);
+        fixture.detectChanges();
+        host.control.setValue('Line 1\nLine 2\nLine 3');
+        fixture.detectChanges();
+        expect(textarea().style.height).toMatch(/px$/);
+      });
     });
   });
 
-  describe('Character Count', () => {
-    it('should show character count when showCharacterCount is true', () => {
-      component.showCharacterCount = true;
-      fixture.changeDetectorRef.markForCheck();
+  describe('with two instances', () => {
+    let fixture: ComponentFixture<TwoInstancesHostComponent>;
+    let host: TwoInstancesHostComponent;
+
+    beforeEach(async () => {
+      await TestBed.configureTestingModule({
+        imports: [TwoInstancesHostComponent],
+      }).compileComponents();
+
+      fixture = TestBed.createComponent(TwoInstancesHostComponent);
+      host = fixture.componentInstance;
       fixture.detectChanges();
-      expect(component.showCharacterCount).toBe(true);
     });
 
-    it('should calculate current character count', () => {
-      component.value.set('Hello');
-      expect(component.currentCharacterCount()).toBe(5);
+    it('generates unique ids across instances', () => {
+      const areas: HTMLTextAreaElement[] = Array.from(fixture.nativeElement.querySelectorAll('textarea'));
+      const labels: HTMLLabelElement[] = Array.from(fixture.nativeElement.querySelectorAll('label'));
+      expect(areas).toHaveLength(2);
+      expect(areas[0].id).not.toBe(areas[1].id);
+      expect(labels[0].getAttribute('for')).toBe(areas[0].id);
+      expect(labels[1].getAttribute('for')).toBe(areas[1].id);
     });
 
-    it('should show character count with maxLength', () => {
-      component.showCharacterCount = true;
-      component.maxLength = 100;
-      component.value.set('Hello');
-      expect(component.characterCountText()).toBe('5 / 100');
-    });
-
-    it('should show character count without maxLength', () => {
-      component.showCharacterCount = true;
-      component.value.set('Hello World');
-      expect(component.characterCountText()).toBe('11');
-    });
-
-    it('should mark as over limit when exceeding maxLength', () => {
-      component.maxLength = 5;
-      component.value.set('Hello World');
-      expect(component.isOverLimit()).toBe(true);
-    });
-
-    it('should not mark as over limit when within maxLength', () => {
-      component.maxLength = 20;
-      component.value.set('Hello');
-      expect(component.isOverLimit()).toBe(false);
-    });
-
-    it('should not mark as over limit when no maxLength', () => {
-      component.value.set('Hello World');
-      expect(component.isOverLimit()).toBe(false);
+    it('disables the textarea when the disabled input is set', () => {
+      const first: HTMLTextAreaElement = fixture.nativeElement.querySelector('textarea');
+      host.disabled.set(true);
+      fixture.detectChanges();
+      expect(first.disabled).toBe(true);
+      expect(first.classList).toContain('lc-textarea--disabled');
     });
   });
 
-  describe('Auto Resize', () => {
-    it('should enable auto resize', () => {
-      component.autoResize = true;
-      expect(component.autoResize).toBe(true);
+  describe('ControlValueAccessor (direct)', () => {
+    let fixture: ComponentFixture<TextareaComponent>;
+    let component: TextareaComponent;
+
+    beforeEach(async () => {
+      await TestBed.configureTestingModule({
+        imports: [TextareaComponent],
+      }).compileComponents();
+
+      fixture = TestBed.createComponent(TextareaComponent);
+      component = fixture.componentInstance;
+      fixture.detectChanges();
     });
 
-    it('should disable auto resize', () => {
-      component.autoResize = false;
-      expect(component.autoResize).toBe(false);
-    });
-
-    it('should set min rows for auto resize', () => {
-      component.minRows = 2;
-      expect(component.minRows).toBe(2);
-    });
-
-    it('should set max rows for auto resize', () => {
-      component.maxRows = 10;
-      expect(component.maxRows).toBe(10);
-    });
-
-    it('should adjust height on input when autoResize is enabled', () => {
-      component.autoResize = true;
-      const textarea = document.createElement('textarea');
-      component['textareaElement'] = { nativeElement: textarea };
-
-      component.onInput('Line 1\nLine 2\nLine 3');
-      expect(textarea.style.height).toBeTruthy();
-    });
-  });
-
-  describe('Rows Configuration', () => {
-    it('should set rows', () => {
-      component.rows = 5;
-      expect(component.rows).toBe(5);
-    });
-
-    it('should use rows when autoResize is disabled', () => {
-      component.autoResize = false;
-      component.rows = 5;
-      expect(component.rows).toBe(5);
-    });
-  });
-
-  describe('ControlValueAccessor', () => {
-    it('should write value', () => {
-      component.writeValue('test value');
-      expect(component.value()).toBe('test value');
-    });
-
-    it('should write null value', () => {
+    it('writes null/undefined as empty string', () => {
+      component.writeValue('x');
+      expect(component.value()).toBe('x');
       component.writeValue(null);
       expect(component.value()).toBe('');
-    });
-
-    it('should write undefined value', () => {
       component.writeValue(undefined);
       expect(component.value()).toBe('');
     });
 
-    it('should register onChange callback', () => {
-      const fn = jest.fn();
-      component.registerOnChange(fn);
+    it('calls the registered callbacks', () => {
+      const onChange = jest.fn();
+      const onTouched = jest.fn();
+      component.registerOnChange(onChange);
+      component.registerOnTouched(onTouched);
       component.onInput('test');
-      expect(fn).toHaveBeenCalledWith('test');
-    });
-
-    it('should register onTouched callback', () => {
-      const fn = jest.fn();
-      component.registerOnTouched(fn);
       component.onBlur();
-      expect(fn).toHaveBeenCalled();
+      expect(onChange).toHaveBeenCalledWith('test');
+      expect(onTouched).toHaveBeenCalled();
     });
 
-    it('should set disabled state through ControlValueAccessor', () => {
+    it('ignores input while disabled via the form', () => {
       component.setDisabledState(true);
-      expect(component.disabled).toBe(true);
+      component.onInput('nope');
+      expect(component.value()).toBe('');
+      expect(component.isDisabled()).toBe(true);
     });
 
-    it('should enable through ControlValueAccessor', () => {
-      component.setDisabledState(false);
-      expect(component.disabled).toBe(false);
-    });
-  });
-
-  describe('Reactive Forms Integration', () => {
-    it('should work with FormControl', () => {
-      const _control = new FormControl('initial value');
-      component.writeValue('initial value');
-      expect(component.value()).toBe('initial value');
-    });
-
-    it('should update FormControl on input', () => {
-      const _control = new FormControl('');
-      const onChangeSpy = jest.fn();
-      component.registerOnChange(onChangeSpy);
-
-      component.onInput('new value');
-      expect(onChangeSpy).toHaveBeenCalledWith('new value');
-    });
-
-    it('should sync with FormControl disabled state', () => {
-      component.setDisabledState(true);
-      expect(component.disabled).toBe(true);
-    });
-  });
-
-  describe('CSS Classes', () => {
-    it('should generate correct base classes', () => {
-      expect(component.textareaClasses).toContain('lc-textarea');
-    });
-
-    it('should include variant class', () => {
-      component.variant = 'filled';
-      fixture.changeDetectorRef.markForCheck();
-      fixture.detectChanges();
-      expect(component.textareaClasses).toContain('lc-textarea--filled');
-    });
-
-    it('should include size class', () => {
-      component.size = 'sm';
-      fixture.changeDetectorRef.markForCheck();
-      fixture.detectChanges();
-      expect(component.textareaClasses).toContain('lc-textarea--sm');
-    });
-
-    it('should include multiple state classes', () => {
-      component.disabled = true;
-      component.error = true;
-      fixture.changeDetectorRef.markForCheck();
-      fixture.detectChanges();
-      const classes = component.textareaClasses;
-      expect(classes).toContain('lc-textarea--disabled');
-      expect(classes).toContain('lc-textarea--error');
-    });
-
-    it('should include auto-resize class when enabled', () => {
-      component.autoResize = true;
-      // Don't trigger detectChanges to avoid DOM manipulation in test
-      const classes = component.textareaClasses;
-      expect(classes).toContain('lc-textarea--auto-resize');
-    });
-  });
-
-  describe('Accessibility', () => {
-    it('should have aria-label when provided', () => {
-      component.ariaLabel = 'Description';
-      fixture.changeDetectorRef.markForCheck();
-      fixture.detectChanges();
-      expect(component.ariaLabel).toBe('Description');
-    });
-
-    it('should have aria-required when required', () => {
-      component.required = true;
-      fixture.changeDetectorRef.markForCheck();
-      fixture.detectChanges();
-      expect(component.required).toBe(true);
-    });
-
-    it('should have aria-invalid when error', () => {
-      component.error = true;
-      fixture.changeDetectorRef.markForCheck();
-      fixture.detectChanges();
-      expect(component.error).toBe(true);
-    });
-
-    it('should be accessible with screen readers', () => {
-      component.label = 'Description';
-      component.helperText = 'Enter your description';
-      fixture.changeDetectorRef.markForCheck();
-      fixture.detectChanges();
-      expect(component.label).toBe('Description');
-      expect(component.helperText).toBe('Enter your description');
+    it('ORs the disabled input with the form disabled state', () => {
+      fixture.componentRef.setInput('disabled', true);
+      expect(component.isDisabled()).toBe(true);
+      fixture.componentRef.setInput('disabled', false);
+      expect(component.isDisabled()).toBe(false);
     });
   });
 });

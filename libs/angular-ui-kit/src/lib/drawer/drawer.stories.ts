@@ -50,19 +50,19 @@ export const Default: Story = {
       <lc-drawer [open]="open" [position]="position" [size]="size" [heading]="heading">
         <div style="padding: 16px; display: flex; flex-direction: column; gap: 12px;">
           <div>
-            <p style="margin: 0; font-size: 12px; color: #6b7280; text-transform: uppercase;">Status</p>
+            <p style="margin: 0; font-size: 12px; color: var(--color-text-secondary); text-transform: uppercase;">Status</p>
             <lc-badge variant="info">In Progress</lc-badge>
           </div>
           <div>
-            <p style="margin: 0; font-size: 12px; color: #6b7280; text-transform: uppercase;">Assignee</p>
+            <p style="margin: 0; font-size: 12px; color: var(--color-text-secondary); text-transform: uppercase;">Assignee</p>
             <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
               <lc-avatar name="Alice Johnson" size="xs"></lc-avatar>
               <span style="font-size: 14px;">Alice Johnson</span>
             </div>
           </div>
           <div>
-            <p style="margin: 0; font-size: 12px; color: #6b7280; text-transform: uppercase;">Description</p>
-            <p style="margin: 4px 0 0; font-size: 14px; color: #374151; line-height: 1.5;">
+            <p style="margin: 0; font-size: 12px; color: var(--color-text-secondary); text-transform: uppercase;">Description</p>
+            <p style="margin: 4px 0 0; font-size: 14px; color: var(--color-text-primary); line-height: 1.5;">
               Implement the new authentication flow including OAuth2 support, refresh token handling, and session management.
             </p>
           </div>
@@ -80,10 +80,10 @@ export const LeftPosition: Story = {
         <div style="padding: 8px;">
           <div style="display: flex; flex-direction: column; gap: 4px;">
             <a style="display: block; padding: 8px 12px; border-radius: 6px; background: #eff6ff; color: #1d4ed8; text-decoration: none; font-size: 14px;">Dashboard</a>
-            <a style="display: block; padding: 8px 12px; border-radius: 6px; color: #374151; text-decoration: none; font-size: 14px;">Projects</a>
-            <a style="display: block; padding: 8px 12px; border-radius: 6px; color: #374151; text-decoration: none; font-size: 14px;">Team</a>
-            <a style="display: block; padding: 8px 12px; border-radius: 6px; color: #374151; text-decoration: none; font-size: 14px;">Reports</a>
-            <a style="display: block; padding: 8px 12px; border-radius: 6px; color: #374151; text-decoration: none; font-size: 14px;">Settings</a>
+            <a style="display: block; padding: 8px 12px; border-radius: 6px; color: var(--color-text-primary); text-decoration: none; font-size: 14px;">Projects</a>
+            <a style="display: block; padding: 8px 12px; border-radius: 6px; color: var(--color-text-primary); text-decoration: none; font-size: 14px;">Team</a>
+            <a style="display: block; padding: 8px 12px; border-radius: 6px; color: var(--color-text-primary); text-decoration: none; font-size: 14px;">Reports</a>
+            <a style="display: block; padding: 8px 12px; border-radius: 6px; color: var(--color-text-primary); text-decoration: none; font-size: 14px;">Settings</a>
           </div>
         </div>
       </lc-drawer>`,

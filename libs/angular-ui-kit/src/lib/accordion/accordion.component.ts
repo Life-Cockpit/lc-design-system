@@ -29,8 +29,9 @@ export type AccordionChevronPosition = 'leading' | 'trailing';
  * - Plain-string `title` **or** a rich projected header (`lcAccordionHeader`)
  * - Eager `<ng-content>` body **or** lazy/destroyable template body
  *   (`lcAccordionContent` + `[lazy]` / `[destroyOnClose]`)
- * - Accessible: header is a real `<button>` with `aria-expanded` /
- *   `aria-controls`, keyboard support, and a visible focus ring
+ * - Accessible: header is a real `<button>` inside a heading with
+ *   `aria-expanded` / `aria-controls`, keyboard support and a visible focus
+ *   ring; the collapsed panel is `inert` (not focusable, hidden from AT)
  *
  * @example Plain (unchanged, fully backward compatible)
  * ```html
@@ -87,6 +88,13 @@ export class AccordionComponent {
 
   /** Whether the accordion is disabled */
   readonly disabled = input<boolean>(false);
+
+  /**
+   * Heading level (1–6) announced for the header button, so the accordion
+   * fits into the surrounding document outline.
+   * @default 3
+   */
+  readonly headingLevel = input<1 | 2 | 3 | 4 | 5 | 6>(3);
 
   /**
    * Where the disclosure chevron sits. `'trailing'` (default) preserves the

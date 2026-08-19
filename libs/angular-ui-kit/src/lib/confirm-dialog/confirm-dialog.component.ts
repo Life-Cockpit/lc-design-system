@@ -6,8 +6,6 @@ import {
   signal,
   computed,
   effect,
-  ViewChild,
-  ElementRef,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { IconComponent } from '../icon/icon.component';
@@ -49,8 +47,6 @@ export interface RequireTextConfig {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ConfirmDialogComponent {
-  @ViewChild('confirmInput') confirmInput?: ElementRef<HTMLInputElement>;
-
   /** Whether the dialog is open */
   readonly open = input<boolean>(false);
 
@@ -94,7 +90,8 @@ export class ConfirmDialogComponent {
       case 'warning':
         return 'exclamation-circle';
       default:
-        return 'question-mark-circle';
+        // Tabler name — 'question-mark-circle' has no alias and rendered a placeholder
+        return 'help-circle';
     }
   });
 
@@ -102,11 +99,11 @@ export class ConfirmDialogComponent {
   protected iconColor = computed(() => {
     switch (this.variant()) {
       case 'destructive':
-        return 'var(--color-error-default, #ef4444)';
+        return 'var(--color-error-default)';
       case 'warning':
-        return 'var(--color-warning-default, #f59e0b)';
+        return 'var(--color-warning-default)';
       default:
-        return 'var(--color-primary-600, #2563eb)';
+        return 'var(--color-primary-600)';
     }
   });
 
@@ -138,6 +135,12 @@ export class ConfirmDialogComponent {
     });
   }
 
+  /**
+   * Confirm via button click or Enter inside the require-text input.
+   * Enter is deliberately NOT handled on the whole dialog: the focus trap
+   * lands on the close/cancel buttons first, and Enter there must activate
+   * *that* button, never the (possibly destructive) confirm action.
+   */
   protected onConfirm(): void {
     if (!this.confirmAllowed()) return;
     this.confirmed.emit();
@@ -153,12 +156,5 @@ export class ConfirmDialogComponent {
 
   protected onInputChange(value: string | number): void {
     this.inputValue.set(String(value));
-  }
-
-  protected onKeydown(event: KeyboardEvent): void {
-    if (event.key === 'Enter' && this.confirmAllowed()) {
-      event.preventDefault();
-      this.onConfirm();
-    }
   }
 }

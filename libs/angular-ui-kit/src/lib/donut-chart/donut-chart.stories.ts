@@ -75,10 +75,10 @@ export const TwoSegments: Story = {
 export const CustomColors: Story = {
   args: {
     segments: [
-      { value: 40, label: 'Active', color: '#22c55e' },
-      { value: 25, label: 'Idle', color: '#f59e0b' },
-      { value: 20, label: 'Offline', color: '#ef4444' },
-      { value: 15, label: 'Unknown', color: '#94a3b8' },
+      { value: 40, label: 'Active', color: 'var(--color-success-default)' },
+      { value: 25, label: 'Idle', color: 'var(--color-warning-default)' },
+      { value: 20, label: 'Offline', color: 'var(--color-error-default)' },
+      { value: 15, label: 'Unknown', color: 'var(--color-secondary-500)' },
     ],
     centerValue: '156',
     centerLabel: 'Servers',
@@ -101,16 +101,26 @@ export const Small: Story = {
 export const Large: Story = {
   args: {
     segments: [
-      { value: 30, label: 'React' },
-      { value: 25, label: 'Angular' },
-      { value: 20, label: 'Vue' },
-      { value: 15, label: 'Svelte' },
+      { value: 30, label: 'Series A' },
+      { value: 25, label: 'Series B' },
+      { value: 20, label: 'Series C' },
+      { value: 15, label: 'Series D' },
       { value: 10, label: 'Other' },
     ],
     centerValue: '5',
-    centerLabel: 'Frameworks',
+    centerLabel: 'Series',
     showLegend: true,
     size: 'lg',
+  },
+};
+
+export const SingleSegment: Story = {
+  parameters: {
+    docs: { description: { story: 'A single segment renders as a full ring.' } },
+  },
+  args: {
+    segments: [{ value: 100, label: 'All' }],
+    centerValue: '100%',
   },
 };
 

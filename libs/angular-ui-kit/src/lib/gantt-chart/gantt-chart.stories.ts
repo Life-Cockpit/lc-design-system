@@ -40,11 +40,15 @@ Gantt chart component for project timeline visualization.
 - Monthly and daily header timeline
 - Today marker line
 - Weekend highlighting
-- Configurable row height, label width, and day width
-- Task click event handling
+- Configurable row height, label width, day width, \`locale\` (month labels) and \`labelsHeader\`
+- Task click event handling — bars are focusable, Enter / Space activate
 `,
       },
     },
+  },
+  argTypes: {
+    locale: { control: 'text', description: 'BCP 47 locale for the month header labels', table: { defaultValue: { summary: 'de-DE' } } },
+    labelsHeader: { control: 'text', description: 'Header text of the task label column', table: { defaultValue: { summary: 'Aufgaben' } } },
   },
 };
 export default meta;

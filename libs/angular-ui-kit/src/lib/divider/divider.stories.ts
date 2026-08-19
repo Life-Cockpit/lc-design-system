@@ -53,11 +53,11 @@ export const Variants: Story = {
   render: () => ({
     template: `
       <div style="display: flex; flex-direction: column; gap: 4px;">
-        <span style="font-size: 12px; color: #9ca3af;">Solid</span>
+        <span style="font-size: 12px; color: var(--color-text-tertiary);">Solid</span>
         <lc-divider variant="solid" spacing="sm"></lc-divider>
-        <span style="font-size: 12px; color: #9ca3af;">Dashed</span>
+        <span style="font-size: 12px; color: var(--color-text-tertiary);">Dashed</span>
         <lc-divider variant="dashed" spacing="sm"></lc-divider>
-        <span style="font-size: 12px; color: #9ca3af;">Dotted</span>
+        <span style="font-size: 12px; color: var(--color-text-tertiary);">Dotted</span>
         <lc-divider variant="dotted" spacing="sm"></lc-divider>
       </div>`,
   }),

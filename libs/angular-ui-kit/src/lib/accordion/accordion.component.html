@@ -1,36 +1,45 @@
 <div [class]="accordionClasses()">
-  <button
-    class="lc-accordion__header"
-    [id]="headerId"
-    [attr.aria-expanded]="expanded()"
-    [attr.aria-controls]="panelId"
-    [attr.aria-label]="headerAriaLabel()"
-    [attr.aria-disabled]="disabled()"
-    [disabled]="disabled()"
-    (click)="toggle()"
-    (keydown)="onKeydown($event)"
-  >
-    @if (headerTemplate(); as header) {
-      <span class="lc-accordion__header-content">
-        <ng-container *ngTemplateOutlet="header.template"></ng-container>
-      </span>
-    } @else {
-      <span class="lc-accordion__title">{{ title() }}</span>
-    }
-    <lc-icon
-      class="lc-accordion__icon"
-      name="chevron-down"
-      size="sm"
-      aria-hidden="true"
-    ></lc-icon>
-  </button>
+  <!-- The heading wrapper gives the disclosure button a heading level (WAI-ARIA accordion pattern). -->
+  <div class="lc-accordion__heading" role="heading" [attr.aria-level]="headingLevel()">
+    <button
+      class="lc-accordion__header"
+      type="button"
+      [id]="headerId"
+      [attr.aria-expanded]="expanded()"
+      [attr.aria-controls]="panelId"
+      [attr.aria-label]="headerAriaLabel()"
+      [attr.aria-disabled]="disabled()"
+      [disabled]="disabled()"
+      (click)="toggle()"
+      (keydown)="onKeydown($event)"
+    >
+      @if (headerTemplate(); as header) {
+        <span class="lc-accordion__header-content">
+          <ng-container *ngTemplateOutlet="header.template"></ng-container>
+        </span>
+      } @else {
+        <span class="lc-accordion__title">{{ title() }}</span>
+      }
+      <lc-icon
+        class="lc-accordion__icon"
+        name="chevron-down"
+        size="sm"
+        [decorative]="true"
+      ></lc-icon>
+    </button>
+  </div>
 
+  <!--
+    A collapsed panel is `inert`: its eagerly projected body stays in the DOM
+    (for the height animation) but is neither focusable nor exposed to AT.
+  -->
   <div
     class="lc-accordion__panel"
     [id]="panelId"
     role="region"
     [attr.aria-labelledby]="headerId"
     [attr.aria-hidden]="!expanded()"
+    [attr.inert]="expanded() ? null : ''"
   >
     <div class="lc-accordion__body">
       @if (contentTemplate(); as content) {

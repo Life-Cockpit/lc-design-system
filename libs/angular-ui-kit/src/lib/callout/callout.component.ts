@@ -2,9 +2,9 @@ import {
   ChangeDetectionStrategy,
   Component,
   input,
+  model,
   output,
   computed,
-  signal,
 } from '@angular/core';
 import { IconComponent } from '../icon/icon.component';
 
@@ -25,7 +25,9 @@ export type CalloutVariant = 'info' | 'success' | 'warning' | 'error' | 'neutral
  * - Semantic variants (info, success, warning, error, neutral)
  * - Auto-mapped variant icons
  * - Optional title text
- * - Dismissible with close button
+ * - Dismissible with close button; `visible` is two-way bindable so a
+ *   dismissed callout can be shown again
+ * - `role="alert"` for error / warning, `role="status"` otherwise
  * - Content projection for custom body content
  *
  * @example
@@ -46,10 +48,34 @@ export class CalloutComponent {
   /** Emits when dismiss button is clicked */
   dismissed = output<void>();
 
-  protected visible = signal(true);
+  /**
+   * Visibility (two-way bindable). Dismissing sets it to `false`; the parent
+   * can set it back to `true` to show the callout again.
+   */
+  visible = model<boolean>(true);
 
   protected calloutClasses = computed(() => {
     return ['callout', `callout--${this.variant()}`].join(' ');
+  });
+
+  /**
+   * Live-region semantics: only error / warning callouts interrupt the user
+   * (`alert`); informational ones are announced politely (`status`).
+   */
+  protected role = computed(() =>
+    this.variant() === 'error' || this.variant() === 'warning' ? 'alert' : 'status',
+  );
+
+  /** Accessible name of the variant icon (it conveys the callout's tone). */
+  protected iconLabel = computed(() => {
+    const map: Record<CalloutVariant, string> = {
+      info: 'Info',
+      success: 'Success',
+      warning: 'Warning',
+      error: 'Error',
+      neutral: 'Note',
+    };
+    return map[this.variant()];
   });
 
   protected iconName = computed(() => {

@@ -5,17 +5,18 @@ import {
   output,
   signal,
   computed,
-  effect,
+  afterRenderEffect,
   forwardRef,
   ElementRef,
-  ViewChild,
+  viewChild,
   HostListener,
   inject,
-  OnDestroy,
+  untracked,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
-import { Observable, Subject, Subscription, debounceTime, switchMap, of } from 'rxjs';
+import { OverlayModule } from '@angular/cdk/overlay';
+import { Observable, Subject, catchError, debounce, defer, of, switchMap, timer } from 'rxjs';
 import { IconComponent } from '../icon/icon.component';
 import { SpinnerComponent } from '../spinner/spinner.component';
 import { ChipComponent } from '../chip/chip.component';
@@ -38,6 +39,8 @@ export type ComboboxSize = 'xs' | 'sm' | 'md' | 'lg';
  *
  * Supports free-text input with sync/async option suggestions,
  * single/multiple selection, create new entries, and keyboard navigation.
+ * The suggestion list is rendered in a CDK overlay so it is never clipped
+ * by `overflow: hidden` ancestors (cards, modals, table cells).
  *
  * @example
  * ```html
@@ -52,7 +55,7 @@ export type ComboboxSize = 'xs' | 'sm' | 'md' | 'lg';
 @Component({
   selector: 'lc-combobox',
   standalone: true,
-  imports: [CommonModule, IconComponent, SpinnerComponent, ChipComponent],
+  imports: [OverlayModule, IconComponent, SpinnerComponent, ChipComponent],
   templateUrl: './combobox.component.html',
   styleUrls: ['./combobox.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -64,12 +67,19 @@ export type ComboboxSize = 'xs' | 'sm' | 'md' | 'lg';
     },
   ],
 })
-export class ComboboxComponent implements ControlValueAccessor, OnDestroy {
-  @ViewChild('inputEl') inputEl?: ElementRef<HTMLInputElement>;
+export class ComboboxComponent implements ControlValueAccessor {
+  private static nextId = 0;
+
+  /** Per-instance ids so label/listbox/options can be linked via ARIA */
+  readonly inputId = `lc-combobox-${++ComboboxComponent.nextId}`;
+  readonly listboxId = `${this.inputId}-listbox`;
+  protected readonly createOptionId = `${this.listboxId}-create`;
+
+  private readonly inputEl = viewChild<ElementRef<HTMLInputElement>>('inputEl');
+  private readonly dropdownEl = viewChild<ElementRef<HTMLElement>>('dropdownEl');
 
   private readonly elRef = inject(ElementRef);
-  private querySubject = new Subject<string>();
-  private asyncSub?: Subscription;
+  private readonly querySubject = new Subject<string>();
 
   /** Sync options */
   readonly options = input<ComboboxOption[]>([]);
@@ -131,6 +141,12 @@ export class ComboboxComponent implements ControlValueAccessor, OnDestroy {
   protected highlightedIndex = signal(-1);
   protected asyncOptions = signal<ComboboxOption[]>([]);
   protected isLoading = signal(false);
+
+  /** Disabled via `setDisabledState` (reactive forms) */
+  private readonly formDisabled = signal(false);
+
+  /** Effective disabled state: `disabled` input OR form control disabled */
+  protected readonly isDisabled = computed(() => this.disabled() || this.formDisabled());
 
   /** Selected values */
   protected selectedSingle = signal<ComboboxOption | null>(null);
@@ -198,54 +214,85 @@ export class ComboboxComponent implements ControlValueAccessor, OnDestroy {
     return !exact;
   });
 
+  /** id of the highlighted option — announced via aria-activedescendant */
+  protected readonly activeDescendantId = computed(() => {
+    if (!this.isOpen()) return null;
+    const i = this.highlightedIndex();
+    if (i < 0) return null;
+    if (i === this.flatOptions().length) {
+      return this.showCreateOption() ? this.createOptionId : null;
+    }
+    return i < this.flatOptions().length ? this.optionId(i) : null;
+  });
+
+  /** ids referenced by aria-describedby (helper / error) */
+  protected readonly describedBy = computed(() => {
+    if (this.error()) return `${this.inputId}-error`;
+    if (this.helperText()) return `${this.inputId}-helper`;
+    return null;
+  });
+
   /** Container classes */
   protected containerClasses = computed(() => {
     const classes = [`lc-combobox`, `lc-combobox--${this.size()}`];
-    if (this.disabled()) classes.push('lc-combobox--disabled');
+    if (this.isDisabled()) classes.push('lc-combobox--disabled');
     if (this.error()) classes.push('lc-combobox--error');
     if (this.isOpen()) classes.push('lc-combobox--open');
     return classes.join(' ');
   });
 
+  protected optionId(index: number): string {
+    return `${this.listboxId}-opt-${index}`;
+  }
+
   // ControlValueAccessor
-  private onChange: (value: ComboboxValue) => void = () => {};
-  private onTouched: () => void = () => {};
+  private onChange: (value: ComboboxValue) => void = () => { /* set by registerOnChange */ };
+  private onTouched: () => void = () => { /* set by registerOnTouched */ };
 
   constructor() {
-    // Async loading pipe
-    this.asyncSub = this.querySubject
+    // Async loading pipe. `debounce` (not `debounceTime`) reads the signal per
+    // emission, so `debounceMs` is honoured after inputs are populated.
+    this.querySubject
       .pipe(
-        debounceTime(this.debounceMs()),
+        debounce(() => timer(this.debounceMs())),
         switchMap((q) => {
           const loader = this.loadOptions();
           if (!loader || q.length < this.minChars()) {
-            return of([]);
+            return of([] as ComboboxOption[]);
           }
           this.isLoading.set(true);
-          return loader(q);
-        })
+          // `defer` turns a synchronously throwing loader into an error
+          // notification; `catchError` keeps the pipe alive for the next query.
+          return defer(() => loader(q)).pipe(catchError(() => of([] as ComboboxOption[])));
+        }),
+        takeUntilDestroyed()
       )
       .subscribe((results) => {
         this.asyncOptions.set(results);
         this.isLoading.set(false);
       });
-  }
 
-  ngOnDestroy(): void {
-    this.asyncSub?.unsubscribe();
-    this.querySubject.complete();
+    // Keep the highlighted option visible while navigating with the keyboard
+    // (after render, so the option element exists in the overlay pane).
+    afterRenderEffect(() => {
+      const id = this.activeDescendantId();
+      if (!id) return;
+      untracked(() => {
+        // ids are generated from a counter, so no CSS escaping is needed
+        this.dropdownEl()
+          ?.nativeElement.querySelector<HTMLElement>(`#${id}`)
+          ?.scrollIntoView?.({ block: 'nearest' });
+      });
+    });
   }
 
   writeValue(value: ComboboxValue): void {
     if (this.multiple()) {
       this.selectedMultiple.set(Array.isArray(value) ? value : []);
     } else {
-      this.selectedSingle.set(
-        value && !Array.isArray(value) ? value : null
-      );
-      if (value && !Array.isArray(value)) {
-        this.query.set(value.label);
-      }
+      const single = value && !Array.isArray(value) ? value : null;
+      this.selectedSingle.set(single);
+      this.query.set(single ? single.label : '');
     }
   }
 
@@ -258,7 +305,32 @@ export class ComboboxComponent implements ControlValueAccessor, OnDestroy {
   }
 
   setDisabledState(isDisabled: boolean): void {
-    // handled by input
+    this.formDisabled.set(isDisabled);
+    if (isDisabled) this.isOpen.set(false);
+  }
+
+  /**
+   * Clear the current selection and query. Emits `null` (single) or `[]`
+   * (multiple) exactly once, like a user-initiated deselect.
+   */
+  clear(): void {
+    this.query.set('');
+    this.highlightedIndex.set(-1);
+    this.isOpen.set(false);
+    const value: ComboboxValue = this.multiple() ? [] : null;
+    if (this.multiple()) {
+      this.selectedMultiple.set([]);
+    } else {
+      this.selectedSingle.set(null);
+    }
+    this.onChange(value);
+    this.valueChange.emit(value);
+  }
+
+  protected onClearClick(): void {
+    if (this.isDisabled()) return;
+    this.clear();
+    this.inputEl()?.nativeElement.focus();
   }
 
   protected onInputChange(event: Event): void {
@@ -296,11 +368,11 @@ export class ComboboxComponent implements ControlValueAccessor, OnDestroy {
       case 'ArrowDown':
         event.preventDefault();
         this.isOpen.set(true);
-        this.highlightedIndex.update((i) => (i + 1) % total);
+        if (total > 0) this.highlightedIndex.update((i) => (i + 1) % total);
         break;
       case 'ArrowUp':
         event.preventDefault();
-        this.highlightedIndex.update((i) => (i - 1 + total) % total);
+        if (total > 0) this.highlightedIndex.update((i) => (i - 1 + total) % total);
         break;
       case 'Enter':
         event.preventDefault();
@@ -318,7 +390,12 @@ export class ComboboxComponent implements ControlValueAccessor, OnDestroy {
         }
         break;
       case 'Escape':
-        this.isOpen.set(false);
+        if (this.isOpen()) {
+          this.isOpen.set(false);
+          this.highlightedIndex.set(-1);
+          // Escape consumed by the list — an enclosing modal must not close too.
+          event.stopPropagation();
+        }
         break;
       case 'Tab':
         if (this.highlightedIndex() >= 0 && this.isOpen()) {
@@ -356,13 +433,14 @@ export class ComboboxComponent implements ControlValueAccessor, OnDestroy {
   }
 
   protected removeSelected(option: ComboboxOption): void {
+    if (this.isDisabled()) return;
     this.selectedMultiple.update((sel) =>
       sel.filter((s) => s.value !== option.value)
     );
     const value = this.selectedMultiple();
     this.onChange(value);
     this.valueChange.emit(value);
-    this.inputEl?.nativeElement.focus();
+    this.inputEl()?.nativeElement.focus();
   }
 
   protected onCreateNew(): void {
@@ -375,7 +453,12 @@ export class ComboboxComponent implements ControlValueAccessor, OnDestroy {
 
   @HostListener('document:click', ['$event'])
   protected onDocumentClick(event: MouseEvent): void {
-    if (!this.elRef.nativeElement.contains(event.target)) {
+    const target = event.target as Node | null;
+    // The dropdown lives in the CDK overlay container, outside the host element.
+    if (
+      !this.elRef.nativeElement.contains(target) &&
+      !this.dropdownEl()?.nativeElement.contains(target)
+    ) {
       this.isOpen.set(false);
     }
   }

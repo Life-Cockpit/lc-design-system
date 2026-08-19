@@ -12,8 +12,10 @@ export type ChipSize = 'sm' | 'md' | 'lg';
  * - Color variants (primary, secondary, success, warning, error, info, neutral)
  * - Multiple size options (sm, md, lg)
  * - Optional leading icon
- * - Removable with close button and remove event
- * - Clickable variant that renders as a button and emits `chipClick`
+ * - Removable with a labelled close button and `remove` event
+ * - Clickable variant that renders as a button and emits `chipClick`;
+ *   clickable + removable renders two sibling buttons (activate / remove) so
+ *   no interactive control is ever nested in another
  * - Disabled state support
  *
  * @example
@@ -97,38 +99,13 @@ export class ChipComponent {
   }
 
   /**
-   * Handle remove button click
+   * Handle remove button click. The remove button is a real, labelled
+   * `<button>` (Enter / Space work natively), so no extra key handling here.
    */
   onRemove(event: Event): void {
     event.stopPropagation();
 
     if (!this.disabled()) {
-      this.remove.emit();
-    }
-  }
-
-  /**
-   * Keyboard activation of the delete affordance inside a clickable chip
-   * (a span with role="button", since nesting native buttons is invalid).
-   */
-  onDeleteKeydown(event: KeyboardEvent): void {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      event.stopPropagation();
-      this.onRemove(event);
-    }
-  }
-
-  /**
-   * Handle keyboard navigation
-   */
-  onKeydown(event: KeyboardEvent): void {
-    if (!this.removable() || this.disabled()) {
-      return;
-    }
-
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
       this.remove.emit();
     }
   }

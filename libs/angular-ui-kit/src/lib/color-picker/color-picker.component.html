@@ -1,48 +1,58 @@
 <div [class]="pickerClasses()">
   @if (label()) {
-    <label class="color-picker__label">{{ label() }}</label>
+    <label class="color-picker__label" [for]="inputId">{{ label() }}</label>
   }
   <div class="color-picker__preview-row">
     <input
       type="color"
+      [id]="inputId"
       class="color-picker__native"
       [value]="value()"
-      [disabled]="disabled() || isDisabled()"
+      [disabled]="isDisabled()"
       (input)="onNativeInput($event)"
       (blur)="onBlur()"
-      aria-label="Color picker"
+      [attr.aria-label]="label() ? null : 'Color picker'"
     />
     <span
       class="color-picker__swatch-preview"
       [style.background-color]="value()"
+      aria-hidden="true"
     ></span>
     @if (showInput()) {
       <input
         type="text"
         class="color-picker__hex-input"
         [value]="value()"
-        [disabled]="disabled() || isDisabled()"
+        [disabled]="isDisabled()"
         maxlength="7"
         (input)="onHexInput($event)"
         (blur)="onBlur()"
-        aria-label="Hex color value"
+        [attr.aria-label]="(label() ? label() + ' – ' : '') + 'Hex color value'"
       />
     }
   </div>
   @if (swatches().length > 0) {
-    <div class="color-picker__swatches" role="listbox" aria-label="Color swatches">
-      @for (swatch of swatches(); track swatch) {
+    <div
+      class="color-picker__swatches"
+      role="radiogroup"
+      [attr.aria-label]="(label() ? label() + ' – ' : '') + 'Color swatches'"
+    >
+      @for (swatch of swatches(); track swatch; let i = $index) {
         <button
+          #swatchBtn
           type="button"
           class="color-picker__swatch"
+          role="radio"
           [class.color-picker__swatch--selected]="swatch === value()"
           [class.color-picker__swatch--light]="swatch === '#ffffff'"
           [style.background-color]="swatch"
-          [disabled]="disabled() || isDisabled()"
+          [disabled]="isDisabled()"
+          [tabindex]="i === focusableSwatchIndex() ? 0 : -1"
           [attr.aria-label]="swatch"
-          [attr.aria-selected]="swatch === value()"
-          role="option"
+          [attr.aria-checked]="swatch === value()"
           (click)="selectSwatch(swatch)"
+          (keydown)="onSwatchKeydown($event, i)"
+          (blur)="onBlur()"
         ></button>
       }
     </div>

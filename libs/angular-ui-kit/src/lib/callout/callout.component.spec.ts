@@ -1,6 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
+import { By } from '@angular/platform-browser';
 import { CalloutComponent, CalloutVariant } from './callout.component';
+import { IconComponent } from '../icon/icon.component';
 import { provideHttpClient } from '@angular/common/http';
 
 @Component({
@@ -11,6 +13,7 @@ import { provideHttpClient } from '@angular/common/http';
       [variant]="variant"
       [title]="title"
       [dismissible]="dismissible"
+      [(visible)]="visible"
       (dismissed)="onDismissed()"
     >
       {{ body }}
@@ -22,6 +25,7 @@ class TestHostComponent {
   title = '';
   dismissible = false;
   body = 'Test content';
+  visible = signal(true);
   wasDismissed = false;
   onDismissed() {
     this.wasDismissed = true;
@@ -113,5 +117,45 @@ describe('CalloutComponent', () => {
     fixture.detectChanges();
     const icon = fixture.nativeElement.querySelector('lc-icon.callout__icon');
     expect(icon).toBeTruthy();
+  });
+
+  it('uses role="status" for non-urgent variants and role="alert" for error / warning', () => {
+    fixture.detectChanges();
+    const roleFor = (v: CalloutVariant) => {
+      host.variant = v;
+      fixture.changeDetectorRef.detectChanges();
+      return fixture.nativeElement.querySelector('.callout').getAttribute('role');
+    };
+    expect(roleFor('info')).toBe('status');
+    expect(roleFor('neutral')).toBe('status');
+    expect(roleFor('success')).toBe('status');
+    expect(roleFor('warning')).toBe('alert');
+    expect(roleFor('error')).toBe('alert');
+  });
+
+  it('exposes visible as a two-way binding so a dismissed callout can be shown again', () => {
+    host.dismissible = true;
+    fixture.detectChanges();
+
+    fixture.nativeElement.querySelector('.callout__dismiss').click();
+    fixture.detectChanges();
+    expect(host.visible()).toBe(false);
+    expect(fixture.nativeElement.querySelector('.callout')).toBeNull();
+
+    host.visible.set(true);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.callout')).toBeTruthy();
+  });
+
+  it('labels the variant icon and hides the dismiss icon from AT', () => {
+    host.dismissible = true;
+    host.variant = 'error';
+    fixture.detectChanges();
+    const icons = fixture.debugElement.queryAll(By.directive(IconComponent)).map(d => d.componentInstance as IconComponent);
+    const variantIcon = icons.find(i => i.name() === 'x-circle');
+    const dismissIcon = icons.find(i => i.name() === 'x-mark');
+    expect(variantIcon?.ariaLabel()).toBe('Error');
+    expect(variantIcon?.decorative()).toBe(false);
+    expect(dismissIcon?.decorative()).toBe(true);
   });
 });

@@ -1,6 +1,6 @@
 <div [class]="hostClasses()" role="status">
   @if (icon()) {
-    <lc-icon [name]="icon()!" size="xl" color="var(--color-neutral-400)" />
+    <lc-icon [name]="icon()!" size="xl" color="var(--color-text-tertiary)" [decorative]="true" />
   }
   @if (heading()) {
     <h3 class="empty-state__heading">{{ heading() }}</h3>

@@ -65,4 +65,44 @@ describe('GaugeComponent', () => {
     const text = fixture.nativeElement.querySelector('.lc-gauge__value-text');
     expect(text.textContent).toContain('37°C');
   });
+
+  describe('accessibility, formatting and edge cases', () => {
+    it('announces the value and max, prefixed by the label', () => {
+      fixture.componentRef.setInput('value', 72);
+      fixture.componentRef.setInput('label', 'CPU');
+      fixture.detectChanges();
+      const svg = fixture.nativeElement.querySelector('svg');
+      expect(svg.getAttribute('aria-label')).toBe('CPU: 72% of 100%');
+      expect(svg.querySelector('title').textContent).toBe('CPU: 72% of 100%');
+    });
+
+    it('falls back to "Gauge" without a label and honours ariaLabel', () => {
+      fixture.componentRef.setInput('value', 37);
+      fixture.componentRef.setInput('max', 50);
+      fixture.componentRef.setInput('suffix', '°C');
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('svg').getAttribute('aria-label')).toBe('Gauge: 37°C of 50°C');
+      fixture.componentRef.setInput('ariaLabel', 'Room temperature');
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('svg').getAttribute('aria-label')).toBe('Room temperature');
+    });
+
+    it('lets formatValue replace the default value formatting', () => {
+      fixture.componentRef.setInput('value', 0.756);
+      fixture.componentRef.setInput('max', 1);
+      fixture.componentRef.setInput('formatValue', (v: number) => `${(v * 100).toFixed(1)} %`);
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('.lc-gauge__value-text').textContent.trim()).toBe('75.6 %');
+      expect(fixture.nativeElement.querySelector('svg').getAttribute('aria-label')).toBe('Gauge: 75.6 % of 100.0 %');
+    });
+
+    it('does not render NaN for non-finite value or max', () => {
+      fixture.componentRef.setInput('value', NaN);
+      fixture.componentRef.setInput('max', 0);
+      fixture.detectChanges();
+      const svg = fixture.nativeElement.querySelector('svg');
+      expect(svg.innerHTML).not.toMatch(/NaN|Infinity/);
+      expect(fixture.nativeElement.querySelector('.lc-gauge__value-arc')).toBeFalsy();
+    });
+  });
 });

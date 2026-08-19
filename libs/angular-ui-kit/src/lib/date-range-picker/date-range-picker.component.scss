@@ -12,28 +12,55 @@
     color: var(--color-text-secondary);
   }
 
-  &__trigger {
+  // Bordered field: wraps the trigger button and the (sibling) clear button
+  &__field {
     display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
+    align-items: stretch;
     min-height: 40px;
     border: 1px solid var(--color-border);
     border-radius: var(--border-radius-md);
     background: var(--color-surface-2);
-    cursor: pointer;
-    transition: border-color 0.15s;
+    transition: border-color 0.15s, box-shadow 0.15s;
 
-    &:hover { border-color: var(--color-border-strong); }
-    &--disabled { opacity: 0.6; pointer-events: none; background: var(--color-surface-muted); }
+    &:hover:not(&--disabled) { border-color: var(--color-border-strong); }
+
+    &:focus-within {
+      border-color: var(--color-primary-500);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary-500) 20%, transparent);
+    }
+
+    &--disabled { opacity: 0.6; background: var(--color-surface-muted); }
+  }
+
+  &__trigger {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    padding: 8px 12px;
+    border: none;
+    border-radius: inherit;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+
+    &:focus { outline: none; } // ring is drawn on the field via :focus-within
+    &--disabled, &:disabled { cursor: not-allowed; }
   }
 
   &__icon { flex-shrink: 0; color: var(--color-text-tertiary); display: inline-flex; }
 
   &__value {
     flex: 1;
+    min-width: 0;
     font-size: var(--typography-font-size-sm, 0.875rem);
     color: var(--color-text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 
     &--placeholder { color: var(--color-text-tertiary); }
   }
@@ -41,11 +68,16 @@
   &__clear {
     border: none;
     background: none;
-    padding: 0 4px;
+    padding: 0 8px;
     cursor: pointer;
     font-size: 16px;
     color: var(--color-text-tertiary);
+    border-radius: inherit;
     &:hover { color: var(--color-text-secondary); }
+    &:focus-visible {
+      outline: 2px solid var(--color-primary-500);
+      outline-offset: -2px;
+    }
   }
 
   &__dropdown {
@@ -84,6 +116,10 @@
     justify-content: center;
 
     &:hover { background: var(--color-surface-hover); }
+    &:focus-visible {
+      outline: 2px solid var(--color-primary-500);
+      outline-offset: 0;
+    }
   }
 
   &__month {
@@ -128,6 +164,11 @@
     transition: all 0.1s;
 
     &:hover:not(:disabled) { background: var(--color-surface-hover); }
+    &:focus-visible {
+      outline: 2px solid var(--color-primary-500);
+      outline-offset: -2px;
+      z-index: 1; // keep the ring above neighbouring in-range cells
+    }
 
     &--outside { color: var(--color-text-tertiary); }
     &--disabled { color: var(--color-text-disabled); cursor: default; }

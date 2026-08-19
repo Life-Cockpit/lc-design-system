@@ -1,12 +1,19 @@
 import {
   Component,
   input,
+  model,
   output,
   signal,
   computed,
+  effect,
+  untracked,
   ChangeDetectionStrategy,
   ChangeDetectorRef,
+  DestroyRef,
+  ElementRef,
+  Injectable,
   inject,
+  viewChild,
   OnInit,
   OnDestroy,
 } from '@angular/core';
@@ -17,7 +24,36 @@ export type RadioSize = 'xs' | 'sm' | 'md' | 'lg';
 
 let nextUniqueId = 0;
 
-/* eslint-disable @typescript-eslint/member-ordering */
+/**
+ * Tracks every live `lc-radio` so that checking one radio can uncheck the
+ * others of its group. The browser does this natively (same `name`, same form
+ * owner) without firing an event on the radios that lose the check, so their
+ * component state would otherwise go stale.
+ */
+@Injectable({ providedIn: 'root' })
+export class RadioGroupRegistry {
+  private readonly radios = new Set<RadioComponent>();
+
+  add(radio: RadioComponent): void {
+    this.radios.add(radio);
+  }
+
+  remove(radio: RadioComponent): void {
+    this.radios.delete(radio);
+  }
+
+  /** Marks `source` as the checked radio of its group; siblings are unchecked. */
+  select(source: RadioComponent): void {
+    const name = source.name();
+    if (!name) return;
+    const form = source.formOwner();
+    for (const radio of this.radios) {
+      if (radio !== source && radio.name() === name && radio.formOwner() === form) {
+        radio.checked.set(false);
+      }
+    }
+  }
+}
 
 @Component({
   selector: 'lc-radio',
@@ -55,33 +91,35 @@ export class RadioComponent implements ControlValueAccessor, OnInit, OnDestroy {
   readonly helpText = input<string>('');
   readonly size = input<RadioSize>('md');
   readonly required = input<boolean>(false);
+  readonly disabled = input<boolean>(false);
   readonly ariaLabel = input<string>('');
   readonly ariaLabelledBy = input<string>('');
   readonly ariaDescribedBy = input<string>('');
 
+  /**
+   * Checked state (two-way bindable). Emits `checkedChange` whenever it
+   * changes: on user selection, when a sibling of the same group is selected,
+   * and when a bound form control writes a value.
+   */
+  readonly checked = model<boolean>(false);
+
   // Outputs
-  readonly checkedChange = output<boolean>();
   readonly valueChange = output<string>();
 
-  // Computed state
-  readonly checked = computed(() => {
-    const fv = this.formValue();
-    const v = this.value();
-    // Only match if both have actual values (not just empty strings)
-    return fv !== '' && v !== '' && fv === v;
-  });
-  readonly disabled = signal(false);
-  readonly computedChecked = computed(() => this.checked());
-  readonly computedDisabled = computed(() => this.disabled());
+  /** Disabled state pushed by a form control (`setDisabledState`). */
+  private readonly formDisabled = signal(false);
+
+  /** Effective disabled state: `disabled` input OR form control disabled. */
+  readonly isDisabled = computed(() => this.disabled() || this.formDisabled());
 
   readonly labelClasses = computed(() => {
     const classes = ['radio-label', `radio-${this.size()}`];
 
-    if (this.computedChecked()) {
+    if (this.checked()) {
       classes.push('radio-checked');
     }
 
-    if (this.computedDisabled()) {
+    if (this.isDisabled()) {
       classes.push('radio-disabled');
     }
 
@@ -96,21 +134,54 @@ export class RadioComponent implements ControlValueAccessor, OnInit, OnDestroy {
     return classes.join(' ');
   });
 
+  /** id of the rendered help text (only while it is shown). */
+  readonly helpTextId = computed(() =>
+    this.helpText() && !this.error() ? `${this.id()}-help` : null,
+  );
+
+  /** id of the rendered error message (only while it is shown). */
+  readonly errorMessageId = computed(() =>
+    this.error() && this.errorMessage() ? `${this.id()}-error` : null,
+  );
+
+  /** aria-describedby: consumer-supplied ids plus the rendered help/error text. */
+  readonly describedBy = computed(() => {
+    const ids = [this.ariaDescribedBy(), this.helpTextId(), this.errorMessageId()].filter(Boolean);
+    return ids.length ? ids.join(' ') : null;
+  });
+
   // Private fields
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly ngControl = inject(NgControl, { optional: true, self: true });
-  private formValue = signal<string>('');
+  private readonly registry = inject(RadioGroupRegistry);
+  private readonly inputEl = viewChild<ElementRef<HTMLInputElement>>('radioInput');
+  /**
+   * Last value written by a bound form control; `null` until a form has
+   * written once, so `[checked]` bindings on unbound radios are left alone.
+   */
+  private readonly formValue = signal<string | null>(null);
   private valueChangeSub?: Subscription;
 
   // Control Value Accessor callbacks
-  private onChange: (value: string) => void = () => {};
-  private onTouched: () => void = () => {};
+  private onChange: (value: string) => void = () => undefined;
+  private onTouched: () => void = () => undefined;
 
   constructor() {
     // Prevent circular dependency by not providing NG_VALUE_ACCESSOR here
     if (this.ngControl) {
       this.ngControl.valueAccessor = this;
     }
+
+    this.registry.add(this);
+    inject(DestroyRef).onDestroy(() => this.registry.remove(this));
+
+    // A form-bound radio is checked exactly when the form value equals its own value.
+    effect(() => {
+      const fv = this.formValue();
+      const v = this.value();
+      if (fv === null) return;
+      untracked(() => this.checked.set(fv !== '' && v !== '' && fv === v));
+    });
   }
 
   ngOnInit(): void {
@@ -132,9 +203,14 @@ export class RadioComponent implements ControlValueAccessor, OnInit, OnDestroy {
     this.valueChangeSub?.unsubscribe();
   }
 
+  /** Native form owner of the radio input; scopes the radio group like the browser does. */
+  formOwner(): HTMLFormElement | null {
+    return this.inputEl()?.nativeElement.form ?? null;
+  }
+
   // ControlValueAccessor implementation
   writeValue(value: string | null): void {
-    // Update the form value signal - the computed 'checked' will automatically update
+    // The `checked` model follows formValue via the effect above
     this.formValue.set(value || '');
     this.cdr.markForCheck();
   }
@@ -148,24 +224,24 @@ export class RadioComponent implements ControlValueAccessor, OnInit, OnDestroy {
   }
 
   setDisabledState(isDisabled: boolean): void {
-    this.disabled.set(isDisabled);
+    this.formDisabled.set(isDisabled);
   }
 
   // Event handlers
   public handleChange(event: Event): void {
-    if (this.computedDisabled()) {
+    if (this.isDisabled()) {
       event.preventDefault();
       return;
     }
 
-    // Update local state immediately for instant feedback
-    this.formValue.set(this.value());
+    // model.set() emits `checkedChange` once; siblings that the browser just
+    // unchecked natively are updated through the registry.
+    this.checked.set(true);
+    this.registry.select(this);
 
     // Notify the form control - it will call writeValue on all radios
     this.onChange(this.value());
-
     this.valueChange.emit(this.value());
-    this.checkedChange.emit(true);
   }
 
   public handleBlur(): void {

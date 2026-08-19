@@ -4,8 +4,10 @@
   [attr.viewBox]="viewBox()"
   class="lc-sparkline"
   role="img"
-  aria-label="Sparkline chart"
+  [attr.aria-label]="effectiveAriaLabel()"
 >
+  <title>{{ effectiveAriaLabel() }}</title>
+
   @if (areaD()) {
     <path
       [attr.d]="areaD()"

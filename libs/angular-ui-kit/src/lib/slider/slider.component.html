@@ -1,6 +1,6 @@
 <div [class]="sliderClasses()">
   @if (label()) {
-    <label class="slider__label" [for]="'lc-slider'">
+    <label class="slider__label" [for]="inputId">
       {{ label() }}
       @if (showValue()) {
         <span class="slider__value">{{ value() }}</span>
@@ -9,14 +9,14 @@
   }
   <div class="slider__track-wrapper">
     <input
-      id="lc-slider"
+      [id]="inputId"
       type="range"
       class="slider__input"
       [min]="min()"
       [max]="max()"
       [step]="step()"
       [value]="value()"
-      [disabled]="disabled() || isDisabled()"
+      [disabled]="isDisabled()"
       [style.--fill-percent]="fillPercentage() + '%'"
       (input)="onInput($event)"
       (blur)="onBlur()"

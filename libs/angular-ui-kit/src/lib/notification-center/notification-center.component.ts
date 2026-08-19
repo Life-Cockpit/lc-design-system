@@ -57,6 +57,8 @@ export class NotificationCenterComponent {
   readonly emptyMessage = input('No notifications');
   readonly maxHeight = input('480px');
   readonly groupByCategory = input(false);
+  /** Locale used for absolute dates (older than a week). */
+  readonly dateLocale = input('de-DE');
 
   readonly notificationClick = output<Notification>();
   readonly notificationDismiss = output<string>();
@@ -89,17 +91,24 @@ export class NotificationCenterComponent {
       );
     }
 
-    return items.sort((a, b) => {
+    // Copy before sorting: without a filter `items` is the caller's array and
+    // `sort` would reorder it in place
+    return [...items].sort((a, b) => {
       const prio = this.priorityWeight(b.priority) - this.priorityWeight(a.priority);
       if (prio !== 0) return prio;
       return b.timestamp.getTime() - a.timestamp.getTime();
     });
   });
 
-  protected readonly groupedNotifications = computed(() => {
-    if (!this.groupByCategory()) return null;
+  /**
+   * The list as rendered: one group per category, or a single group without a
+   * category (`null`, no header) when grouping is off.
+   */
+  protected readonly groupedNotifications = computed((): { category: string | null; items: Notification[] }[] => {
+    const items = this.filteredNotifications();
+    if (!this.groupByCategory()) return [{ category: null, items }];
     const map = new Map<string, Notification[]>();
-    for (const n of this.filteredNotifications()) {
+    for (const n of items) {
       const cat = n.category || 'Other';
       if (!map.has(cat)) map.set(cat, []);
       map.get(cat)!.push(n);
@@ -138,7 +147,7 @@ export class NotificationCenterComponent {
     if (hours < 24) return `${hours}h ago`;
     const days = Math.floor(hours / 24);
     if (days < 7) return `${days}d ago`;
-    return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    return date.toLocaleDateString(this.dateLocale(), { day: '2-digit', month: '2-digit', year: 'numeric' });
   }
 
   protected setFilter(filter: NotificationType | 'all'): void {

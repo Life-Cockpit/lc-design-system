@@ -1,5 +1,7 @@
 <div class="lc-radar-chart">
-  <svg [attr.width]="size()" [attr.height]="size()" [attr.viewBox]="viewBox()" role="img" aria-label="Radar chart" class="lc-radar-chart__svg">
+  <svg [attr.width]="size()" [attr.height]="size()" [attr.viewBox]="viewBox()" role="img" [attr.aria-label]="effectiveAriaLabel()" class="lc-radar-chart__svg">
+    <title>{{ effectiveAriaLabel() }}</title>
+
     @for (ring of gridRings(); track $index) {
       <polygon [attr.points]="ring" class="lc-radar-chart__grid" />
     }
@@ -8,18 +10,18 @@
       <line [attr.x1]="center()" [attr.y1]="center()" [attr.x2]="axis.x2" [attr.y2]="axis.y2" class="lc-radar-chart__axis" />
     }
 
-    @for (ser of seriesPolygons(); track ser.label) {
+    @for (ser of seriesPolygons(); track $index) {
       <polygon [attr.points]="ser.points" [class]="'lc-radar-chart__polygon lc-radar-chart__polygon--' + ser.colorIndex" [attr.fill]="ser.customColor" [attr.stroke]="ser.customColor" [attr.fill-opacity]="fillOpacity()" stroke-width="2" />
     }
 
-    @for (lbl of labelItems(); track lbl.label) {
+    @for (lbl of labelItems(); track $index) {
       <text [attr.x]="lbl.x" [attr.y]="lbl.y" [attr.text-anchor]="lbl.anchor" dominant-baseline="central" class="lc-radar-chart__label">{{ lbl.label }}</text>
     }
   </svg>
 
   @if (legendItems().length) {
     <div class="lc-radar-chart__legend">
-      @for (item of legendItems(); track item.label) {
+      @for (item of legendItems(); track $index) {
         <div class="lc-radar-chart__legend-item">
           <span [class]="'lc-radar-chart__legend-dot lc-radar-chart__legend-dot--' + item.colorIndex" [style.background-color]="item.customColor"></span>
           <span class="lc-radar-chart__legend-text">{{ item.label }}</span>

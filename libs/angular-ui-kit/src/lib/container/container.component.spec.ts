@@ -1,6 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Component, ChangeDetectionStrategy } from '@angular/core';
+import { Component, ChangeDetectionStrategy, signal } from '@angular/core';
 import { By } from '@angular/platform-browser';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 import { ContainerComponent, ContainerSize } from './container.component';
 
 @Component({
@@ -8,22 +10,26 @@ import { ContainerComponent, ContainerSize } from './container.component';
   imports: [ContainerComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <lc-container [size]="size" [noPadding]="noPadding" [paddingY]="paddingY">
+    <lc-container [size]="size()" [noPadding]="noPadding()" [paddingY]="paddingY()">
       <div>Container Content</div>
     </lc-container>
   `,
 })
 class TestHostComponent {
-  size: ContainerSize = 'lg';
-  noPadding: boolean = false;
-  paddingY: boolean = false;
+  readonly size = signal<ContainerSize>('lg');
+  readonly noPadding = signal(false);
+  readonly paddingY = signal(false);
 }
+
+const TAILWIND_UTILITIES = ['mx-auto', 'px-4', 'sm:px-6', 'lg:px-8', 'py-6'];
 
 describe('ContainerComponent', () => {
   let component: ContainerComponent;
   let fixture: ComponentFixture<ContainerComponent>;
   let hostFixture: ComponentFixture<TestHostComponent>;
   let containerElement: HTMLElement;
+
+  const hostClasses = () => Array.from(containerElement.classList);
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -50,60 +56,31 @@ describe('ContainerComponent', () => {
       expect(containerElement.classList).toContain('container-lg');
     });
 
-    it('should render sm size (max-w-screen-sm)', () => {
-      hostFixture.componentInstance.size = 'sm';
+    it.each<ContainerSize>(['sm', 'md', 'lg', 'xl', 'xxl', 'full'])(
+      'should put the container-%s class on the host',
+      (size) => {
+        hostFixture.componentInstance.size.set(size);
+        hostFixture.detectChanges();
+        expect(containerElement.classList).toContain(`container-${size}`);
+      },
+    );
+
+    it('should swap the size class when the input changes', () => {
+      hostFixture.componentInstance.size.set('sm');
       hostFixture.detectChanges();
       expect(containerElement.classList).toContain('container-sm');
-      expect(containerElement.classList).toContain('max-w-screen-sm');
-    });
 
-    it('should render md size (max-w-screen-md)', () => {
-      hostFixture.componentInstance.size = 'md';
-      hostFixture.detectChanges();
-      expect(containerElement.classList).toContain('container-md');
-      expect(containerElement.classList).toContain('max-w-screen-md');
-    });
-
-    it('should render lg size (max-w-screen-lg)', () => {
-      hostFixture.componentInstance.size = 'lg';
-      hostFixture.detectChanges();
-      expect(containerElement.classList).toContain('container-lg');
-      expect(containerElement.classList).toContain('max-w-screen-lg');
-    });
-
-    it('should render xl size (max-w-screen-xl)', () => {
-      hostFixture.componentInstance.size = 'xl';
+      hostFixture.componentInstance.size.set('xl');
       hostFixture.detectChanges();
       expect(containerElement.classList).toContain('container-xl');
-      expect(containerElement.classList).toContain('max-w-screen-xl');
+      expect(containerElement.classList).not.toContain('container-sm');
     });
 
-    it('should render xxl size (capped in SCSS via --lc-content-max-width)', () => {
-      hostFixture.componentInstance.size = 'xxl';
+    it('should not rely on Tailwind max-w-* / mx-auto utilities', () => {
+      hostFixture.componentInstance.size.set('xl');
       hostFixture.detectChanges();
-      expect(containerElement.classList).toContain('container-xxl');
-      // xxl deliberately carries no Tailwind max-w utility — the cap comes from
-      // the token in container.component.scss.
-      const hasTailwindMaxWidth = Array.from(containerElement.classList).some((cls) =>
-        cls.startsWith('max-w-')
-      );
-      expect(hasTailwindMaxWidth).toBe(false);
-    });
-
-    it('should keep centering and padding on xxl', () => {
-      hostFixture.componentInstance.size = 'xxl';
-      hostFixture.detectChanges();
-      expect(containerElement.classList).toContain('mx-auto');
-      expect(containerElement.classList).toContain('px-4');
-      expect(containerElement.classList).toContain('sm:px-6');
-      expect(containerElement.classList).toContain('lg:px-8');
-    });
-
-    it('should render full size (no max-width)', () => {
-      hostFixture.componentInstance.size = 'full';
-      hostFixture.detectChanges();
-      expect(containerElement.classList).toContain('container-full');
-      expect(containerElement.classList).not.toContain('max-w-screen');
+      expect(hostClasses().some((c) => c.startsWith('max-w-'))).toBe(false);
+      expect(hostClasses()).not.toContain('mx-auto');
     });
   });
 
@@ -113,52 +90,74 @@ describe('ContainerComponent', () => {
       containerElement = hostFixture.debugElement.query(By.css('lc-container')).nativeElement;
     });
 
-    it('should have horizontal padding by default', () => {
+    it('should have horizontal padding by default (no modifier class)', () => {
       hostFixture.detectChanges();
-      expect(containerElement.classList).toContain('px-4');
+      expect(containerElement.classList).not.toContain('container--no-padding');
+      expect(containerElement.classList).not.toContain('container--padding-y');
     });
 
-    it('should have no padding when noPadding is true', () => {
-      hostFixture.componentInstance.noPadding = true;
+    it('should mark the host when noPadding is true', () => {
+      hostFixture.componentInstance.noPadding.set(true);
       hostFixture.detectChanges();
-      expect(containerElement.classList).not.toContain('px-4');
+      expect(containerElement.classList).toContain('container--no-padding');
     });
 
-    it('should be responsive (sm:px-6, lg:px-8)', () => {
+    it('should mark the host when paddingY is true', () => {
+      hostFixture.componentInstance.paddingY.set(true);
       hostFixture.detectChanges();
-      expect(containerElement.classList).toContain('sm:px-6');
-      expect(containerElement.classList).toContain('lg:px-8');
+      expect(containerElement.classList).toContain('container--padding-y');
     });
 
-    it('should not have vertical padding by default', () => {
+    it('should not add vertical padding when noPadding is true even with paddingY', () => {
+      hostFixture.componentInstance.noPadding.set(true);
+      hostFixture.componentInstance.paddingY.set(true);
       hostFixture.detectChanges();
-      expect(containerElement.classList).not.toContain('py-6');
+      expect(containerElement.classList).toContain('container--no-padding');
+      expect(containerElement.classList).not.toContain('container--padding-y');
     });
 
-    it('should have vertical padding when paddingY is true', () => {
-      hostFixture.componentInstance.paddingY = true;
+    it('should not emit Tailwind padding utilities', () => {
+      hostFixture.componentInstance.paddingY.set(true);
       hostFixture.detectChanges();
-      expect(containerElement.classList).toContain('py-6');
-    });
-
-    it('should not have vertical padding when noPadding is true even with paddingY', () => {
-      hostFixture.componentInstance.noPadding = true;
-      hostFixture.componentInstance.paddingY = true;
-      hostFixture.detectChanges();
-      expect(containerElement.classList).not.toContain('py-6');
-      expect(containerElement.classList).not.toContain('px-4');
+      for (const utility of TAILWIND_UTILITIES) {
+        expect(containerElement.classList).not.toContain(utility);
+      }
     });
   });
 
-  describe('Centering', () => {
-    beforeEach(() => {
-      hostFixture = TestBed.createComponent(TestHostComponent);
-      containerElement = hostFixture.debugElement.query(By.css('lc-container')).nativeElement;
+  describe('Stylesheet (host-scoped layout rules)', () => {
+    // Component styles are stripped under jest, so the layout contract is
+    // asserted on the stylesheet text.
+    const scss = readFileSync(join(__dirname, 'container.component.scss'), 'utf8');
+
+    it.each<[ContainerSize, string]>([
+      ['sm', '640px'],
+      ['md', '768px'],
+      ['lg', '1024px'],
+      ['xl', '1280px'],
+    ])('should cap container-%s at %s', (size, width) => {
+      expect(scss).toMatch(
+        new RegExp(`:host\\(\\.container-${size}\\)\\s*\\{[^}]*max-width:\\s*${width}`),
+      );
     });
 
-    it('should center content horizontally', () => {
-      hostFixture.detectChanges();
-      expect(containerElement.classList).toContain('mx-auto');
+    it('should cap xxl via the --lc-content-max-width token', () => {
+      expect(scss).toMatch(
+        /:host\(\.container-xxl\)\s*\{[^}]*max-width:\s*var\(--lc-content-max-width,\s*1536px\)/,
+      );
+    });
+
+    it('should not cap full', () => {
+      expect(scss).toMatch(/:host\(\.container-full\)\s*\{[^}]*max-width:\s*none/);
+    });
+
+    it('should centre the host and pad it from density tokens', () => {
+      expect(scss).toMatch(/:host\s*\{[^}]*margin-inline:\s*auto/);
+      expect(scss).toMatch(/:host\s*\{[^}]*padding-inline:\s*var\(--lc-density-padding-md/);
+      expect(scss).toMatch(/@media \(min-width: 640px\)[^}]*\{[^}]*padding-inline:\s*var\(--lc-density-padding-lg/);
+      expect(scss).toMatch(/@media \(min-width: 1024px\)[^}]*\{[^}]*padding-inline:\s*var\(--lc-density-padding-xl/);
+      expect(scss).toMatch(/:host\(\.container--no-padding\)\s*\{[^}]*padding-inline:\s*0/);
+      expect(scss).toMatch(/:host\(\.container--padding-y\)\s*\{[^}]*padding-block:\s*var\(--lc-density-padding-lg/);
     });
   });
 
@@ -195,37 +194,17 @@ describe('ContainerComponent', () => {
     });
   });
 
-  describe('Responsive Behavior', () => {
+  describe('Class combinations', () => {
     it('should combine size and padding classes correctly', () => {
       hostFixture = TestBed.createComponent(TestHostComponent);
-      hostFixture.componentInstance.size = 'xl';
-      hostFixture.componentInstance.noPadding = false;
-      hostFixture.componentInstance.paddingY = true;
+      hostFixture.componentInstance.size.set('xl');
+      hostFixture.componentInstance.noPadding.set(false);
+      hostFixture.componentInstance.paddingY.set(true);
       hostFixture.detectChanges();
 
       containerElement = hostFixture.debugElement.query(By.css('lc-container')).nativeElement;
 
-      expect(containerElement.classList).toContain('container-xl');
-      expect(containerElement.classList).toContain('max-w-screen-xl');
-      expect(containerElement.classList).toContain('mx-auto');
-      expect(containerElement.classList).toContain('px-4');
-      expect(containerElement.classList).toContain('sm:px-6');
-      expect(containerElement.classList).toContain('lg:px-8');
-      expect(containerElement.classList).toContain('py-6');
-    });
-  });
-
-  describe('Full Width Mode', () => {
-    it('should not have max-width in full mode', () => {
-      hostFixture = TestBed.createComponent(TestHostComponent);
-      hostFixture.componentInstance.size = 'full';
-      hostFixture.detectChanges();
-
-      containerElement = hostFixture.debugElement.query(By.css('lc-container')).nativeElement;
-
-      const classList = Array.from(containerElement.classList);
-      const hasMaxWidth = classList.some((cls) => cls.startsWith('max-w-'));
-      expect(hasMaxWidth).toBe(false);
+      expect(hostClasses().sort()).toEqual(['container--padding-y', 'container-xl']);
     });
   });
 });

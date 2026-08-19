@@ -3,7 +3,6 @@
   size="sm"
   [showCloseButton]="true"
   (openChange)="$event ? null : onModalClose()"
-  (keydown)="onKeydown($event)"
 >
   <div slot="header">
     <div class="lc-confirm__header">
@@ -21,11 +20,12 @@
 
     @if (requireText(); as req) {
       <div class="lc-confirm__require-text">
-        <label class="lc-confirm__require-label">{{ req.prompt }}</label>
+        <!-- lc-input renders the prompt as an associated <label for> -->
         <lc-input
-          #confirmInput
+          [label]="req.prompt"
           [placeholder]="req.expected"
           (valueChange)="onInputChange($event)"
+          (enterPressed)="onConfirm()"
         />
       </div>
     }

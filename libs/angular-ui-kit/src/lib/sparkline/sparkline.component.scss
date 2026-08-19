@@ -1,9 +1,17 @@
+// A sparkline is an inline box of exactly `width` × `height` (the host binding
+// sets the width) unless `fluid`, when it stretches to its container.
 :host {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+:host(.lc-sparkline--fluid) {
   display: block;
   width: 100%;
 }
 
 .lc-sparkline {
+  display: block;
   overflow: visible;
 }
 

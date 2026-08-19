@@ -3,6 +3,8 @@ import { BreadcrumbsComponent, BreadcrumbItem } from './breadcrumbs.component';
 import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { By } from '@angular/platform-browser';
 import { RouterTestingModule } from '@angular/router/testing';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 
 describe('BreadcrumbsComponent', () => {
   let component: BreadcrumbsComponent;
@@ -360,6 +362,18 @@ describe('BreadcrumbsComponent', () => {
       hostFixture.detectChanges();
       const customContent = hostFixture.debugElement.query(By.css('.custom-content'));
       expect(customContent).toBeTruthy();
+    });
+  });
+
+  describe('Stylesheet', () => {
+    const scss = readFileSync(join(__dirname, 'breadcrumbs.component.scss'), 'utf8');
+
+    it('should only reference existing transition / spacing tokens', () => {
+      expect(scss).not.toMatch(/--transition-(fast|normal|slow)/);
+      // the token is `--spacing-0-5`; the escaped Tailwind spelling doesn't exist
+      expect(scss).not.toContain('--spacing-0\\.5');
+      expect(scss).toContain('var(--spacing-0-5)');
+      expect(scss).toContain('var(--animation-duration-base)');
     });
   });
 

@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/angular';
-import { fn, expect, userEvent, within } from 'storybook/test';
+import { fn } from 'storybook/test';
 import { VerificationCodeInputComponent } from './verification-code-input.component';
 
 /**
@@ -17,7 +17,9 @@ const meta: Meta<VerificationCodeInputComponent> = {
     complete: { action: 'complete', description: 'Emitted with the full code string when all digits are entered' },
     label: { description: 'Label text above the input fields' },
     length: { description: 'Number of digit fields (4 for PIN, 6 for typical OTP)' },
-    autoSubmit: { description: 'Automatically emits `complete` when all digits are filled' },
+    hint: { description: 'Hint text below the fields (defaults to "Enter the N-digit code"; empty string hides it)' },
+    autofocus: { description: 'Focus the first digit field once rendered' },
+    autoSubmit: { description: 'Deprecated — `complete` always emits once when all digits are filled; bind `(complete)` to auto-submit' },
     error: { description: 'Error message displayed below the fields' },
     disabled: { description: 'Prevents all interaction' },
     required: { description: 'Marks the field group as required' },
@@ -27,16 +29,16 @@ const meta: Meta<VerificationCodeInputComponent> = {
     docs: {
       description: {
         component: `
-Verification Code Input Component with 6 Separate Digit Inputs
+Verification Code Input Component with one input per digit
 
 **Key Features:**
-- 6 separate input fields (one digit each)
-- Automatic focus advancement after entering digit
-- Backspace moves to previous input
-- Paste support (splits 6-digit code across inputs)
-- Accessible ARIA attributes
+- Configurable number of digit fields (\`length\`)
+- Automatic focus advancement after entering a digit
+- Backspace moves to the previous input, arrow keys navigate
+- Paste / autofill support (splits the code across the inputs)
+- Accessible ARIA attributes (labelled group, linked hint and error)
 - Reactive Forms ControlValueAccessor implementation
-- Auto-submit on complete (optional)
+- \`complete\` emits exactly once when all digits are entered
 `,
       },
     },
@@ -61,9 +63,14 @@ export const WithError: Story = {
   args: { label: 'Verification Code', length: 6, error: 'Invalid code. Please check your email and try again.' },
 };
 
-export const AutoSubmit: Story = {
-  name: 'Auto-Submit on Complete',
-  args: { label: 'Enter Code', length: 6, autoSubmit: true },
+export const CompleteEvent: Story = {
+  name: 'Complete Event',
+  args: { label: 'Enter Code', length: 6 },
+};
+
+export const CustomHint: Story = {
+  name: 'Custom Hint + Autofocus',
+  args: { label: 'One-time code', length: 6, hint: 'Open your authenticator app to get the code', autofocus: true },
 };
 
 export const Disabled: Story = {
@@ -80,8 +87,8 @@ export const TwoFactorAuth: Story = {
     template: `
       <div style="max-width: 380px; text-align: center;">
         <div style="margin-bottom: 24px;">
-          <div style="width: 56px; height: 56px; background: #eff6ff; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px;">
-            <lc-icon name="shield-check" size="lg" color="#3b82f6"></lc-icon>
+          <div style="width: 56px; height: 56px; background: var(--color-primary-subtle); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px;">
+            <lc-icon name="shield-check" size="lg" color="var(--color-primary-500)"></lc-icon>
           </div>
           <h3 style="margin: 0 0 4px; font-size: 18px; font-weight: 600;">Two-Factor Authentication</h3>
           <p style="margin: 0; font-size: 13px; color: #666;">Enter the 6-digit code from your authenticator app.</p>
@@ -89,9 +96,9 @@ export const TwoFactorAuth: Story = {
         <lc-verification-code-input
           label=""
           [length]="6"
-          [autoSubmit]="true"
+          hint=""
         ></lc-verification-code-input>
-        <p style="margin: 16px 0 0; font-size: 12px; color: #666;">Didn't receive a code? <a href="#" style="color: #3b82f6; text-decoration: none;">Resend</a></p>
+        <p style="margin: 16px 0 0; font-size: 12px; color: #666;">Didn't receive a code? <a href="#" style="color: var(--color-primary-500); text-decoration: none;">Resend</a></p>
       </div>`,
   }),
 };
@@ -103,12 +110,12 @@ export const EmailVerification: Story = {
       <div style="max-width: 380px; text-align: center;">
         <div style="margin-bottom: 24px;">
           <h3 style="margin: 0 0 4px; font-size: 18px; font-weight: 600;">Verify your email</h3>
-          <p style="margin: 0; font-size: 13px; color: #666;">We sent a verification code to <strong>sarah&#64;example.com</strong></p>
+          <p style="margin: 0; font-size: 13px; color: #666;">We sent a verification code to <strong>name&#64;example.com</strong></p>
         </div>
         <lc-verification-code-input
           label=""
           [length]="6"
-          [autoSubmit]="true"
+          hint=""
           [required]="true"
         ></lc-verification-code-input>
         <div style="margin-top: 20px;">

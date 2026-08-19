@@ -222,8 +222,37 @@ describe('AlertComponent', () => {
   });
 
   describe('Accessibility', () => {
-    it('should have role="alert"', () => {
+    it('should have role="status" for info / success and role="alert" for error / warning', () => {
+      expect(alertElement.getAttribute('role')).toBe('status');
+      fixture.componentRef.setInput('variant', 'success');
+      fixture.detectChanges();
+      expect(alertElement.getAttribute('role')).toBe('status');
+      fixture.componentRef.setInput('variant', 'warning');
+      fixture.detectChanges();
       expect(alertElement.getAttribute('role')).toBe('alert');
+      fixture.componentRef.setInput('variant', 'error');
+      fixture.detectChanges();
+      expect(alertElement.getAttribute('role')).toBe('alert');
+    });
+
+    it('can be shown again via the visible model after being dismissed', () => {
+      component.dismiss();
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('.lc-alert__container')).toBeNull();
+
+      fixture.componentRef.setInput('visible', true);
+      fixture.detectChanges();
+      expect(component.visible()).toBe(true);
+      expect(fixture.nativeElement.querySelector('.lc-alert__container')).toBeTruthy();
+    });
+
+    it('labels the variant icon and hides the close icon from AT', () => {
+      fixture.componentRef.setInput('variant', 'error');
+      fixture.componentRef.setInput('dismissible', true);
+      fixture.detectChanges();
+      const icons = fixture.debugElement.queryAll(By.css('lc-icon')).map(d => d.componentInstance);
+      expect(icons[0].ariaLabel()).toBe('Error');
+      expect(icons[1].decorative()).toBe(true);
     });
 
     it('should have aria-live="polite" for info/success', () => {

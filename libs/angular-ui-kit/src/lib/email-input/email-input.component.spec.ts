@@ -1,5 +1,16 @@
+import { Component } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { EmailInputComponent } from './email-input.component';
+
+@Component({
+  standalone: true,
+  imports: [EmailInputComponent, ReactiveFormsModule],
+  template: `<lc-email-input [formControl]="control" />`,
+})
+class FormHostComponent {
+  readonly control = new FormControl('first@example.com');
+}
 
 describe('EmailInputComponent', () => {
   let component: EmailInputComponent;
@@ -187,5 +198,49 @@ describe('EmailInputComponent', () => {
       component.resetValidation();
       expect(component['validationError']()).toBeUndefined();
     });
+  });
+});
+
+describe('EmailInputComponent bound to a FormControl', () => {
+  let fixture: ComponentFixture<FormHostComponent>;
+  let host: FormHostComponent;
+  let native: HTMLInputElement;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({ imports: [FormHostComponent] }).compileComponents();
+    fixture = TestBed.createComponent(FormHostComponent);
+    host = fixture.componentInstance;
+    fixture.detectChanges();
+    native = fixture.nativeElement.querySelector('input');
+  });
+
+  it('should render the initial control value in the native input', () => {
+    expect(native.value).toBe('first@example.com');
+  });
+
+  it('should render setValue / patchValue / reset into the native input', () => {
+    host.control.setValue('second@example.com');
+    fixture.detectChanges();
+    expect(native.value).toBe('second@example.com');
+
+    host.control.reset();
+    fixture.detectChanges();
+    expect(native.value).toBe('');
+  });
+
+  it('should disable the native input when the control is disabled', () => {
+    host.control.disable();
+    fixture.detectChanges();
+    expect(native.disabled).toBe(true);
+
+    host.control.enable();
+    fixture.detectChanges();
+    expect(native.disabled).toBe(false);
+  });
+
+  it('should push typed values into the control', () => {
+    native.value = 'typed@example.com';
+    native.dispatchEvent(new Event('input'));
+    expect(host.control.value).toBe('typed@example.com');
   });
 });

@@ -1,13 +1,13 @@
-@use '../../styles/tokens/colors';
-
+// Marker colours are runtime tokens (not compiled Sass constants) so they
+// follow the active theme.
 $timeline-colors: (
-  'primary': colors.$color-primary-500,
-  'secondary': colors.$color-secondary-500,
-  'success': colors.$color-success-default,
-  'warning': colors.$color-warning-default,
-  'error': colors.$color-error-default,
-  'info': colors.$color-info-default,
-  'neutral': colors.$color-neutral-400,
+  'primary': var(--color-primary-500),
+  'secondary': var(--color-secondary-500),
+  'success': var(--color-success-default),
+  'warning': var(--color-warning-default),
+  'error': var(--color-error-default),
+  'info': var(--color-info-default),
+  'neutral': var(--color-text-tertiary),
 );
 
 :host {

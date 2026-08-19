@@ -27,6 +27,10 @@ const meta: Meta<ListComponent> = {
       description: 'Size of list items — sm is compact, lg is spacious',
     },
     showDividers: { description: 'Show separator lines between items' },
+    clickable: {
+      control: 'boolean',
+      description: 'Render rows as focusable buttons (Enter / Space emit itemClick). Set this whenever itemClick is handled.',
+    },
   },
 
   parameters: {
@@ -46,7 +50,7 @@ List component for displaying structured item collections.
 - Metadata text (dates, sizes, counts)
 - Action buttons with click events
 - Selected/highlighted state
-- Accessible with ARIA list role
+- Accessible with ARIA list role; \`clickable\` rows are keyboard-operable
 `,
       },
     },

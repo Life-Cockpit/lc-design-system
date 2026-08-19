@@ -1,3 +1,5 @@
+@use '../../styles/tokens/colors';
+
 .footer {
   padding: var(--lc-density-padding-xl, 2rem) var(--lc-density-padding-lg, 1.5rem) var(--lc-density-padding-lg, 1.5rem);
   color: var(--color-text-secondary);
@@ -75,54 +77,63 @@
     }
   }
 
-  // Color variants
+  // Color variants.
+  //
+  // `primary` and `dark` are LITERAL values, not the semantic tokens: both
+  // variants promise a fixed dark surface with light ink whichever theme the
+  // page runs, and the tokens do not deliver that. --color-primary-900 and
+  // --color-neutral-100 invert under the dark root (the primary footer became
+  // a pale teal bar with white titles on it; the dark footer's neutral-100
+  // title matched its own neutral-100 surface in light and sat at ~1.4:1 in
+  // dark) and --color-neutral-white put white link hovers on a light surface.
+  // Same approach as `lc-header` / `lc-sidenav` `theme="dark"`.
   &--primary {
-    background-color: var(--color-primary-900);
-    color: var(--color-primary-200);
+    background-color: colors.$color-primary-900;
+    color: colors.$color-primary-200;
 
     .footer__section-title {
-      color: var(--color-neutral-white);
+      color: #ffffff;
     }
 
     .footer__link {
-      color: var(--color-primary-300);
+      color: colors.$color-primary-300;
 
       &:hover {
-        color: var(--color-neutral-white);
+        color: #ffffff;
       }
     }
 
     .footer__copyright {
-      color: var(--color-primary-400);
+      color: colors.$color-primary-400;
     }
 
     &.footer--bordered {
-      border-top-color: var(--color-primary-700);
+      border-top-color: colors.$color-primary-700;
     }
   }
 
   &--dark {
-    background-color: var(--color-surface-sunken);
-    color: var(--color-text-tertiary);
+    background-color: colors.$color-surface-dark-sunken;
+    color: #93a4ad; // dark --color-text-tertiary
 
     .footer__section-title {
-      color: var(--color-neutral-100);
+      color: #f1f6f8; // dark --color-text-primary
     }
 
     .footer__link {
-      color: var(--color-text-tertiary);
+      color: #93a4ad; // dark --color-text-tertiary
 
       &:hover {
-        color: var(--color-neutral-white);
+        color: #f1f6f8; // dark --color-text-primary
       }
     }
 
     .footer__copyright {
-      color: var(--color-text-tertiary);
+      color: #93a4ad; // dark --color-text-tertiary
     }
 
     &.footer--bordered {
-      border-top-color: var(--color-text-secondary);
+      border-top-color: rgba(255, 255, 255, 0.08); // dark --color-border
     }
   }
 

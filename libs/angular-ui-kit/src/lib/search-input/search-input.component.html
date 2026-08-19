@@ -1,16 +1,18 @@
 <div [class]="wrapperClasses()">
-  <lc-icon name="magnifying-glass" class="search-input__icon"></lc-icon>
+  <lc-icon name="magnifying-glass" class="search-input__icon" [decorative]="true"></lc-icon>
   <input
     #searchInputEl
     type="search"
     class="search-input__field"
+    [id]="inputId()"
     [placeholder]="placeholder()"
     [disabled]="disabled()"
     [value]="value()"
     (input)="onInput($event)"
     (keydown)="onKeydown($event)"
     autocomplete="off"
-    aria-label="Search"
+    [attr.aria-label]="ariaLabelledBy() ? null : ariaLabel() || 'Search'"
+    [attr.aria-labelledby]="ariaLabelledBy() || null"
   />
   @if (value()) {
     <button
@@ -20,7 +22,7 @@
       aria-label="Clear search"
       [disabled]="disabled()"
     >
-      <lc-icon name="x-mark" class="search-input__clear-icon"></lc-icon>
+      <lc-icon name="x-mark" class="search-input__clear-icon" [decorative]="true"></lc-icon>
     </button>
   }
 </div>

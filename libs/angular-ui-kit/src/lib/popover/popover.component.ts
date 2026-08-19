@@ -5,14 +5,22 @@ import {
   output,
   signal,
   computed,
+  effect,
+  untracked,
+  afterRenderEffect,
   ElementRef,
   HostListener,
+  Renderer2,
   inject,
   OnDestroy,
 } from '@angular/core';
+import { OverlayStackService } from '../shared/overlay-stack.service';
 
 export type PopoverPosition = 'top' | 'bottom' | 'left' | 'right';
 export type PopoverTrigger = 'click' | 'hover';
+
+/** Natively focusable elements a projected trigger may be or contain. */
+const INTERACTIVE_SELECTOR = 'button, a[href], input, select, textarea, [tabindex]';
 
 /**
  * Popover component for displaying rich floating content.
@@ -21,7 +29,7 @@ export type PopoverTrigger = 'click' | 'hover';
  * - Position options (top, bottom, left, right)
  * - Click or hover trigger modes
  * - Optional arrow indicator
- * - Click-outside to close
+ * - Click-outside and Escape to close (top-most overlay only)
  * - Open state change event
  * - Content projection for trigger and body
  *
@@ -41,6 +49,10 @@ export type PopoverTrigger = 'click' | 'hover';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PopoverComponent implements OnDestroy {
+  private static nextId = 0;
+  /** Identifies this instance in the overlay stack. */
+  private readonly overlayId = `lc-popover-${++PopoverComponent.nextId}`;
+
   /**
    * Position relative to the trigger element.
    * @default 'bottom'
@@ -66,6 +78,9 @@ export class PopoverComponent implements OnDestroy {
 
   protected isOpen = signal(false);
 
+  /** Id of the panel, referenced by the trigger's `aria-controls`. */
+  protected readonly panelId = `${this.overlayId}-panel`;
+
   protected panelClasses = computed(() => {
     return [
       'popover__panel',
@@ -76,31 +91,75 @@ export class PopoverComponent implements OnDestroy {
       .join(' ');
   });
 
-  private readonly elementRef = inject(ElementRef);
+  private readonly elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly renderer = inject(Renderer2);
+  private readonly overlayStack = inject(OverlayStackService);
 
-  @HostListener('document:click', ['$event'])
-  onDocumentClick(event: MouseEvent): void {
-    if (this.isOpen() && this.trigger() === 'click') {
-      const el = this.elementRef.nativeElement as HTMLElement;
-      if (!el.contains(event.target as Node)) {
-        this.close();
+  constructor() {
+    effect(() => {
+      const open = this.isOpen();
+      untracked(() => {
+        if (open) {
+          this.overlayStack.push(this.overlayId);
+        } else {
+          this.overlayStack.remove(this.overlayId);
+        }
+      });
+    });
+
+    // Mirror the open state onto the projected trigger so assistive tech knows
+    // it controls a popup (the trigger is caller-supplied, so we set the
+    // attributes rather than bind them).
+    afterRenderEffect(() => {
+      const open = this.isOpen();
+      const trigger = this.triggerElement();
+      if (!trigger) return;
+      this.renderer.setAttribute(trigger, 'aria-haspopup', 'dialog');
+      this.renderer.setAttribute(trigger, 'aria-expanded', String(open));
+      if (open) {
+        this.renderer.setAttribute(trigger, 'aria-controls', this.panelId);
+      } else {
+        this.renderer.removeAttribute(trigger, 'aria-controls');
       }
-    }
+    });
   }
 
-  @HostListener('document:keydown.escape')
-  onEscape(): void {
-    if (this.isOpen()) {
-      this.close();
-    }
+  /**
+   * Click outside closes the popover — only while it is the top-most overlay,
+   * so a click inside a layer above it (a modal opened from the popover) is
+   * left alone.
+   */
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    if (!this.isOpen() || this.trigger() !== 'click') return;
+    const el = this.elementRef.nativeElement;
+    if (el.contains(event.target as Node)) return;
+    if (!this.overlayStack.claim(this.overlayId, event)) return;
+    this.close();
+  }
+
+  /**
+   * Escape closes the popover only while it is the top-most overlay; the event
+   * is consumed so overlays underneath stay open.
+   */
+  @HostListener('document:keydown.escape', ['$event'])
+  onEscape(event: Event): void {
+    if (!this.isOpen()) return;
+    if (!this.overlayStack.claim(this.overlayId, event)) return;
+    event.stopPropagation();
+    this.close();
   }
 
   ngOnDestroy(): void {
-    // Cleanup handled by Angular
+    this.overlayStack.remove(this.overlayId);
   }
 
   protected toggle(): void {
-    this.isOpen() ? this.close() : this.open();
+    if (this.isOpen()) {
+      this.close();
+    } else {
+      this.open();
+    }
   }
 
   protected open(): void {
@@ -109,6 +168,7 @@ export class PopoverComponent implements OnDestroy {
   }
 
   protected close(): void {
+    this.restoreFocus();
     this.isOpen.set(false);
     this.openChange.emit(false);
   }
@@ -122,6 +182,32 @@ export class PopoverComponent implements OnDestroy {
   protected onMouseLeave(): void {
     if (this.trigger() === 'hover') {
       this.close();
+    }
+  }
+
+  /**
+   * The element that carries the popup ARIA attributes and receives focus back:
+   * the projected `[popover-trigger]` node itself when it is natively
+   * interactive, otherwise the first interactive element inside it (e.g. the
+   * `<button>` inside an `<lc-button popover-trigger>`).
+   */
+  private triggerElement(): HTMLElement | null {
+    const slot = this.elementRef.nativeElement.querySelector<HTMLElement>('[popover-trigger]');
+    if (!slot) return null;
+    return slot.matches(INTERACTIVE_SELECTOR)
+      ? slot
+      : (slot.querySelector<HTMLElement>(INTERACTIVE_SELECTOR) ?? slot);
+  }
+
+  /**
+   * Closing removes the panel from the DOM; if focus is inside it (Escape after
+   * tabbing in) it would silently drop to `<body>`, so send it back to the trigger.
+   */
+  private restoreFocus(): void {
+    if (typeof document === 'undefined') return;
+    const panel = this.elementRef.nativeElement.querySelector<HTMLElement>('.popover__panel');
+    if (panel?.contains(document.activeElement)) {
+      this.triggerElement()?.focus();
     }
   }
 }

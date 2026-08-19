@@ -1,6 +1,23 @@
+import { Component, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ReactiveFormsModule, FormControl } from '@angular/forms';
 import { InputComponent } from './input.component';
+
+@Component({
+  standalone: true,
+  imports: [InputComponent, ReactiveFormsModule],
+  template: `
+    <lc-input label="Bound" [(value)]="text" (valueChange)="changes.push($event)" />
+    <lc-input label="One-way" [value]="preset()" />
+    <lc-input label="Form" [formControl]="control" />
+  `,
+})
+class HostComponent {
+  readonly text = signal('');
+  readonly preset = signal('initial');
+  readonly control = new FormControl('from-form');
+  readonly changes: string[] = [];
+}
 
 describe('InputComponent', () => {
   let component: InputComponent;
@@ -116,15 +133,16 @@ describe('InputComponent', () => {
   });
 
   describe('Output Events', () => {
-    it('should emit valueChange when value changes', (done) => {
-      component.valueChange.subscribe((value: string) => {
-        expect(value).toBe('test@example.com');
-        done();
-      });
+    it('should emit valueChange exactly once per keystroke', () => {
+      const spy = jest.fn();
+      component.value.subscribe(spy);
 
       const input = fixture.nativeElement.querySelector('input');
       input.value = 'test@example.com';
       input.dispatchEvent(new Event('input'));
+
+      expect(spy).toHaveBeenCalledTimes(1);
+      expect(spy).toHaveBeenCalledWith('test@example.com');
     });
 
     it('should emit focused when input receives focus', (done) => {
@@ -340,5 +358,50 @@ describe('InputComponent', () => {
       const input = fixture.nativeElement.querySelector('input');
       expect(input.getAttribute('aria-invalid')).toBe('true');
     });
+  });
+});
+
+describe('InputComponent value binding in a host', () => {
+  let fixture: ComponentFixture<HostComponent>;
+  let host: HostComponent;
+  let inputs: HTMLInputElement[];
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({ imports: [HostComponent] }).compileComponents();
+    fixture = TestBed.createComponent(HostComponent);
+    host = fixture.componentInstance;
+    fixture.detectChanges();
+    inputs = Array.from(fixture.nativeElement.querySelectorAll('input'));
+  });
+
+  it('should render a value pushed in via [value]', () => {
+    expect(inputs[1].value).toBe('initial');
+    host.preset.set('updated');
+    fixture.detectChanges();
+    expect(inputs[1].value).toBe('updated');
+  });
+
+  it('should keep [(value)] in sync in both directions and emit once per keystroke', () => {
+    host.text.set('hello');
+    fixture.detectChanges();
+    expect(inputs[0].value).toBe('hello');
+    expect(host.changes).toEqual([]);
+
+    inputs[0].value = 'hello!';
+    inputs[0].dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+    expect(host.text()).toBe('hello!');
+    expect(host.changes).toEqual(['hello!']);
+  });
+
+  it('should still render and follow a reactive form control', () => {
+    expect(inputs[2].value).toBe('from-form');
+    host.control.setValue('changed');
+    fixture.detectChanges();
+    expect(inputs[2].value).toBe('changed');
+
+    inputs[2].value = 'typed';
+    inputs[2].dispatchEvent(new Event('input'));
+    expect(host.control.value).toBe('typed');
   });
 });

@@ -45,7 +45,7 @@ export const Default: Story = {
     filters: [
       { key: 'search', label: 'Search', type: 'search', placeholder: 'Search...' },
       { key: 'status', label: 'Status', type: 'select', options: [{ value: 'active', label: 'Active' }, { value: 'inactive', label: 'Inactive' }] },
-      { key: 'featured', label: 'Featured only', type: 'toggle' },
+      { key: 'featured', label: 'Featured', type: 'toggle', options: [{ value: '', label: 'All' }, { value: 'true', label: 'Featured only' }] },
     ],
     values: {},
   },
@@ -58,7 +58,7 @@ export const WithPresetValues: Story = {
     filters: [
       { key: 'search', label: 'Search', type: 'search', placeholder: 'Filter by name...' },
       { key: 'role', label: 'Role', type: 'select', options: [{ value: 'admin', label: 'Admin' }, { value: 'editor', label: 'Editor' }, { value: 'viewer', label: 'Viewer' }] },
-      { key: 'active', label: 'Active only', type: 'toggle' },
+      { key: 'active', label: 'Active', type: 'toggle', options: [{ value: '', label: 'All' }, { value: 'true', label: 'Active only' }] },
     ],
     values: { role: 'editor', active: 'true' },
   },
@@ -84,7 +84,7 @@ export const ProjectFilters: Story = {
       { key: 'search', label: 'Search', type: 'search', placeholder: 'Search tasks...' },
       { key: 'priority', label: 'Priority', type: 'select', options: [{ value: 'high', label: 'High' }, { value: 'medium', label: 'Medium' }, { value: 'low', label: 'Low' }] },
       { key: 'assignee', label: 'Assignee', type: 'select', options: [{ value: 'me', label: 'Assigned to me' }, { value: 'unassigned', label: 'Unassigned' }] },
-      { key: 'overdue', label: 'Overdue only', type: 'toggle' },
+      { key: 'overdue', label: 'Due', type: 'toggle', options: [{ value: '', label: 'All' }, { value: 'true', label: 'Overdue only' }] },
     ],
     values: {},
   },
@@ -97,7 +97,7 @@ export const AboveTable: Story = {
       filters: [
         { key: 'search', label: 'Search', type: 'search', placeholder: 'Search members...' },
         { key: 'role', label: 'Role', type: 'select', options: [{ value: 'admin', label: 'Admin' }, { value: 'member', label: 'Member' }] },
-        { key: 'active', label: 'Active only', type: 'toggle' },
+        { key: 'active', label: 'Active', type: 'toggle', options: [{ value: '', label: 'All' }, { value: 'true', label: 'Active only' }] },
       ],
     },
     template: `

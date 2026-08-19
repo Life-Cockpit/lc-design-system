@@ -1,4 +1,5 @@
-import { Injectable, signal, Signal } from '@angular/core';
+import { Injectable, PLATFORM_ID, inject, signal, Signal } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 
 export type ToastVariant = 'success' | 'error' | 'warning' | 'info';
 export type ToastPosition =
@@ -31,9 +32,12 @@ export interface Toast extends Required<Omit<ToastConfig, 'action'>> {
 /**
  * Toast service for showing ephemeral notifications.
  *
+ * The toasts are rendered by `<lc-toast-outlet />`, which the application
+ * places once (e.g. in its shell); without it nothing is shown.
+ *
  * @example
  * ```typescript
- * constructor(private toastService: ToastService) {}
+ * private readonly toastService = inject(ToastService);
  *
  * showSuccess() {
  *   this.toastService.show({
@@ -60,7 +64,9 @@ export class ToastService {
 
   private readonly MAX_TOASTS = 5;
   private toastIdCounter = 0;
-  private activeTimeouts = new Map<string, number>();
+  private activeTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
+  /** Auto-dismiss timers only make sense in the browser (and `window` does not exist on the server). */
+  private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
   constructor() {
     this.toasts = this.toastList.asReadonly();
@@ -95,8 +101,8 @@ export class ToastService {
     this.toastList.set([...currentToasts, toast]);
 
     // Auto-dismiss if duration > 0
-    if (toast.duration > 0) {
-      const timeoutId = window.setTimeout(() => {
+    if (toast.duration > 0 && this.isBrowser) {
+      const timeoutId = setTimeout(() => {
         this.close(toast.id);
       }, toast.duration);
 
@@ -146,7 +152,7 @@ export class ToastService {
   private clearTimeout(id: string): void {
     const timeoutId = this.activeTimeouts.get(id);
     if (timeoutId !== undefined) {
-      window.clearTimeout(timeoutId);
+      clearTimeout(timeoutId);
       this.activeTimeouts.delete(id);
     }
   }

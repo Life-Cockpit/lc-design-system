@@ -2,7 +2,7 @@
   <div class="lc-gantt__container">
     <!-- Left: Task labels -->
     <div class="lc-gantt__labels" [style.width.px]="labelWidth()">
-      <div class="lc-gantt__labels-header">Aufgaben</div>
+      <div class="lc-gantt__labels-header">{{ labelsHeader() }}</div>
       @for (bar of bars(); track bar.task.id) {
         <div class="lc-gantt__label-row" [style.height.px]="rowHeight()">
           <span class="lc-gantt__label-text" [title]="bar.task.title">{{ bar.task.title }}</span>
@@ -58,7 +58,7 @@
         @if (depLines().length) {
           <svg class="lc-gantt__dep-svg" [attr.width]="timelineWidth()" [attr.height]="gridHeight()">
             <defs>
-              <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+              <marker [attr.id]="markerId" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
                 <path d="M0,0 L8,3 L0,6 Z" class="lc-gantt__arrow" />
               </marker>
             </defs>
@@ -66,7 +66,7 @@
               <path
                 [attr.d]="'M' + dep.x1 + ',' + dep.y1 + ' C' + (dep.x1 + 20) + ',' + dep.y1 + ' ' + (dep.x2 - 20) + ',' + dep.y2 + ' ' + dep.x2 + ',' + dep.y2"
                 class="lc-gantt__dep-line"
-                marker-end="url(#arrowhead)"
+                [attr.marker-end]="'url(#' + markerId + ')'"
               />
             }
           </svg>
@@ -76,12 +76,16 @@
         @for (bar of bars(); track bar.task.id) {
           <div
             [class]="'lc-gantt__bar lc-gantt__bar--' + bar.colorClass"
+            role="button"
+            tabindex="0"
             [style.left.px]="bar.left"
             [style.top.px]="bar.top + 8"
             [style.width.px]="bar.width"
             [style.height.px]="rowHeight() - 16"
             [title]="bar.task.title + ' (' + bar.progress + '%)'"
+            [attr.aria-label]="bar.task.title + ' (' + bar.progress + '%)'"
             (click)="onTaskClick(bar.task)"
+            (keydown)="onTaskKeydown($event, bar.task)"
           >
             @if (bar.progress > 0) {
               <div class="lc-gantt__bar-progress" [style.width.%]="bar.progress"></div>

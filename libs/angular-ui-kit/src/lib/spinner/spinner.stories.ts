@@ -50,15 +50,15 @@ export const Sizes: Story = {
       <div style="display: flex; align-items: center; gap: 32px;">
         <div style="text-align: center;">
           <lc-spinner size="sm"></lc-spinner>
-          <p style="margin: 8px 0 0; font-size: 12px; color: #6b7280;">Small</p>
+          <p style="margin: 8px 0 0; font-size: 12px; color: var(--color-text-secondary);">Small</p>
         </div>
         <div style="text-align: center;">
           <lc-spinner size="md"></lc-spinner>
-          <p style="margin: 8px 0 0; font-size: 12px; color: #6b7280;">Medium</p>
+          <p style="margin: 8px 0 0; font-size: 12px; color: var(--color-text-secondary);">Medium</p>
         </div>
         <div style="text-align: center;">
           <lc-spinner size="lg"></lc-spinner>
-          <p style="margin: 8px 0 0; font-size: 12px; color: #6b7280;">Large</p>
+          <p style="margin: 8px 0 0; font-size: 12px; color: var(--color-text-secondary);">Large</p>
         </div>
       </div>`,
   }),
@@ -87,7 +87,7 @@ export const InlineWithButton: Story = {
       <div style="display: flex; align-items: center; gap: 12px;">
         <lc-button variant="primary" [disabled]="true">Submitting...</lc-button>
         <lc-spinner size="sm"></lc-spinner>
-        <span style="font-size: 14px; color: #6b7280;">Please wait</span>
+        <span style="font-size: 14px; color: var(--color-text-secondary);">Please wait</span>
       </div>`,
   }),
 };

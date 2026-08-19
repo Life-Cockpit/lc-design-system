@@ -22,8 +22,8 @@ import { SectionComponent } from './section.component';
 class TestHostComponent {
   spacing: 'none' | 'sm' | 'md' | 'lg' | 'xl' = 'md';
   background: 'none' | 'gray' | 'primary' | 'secondary' = 'none';
-  noPaddingX: boolean = false;
-  noPaddingY: boolean = false;
+  noPaddingX = false;
+  noPaddingY = false;
 }
 
 describe('SectionComponent', () => {

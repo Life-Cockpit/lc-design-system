@@ -14,8 +14,10 @@
           [class.lc-log-viewer__tool-btn--active]="paused()"
           (click)="togglePause()"
           [title]="paused() ? 'Resume' : 'Pause'"
+          [attr.aria-label]="paused() ? 'Resume stream' : 'Pause stream'"
+          [attr.aria-pressed]="paused()"
         >
-          <lc-icon [name]="paused() ? 'play' : 'pause'" size="xs" />
+          <lc-icon [name]="paused() ? 'player-play' : 'player-pause'" size="xs" />
         </button>
       }
       <button
@@ -23,6 +25,7 @@
         class="lc-log-viewer__tool-btn"
         (click)="clearBuffer()"
         title="Clear"
+        aria-label="Clear log"
       >
         <lc-icon name="trash" size="xs" />
       </button>
@@ -31,6 +34,7 @@
         class="lc-log-viewer__tool-btn"
         (click)="onCopyAll()"
         title="Copy all"
+        aria-label="Copy all lines"
       >
         <lc-icon name="clipboard-document" size="xs" />
       </button>
@@ -40,6 +44,8 @@
         [class.lc-log-viewer__tool-btn--active]="showSearch()"
         (click)="toggleSearch()"
         title="Search (/)"
+        aria-label="Search log"
+        [attr.aria-expanded]="showSearch()"
       >
         <lc-icon name="magnifying-glass" size="xs" />
       </button>
@@ -52,6 +58,7 @@
           type="button"
           class="lc-log-viewer__level-pill lc-log-viewer__level-pill--error"
           [class.lc-log-viewer__level-pill--active]="internalLevelFilter().has('error')"
+          [attr.aria-pressed]="internalLevelFilter().has('error')"
           (click)="toggleLevelFilter('error')"
         >
           {{ levelCounts().error }} errors
@@ -62,6 +69,7 @@
           type="button"
           class="lc-log-viewer__level-pill lc-log-viewer__level-pill--warn"
           [class.lc-log-viewer__level-pill--active]="internalLevelFilter().has('warn')"
+          [attr.aria-pressed]="internalLevelFilter().has('warn')"
           (click)="toggleLevelFilter('warn')"
         >
           {{ levelCounts().warn }} warnings
@@ -75,21 +83,30 @@
   @if (showSearch()) {
     <div class="lc-log-viewer__search">
       <lc-icon name="magnifying-glass" size="xs" />
+      <label class="lc-log-viewer__sr-only" [for]="searchInputId">Search logs</label>
       <input
+        #searchInput
         type="text"
+        [id]="searchInputId"
         class="lc-log-viewer__search-input"
         placeholder="Search logs..."
         [value]="internalSearch()"
         (input)="internalSearch.set(getInputValue($event))"
-        autofocus
       />
     </div>
   }
 
-  <!-- Log content (virtualized) -->
+  <!--
+    Log content (virtualized). `role="log"` names the region; live
+    announcements are switched off because rows enter/leave the DOM on every
+    scroll of the virtual window — announcing them would be pure noise.
+  -->
   <div
     #scrollContainer
     class="lc-log-viewer__content"
+    role="log"
+    aria-live="off"
+    aria-label="Log output"
   >
     <div
       class="lc-log-viewer__spacer"
@@ -97,16 +114,21 @@
     >
       <div
         class="lc-log-viewer__window"
-        [style.transform]="'translateY(' + (visibleRange().start * LINE_HEIGHT) + 'px)'"
+        [style.transform]="'translateY(' + (visibleRange().start * lineHeight()) + 'px)'"
       >
         @for (line of visibleLines(); track line._index) {
           <div
             class="lc-log-viewer__line"
+            [class.lc-log-viewer__line--clickable]="clickableLines()"
             [class.lc-log-viewer__line--debug]="line.level === 'debug'"
             [class.lc-log-viewer__line--info]="line.level === 'info'"
             [class.lc-log-viewer__line--warn]="line.level === 'warn'"
             [class.lc-log-viewer__line--error]="line.level === 'error'"
+            [attr.role]="clickableLines() ? 'button' : null"
+            [attr.tabindex]="clickableLines() ? 0 : null"
             (click)="onLineClick(line)"
+            (keydown)="onLineKeydown($event, line)"
+            (keyup)="onLineKeyup($event, line)"
           >
             @if (showLineNumbers()) {
               <span class="lc-log-viewer__line-num">{{ line._index + 1 }}</span>
@@ -122,7 +144,7 @@
             }
             <span
               class="lc-log-viewer__text"
-              [innerHTML]="highlightSearch(parseAnsi(line.text))"
+              [innerHTML]="renderLine(line.text)"
             ></span>
           </div>
         }

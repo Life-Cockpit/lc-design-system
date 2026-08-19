@@ -1,17 +1,17 @@
 import {
   Component,
   input,
-  output,
-  ContentChildren,
-  QueryList,
-  AfterContentInit,
-  signal,
+  model,
+  contentChildren,
+  viewChild,
+  viewChildren,
   computed,
   effect,
+  untracked,
   ChangeDetectionStrategy,
   ViewEncapsulation,
-  ViewChild,
   TemplateRef,
+  ElementRef,
 } from '@angular/core';
 import { NgClass, NgTemplateOutlet } from '@angular/common';
 import { BadgeComponent, BadgeVariant } from '../badge/badge.component';
@@ -84,23 +84,25 @@ export class TabComponent {
   /**
    * Template reference for tab content
    */
-  @ViewChild(TemplateRef, { static: true }) template!: TemplateRef<unknown>;
+  readonly template = viewChild.required(TemplateRef);
 }
 
 /**
  * Tabs component for organizing content into switchable views.
  *
  * Features:
- * - Dynamic tab registration via content projection
- * - Active tab tracking with two-way binding
+ * - Dynamic tab registration via content projection (tabs added or removed
+ *   after init are picked up automatically)
+ * - Active tab tracking with two-way binding (`[(selectedIndex)]`)
  * - Accessible with ARIA tablist/tab/tabpanel roles
- * - Keyboard navigation between tabs
+ * - Keyboard navigation between tabs (arrow keys, Home, End) moves both the
+ *   selection and DOM focus
  * - Lazy content rendering per tab
  * - Optional badge per tab (counts or status labels)
  *
  * @example
  * ```html
- * <lc-tabs>
+ * <lc-tabs [(selectedIndex)]="active">
  *   <lc-tab label="Account">Account settings</lc-tab>
  *   <lc-tab label="Inbox" [badge]="12" badgeVariant="primary">Messages</lc-tab>
  *   <lc-tab label="Security">Security settings</lc-tab>
@@ -113,14 +115,13 @@ export class TabComponent {
   imports: [NgClass, NgTemplateOutlet, BadgeComponent],
   templateUrl: './tabs.component.html',
   styleUrl: './tabs.component.scss',
-  // eslint-disable-next-line @angular-eslint/use-component-view-encapsulation
   encapsulation: ViewEncapsulation.None,
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     class: 'lc-tabs',
   },
 })
-export class TabsComponent implements AfterContentInit {
+export class TabsComponent {
   /**
    * Orientation of tabs
    * @default 'horizontal'
@@ -128,30 +129,34 @@ export class TabsComponent implements AfterContentInit {
   readonly orientation = input<TabOrientation>('horizontal');
 
   /**
-   * Currently selected tab index (external input)
+   * Currently selected tab index. Two-way bindable via `[(selectedIndex)]`;
+   * `selectedIndexChange` emits only when the selection actually changes
+   * (never during initialisation).
    * @default 0
    */
-  readonly selectedIndexInput = input(0);
+  readonly selectedIndex = model(0);
 
   /**
-   * Currently selected tab index (internal writable signal)
+   * Legacy one-way input for the selected index.
+   * @deprecated Bind `[selectedIndex]` / `[(selectedIndex)]` instead.
    */
-  readonly selectedIndex = signal(0);
+  readonly selectedIndexInput = input<number | undefined>(undefined);
 
   /**
-   * Emitted when selected tab changes
+   * Projected tab components (signal query — updates when tabs are added or
+   * removed after init).
    */
-  readonly selectedIndexChange = output<number>();
-
-  /**
-   * Tab components
-   */
-  @ContentChildren(TabComponent) tabs!: QueryList<TabComponent>;
+  readonly tabs = contentChildren(TabComponent);
 
   /**
    * Tab list for template access
    */
-  readonly tabList = computed(() => this.tabs?.toArray() || []);
+  readonly tabList = computed(() => this.tabs());
+
+  /**
+   * Rendered tab buttons — used to move DOM focus on keyboard navigation.
+   */
+  private readonly tabButtons = viewChildren<ElementRef<HTMLButtonElement>>('tabButton');
 
   /**
    * CSS classes for tab list
@@ -162,43 +167,26 @@ export class TabsComponent implements AfterContentInit {
     'lc-tabs--vertical': this.orientation() === 'vertical',
   }));
 
-  /**
-   * Track tab registration
-   */
-  private registeredTabs: Array<{ label: string; disabled: boolean }> = [];
-
   constructor() {
-    // Sync external selectedIndexInput to internal selectedIndex
+    // Mirror the deprecated one-way input into the model. `model.set` is a
+    // no-op (no emit) when the value is unchanged, so binding the same index
+    // does not fire `selectedIndexChange`.
     effect(() => {
-      this.selectedIndex.set(this.selectedIndexInput());
+      const legacy = this.selectedIndexInput();
+      if (legacy !== undefined) {
+        untracked(() => this.selectedIndex.set(legacy));
+      }
     });
-    // Emit when selection changes
+
+    // Keep the selection valid when tabs are removed at runtime: falling off
+    // the end would leave no panel visible and no tab reachable via Tab.
     effect(() => {
-      const index = this.selectedIndex();
-      this.selectedIndexChange.emit(index);
+      const count = this.tabs().length;
+      const index = untracked(() => this.selectedIndex());
+      if (count > 0 && index >= count) {
+        untracked(() => this.selectTab(this.getLastEnabledTab()));
+      }
     });
-  }
-
-  ngAfterContentInit(): void {
-    // Register all tabs
-    this.tabs.forEach((tab) => {
-      this.registerTab({ label: tab.label(), disabled: tab.disabled() });
-    });
-
-    // Listen for tab changes
-    this.tabs.changes.subscribe(() => {
-      this.registeredTabs = [];
-      this.tabs.forEach((tab) => {
-        this.registerTab({ label: tab.label(), disabled: tab.disabled() });
-      });
-    });
-  }
-
-  /**
-   * Register a tab
-   */
-  registerTab(tab: { label: string; disabled: boolean }): void {
-    this.registeredTabs.push(tab);
   }
 
   /**
@@ -220,7 +208,8 @@ export class TabsComponent implements AfterContentInit {
   }
 
   /**
-   * Handle keyboard navigation
+   * Handle keyboard navigation (automatic activation: focus and selection
+   * move together).
    */
   handleKeyDown(event: KeyboardEvent): void {
     const currentIndex = this.selectedIndex();
@@ -257,6 +246,7 @@ export class TabsComponent implements AfterContentInit {
 
     if (nextIndex !== currentIndex) {
       this.selectTab(nextIndex);
+      this.focusTab(nextIndex);
     }
   }
 
@@ -265,6 +255,13 @@ export class TabsComponent implements AfterContentInit {
    */
   getTabIndex(index: number): number {
     return this.isSelected(index) ? 0 : -1;
+  }
+
+  /**
+   * Move DOM focus to the tab button at `index` (roving tabindex).
+   */
+  private focusTab(index: number): void {
+    this.tabButtons()[index]?.nativeElement.focus();
   }
 
   /**

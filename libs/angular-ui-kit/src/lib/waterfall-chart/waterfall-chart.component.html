@@ -1,4 +1,6 @@
-<svg width="100%" [attr.height]="height()" [attr.viewBox]="viewBox()" role="img" aria-label="Waterfall chart" class="lc-waterfall-chart">
+<svg width="100%" [attr.height]="height()" [attr.viewBox]="viewBox()" role="img" [attr.aria-label]="effectiveAriaLabel()" class="lc-waterfall-chart">
+  <title>{{ effectiveAriaLabel() }}</title>
+
   @for (line of computedBars().gridLines; track line.y) {
     <line [attr.x1]="axisLine().hx1" [attr.y1]="line.y" [attr.x2]="axisLine().hx2" [attr.y2]="line.y" class="lc-waterfall-chart__grid" />
     <text [attr.x]="axisLine().vx1 - 6" [attr.y]="line.y" text-anchor="end" dominant-baseline="central" class="lc-waterfall-chart__grid-label">{{ line.label }}</text>
@@ -11,10 +13,10 @@
     <line [attr.x1]="conn.x1" [attr.y1]="conn.y" [attr.x2]="conn.x2" [attr.y2]="conn.y" class="lc-waterfall-chart__connector" />
   }
 
-  @for (bar of computedBars().bars; track bar.label) {
+  @for (bar of computedBars().bars; track $index) {
     <rect [attr.x]="bar.x" [attr.y]="bar.y" [attr.width]="bar.width" [attr.height]="bar.height" [attr.fill]="bar.color" rx="2" class="lc-waterfall-chart__bar" />
     @if (showValues()) {
-      <text [attr.x]="bar.labelX" [attr.y]="bar.valueY" text-anchor="middle" class="lc-waterfall-chart__value">{{ bar.value >= 0 ? '+' : '' }}{{ bar.value }}</text>
+      <text [attr.x]="bar.labelX" [attr.y]="bar.valueY" text-anchor="middle" class="lc-waterfall-chart__value">{{ bar.valueText }}</text>
     }
     <text [attr.x]="bar.labelX" [attr.y]="bar.labelY" text-anchor="middle" class="lc-waterfall-chart__label">{{ bar.label }}</text>
   }

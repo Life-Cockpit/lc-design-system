@@ -109,6 +109,77 @@ describe('MarkdownComponent', () => {
     expect(anchor).toBeTruthy();
   });
 
+  // ── Safety ─────────────────────────────────────────────────────────────
+  // The parser builds HTML strings itself; these pin down that nothing in the
+  // markdown becomes live markup, on both sanitizer settings.
+  describe('Safety', () => {
+    const el = () => fixture.nativeElement as HTMLElement;
+    const hasEventHandler = () =>
+      Array.from(el().querySelectorAll('*')).some((n) =>
+        Array.from(n.attributes).some((a) => a.name.startsWith('on')),
+      );
+    const render = (md: string, sanitize = true) => {
+      fixture.componentRef.setInput('content', md);
+      fixture.componentRef.setInput('sanitize', sanitize);
+      fixture.detectChanges();
+    };
+
+    it.each([true, false])('should never emit event-handler attributes (sanitize=%s)', (sanitize) => {
+      render('Hi <img src=x onerror="alert(1)"> and ![x](x" onerror="alert(2)) and [l](x" onclick="alert(3))', sanitize);
+      expect(hasEventHandler()).toBe(false);
+      expect(el().querySelector('img[src="x"]')).toBeNull();
+    });
+
+    it.each([true, false])('should not turn javascript: URLs into links or images (sanitize=%s)', (sanitize) => {
+      render('[go](javascript:alert(1)) ![i](javascript:alert(2)) [ok](https://example.com)', sanitize);
+      const hrefs = Array.from(el().querySelectorAll('a')).map((a) => a.getAttribute('href'));
+      expect(hrefs).toEqual(['https://example.com']);
+      expect(el().querySelector('img')).toBeNull();
+      expect(el().textContent).toContain('go');
+    });
+
+    it('should show raw <script> as text', () => {
+      render('<script>alert(1)</script> text');
+      expect(el().querySelector('script')).toBeNull();
+      expect(el().textContent).toContain('<script>');
+    });
+
+    it('should keep data: images but not data: links', () => {
+      render('![p](data:image/png;base64,AAAA) [d](data:text/html,<script>alert(1)</script>)');
+      expect(el().querySelector('img')?.getAttribute('src')).toContain('data:image/png');
+      expect(el().querySelector('a')).toBeNull();
+    });
+
+    it('should survive a literal code-block placeholder in the text', () => {
+      // Used to dereference an absent block and throw inside a computed.
+      expect(() => render('<!--CODE_BLOCK_5--> and \u0000LCBLOCK9\u0000\n\n```js\nx\n```')).not.toThrow();
+      expect(el().textContent).toContain('<!--CODE_BLOCK_5-->');
+      expect(el().querySelector('lc-code-block')).toBeTruthy();
+    });
+  });
+
+  describe('Heading ids and ordered lists', () => {
+    it('should keep heading ids through sanitisation so anchors resolve', () => {
+      fixture.componentRef.setInput('content', '# Hello World\n\ntext\n\n```js\nx\n```\n\n## Second Part');
+      fixture.componentRef.setInput('showHeadingAnchors', true);
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      expect(el.querySelector('h1')?.id).toBe('hello-world');
+      expect(el.querySelector('h2')?.id).toBe('second-part');
+      expect(el.querySelector('h1 a.lc-markdown__anchor')?.getAttribute('href')).toBe('#hello-world');
+    });
+
+    it('should wrap ordered items in an <ol>', () => {
+      fixture.componentRef.setInput('content', '1. First\n2. Second\n\n- a\n- b');
+      fixture.detectChanges();
+      const el = fixture.nativeElement as HTMLElement;
+      const ol = el.querySelector('ol');
+      expect(ol).toBeTruthy();
+      expect(ol?.querySelectorAll('li').length).toBe(2);
+      expect(el.querySelector('ul')?.querySelectorAll('li').length).toBe(2);
+    });
+  });
+
   describe('GFM coverage', () => {
     const render = (md: string): HTMLElement => {
       fixture.componentRef.setInput('content', md);

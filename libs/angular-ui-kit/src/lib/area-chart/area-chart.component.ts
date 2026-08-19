@@ -9,6 +9,14 @@ import {
   computed,
   signal,
 } from '@angular/core';
+import { chartColor } from '../shared/chart-palette';
+import { linearPath, smoothPath } from '../shared/chart-path';
+import {
+  ChartValueFormatter,
+  formatChartValue,
+  niceScale,
+  toFinite,
+} from '../shared/chart-scale';
 
 export interface AreaChartSeries {
   label: string;
@@ -16,14 +24,8 @@ export interface AreaChartSeries {
   color?: string;
 }
 
-const DEFAULT_COLORS = [
-  'var(--color-primary-500)',
-  'var(--color-secondary-500)',
-  'var(--color-success-default)',
-  'var(--color-warning-default)',
-  'var(--color-error-default)',
-  'var(--color-info-default)',
-];
+/** viewBox width used until the container has been measured. */
+const DEFAULT_WIDTH = 400;
 
 @Component({
   selector: 'lc-area-chart',
@@ -31,6 +33,9 @@ const DEFAULT_COLORS = [
   templateUrl: './area-chart.component.html',
   styleUrls: ['./area-chart.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    '[style.max-width.px]': 'width()',
+  },
 })
 /**
  * Area chart component for visualizing trends over time.
@@ -39,7 +44,7 @@ const DEFAULT_COLORS = [
  * - Multiple data series with stacking support
  * - Smooth or linear curve interpolation
  * - Configurable fill opacity for area shading
- * - Optional grid, axis labels, dots, and legend
+ * - Optional grid on a nice tick scale, axis labels, dots, and legend
  * - Responsive SVG rendering with configurable dimensions
  *
  * @example
@@ -64,7 +69,14 @@ export class AreaChartComponent {
 
   series = input.required<AreaChartSeries[]>();
   labels = input<string[]>([]);
-  width = input<number>(400);
+  /**
+   * Intrinsic chart width in pixels. The chart fills its container (the SVG is
+   * `width="100%"` and its viewBox follows the measured container width);
+   * `width` is the viewBox width until the container has been measured and,
+   * when set, the host's `max-width`, so the chart never grows past it. Leave
+   * unset for a fully fluid chart.
+   */
+  width = input<number | undefined>(undefined);
   height = input<number>(200);
   strokeWidth = input<number>(2);
   showDots = input<boolean>(false);
@@ -77,6 +89,13 @@ export class AreaChartComponent {
   fillOpacity = input<number>(0.2);
   /** Stack areas on top of each other. */
   stacked = input<boolean>(false);
+  /** Formats Y-axis tick labels. Defaults to a float-safe `String(value)`. */
+  formatValue = input<ChartValueFormatter>(formatChartValue);
+  /**
+   * Accessible name of the chart. Defaults to a generated summary naming each
+   * series with its point count and value range.
+   */
+  ariaLabel = input<string>('');
 
   private readonly PL = 40;
   private readonly PR = 10;
@@ -84,7 +103,7 @@ export class AreaChartComponent {
   private readonly PB = 30;
 
   protected readonly effectiveWidth = computed(
-    () => this._containerWidth() || this.width()
+    () => this._containerWidth() || this.width() || DEFAULT_WIDTH
   );
 
   protected readonly viewBox = computed(() => `0 0 ${this.effectiveWidth()} ${this.height()}`);
@@ -95,8 +114,15 @@ export class AreaChartComponent {
     h: this.height() - this.PT - this.PB,
   }));
 
+  private readonly cleanSeries = computed(() =>
+    (this.series() ?? []).map((ser) => ({
+      ...ser,
+      data: (ser.data ?? []).map((v) => toFinite(v)),
+    }))
+  );
+
   protected readonly computedSeries = computed(() => {
-    const allSeries = this.series();
+    const allSeries = this.cleanSeries();
     if (!allSeries.length) return [];
 
     if (this.stacked()) {
@@ -127,30 +153,29 @@ export class AreaChartComponent {
 
   protected readonly minValue = computed(() => {
     if (this.stacked()) return 0;
-    const all = this.series().flatMap(s => s.data);
+    const all = this.cleanSeries().flatMap(s => s.data);
     return all.length ? Math.min(...all, 0) : 0;
   });
 
   protected readonly maxValue = computed(() => {
-    const cs = this.computedSeries();
-    if (!cs.length) return 0;
-    return Math.max(...cs.flatMap(s => s.computedData));
+    // Every series may be empty ([{ data: [] }]) — Math.max() of nothing is -Infinity.
+    const all = this.computedSeries().flatMap(s => s.computedData);
+    return all.length ? Math.max(...all) : 0;
   });
+
+  /** Y scale with nice tick bounds; the plot edges sit on the outermost ticks. */
+  protected readonly scale = computed(() => niceScale(this.minValue(), this.maxValue(), 4));
+
+  private valueToY(value: number): number {
+    const { min, max } = this.scale();
+    const pa = this.plotArea();
+    return pa.y + pa.h - ((value - min) / (max - min || 1)) * pa.h;
+  }
 
   protected readonly gridLines = computed(() => {
     if (!this.showGrid()) return [];
-    const min = this.minValue();
-    const max = this.maxValue();
-    const range = max - min || 1;
-    const pa = this.plotArea();
-    const steps = 4;
-    const lines: { y: number; label: string }[] = [];
-    for (let i = 0; i <= steps; i++) {
-      const val = min + (i / steps) * range;
-      const y = pa.y + pa.h - (i / steps) * pa.h;
-      lines.push({ y, label: String(Math.round(val * 10) / 10) });
-    }
-    return lines;
+    const fmt = this.formatValue();
+    return this.scale().ticks.map((tick) => ({ y: this.valueToY(tick), label: fmt(tick) }));
   });
 
   protected readonly xLabelItems = computed(() => {
@@ -166,50 +191,28 @@ export class AreaChartComponent {
 
   private toPoints(data: number[]) {
     const pa = this.plotArea();
-    const min = this.minValue();
-    const max = this.maxValue();
-    const range = max - min || 1;
     return data.map((v, i) => ({
       x: pa.x + (data.length > 1 ? (i / (data.length - 1)) * pa.w : pa.w / 2),
-      y: pa.y + pa.h - ((v - min) / range) * pa.h,
+      y: this.valueToY(v),
     }));
-  }
-
-  private buildPath(points: { x: number; y: number }[]) {
-    if (points.length < 2) return '';
-    if (this.smooth()) {
-      let d = `M${points[0].x},${points[0].y}`;
-      for (let i = 0; i < points.length - 1; i++) {
-        const p0 = points[Math.max(i - 1, 0)];
-        const p1 = points[i];
-        const p2 = points[i + 1];
-        const p3 = points[Math.min(i + 2, points.length - 1)];
-        const cp1x = p1.x + (p2.x - p0.x) / 6;
-        const cp1y = p1.y + (p2.y - p0.y) / 6;
-        const cp2x = p2.x - (p3.x - p1.x) / 6;
-        const cp2y = p2.y - (p3.y - p1.y) / 6;
-        d += ` C${cp1x},${cp1y} ${cp2x},${cp2y} ${p2.x},${p2.y}`;
-      }
-      return d;
-    }
-    return points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ');
   }
 
   protected readonly renderedSeries = computed(() => {
     const cs = this.computedSeries();
     const pa = this.plotArea();
     const bottomY = pa.y + pa.h;
+    const smooth = this.smooth();
 
     return cs.map((ser, si) => {
-      const color = ser.color || DEFAULT_COLORS[si % DEFAULT_COLORS.length];
+      const color = ser.color || chartColor(si);
       const points = this.toPoints(ser.computedData);
-      const lineD = this.buildPath(points);
+      const lineD = smooth ? smoothPath(points) : linearPath(points);
 
       let areaD = '';
-      if (lineD && points.length >= 2) {
+      if (lineD) {
         if (ser.prevData) {
           const prevPoints = this.toPoints(ser.prevData).reverse();
-          const prevPath = prevPoints.map((p, i) => `${i === 0 ? 'L' : 'L'}${p.x},${p.y}`).join(' ');
+          const prevPath = prevPoints.map((p) => `L${p.x},${p.y}`).join(' ');
           areaD = `${lineD} ${prevPath} Z`;
         } else {
           const lastX = points[points.length - 1].x;
@@ -239,5 +242,20 @@ export class AreaChartComponent {
   protected readonly legendItems = computed(() => {
     if (!this.showLegend()) return [];
     return this.renderedSeries().map(s => ({ label: s.label, color: s.color }));
+  });
+
+  protected readonly effectiveAriaLabel = computed(() => {
+    const explicit = this.ariaLabel();
+    if (explicit) return explicit;
+    const series = this.cleanSeries();
+    if (!series.length) return 'Area chart: no data';
+    const fmt = this.formatValue();
+    const parts = series.map((s, i) => {
+      const name = s.label || `Series ${i + 1}`;
+      if (!s.data.length) return `${name} (no data)`;
+      const n = s.data.length;
+      return `${name} (${n} ${n === 1 ? 'point' : 'points'}, ${fmt(Math.min(...s.data))} to ${fmt(Math.max(...s.data))})`;
+    });
+    return `${this.stacked() ? 'Stacked area chart' : 'Area chart'}: ${parts.join(', ')}`;
   });
 }

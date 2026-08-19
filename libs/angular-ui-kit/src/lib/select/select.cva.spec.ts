@@ -31,7 +31,7 @@ describe('ControlValueAccessor Integration Tests', () => {
 
       fixture = TestBed.createComponent(SelectComponent);
       component = fixture.componentInstance;
-      component.options.push(...testOptions);
+      fixture.componentRef.setInput('options', testOptions);
       formControl = new FormControl(null);
       fixture.detectChanges();
     });
@@ -60,19 +60,18 @@ describe('ControlValueAccessor Integration Tests', () => {
       const onTouched = jest.fn();
       component.registerOnTouched(onTouched);
 
-      // Manually call onTouched to verify it's registered
-      component.onTouched();
+      component.onBlur();
       expect(onTouched).toHaveBeenCalled();
     });
 
     it('should update disabled state', () => {
-      expect(component.disabled).toBe(false);
+      expect(component.isDisabled()).toBe(false);
 
       component.setDisabledState?.(true);
-      expect(component.disabled).toBe(true);
+      expect(component.isDisabled()).toBe(true);
 
       component.setDisabledState?.(false);
-      expect(component.disabled).toBe(false);
+      expect(component.isDisabled()).toBe(false);
     });
 
     it('should work with reactive forms', () => {
@@ -137,13 +136,13 @@ describe('ControlValueAccessor Integration Tests', () => {
     });
 
     it('should update disabled state', () => {
-      expect(component.disabled).toBe(false);
+      expect(component.isDisabled()).toBe(false);
 
       component.setDisabledState?.(true);
-      expect(component.disabled).toBe(true);
+      expect(component.isDisabled()).toBe(true);
 
       component.setDisabledState?.(false);
-      expect(component.disabled).toBe(false);
+      expect(component.isDisabled()).toBe(false);
     });
   });
 
@@ -170,10 +169,10 @@ describe('ControlValueAccessor Integration Tests', () => {
 
     it('should update internal checked state when writeValue is called', () => {
       component.writeValue(true);
-      expect(component.checked).toBe(true);
+      expect(component.checkedState()).toBe(true);
 
       component.writeValue(false);
-      expect(component.checked).toBe(false);
+      expect(component.checkedState()).toBe(false);
     });
 
     it('should call onChange when checked state changes', () => {
@@ -196,13 +195,13 @@ describe('ControlValueAccessor Integration Tests', () => {
     });
 
     it('should update disabled state', () => {
-      expect(component.disabled).toBe(false);
+      expect(component.isDisabled()).toBe(false);
 
       component.setDisabledState?.(true);
-      expect(component.disabled).toBe(true);
+      expect(component.isDisabled()).toBe(true);
 
       component.setDisabledState?.(false);
-      expect(component.disabled).toBe(false);
+      expect(component.isDisabled()).toBe(false);
     });
 
     it('should work with reactive forms', () => {
@@ -215,7 +214,7 @@ describe('ControlValueAccessor Integration Tests', () => {
       form.patchValue({ enabled: true });
       component.writeValue(form.get('enabled')?.value);
 
-      expect(component.checked).toBe(true);
+      expect(component.checkedState()).toBe(true);
     });
   });
 });

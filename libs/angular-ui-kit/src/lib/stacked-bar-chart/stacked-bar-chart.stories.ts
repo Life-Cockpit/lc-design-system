@@ -66,3 +66,36 @@ export const TwoSeries: Story = {
     width: 500,
   },
 };
+
+export const WithValues: Story = {
+  parameters: {
+    docs: { description: { story: '`showValues` prints each segment value (when it fits) and the stack total.' } },
+  },
+  args: {
+    categories: [
+      { label: 'Q1', values: [30, 20, 10] },
+      { label: 'Q2', values: [25, 35, 15] },
+      { label: 'Q3', values: [40, 25, 20] },
+    ],
+    legends: [{ label: 'Series A' }, { label: 'Series B' }, { label: 'Series C' }],
+    showValues: true,
+    height: 240,
+  },
+};
+
+export const NegativeValues: Story = {
+  parameters: {
+    docs: { description: { story: 'Negative values stack downward from the zero baseline.' } },
+  },
+  args: {
+    categories: [
+      { label: 'Jan', values: [40, -15] },
+      { label: 'Feb', values: [35, -30] },
+      { label: 'Mar', values: [50, -10] },
+      { label: 'Apr', values: [20, -45] },
+    ],
+    legends: [{ label: 'Inflow' }, { label: 'Outflow' }],
+    showValues: true,
+    height: 240,
+  },
+};

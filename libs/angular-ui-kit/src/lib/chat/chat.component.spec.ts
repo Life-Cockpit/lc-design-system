@@ -5,7 +5,7 @@ describe('ChatComponent', () => {
   let fixture: ComponentFixture<ChatComponent>;
 
   const messages: ChatMessage[] = [
-    { id: '1', role: 'user', content: 'Hello!', name: 'Eric', timestamp: new Date() },
+    { id: '1', role: 'user', content: 'Hello!', name: 'Alex', timestamp: new Date() },
     { id: '2', role: 'agent', content: 'Hi! How can I help?', name: 'AI Assistant', timestamp: new Date() },
   ];
 
@@ -37,7 +37,7 @@ describe('ChatComponent', () => {
       fixture.detectChanges();
       const user = fixture.nativeElement.querySelector('.lc-chat__message--user');
       expect(user.querySelector('.lc-chat__name')).toBeNull();
-      expect(user.textContent).not.toContain('Eric');
+      expect(user.textContent).not.toContain('Alex');
     });
 
     it('renders the user timestamp on a line below the bubble', () => {
@@ -52,19 +52,19 @@ describe('ChatComponent', () => {
 
     it('shows a monogram from the name when the user has no avatar image', () => {
       fixture.componentRef.setInput('messages', [
-        { id: 'u', role: 'user', content: 'Hi', name: 'Eric Fritzsche', timestamp: new Date() },
+        { id: 'u', role: 'user', content: 'Hi', name: 'Alex Example', timestamp: new Date() },
       ]);
       fixture.detectChanges();
       const user = fixture.nativeElement.querySelector('.lc-chat__message--user');
       expect(user.classList).toContain('lc-chat__message--avatar');
       const mono = user.querySelector('.lc-chat__marker--user .lc-chat__monogram');
       expect(mono).toBeTruthy();
-      expect(mono.textContent.trim()).toBe('EF');
+      expect(mono.textContent.trim()).toBe('AE');
     });
 
     it('uses the avatar image on the user side when provided', () => {
       fixture.componentRef.setInput('messages', [
-        { id: 'u', role: 'user', content: 'Hi', name: 'Eric', avatar: 'x.png', timestamp: new Date() },
+        { id: 'u', role: 'user', content: 'Hi', name: 'Alex', avatar: 'x.png', timestamp: new Date() },
       ]);
       fixture.detectChanges();
       const user = fixture.nativeElement.querySelector('.lc-chat__message--user');
@@ -269,5 +269,164 @@ describe('ChatComponent', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.lc-chat__marker')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('.lc-chat__status-icon')).toBeTruthy();
+  });
+
+  // --- Auto-scroll ---
+
+  describe('auto-scroll', () => {
+    /** jsdom has no layout: fake the scroll metrics of the thread container. */
+    const layout = (el: HTMLElement, scrollHeight: number, clientHeight: number) => {
+      Object.defineProperty(el, 'scrollHeight', { get: () => scrollHeight, configurable: true });
+      Object.defineProperty(el, 'clientHeight', { get: () => clientHeight, configurable: true });
+    };
+    const container = (): HTMLElement => fixture.nativeElement.querySelector('.lc-chat__messages');
+
+    it('scrolls to the bottom when a history of messages is loaded', () => {
+      fixture.detectChanges();
+      const el = container();
+      layout(el, 1000, 200);
+      fixture.componentRef.setInput('messages', messages);
+      fixture.detectChanges();
+      expect(el.scrollTop).toBe(1000);
+    });
+
+    it('follows a new agent reply while the reader is at the bottom', () => {
+      fixture.componentRef.setInput('messages', messages);
+      fixture.detectChanges();
+      const el = container();
+      layout(el, 1200, 200);
+      fixture.componentRef.setInput('messages', [
+        ...messages,
+        { id: '3', role: 'agent', content: 'A reply', name: 'Assistant' },
+      ]);
+      fixture.detectChanges();
+      expect(el.scrollTop).toBe(1200);
+    });
+
+    it('follows streamed token updates on the last message', () => {
+      const streaming: ChatMessage[] = [
+        ...messages,
+        { id: '3', role: 'agent', content: 'Wor', streaming: true },
+      ];
+      fixture.componentRef.setInput('messages', streaming);
+      fixture.detectChanges();
+      const el = container();
+      layout(el, 900, 200);
+      // Same ids, only the last message's content grew.
+      fixture.componentRef.setInput('messages', [
+        ...messages,
+        { id: '3', role: 'agent', content: 'Working on it…', streaming: true },
+      ]);
+      fixture.detectChanges();
+      expect(el.scrollTop).toBe(900);
+    });
+
+    it('does not fight a reader who scrolled up', () => {
+      fixture.componentRef.setInput('messages', messages);
+      fixture.detectChanges();
+      const el = container();
+      layout(el, 1000, 200);
+      el.scrollTop = 100;
+      el.dispatchEvent(new Event('scroll'));
+      fixture.componentRef.setInput('messages', [
+        ...messages,
+        { id: '3', role: 'agent', content: 'A reply', name: 'Assistant' },
+      ]);
+      fixture.detectChanges();
+      expect(el.scrollTop).toBe(100);
+    });
+
+    it('re-engages follow mode when the reader sends a message', () => {
+      fixture.componentRef.setInput('messages', messages);
+      fixture.detectChanges();
+      const el = container();
+      layout(el, 1000, 200);
+      el.scrollTop = 100;
+      el.dispatchEvent(new Event('scroll'));
+
+      const textarea = fixture.nativeElement.querySelector('.lc-chat__input') as HTMLTextAreaElement;
+      textarea.value = 'Hello';
+      textarea.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+      textarea.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+      fixture.detectChanges();
+      expect(el.scrollTop).toBe(1000);
+    });
+  });
+
+  // --- Composer ---
+
+  describe('composer', () => {
+    it('does not send on Enter while an IME composition is in progress', () => {
+      fixture.detectChanges();
+      const spy = jest.fn();
+      fixture.componentInstance.messageSend.subscribe(spy);
+      const textarea = fixture.nativeElement.querySelector('.lc-chat__input') as HTMLTextAreaElement;
+      textarea.value = 'こんにちは';
+      textarea.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+
+      const composing = new KeyboardEvent('keydown', { key: 'Enter', isComposing: true, bubbles: true, cancelable: true });
+      textarea.dispatchEvent(composing);
+      expect(spy).not.toHaveBeenCalled();
+      expect(composing.defaultPrevented).toBe(false);
+
+      textarea.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+      expect(spy).toHaveBeenCalledWith({ content: 'こんにちは', attachments: undefined });
+    });
+
+    it('associates a visually-hidden label with the textarea', () => {
+      fixture.detectChanges();
+      const textarea = fixture.nativeElement.querySelector('.lc-chat__input') as HTMLTextAreaElement;
+      expect(textarea.id).toMatch(/^lc-chat-input-\d+$/);
+      const label = fixture.nativeElement.querySelector(`label[for="${textarea.id}"]`) as HTMLLabelElement;
+      expect(label).toBeTruthy();
+      expect(label.textContent?.trim()).toBe('Nachricht');
+      expect(label.classList).toContain('lc-chat__sr-only');
+    });
+
+    it('uses inputLabel as the accessible name', () => {
+      fixture.componentRef.setInput('inputLabel', 'Message');
+      fixture.detectChanges();
+      const textarea = fixture.nativeElement.querySelector('.lc-chat__input') as HTMLTextAreaElement;
+      expect(fixture.nativeElement.querySelector(`label[for="${textarea.id}"]`).textContent.trim()).toBe('Message');
+    });
+  });
+
+  // --- Live region ---
+
+  describe('live region', () => {
+    const announcer = (): HTMLElement => fixture.nativeElement.querySelector('.lc-chat__announcer');
+
+    it('exists as a polite, atomic live region', () => {
+      fixture.detectChanges();
+      expect(announcer().getAttribute('aria-live')).toBe('polite');
+      expect(announcer().getAttribute('aria-atomic')).toBe('true');
+    });
+
+    it('announces the latest completed non-user message with its name', () => {
+      fixture.componentRef.setInput('messages', messages);
+      fixture.detectChanges();
+      expect(announcer().textContent?.trim()).toBe('AI Assistant: Hi! How can I help?');
+    });
+
+    it('does not announce user turns or streaming turns', () => {
+      fixture.componentRef.setInput('messages', [
+        ...messages,
+        { id: '3', role: 'user', content: 'Thanks' },
+        { id: '4', role: 'agent', content: 'partial', streaming: true },
+      ]);
+      fixture.detectChanges();
+      expect(announcer().textContent?.trim()).toBe('AI Assistant: Hi! How can I help?');
+    });
+
+    it('leaves semantic-status messages to their own alert/live semantics', () => {
+      fixture.componentRef.setInput('messages', [
+        ...messages,
+        { id: '3', role: 'agent', content: 'Failed', status: 'error' },
+      ]);
+      fixture.detectChanges();
+      expect(announcer().textContent?.trim()).toBe('AI Assistant: Hi! How can I help?');
+    });
   });
 });

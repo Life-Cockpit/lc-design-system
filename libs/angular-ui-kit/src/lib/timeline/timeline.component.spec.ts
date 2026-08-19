@@ -1,26 +1,27 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { By } from '@angular/platform-browser';
 import { provideHttpClient } from '@angular/common/http';
 import { TimelineComponent, TimelineItem } from './timeline.component';
+import { IconComponent } from '../icon/icon.component';
 
 @Component({
   standalone: true,
   imports: [TimelineComponent],
   template: `
     <lc-timeline
-      [items]="items"
+      [items]="items()"
       [orientation]="orientation"
       [compact]="compact"
     ></lc-timeline>
   `,
 })
 class TestHostComponent {
-  items: TimelineItem[] = [
+  items = signal<TimelineItem[]>([
     { title: 'First event', description: 'Description 1', timestamp: '10:00' },
     { title: 'Second event', color: 'success' },
     { title: 'Third event', icon: 'check', color: 'primary' },
-  ];
+  ]);
   orientation: 'vertical' | 'horizontal' = 'vertical';
   compact = false;
 }
@@ -104,5 +105,26 @@ describe('TimelineComponent', () => {
     fixture.detectChanges();
     const connectors = fixture.debugElement.queryAll(By.css('.timeline__connector'));
     expect(connectors.length).toBe(2);
+  });
+
+  it('renders items with identical titles (tracked by id / index, not title)', () => {
+    fixture.detectChanges();
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+    host.items.set([
+      { title: 'Deployed', timestamp: '10:00' },
+      { title: 'Deployed', timestamp: '11:00' },
+      { title: 'Deployed', timestamp: '12:00' },
+    ]);
+    fixture.detectChanges();
+    const timestamps = fixture.debugElement.queryAll(By.css('.timeline__timestamp'));
+    expect(timestamps.map(t => t.nativeElement.textContent.trim())).toEqual(['10:00', '11:00', '12:00']);
+    expect(warn.mock.calls.some(args => String(args[0]).includes('NG0955'))).toBe(false);
+    warn.mockRestore();
+  });
+
+  it('marks marker icons as decorative', () => {
+    fixture.detectChanges();
+    const icon = fixture.debugElement.query(By.directive(IconComponent)).componentInstance as IconComponent;
+    expect(icon.decorative()).toBe(true);
   });
 });

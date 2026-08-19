@@ -27,6 +27,12 @@ const meta: Meta<AccordionComponent> = {
     },
     expanded: { description: 'Whether the content section is visible (supports two-way binding)' },
     disabled: { description: 'Prevents the accordion from being toggled' },
+    headingLevel: {
+      control: 'select',
+      options: [1, 2, 3, 4, 5, 6],
+      description: 'Heading level announced for the header button (WAI-ARIA accordion pattern)',
+      table: { defaultValue: { summary: '3' } },
+    },
     chevronPosition: {
       control: 'select',
       options: ['leading', 'trailing'],

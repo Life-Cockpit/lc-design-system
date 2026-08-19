@@ -8,12 +8,12 @@
 .lc-label {
   font-size: 0.875rem;
   font-weight: 500;
-  color: var(--color-text-primary, #1f2937);
+  color: var(--color-text-primary);
   text-align: center;
 }
 
 .lc-required {
-  color: var(--color-error, #ef4444);
+  color: var(--color-text-error);
   margin-left: 0.25rem;
 }
 
@@ -29,63 +29,51 @@
   font-size: 1.5rem;
   font-weight: 600;
   text-align: center;
-  border: 2px solid var(--color-border, #d1d5db);
+  border: 2px solid var(--color-border);
   border-radius: var(--border-radius-md);
   background-color: var(--color-surface);
-  color: var(--color-text-primary, #1f2937);
+  color: var(--color-text-primary);
   transition: all 0.2s ease;
 
   &:focus {
     outline: none;
-    border-color: var(--color-primary, #3b82f6);
-    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+    border-color: var(--color-primary-500);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-primary-500) 20%, transparent);
   }
 
   &:disabled {
-    background-color: var(--color-bg-disabled, #f3f4f6);
-    color: var(--color-text-disabled, #9ca3af);
+    background-color: var(--color-surface-muted);
+    color: var(--color-text-disabled);
     cursor: not-allowed;
   }
 
   &.lc-digit-input-error {
-    border-color: var(--color-error, #ef4444);
+    border-color: var(--color-error-600);
 
     &:focus {
-      box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1);
+      box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-error-600) 20%, transparent);
     }
   }
 
   &.lc-digit-input-filled {
-    border-color: var(--color-primary, #3b82f6);
-    background-color: rgba(59, 130, 246, 0.05);
-  }
-
-  /* Hide number spinner for number inputs */
-  &::-webkit-outer-spin-button,
-  &::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-  }
-
-  &[type='number'] {
-    appearance: textfield;
-    -moz-appearance: textfield;
+    border-color: var(--color-primary-500);
+    background-color: var(--color-primary-subtle);
   }
 }
 
 .lc-error {
   font-size: 0.875rem;
-  color: var(--color-error, #ef4444);
+  color: var(--color-text-error);
   text-align: center;
 }
 
 .lc-hint {
   font-size: 0.875rem;
-  color: var(--color-text-secondary, #6b7280);
+  color: var(--color-text-secondary);
   text-align: center;
 }
 
-/* Responsive: Stack inputs on small screens */
+/* Responsive: tighter inputs on small screens */
 @media (max-width: 480px) {
   .lc-digit-inputs {
     gap: 0.5rem;

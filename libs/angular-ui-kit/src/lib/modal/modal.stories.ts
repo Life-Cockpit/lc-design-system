@@ -47,7 +47,7 @@ export const Default: Story = {
       <lc-modal [open]="isOpen" (openChange)="isOpen = $event" [size]="size">
         <div slot="header"><h2>Confirm Action</h2></div>
         <div slot="body">
-          <p style="margin: 0; color: #4b5563; line-height: 1.5;">
+          <p style="margin: 0; color: var(--color-text-secondary); line-height: 1.5;">
             Are you sure you want to proceed? This action will update your billing settings and cannot be undone.
           </p>
         </div>
@@ -71,7 +71,7 @@ export const Small: Story = {
       <lc-modal [open]="isOpen" (openChange)="isOpen = $event" [size]="size">
         <div slot="header"><h2>Delete Item?</h2></div>
         <div slot="body">
-          <p style="margin: 0; color: #4b5563;">This item will be permanently removed.</p>
+          <p style="margin: 0; color: var(--color-text-secondary);">This item will be permanently removed.</p>
         </div>
         <div slot="footer" style="display: flex; gap: 8px; justify-content: flex-end;">
           <lc-button variant="ghost" size="sm" (click)="isOpen = false">Keep</lc-button>
@@ -127,10 +127,10 @@ export const DestructiveConfirmation: Story = {
           </div>
         </div>
         <div slot="body">
-          <p style="margin: 0 0 12px; color: #4b5563; line-height: 1.5;">
+          <p style="margin: 0 0 12px; color: var(--color-text-secondary); line-height: 1.5;">
             This will permanently delete your account and all associated data including:
           </p>
-          <ul style="margin: 0; padding-left: 20px; color: #4b5563; font-size: 14px; line-height: 1.8;">
+          <ul style="margin: 0; padding-left: 20px; color: var(--color-text-secondary); font-size: 14px; line-height: 1.8;">
             <li>All projects and tasks</li>
             <li>Team memberships</li>
             <li>Billing history</li>

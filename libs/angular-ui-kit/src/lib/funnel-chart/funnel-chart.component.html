@@ -4,10 +4,12 @@
     [attr.height]="height()"
     [attr.viewBox]="viewBox()"
     role="img"
-    aria-label="Funnel chart"
+    [attr.aria-label]="effectiveAriaLabel()"
     class="lc-funnel-chart__svg"
   >
-    @for (step of renderedSteps(); track step.label) {
+    <title>{{ effectiveAriaLabel() }}</title>
+
+    @for (step of renderedSteps(); track $index) {
       <path
         [attr.d]="step.path"
         [attr.fill]="step.color"
@@ -18,9 +20,11 @@
         <text
           [attr.x]="step.labelX"
           [attr.y]="step.labelY - 2"
+          [attr.fill]="step.ink"
           text-anchor="middle"
           dominant-baseline="auto"
           class="lc-funnel-chart__label"
+          [class.lc-funnel-chart__text--halo]="step.halo"
         >{{ step.label }}</text>
       }
 
@@ -28,11 +32,13 @@
         <text
           [attr.x]="step.labelX"
           [attr.y]="step.labelY + 12"
+          [attr.fill]="step.ink"
           text-anchor="middle"
           dominant-baseline="auto"
           class="lc-funnel-chart__value"
+          [class.lc-funnel-chart__text--halo]="step.halo"
         >
-          @if (showValues()) { {{ step.value }} }
+          @if (showValues()) { {{ step.valueText }} }
           @if (showValues() && showPercentage()) { · }
           @if (showPercentage()) { {{ step.pct }}% }
         </text>

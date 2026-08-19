@@ -4,25 +4,17 @@ import {
   input,
   computed,
 } from '@angular/core';
+import { chartColor } from '../shared/chart-palette';
+import { toFinite } from '../shared/chart-scale';
 
 export interface PieSegment {
+  /** Share of the whole. Non-finite and negative values count as 0. */
   value: number;
   label?: string;
   color?: string;
 }
 
 export type PieChartSize = 'sm' | 'md' | 'lg';
-
-const DEFAULT_COLORS = [
-  'var(--color-primary-500)',
-  'var(--color-secondary-500)',
-  'var(--color-success-default)',
-  'var(--color-warning-default)',
-  'var(--color-error-default)',
-  'var(--color-info-default)',
-  'var(--color-primary-300)',
-  'var(--color-secondary-300)',
-];
 
 @Component({
   selector: 'lc-pie-chart',
@@ -50,6 +42,11 @@ export class PieChartComponent {
   segments = input.required<PieSegment[]>();
   size = input<PieChartSize>('md');
   showLegend = input<boolean>(false);
+  /**
+   * Accessible name of the chart. Defaults to a generated summary listing
+   * every segment's label and share, e.g. "Pie chart: A 40%, B 60%".
+   */
+  ariaLabel = input<string>('');
 
   private readonly SIZE_MAP: Record<PieChartSize, number> = { sm: 96, md: 140, lg: 200 };
 
@@ -61,7 +58,8 @@ export class PieChartComponent {
   protected readonly arcs = computed(() => {
     const segs = this.segments();
     if (!segs?.length) return [];
-    const total = segs.reduce((s, seg) => s + seg.value, 0);
+    const values = segs.map((s) => Math.max(0, toFinite(s.value)));
+    const total = values.reduce((s, v) => s + v, 0);
     if (!total) return [];
 
     const cx = this.center();
@@ -71,7 +69,7 @@ export class PieChartComponent {
     const gap = segs.length > 1 ? 0.02 : 0;
 
     return segs.map((seg, i) => {
-      const frac = seg.value / total;
+      const frac = values[i] / total;
       const sweep = frac * Math.PI * 2 - gap;
       const endAngle = startAngle + sweep;
       const large = sweep > Math.PI ? 1 : 0;
@@ -81,15 +79,16 @@ export class PieChartComponent {
       const x2 = cx + r * Math.cos(endAngle);
       const y2 = cy + r * Math.sin(endAngle);
 
-      const d = segs.length === 1
-        ? `M${cx - r},${cy} A${r},${r} 0 1 1 ${cx - r - 0.01},${cy} Z`
+      // A full circle can't be one arc (start === end collapses it): two half-circles.
+      const d = sweep >= Math.PI * 2 - 1e-9
+        ? `M${cx},${cy - r} A${r},${r} 0 1 1 ${cx},${cy + r} A${r},${r} 0 1 1 ${cx},${cy - r} Z`
         : `M${cx},${cy} L${x1},${y1} A${r},${r} 0 ${large} 1 ${x2},${y2} Z`;
 
       startAngle = endAngle + gap;
 
       return {
         d,
-        color: seg.color || DEFAULT_COLORS[i % DEFAULT_COLORS.length],
+        color: seg.color || chartColor(i),
         label: seg.label || '',
         percentage: Math.round(frac * 100),
       };
@@ -99,4 +98,14 @@ export class PieChartComponent {
   protected readonly legendItems = computed(() =>
     this.arcs().map(a => ({ color: a.color, label: a.label, percentage: a.percentage }))
   );
+
+  protected readonly effectiveAriaLabel = computed(() => {
+    const explicit = this.ariaLabel();
+    if (explicit) return explicit;
+    const arcs = this.arcs();
+    if (!arcs.length) return 'Pie chart: no data';
+    return `Pie chart: ${arcs
+      .map((a, i) => `${a.label || `Segment ${i + 1}`} ${a.percentage}%`)
+      .join(', ')}`;
+  });
 }

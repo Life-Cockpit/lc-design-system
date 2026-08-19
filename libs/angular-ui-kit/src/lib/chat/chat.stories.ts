@@ -6,35 +6,36 @@ import { MarkdownComponent } from '../markdown/markdown.component';
 const now = new Date();
 const t = (min: number) => new Date(now.getTime() - min * 60000);
 
+// Neutral placeholder conversation — generic names and tasks only.
 const conversationMessages: ChatMessage[] = [
   { id: '1', role: 'system', content: 'Chat begonnen', timestamp: t(10) },
-  { id: '2', role: 'user', content: 'Hallo! Kannst du mir bei meinem Angular-Projekt helfen?', name: 'Eric', timestamp: t(9) },
-  { id: '3', role: 'agent', content: 'Natürlich! Was genau brauchst du Hilfe bei?', name: 'AI Assistant', timestamp: t(8) },
-  { id: '4', role: 'user', content: 'Ich brauche einen Calendar-Komponenten mit Day, Week und Month Views.', name: 'Eric', timestamp: t(7) },
-  { id: '5', role: 'agent', content: 'Das kann ich erstellen! Ich werde einen CalendarComponent mit drei Views (Tag, Woche, Monat) bauen, inklusive Event-Handling und Navigation.\n\nSoll ich auch Drag & Drop für Events einbauen?', name: 'AI Assistant', timestamp: t(6) },
-  { id: '6', role: 'user', content: 'Nein, erstmal ohne D&D. Danke!', name: 'Eric', timestamp: t(5) },
+  { id: '2', role: 'user', content: 'Hallo! Kannst du mir bei einer Aufgabe helfen?', name: 'Alex Example', timestamp: t(9) },
+  { id: '3', role: 'agent', content: 'Natürlich! Worum geht es genau?', name: 'Assistant', timestamp: t(8) },
+  { id: '4', role: 'user', content: 'Ich brauche eine kurze Zusammenfassung eines längeren Textes.', name: 'Alex Example', timestamp: t(7) },
+  { id: '5', role: 'agent', content: 'Gern! Ich fasse den Text in drei Absätzen zusammen: Ausgangslage, Kernaussagen und Fazit.\n\nSoll ich zusätzlich eine Stichpunktliste anhängen?', name: 'Assistant', timestamp: t(6) },
+  { id: '6', role: 'user', content: 'Nein, die Absätze reichen. Danke!', name: 'Alex Example', timestamp: t(5) },
 ];
 
 const streamingMessages: ChatMessage[] = [
   ...conversationMessages,
-  { id: '7', role: 'agent', content: 'Ich erstelle jetzt den Calendar-Komponenten mit Signal-Inputs und OnPush Change Detection…', name: 'AI Assistant', timestamp: new Date(), streaming: true },
+  { id: '7', role: 'agent', content: 'Ich erstelle jetzt die Zusammenfassung und gliedere sie in drei Absätze…', name: 'Assistant', timestamp: new Date(), streaming: true },
 ];
 
 const multiUserMessages: ChatMessage[] = [
-  { id: '1', role: 'user', content: 'Hey Team, das neue Design ist fertig!', name: 'Eric', timestamp: t(15) },
-  { id: '2', role: 'agent', content: 'Sieht super aus! Ich habe die Components dafür generiert.', name: 'Copilot', timestamp: t(14) },
-  { id: '3', role: 'system', content: 'Anna hat den Chat betreten', timestamp: t(13) },
-  { id: '4', role: 'user', content: 'Perfekt, ich kümmere mich um die Tests.', name: 'Anna', timestamp: t(12) },
-  { id: '5', role: 'agent', content: 'Die Test-Suite ist ready. 1472 Tests bestehen.', name: 'Copilot', timestamp: t(11) },
+  { id: '1', role: 'user', content: 'Hallo zusammen, der Entwurf ist fertig!', name: 'Alex Example', timestamp: t(15) },
+  { id: '2', role: 'agent', content: 'Sieht gut aus! Ich habe die Notizen dazu zusammengestellt.', name: 'Assistant', timestamp: t(14) },
+  { id: '3', role: 'system', content: 'Sam Sample hat den Chat betreten', timestamp: t(13) },
+  { id: '4', role: 'user', content: 'Prima, ich übernehme die Durchsicht.', name: 'Sam Sample', timestamp: t(12) },
+  { id: '5', role: 'agent', content: 'Die Prüfung ist abgeschlossen. Alle Punkte sind erledigt.', name: 'Assistant', timestamp: t(11) },
 ];
 
 const statusMessages: ChatMessage[] = [
-  { id: '1', role: 'user', content: 'Erstelle eine Spec für das Onboarding-Feature.', name: 'Eric', timestamp: t(6) },
-  { id: '2', role: 'agent', content: 'Klar, ich lege die Spec an und fülle Ziel und Zielgruppe aus.', name: 'Spec Author', timestamp: t(5) },
-  { id: '3', role: 'system', content: 'Modell gewechselt zu Opus 4.8', status: 'info', timestamp: t(4) },
-  { id: '4', role: 'agent', content: 'Spec erstellt und gespeichert.', name: 'Spec Author', status: 'success', timestamp: t(3) },
-  { id: '5', role: 'agent', content: 'Rate-Limit erreicht — neuer Versuch in 5 s …', name: 'Spec Author', status: 'warning', timestamp: t(2) },
-  { id: '6', role: 'agent', content: 'Agent nicht erreichbar — die Verbindung ist fehlgeschlagen.', name: 'Spec Author', status: 'error', timestamp: t(1) },
+  { id: '1', role: 'user', content: 'Lege bitte ein neues Dokument an.', name: 'Alex Example', timestamp: t(6) },
+  { id: '2', role: 'agent', content: 'Klar, ich lege das Dokument an und fülle die Standardabschnitte aus.', name: 'Assistant', timestamp: t(5) },
+  { id: '3', role: 'system', content: 'Einstellungen aktualisiert', status: 'info', timestamp: t(4) },
+  { id: '4', role: 'agent', content: 'Dokument erstellt und gespeichert.', name: 'Assistant', status: 'success', timestamp: t(3) },
+  { id: '5', role: 'agent', content: 'Limit erreicht — neuer Versuch in 5 s …', name: 'Assistant', status: 'warning', timestamp: t(2) },
+  { id: '6', role: 'agent', content: 'Dienst nicht erreichbar — die Verbindung ist fehlgeschlagen.', name: 'Assistant', status: 'error', timestamp: t(1) },
 ];
 
 const meta: Meta<ChatComponent> = {
@@ -60,10 +61,11 @@ via the \`--lc-chat-*\` custom properties.
 - **Semantic status** per message (\`info\` / \`success\` / \`warning\` / \`error\`)
 - Streaming cursor indicator for AI responses
 - Typing indicator with animated dots
-- Auto-scroll to latest message
+- Auto-scroll to the latest message (new turns, streamed tokens, history loads) — pauses while the reader has scrolled up
 - Optional avatars and timestamps
 - Configurable header with title
-- Send on Enter with Shift+Enter for newline
+- Send on Enter with Shift+Enter for newline (IME compositions are respected)
+- Accessible composer label (\`inputLabel\`) and a polite live region announcing completed assistant turns
 - **File upload** via \`allowFileUpload\` with \`accept\` / \`maxFileSize\`
   constraints, pending-attachment chips, and rendered attachments
   (image thumbnails / file links) inside messages
@@ -119,14 +121,14 @@ export const UserAvatar: Story = {
   render: () => ({
     template: `
       <div style="height: 500px;">
-        <lc-chat title="Spec Author" [messages]="messages"></lc-chat>
+        <lc-chat title="Assistant" [messages]="messages"></lc-chat>
       </div>
     `,
     props: {
       messages: [
-        { id: '1', role: 'user', content: 'Nachricht mit Avatar-Bild.', name: 'Anna', avatar: sampleAvatar, timestamp: t(5) },
-        { id: '2', role: 'agent', content: 'Alles klar, ich übernehme das.', name: 'Spec Author', timestamp: t(4) },
-        { id: '3', role: 'user', content: 'Diese hier fällt auf ein Monogramm zurück (kein Bild).', name: 'Eric Fritzsche', timestamp: t(3) },
+        { id: '1', role: 'user', content: 'Nachricht mit Avatar-Bild.', name: 'Sam Sample', avatar: sampleAvatar, timestamp: t(5) },
+        { id: '2', role: 'agent', content: 'Alles klar, ich übernehme das.', name: 'Assistant', timestamp: t(4) },
+        { id: '3', role: 'user', content: 'Diese hier fällt auf ein Monogramm zurück (kein Bild).', name: 'Alex Example', timestamp: t(3) },
       ] as ChatMessage[],
     },
     moduleMetadata: { imports: [ChatComponent] },
@@ -192,7 +194,7 @@ export const MessageStatus: Story = {
   render: () => ({
     template: `
       <div style="height: 500px;">
-        <lc-chat title="Spec Author" [messages]="messages"></lc-chat>
+        <lc-chat title="Assistant" [messages]="messages"></lc-chat>
       </div>
     `,
     props: { messages: statusMessages },
@@ -201,7 +203,7 @@ export const MessageStatus: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Setze `status` auf einer `ChatMessage` (`info`, `success`, `warning`, `error`), um den Rail-Punkt semantisch einzufärben — z. B. für „Agent nicht erreichbar" (`error`) oder „Spec erstellt" (`success`). Unabhängig von `role`, voll abwärtskompatibel.',
+        story: 'Setze `status` auf einer `ChatMessage` (`info`, `success`, `warning`, `error`), um den Rail-Punkt semantisch einzufärben — z. B. für „Dienst nicht erreichbar" (`error`) oder „Dokument erstellt" (`success`). Unabhängig von `role`, voll abwärtskompatibel.',
       },
     },
   },
@@ -276,16 +278,16 @@ export const ReadingColumn: Story = {
 // --- File upload ---
 
 const fileUploadMessages: ChatMessage[] = [
-  { id: '1', role: 'user', content: 'Hier ist das aktuelle Logo:', name: 'Eric', timestamp: t(5),
+  { id: '1', role: 'user', content: 'Hier ist das aktuelle Bild:', name: 'Alex Example', timestamp: t(5),
     attachments: [
       { id: 'a1', name: 'logo.png', type: 'image/png', size: 24_128,
         url: 'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?w=300&h=200&fit=crop' },
     ],
   },
-  { id: '2', role: 'agent', content: 'Sieht gut aus! Anbei das Briefing als PDF.', name: 'AI Assistant', timestamp: t(4),
+  { id: '2', role: 'agent', content: 'Sieht gut aus! Anbei die Notizen als PDF.', name: 'Assistant', timestamp: t(4),
     attachments: [
-      { id: 'a2', name: 'briefing.pdf', type: 'application/pdf', size: 184_322 },
-      { id: 'a3', name: 'styleguide.docx', type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', size: 56_120 },
+      { id: 'a2', name: 'notizen.pdf', type: 'application/pdf', size: 184_322 },
+      { id: 'a3', name: 'entwurf.docx', type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', size: 56_120 },
     ],
   },
 ];
@@ -324,50 +326,50 @@ export const WithFileUpload: Story = {
 
 // --- Rich content stories ---
 
-const specOld = `## Ziel\n\n_TBD_\n\n## Zielgruppe\n\n_TBD_`;
-const specNew = `## Ziel\n\nEine Plattform für automatisiertes Onboarding neuer Mitarbeiter.\n\n## Zielgruppe\n\nHR-Teams in mittelständischen B2B-SaaS-Unternehmen.`;
+const docOld = `## Ziel\n\n_TBD_\n\n## Zielgruppe\n\n_TBD_`;
+const docNew = `## Ziel\n\nEin Beispieldokument zur Demonstration des Diff-Viewers.\n\n## Zielgruppe\n\nLeserinnen und Leser dieser Storybook-Story.`;
 
 const diffMessages: ChatMessage[] = [
-  { id: '1', role: 'system', content: 'Spec-Authoring gestartet', timestamp: t(5) },
-  { id: '2', role: 'user', content: 'Wir bauen eine Plattform für automatisiertes Onboarding. Zielgruppe sind HR-Teams in mittelständischen B2B-SaaS-Firmen.', name: 'Eric', timestamp: t(4) },
+  { id: '1', role: 'system', content: 'Bearbeitung gestartet', timestamp: t(5) },
+  { id: '2', role: 'user', content: 'Bitte fülle Ziel und Zielgruppe im Beispieldokument aus.', name: 'Alex Example', timestamp: t(4) },
   {
     id: '3', role: 'agent',
-    content: 'Ich habe Ziel und Zielgruppe im Template ausgefüllt:',
-    name: 'Spec Author',
+    content: 'Ich habe Ziel und Zielgruppe in der Vorlage ausgefüllt:',
+    name: 'Assistant',
     timestamp: t(3),
     data: {
       diff: true,
-      oldText: specOld,
-      newText: specNew,
+      oldText: docOld,
+      newText: docNew,
     },
   },
-  { id: '4', role: 'user', content: 'Passt! Kannst du noch die Akzeptanzkriterien ergänzen?', name: 'Eric', timestamp: t(2) },
+  { id: '4', role: 'user', content: 'Passt! Kannst du noch eine Checkliste ergänzen?', name: 'Alex Example', timestamp: t(2) },
   {
     id: '5', role: 'agent',
-    content: 'Akzeptanzkriterien hinzugefügt:',
-    name: 'Spec Author',
+    content: 'Checkliste hinzugefügt:',
+    name: 'Assistant',
     timestamp: t(1),
     data: {
       diff: true,
-      oldText: specNew,
-      newText: specNew + `\n\n## Akzeptanzkriterien\n\n- [ ] Neuer Mitarbeiter kann Onboarding-Prozess starten\n- [ ] HR-Manager sieht Fortschritt in Echtzeit\n- [ ] E-Mail-Benachrichtigungen bei abgeschlossenen Schritten`,
+      oldText: docNew,
+      newText: docNew + `\n\n## Checkliste\n\n- [ ] Erster Punkt\n- [ ] Zweiter Punkt\n- [ ] Dritter Punkt`,
     },
   },
 ];
 
 const markdownMessages: ChatMessage[] = [
-  { id: '1', role: 'user', content: 'Zeig mir eine Zusammenfassung des API-Designs.', name: 'Eric', timestamp: t(3) },
+  { id: '1', role: 'user', content: 'Zeig mir eine Übersicht als Tabelle.', name: 'Alex Example', timestamp: t(3) },
   {
     id: '2', role: 'agent',
     content: '',
-    name: 'AI Assistant',
+    name: 'Assistant',
     timestamp: t(2),
     data: {
       markdown: true,
-      markdownContent: `### API Endpoints\n\n| Method | Path | Beschreibung |\n|--------|------|-------------|\n| \`GET\` | \`/api/users\` | Alle Benutzer |\n| \`POST\` | \`/api/users\` | Benutzer erstellen |\n| \`DELETE\` | \`/api/users/:id\` | Benutzer löschen |\n\n> **Hinweis:** Alle Endpoints erfordern einen gültigen JWT-Token.\n\n- Rate Limit: **100 req/min**\n- Response-Format: \`application/json\``,
+      markdownContent: `### Übersicht\n\n| Spalte A | Spalte B | Beschreibung |\n|----------|----------|-------------|\n| \`eins\` | \`/beispiel/a\` | Erster Eintrag |\n| \`zwei\` | \`/beispiel/b\` | Zweiter Eintrag |\n| \`drei\` | \`/beispiel/c\` | Dritter Eintrag |\n\n> **Hinweis:** Dies ist Platzhalter-Inhalt.\n\n- Punkt: **eins**\n- Format: \`text/plain\``,
     },
   },
-  { id: '3', role: 'user', content: 'Danke, kannst du den DELETE-Endpoint auf soft-delete umstellen?', name: 'Eric', timestamp: t(1) },
+  { id: '3', role: 'user', content: 'Danke, kannst du den dritten Eintrag noch ergänzen?', name: 'Alex Example', timestamp: t(1) },
 ];
 
 export const WithDiffViewer: Story = {
@@ -375,7 +377,7 @@ export const WithDiffViewer: Story = {
   render: () => ({
     template: `
       <div style="height: 600px;">
-        <lc-chat title="Spec Author" [messages]="messages">
+        <lc-chat title="Assistant" [messages]="messages">
           <ng-template #messageTemplate let-msg>
             {{ msg.content }}
             @if (msg.data?.diff) {
@@ -410,7 +412,7 @@ export const WithMarkdown: Story = {
   render: () => ({
     template: `
       <div style="height: 600px;">
-        <lc-chat title="AI Assistant" [messages]="messages">
+        <lc-chat title="Assistant" [messages]="messages">
           <ng-template #messageTemplate let-msg>
             @if (msg.data?.markdown) {
               <lc-markdown [content]="msg.data.markdownContent" variant="compact" />

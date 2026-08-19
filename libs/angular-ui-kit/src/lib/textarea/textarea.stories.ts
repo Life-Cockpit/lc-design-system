@@ -68,7 +68,7 @@ export const WithHelperText: Story = {
 
 export const WithCharacterCount: Story = {
   name: 'With Character Count',
-  args: { label: 'Tweet', placeholder: 'What\'s happening?', maxLength: 280, showCharacterCount: true, variant: 'outline', size: 'md', rows: 3 },
+  args: { label: 'Short message', placeholder: 'Write a short message...', maxLength: 280, showCharacterCount: true, variant: 'outline', size: 'md', rows: 3 },
 };
 
 export const AutoResize: Story = {

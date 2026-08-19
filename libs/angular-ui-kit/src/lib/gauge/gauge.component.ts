@@ -4,6 +4,7 @@ import {
   input,
   computed,
 } from '@angular/core';
+import { ChartValueFormatter, toFinite } from '../shared/chart-scale';
 
 export type GaugeColor = 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'info';
 export type GaugeSize = 'sm' | 'md' | 'lg';
@@ -53,6 +54,18 @@ export class GaugeComponent {
   /** Show the value in the center. */
   showValue = input<boolean>(true);
 
+  /**
+   * Formats the displayed value. When set it replaces the default
+   * `Math.round(value) + suffix` entirely (the suffix is not appended).
+   */
+  formatValue = input<ChartValueFormatter | null>(null);
+
+  /**
+   * Accessible name of the gauge. Defaults to a generated summary such as
+   * "CPU: 72% of 100%", so assistive technology hears the value.
+   */
+  ariaLabel = input<string>('');
+
   private readonly SIZE_MAP: Record<GaugeSize, number> = { sm: 100, md: 160, lg: 220 };
 
   protected readonly svgSize = computed(() => this.SIZE_MAP[this.size()]);
@@ -81,8 +94,8 @@ export class GaugeComponent {
   });
 
   protected readonly fraction = computed(() => {
-    const m = this.max() || 1;
-    return Math.min(Math.max(this.value() / m, 0), 1);
+    const m = toFinite(this.max()) || 1;
+    return Math.min(Math.max(toFinite(this.value()) / m, 0), 1);
   });
 
   protected readonly trackD = computed(() => {
@@ -104,9 +117,20 @@ export class GaugeComponent {
     return `M${cxv - r},${cyv} A${r},${r} 0 0 1 ${x},${y}`;
   });
 
-  protected readonly displayValue = computed(() =>
-    `${Math.round(this.value())}${this.suffix()}`
-  );
+  private formatted(value: number): string {
+    const fmt = this.formatValue();
+    return fmt ? fmt(value) : `${Math.round(toFinite(value))}${this.suffix()}`;
+  }
+
+  protected readonly displayValue = computed(() => this.formatted(this.value()));
+
+  protected readonly effectiveAriaLabel = computed(() => {
+    const explicit = this.ariaLabel();
+    if (explicit) return explicit;
+    const label = this.label();
+    const summary = `${this.displayValue()} of ${this.formatted(this.max())}`;
+    return label ? `${label}: ${summary}` : `Gauge: ${summary}`;
+  });
 
   protected readonly valueFontSize = computed(() => {
     const map: Record<GaugeSize, string> = { sm: '1rem', md: '1.5rem', lg: '2rem' };

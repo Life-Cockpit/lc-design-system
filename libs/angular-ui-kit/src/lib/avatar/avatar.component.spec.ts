@@ -60,6 +60,24 @@ describe('AvatarComponent', () => {
       const initials = avatarElement.querySelector('.lc-avatar__initials');
       expect(initials).toBeTruthy();
     });
+
+    it('should retry the image when src changes after an error', () => {
+      fixture.componentRef.setInput('src', 'https://example.com/invalid.jpg');
+      fixture.componentRef.setInput('name', 'John Doe');
+      fixture.detectChanges();
+
+      (avatarElement.querySelector('img') as HTMLImageElement).dispatchEvent(new Event('error'));
+      fixture.detectChanges();
+      expect(avatarElement.querySelector('img')).toBeNull();
+
+      fixture.componentRef.setInput('src', 'https://example.com/valid.jpg');
+      fixture.detectChanges();
+
+      const img = avatarElement.querySelector('img');
+      expect(img).toBeTruthy();
+      expect(img?.getAttribute('src')).toBe('https://example.com/valid.jpg');
+      expect(avatarElement.querySelector('.lc-avatar__initials')).toBeNull();
+    });
   });
 
   describe('Initials Fallback', () => {

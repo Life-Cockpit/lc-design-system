@@ -3,28 +3,48 @@
   [attr.height]="height()"
   [attr.viewBox]="viewBox()"
   role="img"
-  aria-label="Bar chart"
+  [attr.aria-label]="effectiveAriaLabel()"
   class="lc-bar-chart"
 >
+  <title>{{ effectiveAriaLabel() }}</title>
+
   <!-- Grid lines -->
-  @if (showGrid() && isVertical()) {
-    @for (line of gridLines(); track line.y) {
-      <line
-        [attr.x1]="axisLine().bx1"
-        [attr.y1]="line.y"
-        [attr.x2]="axisLine().bx2"
-        [attr.y2]="line.y"
-        class="lc-bar-chart__grid-line"
-      />
-      <text
-        [attr.x]="axisLine().x1 - 6"
-        [attr.y]="line.y"
-        text-anchor="end"
-        dominant-baseline="central"
-        class="lc-bar-chart__grid-label"
-      >
-        {{ line.label }}
-      </text>
+  @if (showGrid()) {
+    @for (line of gridLines(); track line.pos) {
+      @if (isVertical()) {
+        <line
+          [attr.x1]="axisLine().bx1"
+          [attr.y1]="line.pos"
+          [attr.x2]="axisLine().bx2"
+          [attr.y2]="line.pos"
+          class="lc-bar-chart__grid-line"
+        />
+        <text
+          [attr.x]="axisLine().x1 - 6"
+          [attr.y]="line.pos"
+          text-anchor="end"
+          dominant-baseline="central"
+          class="lc-bar-chart__grid-label"
+        >
+          {{ line.label }}
+        </text>
+      } @else {
+        <line
+          [attr.x1]="line.pos"
+          [attr.y1]="axisLine().y1"
+          [attr.x2]="line.pos"
+          [attr.y2]="axisLine().y2"
+          class="lc-bar-chart__grid-line"
+        />
+        <text
+          [attr.x]="line.pos"
+          [attr.y]="plotBottom() + 12"
+          text-anchor="middle"
+          class="lc-bar-chart__grid-label"
+        >
+          {{ line.label }}
+        </text>
+      }
     }
   }
 
@@ -45,7 +65,7 @@
   />
 
   <!-- Bars -->
-  @for (bar of bars(); track bar.label) {
+  @for (bar of bars(); track $index) {
     <rect
       [attr.x]="bar.x"
       [attr.y]="bar.y"
@@ -60,11 +80,11 @@
       <text
         [attr.x]="bar.valueX"
         [attr.y]="bar.valueY"
-        [attr.text-anchor]="isVertical() ? 'middle' : 'start'"
+        [attr.text-anchor]="bar.valueAnchor"
         [attr.dominant-baseline]="isVertical() ? 'auto' : 'central'"
         class="lc-bar-chart__value"
       >
-        {{ bar.value }}
+        {{ bar.valueText }}
       </text>
     }
 

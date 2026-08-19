@@ -17,6 +17,7 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { HttpClient } from '@angular/common/http';
 import { Subscription } from 'rxjs';
 import { CodeBlockComponent, CodeBlockLanguage } from '../code-block/code-block.component';
+import { isSafeImageUrl, isSafeLinkUrl } from '../shared/safe-url';
 
 export interface MarkdownHeading {
   level: number;
@@ -45,6 +46,21 @@ export interface RenderPart {
   code?: string;
   lang?: CodeBlockLanguage;
 }
+
+/**
+ * Stand-in for a fenced code block while the rest of the markdown is processed.
+ * Bracketed in NUL characters, which the source is stripped of first — so no
+ * text a user writes can ever spell a placeholder and be mistaken for a block.
+ * (The earlier `<!--CODE_BLOCK_N-->` form was: an escaped literal comment in
+ * the text matched it and dereferenced a block that wasn't there.)
+ */
+const BLOCK_MARK = '\u0000';
+const blockPlaceholder = (idx: number): string => `${BLOCK_MARK}LCBLOCK${idx}${BLOCK_MARK}`;
+// eslint-disable-next-line no-control-regex -- the NUL bracket is the point: unforgeable
+const BLOCK_PLACEHOLDER = /\u0000LCBLOCK(\d+)\u0000/g;
+
+/** Instances numbered so their mermaid render ids never collide on one page. */
+let markdownInstances = 0;
 
 /**
  * Markdown renderer component.
@@ -83,6 +99,7 @@ export interface RenderPart {
 })
 export class MarkdownComponent implements OnDestroy {
   private readonly sanitizer = inject(DomSanitizer);
+  private readonly instanceId = ++markdownInstances;
   private readonly http = inject(HttpClient);
   private readonly host = inject(ElementRef<HTMLElement>);
   private httpSub?: Subscription;
@@ -200,15 +217,34 @@ export class MarkdownComponent implements OnDestroy {
     }
 
     // No code blocks — single HTML part
-    const sanitized = this.sanitize()
-      ? this.sanitizer.sanitize(SecurityContext.HTML, html) || ''
-      : html;
     return [{
       type: 'html',
       index: 0,
-      safeHtml: this.sanitizer.bypassSecurityTrustHtml(sanitized as string),
+      safeHtml: this.sanitizer.bypassSecurityTrustHtml(this.sanitizeHtml(html, { next: 0 })),
     }];
   });
+
+  /**
+   * The HTML as it may go into the DOM. With `sanitize` on (the default) that is
+   * Angular's HTML sanitizer's output — which drops every `id`, since `id` isn't
+   * on its attribute allow-list. The heading ids are put back afterwards: they
+   * are what anchors and the `rendered` TOC point at, and each is a `[\w-]`
+   * slug this parser produced itself, so re-adding them reopens nothing. The
+   * cursor walks the parsed headings in document order across the parts.
+   */
+  private sanitizeHtml(html: string, cursor: { next: number }): string {
+    const headings = this.headings();
+    if (!this.sanitize()) {
+      cursor.next += (html.match(/<h[1-6]\b/g) ?? []).length;
+      return html;
+    }
+    const sanitized = this.sanitizer.sanitize(SecurityContext.HTML, html) || '';
+    return sanitized.replace(/<h([1-6])(\s[^>]*)?>/g, (tag, level: string, attrs = '') => {
+      const heading = headings[cursor.next++];
+      if (!heading || /\sid=/.test(attrs)) return tag;
+      return `<h${level} id="${heading.id}"${attrs}>`;
+    });
+  }
 
   protected containerClasses = computed(() => {
     let classes = `lc-markdown lc-markdown--${this.variant()}`;
@@ -238,12 +274,10 @@ export class MarkdownComponent implements OnDestroy {
       }
     });
 
-    // Emit rendered event when headings change
+    // Emit rendered event whenever a render produced a (possibly empty) TOC
     effect(() => {
       const h = this.headings();
-      if (h.length > 0) {
-        this.rendered.emit({ headings: h });
-      }
+      untracked(() => this.rendered.emit({ headings: h }));
     });
 
     // Render Mermaid code fences as inline SVG diagrams.
@@ -393,8 +427,8 @@ export class MarkdownComponent implements OnDestroy {
     blocks: { kind: 'code' | 'mermaid'; lang: string; code: string }[]
   ): RenderPart[] {
     const parts: RenderPart[] = [];
-    // The placeholders survive HTML escaping as &lt;!--CODE_BLOCK_N--&gt;
-    const regex = /&lt;!--CODE_BLOCK_(\d+)--&gt;/g;
+    const regex = new RegExp(BLOCK_PLACEHOLDER.source, 'g');
+    const cursor = { next: 0 };
     let lastIndex = 0;
     let partIndex = 0;
     let match: RegExpExecArray | null;
@@ -402,17 +436,16 @@ export class MarkdownComponent implements OnDestroy {
     while ((match = regex.exec(html)) !== null) {
       const before = html.slice(lastIndex, match.index);
       if (before.trim()) {
-        const sanitized = this.sanitize()
-          ? this.sanitizer.sanitize(SecurityContext.HTML, before) || ''
-          : before;
         parts.push({
           type: 'html',
           index: partIndex++,
-          safeHtml: this.sanitizer.bypassSecurityTrustHtml(sanitized as string),
+          safeHtml: this.sanitizer.bypassSecurityTrustHtml(this.sanitizeHtml(before, cursor)),
         });
       }
-      const blockIdx = parseInt(match[1], 10);
-      const block = blocks[blockIdx];
+      const block = blocks[parseInt(match[1], 10)];
+      lastIndex = match.index + match[0].length;
+      // Unforgeable placeholder, so this can only be a bug — but never a crash.
+      if (!block) continue;
       if (block.kind === 'mermaid') {
         parts.push({
           type: 'mermaid',
@@ -427,18 +460,14 @@ export class MarkdownComponent implements OnDestroy {
           lang: block.lang as CodeBlockLanguage,
         });
       }
-      lastIndex = match.index + match[0].length;
     }
 
     const remaining = html.slice(lastIndex);
     if (remaining.trim()) {
-      const sanitized = this.sanitize()
-        ? this.sanitizer.sanitize(SecurityContext.HTML, remaining) || ''
-        : remaining;
       parts.push({
         type: 'html',
         index: partIndex++,
-        safeHtml: this.sanitizer.bypassSecurityTrustHtml(sanitized as string),
+        safeHtml: this.sanitizer.bypassSecurityTrustHtml(this.sanitizeHtml(remaining, cursor)),
       });
     }
 
@@ -456,8 +485,10 @@ export class MarkdownComponent implements OnDestroy {
     const linkTarget = this.linkTarget();
     const showAnchors = this.showHeadingAnchors();
 
-    // 1. Extract fenced code blocks → placeholders
-    let processed = md.replace(
+    // 1. Extract fenced code blocks → placeholders (see BLOCK_MARK: the source
+    //    is stripped of the marker character first, so it can't forge one)
+    // eslint-disable-next-line no-control-regex -- strip the placeholder marker (see BLOCK_MARK)
+    let processed = md.replace(/\u0000/g, '').replace(
       /```(\w*)\n([\s\S]*?)```/g,
       (_match, lang: string, code: string) => {
         const idx = blocks.length;
@@ -467,15 +498,13 @@ export class MarkdownComponent implements OnDestroy {
           lang: normalizedLang,
           code: code.trimEnd(),
         });
-        return `<!--CODE_BLOCK_${idx}-->`;
+        return blockPlaceholder(idx);
       }
     );
 
-    // 2. Escape HTML entities
-    processed = processed
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
+    // 2. Escape HTML entities — quotes included, so nothing the parser later
+    //    interpolates into an attribute (link/image URLs, alt text) can close it.
+    processed = this.escapeHtml(processed);
 
     // 3. Headings (# to ######)
     processed = processed.replace(
@@ -538,10 +567,15 @@ export class MarkdownComponent implements OnDestroy {
       '<ul>$1</ul>'
     );
 
-    // 9. Ordered lists
+    // 9. Ordered lists — marked while wrapping, so a run of them gets its <ol>
+    //    and isn't confused with the <li>s already inside <ul>s above.
     processed = processed.replace(
       /^\d+\.\s+(.*)$/gm,
-      '<li>$1</li>'
+      '<li data-ol>$1</li>'
+    );
+    processed = processed.replace(
+      /((?:<li data-ol>.*<\/li>\n?)+)/g,
+      (run) => `<ol>${run.replace(/ data-ol/g, '')}</ol>`
     );
 
     // 10. Inline code
@@ -561,19 +595,23 @@ export class MarkdownComponent implements OnDestroy {
     // 12. Strikethrough (GFM)
     processed = processed.replace(/~~(.+?)~~/g, '<del>$1</del>');
 
-    // 13. Images
+    // 13. Images. Only allow-listed URL schemes become a `src` (see
+    //     safe-url.ts); anything else — `javascript:`, unknown schemes — is
+    //     rendered as its alt text. This holds regardless of `sanitize`.
     processed = processed.replace(
       /!\[([^\]]*)\]\(([^)]+)\)/g,
       (_match, alt: string, src: string) => {
+        if (!isSafeImageUrl(src)) return alt;
         const resolvedSrc = baseUrl && !src.startsWith('http') ? `${baseUrl}/${src}` : src;
         return `<img src="${resolvedSrc}" alt="${alt}" class="lc-markdown__img">`;
       }
     );
 
-    // 14. Links
+    // 14. Links — same rule: an unsafe URL leaves plain text, not a link.
     processed = processed.replace(
       /\[([^\]]+)\]\(([^)]+)\)/g,
       (_match, text: string, href: string) => {
+        if (!isSafeLinkUrl(href)) return text;
         const resolvedHref = baseUrl && !href.startsWith('http') && !href.startsWith('#')
           ? `${baseUrl}/${href}`
           : href;
@@ -600,7 +638,7 @@ export class MarkdownComponent implements OnDestroy {
           trimmed.startsWith('<hr') ||
           trimmed.startsWith('<table') ||
           trimmed.startsWith('<div') ||
-          trimmed.startsWith('<!--CODE_BLOCK')
+          trimmed.startsWith(BLOCK_MARK)
         ) {
           return trimmed;
         }
@@ -614,9 +652,10 @@ export class MarkdownComponent implements OnDestroy {
       // No replacement needed here
     } else {
       processed = processed.replace(
-        /&lt;!--CODE_BLOCK_(\d+)--&gt;/g,
+        new RegExp(BLOCK_PLACEHOLDER.source, 'g'),
         (_match, idx: string) => {
           const block = blocks[parseInt(idx, 10)];
+          if (!block) return '';
           return `<pre><code class="language-${block.lang}">${this.escapeHtml(block.code)}</code></pre>`;
         }
       );
@@ -681,7 +720,8 @@ export class MarkdownComponent implements OnDestroy {
     return text
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
   }
 
   /**
@@ -746,7 +786,10 @@ export class MarkdownComponent implements OnDestroy {
 
       for (const part of mermaidParts) {
         try {
-          const renderId = `lc-md-mermaid-${runId}-${part.index}`;
+          // Per instance, per run, per part: mermaid's render() removes any
+          // element already carrying the id it is given, so an id shared with
+          // another <lc-markdown> on the page would delete that one's diagram.
+          const renderId = `lc-md-mermaid-${this.instanceId}-${runId}-${part.index}`;
           const { svg } = await mermaidApi.render(renderId, part.code!);
           if (runId !== this.mermaidRenderRun) return;
           // Mermaid emits self-contained SVG with internal <style> rules.

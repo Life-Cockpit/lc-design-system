@@ -4,8 +4,10 @@
   [attr.viewBox]="viewBox()"
   class="lc-gauge"
   role="img"
-  aria-label="Gauge chart"
+  [attr.aria-label]="effectiveAriaLabel()"
 >
+  <title>{{ effectiveAriaLabel() }}</title>
+
   <path
     [attr.d]="trackD()"
     [attr.stroke-width]="strokeW()"

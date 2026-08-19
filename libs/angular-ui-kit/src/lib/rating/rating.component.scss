@@ -47,13 +47,26 @@
       color: var(--color-warning);
     }
 
+    // Half: the empty outline with a solid star clipped to its leading half on top.
     &--half {
-      color: var(--color-warning);
-      opacity: 0.6;
+      position: relative;
+      display: inline-flex;
+      color: var(--color-border-strong);
     }
 
     &--empty {
       color: var(--color-border-strong);
+    }
+  }
+
+  &__icon-fill {
+    position: absolute;
+    inset: 0;
+    color: var(--color-warning);
+    clip-path: inset(0 50% 0 0);
+
+    :host-context([dir='rtl']) & {
+      clip-path: inset(0 0 0 50%);
     }
   }
 
@@ -80,7 +93,7 @@
     }
   }
 
-  // States
+  // States — read-only stays focusable and readable, it just does not react.
   &--readonly {
     .rating__star {
       cursor: default;

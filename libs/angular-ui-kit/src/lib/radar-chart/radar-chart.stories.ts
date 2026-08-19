@@ -49,7 +49,7 @@ export const MultipleSeries: Story = {
 export const Skills: Story = {
   args: {
     series: [{ label: 'Skills', data: [95, 80, 70, 60, 85] }],
-    axes: ['TypeScript', 'Angular', 'CSS', 'Testing', 'Architecture'],
+    axes: ['Skill A', 'Skill B', 'Skill C', 'Skill D', 'Skill E'],
     size: 300,
     fillOpacity: 0.25,
   },

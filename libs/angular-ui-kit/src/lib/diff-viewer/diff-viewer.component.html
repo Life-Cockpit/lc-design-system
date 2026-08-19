@@ -5,7 +5,13 @@
     <span class="lc-diff__stat lc-diff__stat--del">−{{ stats().deletions }}</span>
   </div>
 
-  @if (mode() === 'inline') {
+  @if (tooLarge()) {
+    <!-- Size cap hit: no diff is computed -->
+    <p class="lc-diff__too-large" role="status">
+      Diff too large to display ({{ oldLabel() }}: {{ oldLineCount() }} lines,
+      {{ newLabel() }}: {{ newLineCount() }} lines; limit {{ maxLines() }} lines per side).
+    </p>
+  } @else if (mode() === 'inline') {
     <!-- Inline mode -->
     <div class="lc-diff__inline">
       <div class="lc-diff__headers">

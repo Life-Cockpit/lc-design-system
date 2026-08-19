@@ -143,4 +143,105 @@ describe('ScatterPlotComponent', () => {
     // All grid-line-associated labels should be X only
     expect(yLabelsCount).toBeGreaterThanOrEqual(0);
   });
+
+  describe('keyboard interaction and accessibility', () => {
+    const chart = () => fixture.debugElement.children[0].componentInstance as ScatterPlotComponent;
+    const dot = () => el.querySelector('.lc-scatter-plot__dot') as SVGCircleElement;
+
+    it('exposes the SVG as a labelled group with button dots', () => {
+      const svg = el.querySelector('svg')!;
+      expect(svg.getAttribute('role')).toBe('group');
+      expect(svg.getAttribute('aria-label')).toBe('Scatter plot: Set A 3 points');
+      expect(svg.querySelector('title')!.textContent).toBe('Scatter plot: Set A 3 points');
+      expect(dot().getAttribute('tabindex')).toBe('0');
+      expect(dot().getAttribute('role')).toBe('button');
+      expect(dot().getAttribute('aria-label')).toBe('Set A: (1, 2)');
+    });
+
+    it('names the axes in the summary when axis labels are set', () => {
+      host.xAxisLabel.set('Weight');
+      host.yAxisLabel.set('Height');
+      fixture.detectChanges();
+      expect(el.querySelector('svg')!.getAttribute('aria-label')).toBe('Scatter plot (Weight vs Height): Set A 3 points');
+    });
+
+    it('shows the tooltip on focus and hides it on blur', () => {
+      dot().dispatchEvent(new FocusEvent('focus'));
+      fixture.detectChanges();
+      expect(el.querySelector('.lc-scatter-plot__tooltip-text')!.textContent).toBe('(1, 2)');
+      dot().dispatchEvent(new FocusEvent('blur'));
+      fixture.detectChanges();
+      expect(el.querySelector('.lc-scatter-plot__tooltip-text')).toBeFalsy();
+    });
+
+    it('emits pointClick on Enter and Space (and prevents the Space scroll)', () => {
+      const clicks: unknown[] = [];
+      chart().pointClick.subscribe((e) => clicks.push(e));
+      dot().dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      const space = new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true });
+      dot().dispatchEvent(space);
+      expect(clicks.length).toBe(2);
+      expect(clicks[0]).toEqual({ series: 'Set A', point: { x: 1, y: 2 } });
+      expect(space.defaultPrevented).toBe(true);
+    });
+
+    it('becomes a static image when interactive is false', () => {
+      const direct = TestBed.createComponent(ScatterPlotComponent);
+      direct.componentRef.setInput('series', [{ label: 'A', data: [{ x: 1, y: 1 }] }]);
+      direct.componentRef.setInput('interactive', false);
+      direct.detectChanges();
+      const svg = direct.nativeElement.querySelector('svg');
+      expect(svg.getAttribute('role')).toBe('img');
+      const c = direct.nativeElement.querySelector('.lc-scatter-plot__dot');
+      expect(c.hasAttribute('tabindex')).toBe(false);
+      expect(c.hasAttribute('role')).toBe(false);
+    });
+
+    it('honours ariaLabel', () => {
+      const direct = TestBed.createComponent(ScatterPlotComponent);
+      direct.componentRef.setInput('series', []);
+      direct.componentRef.setInput('ariaLabel', 'Correlation');
+      direct.detectChanges();
+      expect(direct.nativeElement.querySelector('svg').getAttribute('aria-label')).toBe('Correlation');
+    });
+  });
+
+  describe('tooltip, scale and edge cases', () => {
+    it('sizes the tooltip backplate from the label and uses a custom point label', () => {
+      host.series.set([{ label: 'S', data: [{ x: 1, y: 2, label: 'A much longer point label' }, { x: 2, y: 3 }] }]);
+      fixture.detectChanges();
+      const dots = el.querySelectorAll('.lc-scatter-plot__dot');
+      dots[0].dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+      fixture.detectChanges();
+      const wide = Number(el.querySelector('.lc-scatter-plot__tooltip-bg')!.getAttribute('width'));
+      dots[1].dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+      fixture.detectChanges();
+      const narrow = Number(el.querySelector('.lc-scatter-plot__tooltip-bg')!.getAttribute('width'));
+      expect(wide).toBeGreaterThan(narrow);
+      expect(dots[0].getAttribute('aria-label')).toBe('S: A much longer point label (1, 2)');
+    });
+
+    it('labels the grid with nice, float-clean ticks', () => {
+      host.series.set([{ label: 'S', data: [{ x: 0.1, y: 10 }, { x: 0.3, y: 30 }] }]);
+      fixture.detectChanges();
+      const labels = Array.from(el.querySelectorAll('.lc-scatter-plot__label')).map((t) => t.textContent!.trim());
+      expect(labels.join('|')).not.toMatch(/0000|9999|NaN/);
+    });
+
+    it('renders no NaN for empty series or NaN coordinates', () => {
+      host.series.set([{ label: 'S', data: [] }, { label: 'T', data: [{ x: NaN, y: 1 }] }]);
+      fixture.detectChanges();
+      expect(el.querySelector('svg')!.innerHTML).not.toMatch(/NaN|Infinity/);
+      expect(el.querySelectorAll('.lc-scatter-plot__dot').length).toBe(1);
+    });
+
+    it('formats ticks and default point labels through formatValue', () => {
+      const direct = TestBed.createComponent(ScatterPlotComponent);
+      direct.componentRef.setInput('series', [{ label: 'A', data: [{ x: 1, y: 2 }] }]);
+      direct.componentRef.setInput('formatValue', (v: number) => `${v}u`);
+      direct.detectChanges();
+      expect(direct.nativeElement.querySelector('.lc-scatter-plot__dot').getAttribute('aria-label')).toBe('A: (1u, 2u)');
+      expect(direct.nativeElement.querySelector('.lc-scatter-plot__label').textContent.trim()).toMatch(/u$/);
+    });
+  });
 });

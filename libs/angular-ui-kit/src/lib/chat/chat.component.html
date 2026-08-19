@@ -129,6 +129,9 @@
     </div>
   </div>
 
+  <!-- Announces the latest completed non-user turn (see `announcement`). -->
+  <div class="lc-chat__sr-only lc-chat__announcer" aria-live="polite" aria-atomic="true">{{ announcement() }}</div>
+
   <div class="lc-chat__input-area">
     <div class="lc-chat__composer">
       @if (allowFileUpload() && pendingAttachments().length) {
@@ -162,8 +165,10 @@
         </div>
       }
 
+      <label class="lc-chat__sr-only" [for]="inputId">{{ inputLabel() }}</label>
       <textarea
         #composerInput
+        [id]="inputId"
         class="lc-chat__input"
         [placeholder]="placeholder()"
         [value]="inputValue()"

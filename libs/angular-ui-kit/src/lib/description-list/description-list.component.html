@@ -1,6 +1,13 @@
 <dl [class]="hostClasses()">
   @for (item of items(); track item.term) {
-    <div class="lc-dl__row" (click)="itemClick.emit(item)">
+    <div
+      class="lc-dl__row"
+      [class.lc-dl__row--clickable]="clickable()"
+      [attr.role]="clickable() ? 'button' : null"
+      [attr.tabindex]="clickable() ? 0 : null"
+      (click)="itemClick.emit(item)"
+      (keydown)="onRowKeydown($event, item)"
+    >
       <dt class="lc-dl__term">{{ item.term }}</dt>
       <span class="lc-dl__leader" aria-hidden="true"></span>
       <dd [class]="valueClass(item)">

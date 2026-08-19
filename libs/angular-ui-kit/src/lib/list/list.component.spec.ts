@@ -1,5 +1,9 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ListComponent } from './list.component';
+import { Component, signal } from '@angular/core';
+import { By } from '@angular/platform-browser';
+import { ListComponent, ListItem } from './list.component';
+import { ListItemTemplateDirective } from './list-item-template.directive';
+import { IconComponent } from '../icon/icon.component';
 import { HttpTestingController } from '@angular/common/http/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
@@ -140,6 +144,14 @@ describe('ListComponent', () => {
       expect(icon).toBeTruthy();
     });
 
+    it('should mark item icons as decorative', () => {
+      fixture.componentRef.setInput('items', [{ label: 'Item 1', icon: 'user' }]);
+      fixture.detectChanges();
+
+      const icon = fixture.debugElement.query(By.directive(IconComponent)).componentInstance as IconComponent;
+      expect(icon.decorative()).toBe(true);
+    });
+
     it('should render multiple items with different icons', () => {
       const items = [
         { label: 'Profile', icon: 'user' },
@@ -204,6 +216,77 @@ describe('ListComponent', () => {
       buttonElement?.click();
 
       expect(actionClickedItem).toEqual({ label: 'Item 1', action: 'Delete', id: '1' });
+    });
+
+    it('should not emit itemClick when the action button is clicked', () => {
+      const items = [{ label: 'Item 1', action: 'Delete', id: '1' }];
+      fixture.componentRef.setInput('items', items);
+      fixture.detectChanges();
+
+      const itemClicks: unknown[] = [];
+      const actionClicks: unknown[] = [];
+      component.itemClick.subscribe((item) => itemClicks.push(item));
+      component.actionClick.subscribe((item) => actionClicks.push(item));
+
+      const buttonElement = listElement.querySelector('lc-button.lc-list__action button') as HTMLElement;
+      buttonElement.click();
+
+      expect(actionClicks.length).toBe(1);
+      expect(itemClicks.length).toBe(0);
+    });
+  });
+
+  describe('Clickable rows (keyboard)', () => {
+    beforeEach(() => {
+      fixture.componentRef.setInput('items', [
+        { label: 'Item 1', id: '1' },
+        { label: 'Item 2', id: '2', disabled: true },
+      ]);
+      fixture.componentRef.setInput('clickable', true);
+      fixture.detectChanges();
+    });
+
+    it('renders focusable button rows inside listitems', () => {
+      const wrappers = listElement.querySelectorAll('[role="listitem"]');
+      expect(wrappers.length).toBe(2);
+      const rows = listElement.querySelectorAll('.lc-list__item');
+      expect(rows[0].getAttribute('role')).toBe('button');
+      expect(rows[0].getAttribute('tabindex')).toBe('0');
+      expect(rows[1].getAttribute('tabindex')).toBe('-1');
+      expect(rows[1].getAttribute('aria-disabled')).toBe('true');
+    });
+
+    it('emits itemClick on Enter and Space', () => {
+      const clicks: unknown[] = [];
+      component.itemClick.subscribe((item) => clicks.push(item));
+      const row = listElement.querySelector('.lc-list__item') as HTMLElement;
+
+      const enter = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+      row.dispatchEvent(enter);
+      row.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true }));
+
+      expect(enter.defaultPrevented).toBe(true);
+      expect(clicks).toEqual([{ label: 'Item 1', id: '1' }, { label: 'Item 1', id: '1' }]);
+    });
+
+    it('does not emit for disabled rows or for keys from nested controls', () => {
+      const clicks: unknown[] = [];
+      component.itemClick.subscribe((item) => clicks.push(item));
+      const disabledRow = listElement.querySelectorAll('.lc-list__item')[1] as HTMLElement;
+      disabledRow.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+
+      const label = listElement.querySelector('.lc-list__label') as HTMLElement;
+      label.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+
+      expect(clicks.length).toBe(0);
+    });
+
+    it('keeps plain listitems when not clickable', () => {
+      fixture.componentRef.setInput('clickable', false);
+      fixture.detectChanges();
+      const row = listElement.querySelector('.lc-list__item');
+      expect(row?.getAttribute('role')).toBe('listitem');
+      expect(row?.hasAttribute('tabindex')).toBe(false);
     });
   });
 
@@ -501,6 +584,38 @@ describe('ListComponent', () => {
       const trailing = listElement.querySelector('.lc-list__trailing');
       expect(trailing?.querySelector('.lc-list__badge')).toBeTruthy();
       expect(trailing?.querySelector('.lc-list__metadata')).toBeTruthy();
+    });
+  });
+
+  describe('Custom item template (lcListItem)', () => {
+    @Component({
+      standalone: true,
+      imports: [ListComponent, ListItemTemplateDirective],
+      template: `
+        <lc-list [items]="items()" [clickable]="clickable()">
+          <ng-template lcListItem let-item>
+            <span class="custom-row">{{ item.label }} / {{ item.extra }}</span>
+          </ng-template>
+        </lc-list>
+      `,
+    })
+    class TemplateHost {
+      items = signal<ListItem[]>([{ label: 'A', extra: 'x' }, { label: 'B', extra: 'y' }]);
+      clickable = signal(false);
+    }
+
+    it('renders the projected template for every row (plain and clickable)', () => {
+      const hostFixture = TestBed.createComponent(TemplateHost);
+      hostFixture.detectChanges();
+      let rows = hostFixture.nativeElement.querySelectorAll('.custom-row');
+      expect(rows.length).toBe(2);
+      expect(rows[1].textContent?.trim()).toBe('B / y');
+      expect(hostFixture.nativeElement.querySelector('.lc-list__label')).toBeNull();
+
+      hostFixture.componentInstance.clickable.set(true);
+      hostFixture.detectChanges();
+      rows = hostFixture.nativeElement.querySelectorAll('.lc-list__item[role="button"] .custom-row');
+      expect(rows.length).toBe(2);
     });
   });
 });

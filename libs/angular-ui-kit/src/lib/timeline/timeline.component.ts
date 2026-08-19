@@ -7,6 +7,8 @@ import {
 import { IconComponent } from '../icon/icon.component';
 
 export interface TimelineItem {
+  /** Optional stable identity for rendering (falls back to the list index). */
+  id?: string;
   /** Title of the event */
   title: string;
   /** Optional description */

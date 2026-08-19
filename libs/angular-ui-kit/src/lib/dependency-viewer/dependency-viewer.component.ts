@@ -102,6 +102,10 @@ interface LayoutNode {
   y: number;
   width: number;
   height: number;
+  /** The label as drawn: wrapped to the box, last line ellipsised if it had to be. */
+  lines: string[];
+  /** `lines` don't carry the whole label — the template offers it as a tooltip. */
+  truncated: boolean;
   depth: number;
   parentId: string | null;
   incomingCount: number;
@@ -118,6 +122,8 @@ interface LayoutEdge {
   label?: string;
   labelX: number;
   labelY: number;
+  /** How the label hangs off (labelX, labelY): centred on it, or starting/ending there. */
+  labelAnchor?: LabelAnchor;
   color: string;
   dashed: boolean;
   /** Draws it as a secondary link: dimmed, and out of the layout's main flow. */
@@ -126,16 +132,65 @@ interface LayoutEdge {
   arrow: boolean;
   /** Arrow marker id suffix — always a known relation, so the marker resolves */
   marker: DependencyRelation;
+  /** Set on bowed routes, so overlapping bows can be spread into lanes afterwards. */
+  bow?: BowInfo;
 }
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
-const NODE_WIDTH = 160;
+/**
+ * Node box, in layout units. Every node in a graph shares one size: the width
+ * grows with the longest label up to a cap, past which labels wrap onto a second
+ * line (and the whole graph switches to the taller box); a label that still
+ * doesn't fit is ellipsised, with the full text as a tooltip. Uniform boxes are
+ * what keep the columns aligned — a per-node width would stagger every level
+ * below a long label.
+ */
+const NODE_MIN_WIDTH = 160;
+const NODE_MAX_WIDTH = 240;
 const NODE_HEIGHT = 40;
+const NODE_HEIGHT_TWO_LINE = 54;
+/** Inset between the box edge and the label, per side. */
+const NODE_PAD_X = 12;
+const MAX_LABEL_LINES = 2;
+/**
+ * The label font, as the layout measures it. Has to match
+ * `.dep-viewer__node-label` in the stylesheet, or the wrapping is computed for a
+ * different font than the one that gets drawn.
+ */
+const LABEL_FONT_SIZE = 12;
+const LABEL_FONT_WEIGHT = 500;
+const LABEL_LINE_HEIGHT = 15;
+/**
+ * Baseline offset from the box's vertical centre for one line of the label font:
+ * roughly (ascent − descent) / 2. Explicit rather than `dominant-baseline`, whose
+ * inheritance into `<tspan>` differs between engines.
+ */
+const LABEL_BASELINE_SHIFT = 4;
+/** Edge label font, as `.dep-viewer__edge-label` draws it — for measuring label room. */
+const EDGE_LABEL_FONT_SIZE = 9;
+/** Gap between a bow's apex and the label that sits beside it. */
+const EDGE_LABEL_GAP = 4;
+/**
+ * Gutter between levels along the flow. The minimum: it widens for a graph whose
+ * sideways bows (plus their labels) wouldn't fit it — see `requiredGap`.
+ */
 const H_GAP = 80;
 const V_GAP = 24;
-/** How far a bowed edge clears the row/column it loops across. */
-const BACK_EDGE_BOW = 36;
+/** How far a bowed edge's apex clears the boxes it loops around. */
+const BOW_CLEARANCE = 28;
+/** Extra clearance per lane, when several bows share a side and overlap. */
+const BOW_LANE_STEP = 18;
+/** Breathing room between a bow's label and the next level's boxes. */
+const BOW_LABEL_MARGIN = 10;
+/**
+ * The collapse toggle is a disc of radius 8, centred 10px off the box's mid-edge —
+ * so it reaches 18px past the box. A bow along that side clears the discs, not
+ * just the boxes; and an edge attaching under a disc would hide its arrowhead
+ * behind it, so it attaches `TOGGLE_CLEARANCE` beside the disc instead.
+ */
+const TOGGLE_EXTENT = 18;
+const TOGGLE_CLEARANCE = 13;
 /** Points sampled along a curve when testing it against the node boxes. */
 const ROUTE_SAMPLES = 24;
 /** Ignore grazing the very edge of a box — only a real incursion counts. */
@@ -149,6 +204,174 @@ const FIT_PADDING = 24;
 const MAX_FIT_SCALE = 1;
 /** Floor for the fit scale, so a huge graph in a tiny box stays a graph, not a smear. */
 const MIN_FIT_SCALE = 0.05;
+
+// ── Label measurement ────────────────────────────────────────────────────────
+
+type TextMeasure = (text: string) => number;
+
+/**
+ * Advance widths in em of a Helvetica-like sans, by character class. Only the
+ * fallback for environments without a canvas (SSR, jsdom); in a browser the label
+ * font is measured for real. Latin letters with diacritics take their base
+ * letter's width, anything unknown a mid-range default.
+ */
+const CHAR_WIDTH_CLASSES: [string, number][] = [
+  ['ijl', 0.23],
+  [" !.,:;'|Ift/\\[]", 0.28],
+  ['-()r`', 0.33],
+  ['ckszxyvJ', 0.5],
+  ['abdeghnopqu0123456789$#?_L', 0.56],
+  ['TZF', 0.61],
+  ['ABEKPSVXY&', 0.67],
+  ['CDHNRUw', 0.72],
+  ['GOQ', 0.78],
+  ['Mm%', 0.83],
+  ['W', 0.94],
+  ['@', 1.0],
+];
+const CHAR_WIDTHS = new Map<string, number>();
+for (const [chars, width] of CHAR_WIDTH_CLASSES) {
+  for (const c of chars) CHAR_WIDTHS.set(c, width);
+}
+
+function estimateTextWidth(text: string, fontSize: number): number {
+  let em = 0;
+  for (const ch of text.normalize('NFD')) {
+    if (/\p{M}/u.test(ch)) continue; // combining mark: no advance of its own
+    const code = ch.codePointAt(0) ?? 0;
+    em += CHAR_WIDTHS.get(ch) ?? (code > 0x2e7f ? 1 : 0.6); // CJK & co. are full-width
+  }
+  // Medium weight runs a touch wider than the regular metrics above.
+  return em * fontSize * 1.04;
+}
+
+/**
+ * Measures text in the given font — exactly, through a canvas, where one exists,
+ * and by estimate elsewhere. Wrapping and ellipsising decisions are made with the
+ * result, so being right for the font actually on screen is what makes a label
+ * that "fits" really fit.
+ */
+function createTextMeasurer(fontFamily: string, fontSize: number, fontWeight: number): TextMeasure {
+  // `CanvasRenderingContext2D` is the tell: jsdom has a canvas element whose
+  // `getContext` returns nothing (and logs), but no context class.
+  if (typeof document !== 'undefined' && typeof CanvasRenderingContext2D === 'function') {
+    const ctx = document.createElement('canvas').getContext('2d');
+    if (ctx) {
+      ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
+      // A family the parser rejects leaves the default 10px font in place —
+      // measure with a plain sans rather than at the wrong size.
+      if (!ctx.font.includes(`${fontSize}px`)) ctx.font = `${fontWeight} ${fontSize}px sans-serif`;
+      return text => ctx.measureText(text).width;
+    }
+  }
+  return text => estimateTextWidth(text, fontSize);
+}
+
+/** The label lines a node renders, and whether they lost anything to the box. */
+interface LabelLines {
+  lines: string[];
+  truncated: boolean;
+}
+
+/** Longest prefix of `text` that, with an ellipsis, fits `maxWidth`. */
+function ellipsize(text: string, maxWidth: number, measure: TextMeasure): string {
+  let lo = 0;
+  let hi = text.length;
+  while (lo < hi) {
+    const mid = (lo + hi + 1) >> 1;
+    if (measure(text.slice(0, mid).trimEnd() + '…') <= maxWidth) lo = mid;
+    else hi = mid - 1;
+  }
+  return text.slice(0, lo).trimEnd() + '…';
+}
+
+/**
+ * Splits a word too long for a line. A hyphenated compound breaks after a hyphen
+ * where it can; anything else breaks wherever it runs out of room. Always takes
+ * at least one character, so an unbreakable word can't stall the wrap.
+ */
+function splitWord(word: string, maxWidth: number, measure: TextMeasure): [string, string] {
+  for (let i = word.length - 1; i > 0; i--) {
+    if (word[i - 1] === '-' && measure(word.slice(0, i)) <= maxWidth) {
+      return [word.slice(0, i), word.slice(i)];
+    }
+  }
+  let lo = 1;
+  let hi = word.length;
+  while (lo < hi) {
+    const mid = (lo + hi + 1) >> 1;
+    if (measure(word.slice(0, mid)) <= maxWidth) lo = mid;
+    else hi = mid - 1;
+  }
+  return [word.slice(0, lo), word.slice(lo)];
+}
+
+/**
+ * Greedy word wrap into at most `MAX_LABEL_LINES` lines of `maxWidth`. Whatever
+ * doesn't fit the last line is cut with an ellipsis, and the cut is reported so
+ * the caller can offer the full text some other way.
+ */
+function wrapLabel(text: string, maxWidth: number, measure: TextMeasure): LabelLines {
+  const label = text.trim().replace(/\s+/g, ' ');
+  if (!label || measure(label) <= maxWidth) return { lines: [label], truncated: false };
+
+  const lines: string[] = [];
+  let rest = label.split(' ');
+  while (rest.length && lines.length < MAX_LABEL_LINES - 1) {
+    let take = 0;
+    while (take < rest.length && measure(rest.slice(0, take + 1).join(' ')) <= maxWidth) take++;
+    if (take === 0) {
+      const [head, tail] = splitWord(rest[0], maxWidth, measure);
+      lines.push(head);
+      rest = [tail, ...rest.slice(1)];
+    } else {
+      lines.push(rest.slice(0, take).join(' '));
+      rest = rest.slice(take);
+    }
+  }
+
+  const last = rest.join(' ');
+  if (!last) return { lines, truncated: false };
+  if (measure(last) <= maxWidth) return { lines: [...lines, last], truncated: false };
+  return { lines: [...lines, ellipsize(last, maxWidth, measure)], truncated: true };
+}
+
+/** One graph's node geometry, and the label lines of every node in it. */
+interface NodeMetrics {
+  width: number;
+  height: number;
+  /** Gutter between levels along the flow — `H_GAP`, unless the bows need more. */
+  gap: number;
+  labels: Map<string, LabelLines>;
+  /** Width of text in the node label font — the edge label font is the same face, scaled. */
+  measure: TextMeasure;
+}
+
+/** Width of an edge label as drawn — the label font scaled down to the edge label size. */
+const edgeLabelWidth = (measure: TextMeasure, label: string | undefined): number =>
+  label ? (measure(label) * EDGE_LABEL_FONT_SIZE) / LABEL_FONT_SIZE : 0;
+
+/**
+ * Sizes the boxes to the labels: wide enough for the longest one, within
+ * `NODE_MIN_WIDTH`..`NODE_MAX_WIDTH`, and tall enough for two lines if any label
+ * needs them at that width. Sized over *all* nodes, so collapsing a subtree or
+ * hiding a type doesn't resize what remains.
+ */
+function measureNodes(nodes: Iterable<DependencyNode>, measure: TextMeasure): NodeMetrics {
+  const all = [...nodes];
+  let widest = 0;
+  for (const node of all) widest = Math.max(widest, measure(node.label ?? ''));
+  const width = Math.min(NODE_MAX_WIDTH, Math.max(NODE_MIN_WIDTH, Math.ceil(widest) + 2 * NODE_PAD_X));
+
+  const labels = new Map<string, LabelLines>();
+  let twoLine = false;
+  for (const node of all) {
+    const wrapped = wrapLabel(node.label ?? '', width - 2 * NODE_PAD_X, measure);
+    labels.set(node.id, wrapped);
+    if (wrapped.lines.length > 1) twoLine = true;
+  }
+  return { width, height: twoLine ? NODE_HEIGHT_TWO_LINE : NODE_HEIGHT, gap: H_GAP, labels, measure };
+}
 
 const RELATION_STYLES: Record<DependencyRelation, { color: string; dashed: boolean; label: string }> = {
   depends:    { color: 'var(--color-neutral-400)',  dashed: false, label: 'depends on' },
@@ -192,6 +415,7 @@ function measureTree(
   dir: DependencyDirection,
   visited: Set<string>,
   backEdges: BackEdge[],
+  metrics: NodeMetrics,
 ): TreeMeasure {
   visited.add(node.id);
 
@@ -201,11 +425,11 @@ function measureTree(
       backEdges.push({ from: node.id, to: child.id });
       continue;
     }
-    children.push(measureTree(child, depth + 1, dir, visited, backEdges));
+    children.push(measureTree(child, depth + 1, dir, visited, backEdges, metrics));
   }
 
-  const nodePrimary = dir === 'horizontal' ? NODE_WIDTH : NODE_HEIGHT;
-  const nodeSecondary = dir === 'horizontal' ? NODE_HEIGHT : NODE_WIDTH;
+  const nodePrimary = dir === 'horizontal' ? metrics.width : metrics.height;
+  const nodeSecondary = dir === 'horizontal' ? metrics.height : metrics.width;
 
   if (children.length === 0) {
     return { node, primary: nodePrimary, secondary: nodeSecondary, children, depth };
@@ -217,28 +441,43 @@ function measureTree(
 
   return {
     node,
-    primary: nodePrimary + H_GAP + maxChildPrimary,
+    primary: nodePrimary + metrics.gap + maxChildPrimary,
     secondary: Math.max(nodeSecondary, totalChildSecondary),
     children,
     depth,
   };
 }
 
+/**
+ * A node at its place. Counts and children come from `original` — the node as the
+ * caller handed it in — because `source` may be a pruned copy (a collapsed
+ * subtree) that has lost its children.
+ */
+function placeNode(
+  source: DependencyNode, original: DependencyNode | undefined,
+  x: number, y: number, depth: number, parentId: string | null,
+  metrics: NodeMetrics,
+): LayoutNode {
+  const label = metrics.labels.get(source.id);
+  return {
+    id: source.id, label: source.label, description: source.description,
+    icon: source.icon, status: source.status || 'default',
+    type: source.type, moreCount: source.moreCount,
+    x, y, width: metrics.width, height: metrics.height,
+    lines: label?.lines ?? [source.label], truncated: label?.truncated ?? false,
+    depth, parentId,
+    incomingCount: original?.dependsOn?.length ?? 0,
+    outgoingCount: original?.children?.length ?? 0,
+  };
+}
+
 function layoutTreeH(
   measure: TreeMeasure, x: number, y: number, parentId: string | null,
   nodes: LayoutNode[], edges: LayoutEdge[], allNodes: Map<string, DependencyNode>,
-  nodeMap: Map<string, LayoutNode>,
+  nodeMap: Map<string, LayoutNode>, metrics: NodeMetrics,
 ): void {
-  const nodeY = y + measure.secondary / 2 - NODE_HEIGHT / 2;
-  const orig = allNodes.get(measure.node.id);
-
-  const laid: LayoutNode = {
-    id: measure.node.id, label: measure.node.label, description: measure.node.description,
-    icon: measure.node.icon, status: measure.node.status || 'default',
-    type: measure.node.type, moreCount: measure.node.moreCount,
-    x, y: nodeY, width: NODE_WIDTH, height: NODE_HEIGHT, depth: measure.depth, parentId,
-    incomingCount: orig?.dependsOn?.length ?? 0, outgoingCount: orig?.children?.length ?? 0,
-  };
+  const nodeY = y + measure.secondary / 2 - metrics.height / 2;
+  const laid = placeNode(measure.node, allNodes.get(measure.node.id), x, nodeY, measure.depth, parentId, metrics);
   nodes.push(laid);
   nodeMap.set(laid.id, laid);
 
@@ -247,8 +486,8 @@ function layoutTreeH(
     const sx = parent.x + parent.width;
     const sy = parent.y + parent.height / 2;
     const tx = x;
-    const ty = nodeY + NODE_HEIGHT / 2;
-    const mx = sx + H_GAP / 2;
+    const ty = nodeY + metrics.height / 2;
+    const mx = sx + metrics.gap / 2;
     edges.push({
       id: `${parentId}→${measure.node.id}`, sourceId: parentId, targetId: measure.node.id,
       path: `M ${sx} ${sy} C ${mx} ${sy}, ${mx} ${ty}, ${tx} ${ty}`,
@@ -260,7 +499,7 @@ function layoutTreeH(
 
   let childY = y;
   for (const child of measure.children) {
-    layoutTreeH(child, x + NODE_WIDTH + H_GAP, childY, measure.node.id, nodes, edges, allNodes, nodeMap);
+    layoutTreeH(child, x + metrics.width + metrics.gap, childY, measure.node.id, nodes, edges, allNodes, nodeMap, metrics);
     childY += child.secondary + V_GAP;
   }
 }
@@ -268,18 +507,10 @@ function layoutTreeH(
 function layoutTreeV(
   measure: TreeMeasure, x: number, y: number, parentId: string | null,
   nodes: LayoutNode[], edges: LayoutEdge[], allNodes: Map<string, DependencyNode>,
-  nodeMap: Map<string, LayoutNode>,
+  nodeMap: Map<string, LayoutNode>, metrics: NodeMetrics,
 ): void {
-  const nodeX = x + measure.secondary / 2 - NODE_WIDTH / 2;
-  const orig = allNodes.get(measure.node.id);
-
-  const laid: LayoutNode = {
-    id: measure.node.id, label: measure.node.label, description: measure.node.description,
-    icon: measure.node.icon, status: measure.node.status || 'default',
-    type: measure.node.type, moreCount: measure.node.moreCount,
-    x: nodeX, y, width: NODE_WIDTH, height: NODE_HEIGHT, depth: measure.depth, parentId,
-    incomingCount: orig?.dependsOn?.length ?? 0, outgoingCount: orig?.children?.length ?? 0,
-  };
+  const nodeX = x + measure.secondary / 2 - metrics.width / 2;
+  const laid = placeNode(measure.node, allNodes.get(measure.node.id), nodeX, y, measure.depth, parentId, metrics);
   nodes.push(laid);
   nodeMap.set(laid.id, laid);
 
@@ -287,9 +518,9 @@ function layoutTreeV(
     const parent = nodeMap.get(parentId)!;
     const sx = parent.x + parent.width / 2;
     const sy = parent.y + parent.height;
-    const tx = nodeX + NODE_WIDTH / 2;
+    const tx = nodeX + metrics.width / 2;
     const ty = y;
-    const my = sy + H_GAP / 2;
+    const my = sy + metrics.gap / 2;
     edges.push({
       id: `${parentId}→${measure.node.id}`, sourceId: parentId, targetId: measure.node.id,
       path: `M ${sx} ${sy} C ${sx} ${my}, ${tx} ${my}, ${tx} ${ty}`,
@@ -301,7 +532,7 @@ function layoutTreeV(
 
   let childX = x;
   for (const child of measure.children) {
-    layoutTreeV(child, childX, y + NODE_HEIGHT + H_GAP, measure.node.id, nodes, edges, allNodes, nodeMap);
+    layoutTreeV(child, childX, y + metrics.height + metrics.gap, measure.node.id, nodes, edges, allNodes, nodeMap, metrics);
     childX += child.secondary + V_GAP;
   }
 }
@@ -321,12 +552,23 @@ interface Pt {
 }
 type Cubic = [Pt, Pt, Pt, Pt];
 
+const push = <T>(map: Map<string, T[]>, key: string, value: T): void => {
+  const bucket = map.get(key);
+  if (bucket) bucket.push(value);
+  else map.set(key, [value]);
+};
+
+type LabelAnchor = 'start' | 'middle' | 'end';
+
 interface EdgeGeometry {
   path: string;
   labelX: number;
   labelY: number;
+  labelAnchor: LabelAnchor;
   /** Control points, kept so the route can be tested against the node boxes. */
   points: Cubic;
+  /** Present on bowed routes: what it takes to redraw the bow in another lane. */
+  bow?: BowInfo;
 }
 
 const cubicPath = (p: Cubic) =>
@@ -373,16 +615,60 @@ function directGeometry(source: LayoutNode, target: LayoutNode, dir: DependencyD
     // labelY is the curve midpoint, not a baseline offset: the template centres the
     // text on it via `dominant-baseline`. Nudging it up instead (as this did) pushes
     // the label out of a 24px gutter and into the node above it.
-    return { path: cubicPath(points), labelX: mx, labelY: (p0.y + p3.y) / 2, points };
+    return { path: cubicPath(points), labelX: mx, labelY: (p0.y + p3.y) / 2, labelAnchor: 'middle', points };
   }
   const p0 = { x: source.x + source.width / 2, y: source.y + source.height };
   const p3 = { x: target.x + target.width / 2, y: target.y };
   const my = (p0.y + p3.y) / 2;
   const points: Cubic = [p0, { x: p0.x, y: my }, { x: p3.x, y: my }, p3];
-  return { path: cubicPath(points), labelX: (p0.x + p3.x) / 2, labelY: my, points };
+  return { path: cubicPath(points), labelX: (p0.x + p3.x) / 2, labelY: my, labelAnchor: 'middle', points };
 }
 
 type BowSide = 'below' | 'above' | 'right' | 'left';
+
+/**
+ * A bowed route, described well enough to draw it again further out. `column` is
+ * the outermost box edge on the bow's side — the line that identifies which bows
+ * share a gutter — and `base` the line the bow actually clears (the boxes, or
+ * their toggle discs); `lo`/`hi` is the span it covers along that line. Together
+ * that is what lane assignment needs to know which bows collide.
+ */
+interface BowInfo {
+  side: BowSide;
+  column: number;
+  base: number;
+  /** Where the bow peaks, on the axis it bows along. */
+  apex: number;
+  lo: number;
+  hi: number;
+  source: LayoutNode;
+  target: LayoutNode;
+  obstacles: LayoutNode[];
+  dir: DependencyDirection;
+}
+
+/**
+ * Where on a box's side an edge attaches. Normally the side's midpoint — but a
+ * node with children carries its collapse toggle right there (on the right side
+ * in a horizontal layout, at the bottom in a vertical one), and an arrowhead under
+ * the toggle disc is an arrowhead nobody sees. Those attach beside the disc, on
+ * the side facing the other endpoint.
+ */
+function sideAttach(node: LayoutNode, other: LayoutNode, side: BowSide, dir: DependencyDirection): Pt {
+  const underToggle =
+    node.outgoingCount > 0 &&
+    ((dir === 'horizontal' && side === 'right') || (dir === 'vertical' && side === 'below'));
+  if (side === 'right' || side === 'left') {
+    const x = side === 'right' ? node.x + node.width : node.x;
+    let y = node.y + node.height / 2;
+    if (underToggle) y += Math.sign(other.y - node.y || 1) * TOGGLE_CLEARANCE;
+    return { x, y };
+  }
+  const y = side === 'below' ? node.y + node.height : node.y;
+  let x = node.x + node.width / 2;
+  if (underToggle) x += Math.sign(other.x - node.x || 1) * TOGGLE_CLEARANCE;
+  return { x, y };
+}
 
 /**
  * Leaves from one side of both boxes and bows clear of everything in `obstacles`,
@@ -391,79 +677,182 @@ type BowSide = 'below' | 'above' | 'right' | 'left';
  *
  * The side matters: bowing *below* clears an obstacle sitting beside the endpoints,
  * but drives straight through one stacked underneath them. Callers try several.
+ *
+ * `lane` pushes the bow out by a step per lane, and `base` overrides the line it
+ * clears — both for bows that would otherwise lie on top of each other, see
+ * `spreadBows`.
  */
 function bowedGeometry(
   source: LayoutNode,
   target: LayoutNode,
   obstacles: LayoutNode[],
   side: BowSide,
+  dir: DependencyDirection,
+  lane = 0,
+  baseOverride?: number,
 ): EdgeGeometry {
   const all = [source, target, ...obstacles];
+  const clearance = BOW_CLEARANCE + lane * BOW_LANE_STEP;
+  // A cubic whose two control points sit at the same offset peaks at ¾ of it, so
+  // the control points go out by 4/3 of the clearance the apex should reach.
+  const control = clearance / 0.75;
+  const p0 = sideAttach(source, target, side, dir);
+  const p3 = sideAttach(target, source, side, dir);
+  // On the toggle side, a box with children reaches as far as its disc.
+  const toggleSide = dir === 'horizontal' ? 'right' : 'below';
+  const extent = (n: LayoutNode) => (side === toggleSide && n.outgoingCount > 0 ? TOGGLE_EXTENT : 0);
+  const outward = side === 'below' || side === 'right' ? 1 : -1;
+
+  let column: number;
+  let base: number;
   switch (side) {
-    case 'below': {
-      const dip = Math.max(...all.map(n => n.y + n.height)) + BACK_EDGE_BOW;
-      const p0 = { x: source.x + source.width / 2, y: source.y + source.height };
-      const p3 = { x: target.x + target.width / 2, y: target.y + target.height };
-      const points: Cubic = [p0, { x: p0.x, y: dip }, { x: p3.x, y: dip }, p3];
-      return { path: cubicPath(points), labelX: (p0.x + p3.x) / 2, labelY: dip - 4, points };
-    }
-    case 'above': {
-      const rise = Math.min(...all.map(n => n.y)) - BACK_EDGE_BOW;
-      const p0 = { x: source.x + source.width / 2, y: source.y };
-      const p3 = { x: target.x + target.width / 2, y: target.y };
-      const points: Cubic = [p0, { x: p0.x, y: rise }, { x: p3.x, y: rise }, p3];
-      return { path: cubicPath(points), labelX: (p0.x + p3.x) / 2, labelY: rise + 12, points };
-    }
-    case 'right': {
-      const bow = Math.max(...all.map(n => n.x + n.width)) + BACK_EDGE_BOW;
-      const p0 = { x: source.x + source.width, y: source.y + source.height / 2 };
-      const p3 = { x: target.x + target.width, y: target.y + target.height / 2 };
-      const points: Cubic = [p0, { x: bow, y: p0.y }, { x: bow, y: p3.y }, p3];
-      return { path: cubicPath(points), labelX: bow - 4, labelY: (p0.y + p3.y) / 2, points };
-    }
-    case 'left': {
-      const bow = Math.min(...all.map(n => n.x)) - BACK_EDGE_BOW;
-      const p0 = { x: source.x, y: source.y + source.height / 2 };
-      const p3 = { x: target.x, y: target.y + target.height / 2 };
-      const points: Cubic = [p0, { x: bow, y: p0.y }, { x: bow, y: p3.y }, p3];
-      return { path: cubicPath(points), labelX: bow + 4, labelY: (p0.y + p3.y) / 2, points };
-    }
+    case 'below':
+      column = Math.max(...all.map(n => n.y + n.height));
+      base = Math.max(...all.map(n => n.y + n.height + extent(n)));
+      break;
+    case 'above':
+      column = base = Math.min(...all.map(n => n.y));
+      break;
+    case 'right':
+      column = Math.max(...all.map(n => n.x + n.width));
+      base = Math.max(...all.map(n => n.x + n.width + extent(n)));
+      break;
+    case 'left':
+      column = base = Math.min(...all.map(n => n.x));
+      break;
   }
+  if (baseOverride !== undefined) base = baseOverride;
+
+  const reach = base + outward * control;
+  const points: Cubic = side === 'right' || side === 'left'
+    ? [p0, { x: reach, y: p0.y }, { x: reach, y: p3.y }, p3]
+    : [p0, { x: p0.x, y: reach }, { x: p3.x, y: reach }, p3];
+
+  // The label sits just outside the apex — the one stretch of the bow that's out
+  // in the open — and hangs *away* from it, so it neither covers its own arc nor
+  // the box edges (and arrowheads) the arc leaves from. Sideways bows anchor the
+  // label's near end at the apex; bows over the rows centre it a line below/above.
+  const apex = cubicAt(points, 0.5);
+  const sideways = side === 'right' || side === 'left';
+  const labelX = sideways ? apex.x + outward * EDGE_LABEL_GAP : apex.x;
+  const labelY = sideways ? apex.y : apex.y + outward * (EDGE_LABEL_GAP + EDGE_LABEL_FONT_SIZE / 2);
+  const along = sideways ? [p0.y, p3.y] : [p0.x, p3.x];
+  return {
+    path: cubicPath(points),
+    labelX,
+    labelY,
+    labelAnchor: sideways ? (outward > 0 ? 'start' : 'end') : 'middle',
+    points,
+    bow: {
+      side, column, base,
+      apex: side === 'right' || side === 'left' ? apex.x : apex.y,
+      lo: Math.min(...along), hi: Math.max(...along),
+      source, target, obstacles, dir,
+    },
+  };
 }
 
-// Try the side that suits the layout flow first: in a left-to-right tree the free
-// space is above and below the rows; in a top-to-bottom one it's left and right.
-const bowSides = (dir: DependencyDirection): BowSide[] =>
-  dir === 'horizontal' ? ['below', 'above', 'right', 'left'] : ['right', 'left', 'below', 'above'];
+/**
+ * The gutter the sideways bows need. A bow beside an inner level swings into the
+ * gutter to the next one, and past a lane or two it — and its label — reaches the
+ * next level's boxes. Widening every gutter to what the widest bow needs is what
+ * keeps them out; the outermost level's bows have open space and don't count.
+ * Returns the current gap when nothing needs more.
+ */
+function requiredGap(
+  nodes: LayoutNode[],
+  edges: LayoutEdge[],
+  dir: DependencyDirection,
+  metrics: NodeMetrics,
+  labelsShown: boolean,
+): number {
+  const along = dir === 'horizontal'
+    ? { start: (n: LayoutNode) => n.x, end: (n: LayoutNode) => n.x + n.width, out: 'right', back: 'left' }
+    : { start: (n: LayoutNode) => n.y, end: (n: LayoutNode) => n.y + n.height, out: 'below', back: 'above' };
+  const first = Math.min(...nodes.map(along.start));
+  const last = Math.max(...nodes.map(along.end));
+
+  let need = metrics.gap;
+  for (const { bow, label } of edges) {
+    if (!bow) continue;
+    // Sideways labels run on from the apex; labels over the rows sit a line beyond it.
+    const shown = labelsShown && label;
+    const room = dir === 'horizontal'
+      ? (shown ? EDGE_LABEL_GAP + edgeLabelWidth(metrics.measure, label) : 0)
+      : (shown ? EDGE_LABEL_GAP + EDGE_LABEL_FONT_SIZE : 0);
+    if (bow.side === along.out && bow.column < last) {
+      need = Math.max(need, bow.apex - bow.column + room + BOW_LABEL_MARGIN);
+    } else if (bow.side === along.back && bow.column > first) {
+      need = Math.max(need, bow.column - bow.apex + room + BOW_LABEL_MARGIN);
+    }
+  }
+  return Math.ceil(need);
+}
+
+/** Sides perpendicular to the flow — the row/column gutters a bow can travel along. */
+const acrossSides = (dir: DependencyDirection): BowSide[] =>
+  dir === 'horizontal' ? ['below', 'above'] : ['right', 'left'];
+
+/** Sides along the flow — where two nodes level with each other have free space. */
+const alongSides = (dir: DependencyDirection): BowSide[] =>
+  dir === 'horizontal' ? ['right', 'left'] : ['below', 'above'];
 
 /**
  * Cross-references connect arbitrary pairs, so unlike parent→child edges (which
  * always run down the gutter between two levels) they can cut straight across
  * unrelated nodes. Pick the cleanest of a handful of candidate routes.
  *
- * This is a small fixed search, not obstacle-avoiding routing: it clears the common
- * cases cheaply, but a dense enough graph can leave every candidate crossing
- * something. Then the least-bad one wins, and `direct` wins ties — a pointless
- * detour reads worse than a short hop behind one box.
+ * Which routes are candidates depends on where the target sits relative to the
+ * source along the flow:
+ *
+ * - *ahead* (a later column): the direct S-curve down the gutter, unless something
+ *   sits in its way — then a bow over the rows, or failing that beside them.
+ * - *behind* (an earlier column, a return edge): never direct — it would double
+ *   back through its own columns — but the same bows.
+ * - *level* (the same column, i.e. siblings): only the sideways bows. Neither the
+ *   direct curve nor a bow over the rows can work here: both would run through the
+ *   two endpoints themselves, and hide behind them.
+ *
+ * This is a small fixed search, not obstacle-avoiding routing: it clears the
+ * common cases cheaply, but a dense enough graph can leave every candidate
+ * crossing something. Then the least-bad one wins, and `direct` wins ties — a
+ * pointless detour reads worse than a short hop behind one box.
  */
 function routeCrossRef(
   source: LayoutNode,
   target: LayoutNode,
   dir: DependencyDirection,
   nodes: LayoutNode[],
-  allowDirect = true,
 ): EdgeGeometry {
   const exclude = new Set([source.id, target.id]);
-  const direct = directGeometry(source, target, dir);
-  const obstacles = crossedNodes(direct.points, nodes, exclude);
+  const [s0, s1] = dir === 'horizontal' ? [source.x, source.x + source.width] : [source.y, source.y + source.height];
+  const [t0, t1] = dir === 'horizontal' ? [target.x, target.x + target.width] : [target.y, target.y + target.height];
+  const ahead = t0 >= s1;
+  const behind = t1 <= s0;
 
-  if (allowDirect && !obstacles.length) return direct;
+  let best: EdgeGeometry | null = null;
+  let bestCount = Infinity;
+  let obstacles: LayoutNode[];
+  let sides: BowSide[];
 
-  let best = allowDirect ? direct : null;
-  let bestCount = allowDirect ? obstacles.length : Infinity;
+  if (ahead) {
+    const direct = directGeometry(source, target, dir);
+    obstacles = crossedNodes(direct.points, nodes, exclude);
+    if (!obstacles.length) return direct;
+    best = direct;
+    bestCount = obstacles.length;
+    sides = [...acrossSides(dir), ...alongSides(dir)];
+  } else {
+    // What lies between them, for the bow to clear: whatever the straight line
+    // from centre to centre would cross.
+    const c0 = { x: source.x + source.width / 2, y: source.y + source.height / 2 };
+    const c1 = { x: target.x + target.width / 2, y: target.y + target.height / 2 };
+    obstacles = crossedNodes([c0, c0, c1, c1], nodes, exclude);
+    sides = behind ? [...acrossSides(dir), ...alongSides(dir)] : alongSides(dir);
+  }
 
-  for (const side of bowSides(dir)) {
-    const candidate = bowedGeometry(source, target, obstacles, side);
+  for (const side of sides) {
+    const candidate = bowedGeometry(source, target, obstacles, side, dir);
     const count = crossedNodes(candidate.points, nodes, exclude).length;
     if (count < bestCount) {
       best = candidate;
@@ -471,7 +860,54 @@ function routeCrossRef(
       if (count === 0) break;
     }
   }
-  return best ?? direct;
+  return best ?? bowedGeometry(source, target, obstacles, sides[0], dir);
+}
+
+/**
+ * Bows that share a side and overlap along it — three siblings all depending on
+ * the same fourth, say — would otherwise be drawn one on top of the other, and
+ * read as a single edge with several arrowheads. This spreads them into lanes:
+ * the shorter span nests inside the longer, and each lane clears the last by
+ * `BOW_LANE_STEP`, so every arc stays its own line.
+ *
+ * Grouped by side *and* column, so bows in different gutters don't take lanes
+ * from each other. A group shares one base line — the furthest any of its bows
+ * had to clear — or lanes measured from different bases could land on top of
+ * each other. Within a group it's greedy interval colouring, shortest span first;
+ * enough for the handful of bows a readable graph has.
+ */
+function spreadBows(edges: LayoutEdge[]): void {
+  const groups = new Map<string, { edge: LayoutEdge; bow: BowInfo }[]>();
+  for (const edge of edges) {
+    if (edge.bow) push(groups, `${edge.bow.side}@${Math.round(edge.bow.column)}`, { edge, bow: edge.bow });
+  }
+
+  for (const group of groups.values()) {
+    if (group.length < 2) continue;
+    group.sort((a, b) => (a.bow.hi - a.bow.lo) - (b.bow.hi - b.bow.lo));
+    const side = group[0].bow.side;
+    const base = side === 'below' || side === 'right'
+      ? Math.max(...group.map(g => g.bow.base))
+      : Math.min(...group.map(g => g.bow.base));
+
+    const placed: { lo: number; hi: number; lane: number }[] = [];
+    for (const { edge, bow } of group) {
+      // Strict overlap: bows that only meet at a shared endpoint can chain in one
+      // lane, and read as one continuous line through it.
+      const taken = new Set(placed.filter(p => p.lo < bow.hi && bow.lo < p.hi).map(p => p.lane));
+      let lane = 0;
+      while (taken.has(lane)) lane++;
+      placed.push({ lo: bow.lo, hi: bow.hi, lane });
+      if (lane === 0 && base === bow.base) continue;
+
+      const geo = bowedGeometry(bow.source, bow.target, bow.obstacles, bow.side, bow.dir, lane, base);
+      edge.path = geo.path;
+      edge.labelX = geo.labelX;
+      edge.labelY = geo.labelY;
+      edge.labelAnchor = geo.labelAnchor;
+      edge.bow = geo.bow;
+    }
+  }
 }
 
 /**
@@ -508,32 +944,34 @@ function createCrossRefEdges(
         id: `${dep.id}⇢${orig.id}`, sourceId: dep.id, targetId: orig.id,
         path: geo.path, relation: dep.relation,
         label: dep.relationLabel ?? style.label,
-        labelX: geo.labelX, labelY: geo.labelY,
+        labelX: geo.labelX, labelY: geo.labelY, labelAnchor: geo.labelAnchor,
         color: style.color, dashed: style.dashed, isCrossRef: true,
-        arrow: true, marker: relation,
+        arrow: true, marker: relation, bow: geo.bow,
       });
     }
   }
 
   // Links the tree layout couldn't follow (cycle, or a node reached from a second
   // parent). The relationship is real, so draw it as a cross-reference rather than
-  // dropping it silently. These always bow: they point against the layout flow by
-  // definition, so the direct route would double back across their own row.
+  // dropping it silently. The router bows them where they point against the flow
+  // (a cycle) and takes the gutter where they don't (a second parent one column
+  // back from a shared child).
   for (const back of backEdges) {
     const source = nodeMap.get(back.from);
     const target = nodeMap.get(back.to);
     if (!source || !target) continue;
 
     const style = RELATION_STYLES.depends;
-    const geo = routeCrossRef(source, target, dir, nodes, /* allowDirect */ false);
+    const geo = routeCrossRef(source, target, dir, nodes);
     edges.push({
       id: `${back.from}↺${back.to}`, sourceId: back.from, targetId: back.to,
-      path: geo.path, labelX: geo.labelX, labelY: geo.labelY,
+      path: geo.path, labelX: geo.labelX, labelY: geo.labelY, labelAnchor: geo.labelAnchor,
       color: style.color, dashed: true, isCrossRef: true,
-      arrow: true, marker: 'depends',
+      arrow: true, marker: 'depends', bow: geo.bow,
     });
   }
 
+  spreadBows(edges);
   return edges;
 }
 
@@ -552,12 +990,6 @@ interface GraphEdge {
   /** Points against the topological flow. Excluded from layering, drawn bowed. */
   back: boolean;
 }
-
-const push = <T>(map: Map<string, T[]>, key: string, value: T): void => {
-  const bucket = map.get(key);
-  if (bucket) bucket.push(value);
-  else map.set(key, [value]);
-};
 
 /**
  * Flattens the input into the node set and the precedence links the layered
@@ -848,6 +1280,7 @@ function layoutLayered(
   roots: DependencyNode[],
   dir: DependencyDirection,
   allNodes: Map<string, DependencyNode>,
+  metrics: NodeMetrics,
 ): { nodes: LayoutNode[]; edges: LayoutEdge[]; nodeMap: Map<string, LayoutNode>; width: number; height: number } {
   const { order, nodes: originals, edges } = collectGraph(roots);
   if (!order.length) {
@@ -861,8 +1294,8 @@ function layoutLayered(
 
   const ordered = orderLayers(layers, edges, layerOf);
 
-  const primarySize = dir === 'horizontal' ? NODE_WIDTH : NODE_HEIGHT;
-  const secondarySize = dir === 'horizontal' ? NODE_HEIGHT : NODE_WIDTH;
+  const primarySize = dir === 'horizontal' ? metrics.width : metrics.height;
+  const secondarySize = dir === 'horizontal' ? metrics.height : metrics.width;
   const secondary = alignSecondary(ordered, edges, secondarySize + V_GAP);
 
   const nodes: LayoutNode[] = [];
@@ -871,23 +1304,17 @@ function layoutLayered(
     for (const id of layer) {
       const source = originals.get(id);
       if (!source) continue;
-      const original = allNodes.get(id);
-      const primary = (layerOf.get(id) ?? 0) * (primarySize + H_GAP);
+      const primary = (layerOf.get(id) ?? 0) * (primarySize + metrics.gap);
       const across = secondary.get(id) ?? 0;
 
-      const laid: LayoutNode = {
-        id, label: source.label, description: source.description, icon: source.icon,
-        status: source.status || 'default', type: source.type, moreCount: source.moreCount,
-        x: dir === 'horizontal' ? primary : across,
-        y: dir === 'horizontal' ? across : primary,
-        width: NODE_WIDTH, height: NODE_HEIGHT,
-        depth: layerOf.get(id) ?? 0,
-        // Layers come from the whole graph, not from one parent — there is no
-        // single node this one hangs off, so nothing to report as its parent.
-        parentId: null,
-        incomingCount: original?.dependsOn?.length ?? 0,
-        outgoingCount: original?.children?.length ?? 0,
-      };
+      // Layers come from the whole graph, not from one parent — there is no
+      // single node this one hangs off, so nothing to report as its parent.
+      const laid = placeNode(
+        source, allNodes.get(id),
+        dir === 'horizontal' ? primary : across,
+        dir === 'horizontal' ? across : primary,
+        layerOf.get(id) ?? 0, null, metrics,
+      );
       nodes.push(laid);
       nodeMap.set(id, laid);
     }
@@ -902,15 +1329,16 @@ function layoutLayered(
 
     const relation = resolveRelation(edge.relation);
     const style = RELATION_STYLES[relation];
-    // A back edge runs against the flow by definition, so the direct route would
-    // double back through its own layers — it always bows clear instead.
-    const geo = routeCrossRef(source, target, dir, laidOut, /* allowDirect */ !edge.back);
+    // A back edge runs against the flow by definition — its target sits in an
+    // earlier layer — so the router bows it clear rather than doubling back
+    // through its own layers.
+    const geo = routeCrossRef(source, target, dir, laidOut);
 
     layoutEdges.push({
       id: `${edge.from}${edge.back ? '↺' : '⇢'}${edge.to}`,
       sourceId: edge.from, targetId: edge.to,
       path: geo.path, relation: edge.relation, label: edge.label,
-      labelX: geo.labelX, labelY: geo.labelY,
+      labelX: geo.labelX, labelY: geo.labelY, labelAnchor: geo.labelAnchor,
       color: edge.structural ? 'var(--color-neutral-400)' : style.color,
       dashed: edge.back || (!edge.structural && style.dashed),
       // Everything here is a real dependency, so nothing is dimmed as secondary
@@ -918,10 +1346,12 @@ function layoutLayered(
       isCrossRef: edge.back,
       arrow: true,
       marker: relation,
+      bow: geo.bow,
     });
   }
+  spreadBows(layoutEdges);
 
-  const width = (depth + 1) * primarySize + depth * H_GAP;
+  const width = (depth + 1) * primarySize + depth * metrics.gap;
   const across = Math.max(...laidOut.map(n => (dir === 'horizontal' ? n.y : n.x))) + secondarySize;
 
   return {
@@ -992,7 +1422,11 @@ function readableInk(color: string): string {
  * - Tree layout (depth in the `children` nesting) and layered/DAG layout (depth in
  *   the dependency graph), via `layout`
  * - Horizontal (left-to-right) and vertical (top-to-bottom) layout directions
+ * - Boxes sized to their labels: one width per graph (160–240px), labels wrapping
+ *   onto a second line past the cap and ellipsised (with a tooltip) past that
  * - Bidirectional dependencies: children (right/down) and dependsOn (cross-references)
+ * - Cross-references routed clear of the boxes: down the gutter to a later level,
+ *   beside the level for siblings, in nested lanes where several overlap
  * - Relationship types: depends, blocks, references, requires, extends, implements, uses
  * - Edge labels showing relationship type
  * - Dashed vs solid edges per relationship category
@@ -1138,7 +1572,8 @@ export class DependencyViewerComponent {
    * scaling down and lets the graph overflow instead — which `fit-width` turns into
    * page scroll, and `contain` into clipping. Pair it with `fit-width`.
    *
-   * Nodes are 160px wide unscaled, so e.g. `80` allows shrinking to half size.
+   * Nodes are 160px wide unscaled (wider — up to 240px — when the graph's labels
+   * need it), so e.g. `80` allows shrinking to half size.
    */
   readonly minNodeSize = input<number | null>(null);
 
@@ -1187,6 +1622,28 @@ export class DependencyViewerComponent {
   /** Last known layout position of the anchor, to compensate pan after a relayout. */
   private anchorPos: { id: string; x: number; y: number } | null = null;
 
+  /** Template constants for laying out the label lines. */
+  protected readonly lineHeight = LABEL_LINE_HEIGHT;
+  protected readonly baselineShift = LABEL_BASELINE_SHIFT;
+
+  /**
+   * Measures label text in the font the labels are drawn in. Built once, on first
+   * use — the host's font is what the SVG text inherits, and it isn't known until
+   * the component is in the document.
+   */
+  private textMeasure: TextMeasure | null = null;
+
+  private measureText(): TextMeasure {
+    if (!this.textMeasure) {
+      let family = '';
+      if (typeof getComputedStyle === 'function') {
+        family = getComputedStyle(this.hostEl.nativeElement).fontFamily;
+      }
+      this.textMeasure = createTextMeasurer(family || 'sans-serif', LABEL_FONT_SIZE, LABEL_FONT_WEIGHT);
+    }
+    return this.textMeasure;
+  }
+
   private roots = computed<DependencyNode[]>(() => {
     const root = this.root();
     return Array.isArray(root) ? root : [root];
@@ -1206,6 +1663,9 @@ export class DependencyViewerComponent {
     return map;
   });
 
+  /** Box size and label lines, sized over the whole input — see `measureNodes`. */
+  private nodeMetrics = computed(() => measureNodes(this.allOriginalNodes().values(), this.measureText()));
+
   /**
    * The laid-out graph. Named `graph` rather than `layout` because `layout` is the
    * input that picks *how* it gets laid out.
@@ -1216,9 +1676,18 @@ export class DependencyViewerComponent {
     const hiddenRelations = new Set(this.hiddenRelations());
     const allNodes = this.allOriginalNodes();
 
-    const placed = this.layout() === 'layered'
-      ? layoutLayered(this.effectiveRoots(), dir, allNodes)
-      : this.layoutTree(dir, allNodes);
+    const place = (metrics: NodeMetrics) =>
+      this.layout() === 'layered'
+        ? layoutLayered(this.effectiveRoots(), dir, allNodes, metrics)
+        : this.layoutTree(dir, allNodes, metrics);
+
+    // Lay out, and if the bows between siblings need more gutter than the levels
+    // got, lay out again with that gutter. Once is enough: the wider gutter
+    // changes where the levels sit, not which pairs are level with each other.
+    const metrics = this.nodeMetrics();
+    let placed = place(metrics);
+    const gap = requiredGap(placed.nodes, placed.edges, dir, metrics, this.showEdgeLabels());
+    if (gap > metrics.gap) placed = place({ ...metrics, gap });
 
     const edges = placed.edges.filter(e => !(e.relation && hiddenRelations.has(e.relation)));
 
@@ -1248,10 +1717,10 @@ export class DependencyViewerComponent {
    * roots from being laid out twice — the second link becomes a cross-reference,
    * exactly as a second parent within one tree does.
    */
-  private layoutTree(dir: DependencyDirection, allNodes: Map<string, DependencyNode>) {
+  private layoutTree(dir: DependencyDirection, allNodes: Map<string, DependencyNode>, metrics: NodeMetrics) {
     const backEdges: BackEdge[] = [];
     const visited = new Set<string>();
-    const measured = this.effectiveRoots().map(root => measureTree(root, 0, dir, visited, backEdges));
+    const measured = this.effectiveRoots().map(root => measureTree(root, 0, dir, visited, backEdges, metrics));
 
     const nodes: LayoutNode[] = [];
     const nodeMap = new Map<string, LayoutNode>();
@@ -1260,9 +1729,9 @@ export class DependencyViewerComponent {
     let offset = 0;
     for (const measure of measured) {
       if (dir === 'horizontal') {
-        layoutTreeH(measure, 0, offset, null, nodes, treeEdges, allNodes, nodeMap);
+        layoutTreeH(measure, 0, offset, null, nodes, treeEdges, allNodes, nodeMap, metrics);
       } else {
-        layoutTreeV(measure, offset, 0, null, nodes, treeEdges, allNodes, nodeMap);
+        layoutTreeV(measure, offset, 0, null, nodes, treeEdges, allNodes, nodeMap, metrics);
       }
       offset += measure.secondary + V_GAP;
     }
@@ -1303,7 +1772,7 @@ export class DependencyViewerComponent {
   private minFitScale = computed(() => {
     const min = this.minNodeSize();
     if (!min || min <= 0) return MIN_FIT_SCALE;
-    return Math.min(MAX_FIT_SCALE, Math.max(MIN_FIT_SCALE, min / NODE_WIDTH));
+    return Math.min(MAX_FIT_SCALE, Math.max(MIN_FIT_SCALE, min / this.nodeMetrics().width));
   });
 
   constructor() {
@@ -1474,7 +1943,8 @@ export class DependencyViewerComponent {
     event.stopPropagation();
     this.collapsedIds.update(set => {
       const next = new Set(set);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   }
@@ -1611,9 +2081,10 @@ export class DependencyViewerComponent {
   /**
    * Bounding box of everything drawn, in layout units.
    *
-   * Edge label points stand in for the edges themselves. A parent→child edge stays
-   * inside the node boxes anyway, and a bowed cross-reference puts its label at the
-   * apex of the bow — the only part of it that reaches outside them.
+   * Edge labels stand in for the edges themselves. A parent→child edge stays
+   * inside the node boxes anyway, and a bowed cross-reference puts its label just
+   * outside the apex of the bow — the only part of it that reaches past them. The
+   * label's own extent counts, as it hangs off its anchor point on one side.
    */
   private contentBox(): { x: number; y: number; width: number; height: number } {
     const { nodes, edges } = this.graph();
@@ -1630,11 +2101,15 @@ export class DependencyViewerComponent {
       maxX = Math.max(maxX, n.x + n.width);
       maxY = Math.max(maxY, n.y + n.height);
     }
+    const measure = this.nodeMetrics().measure;
+    const labelsShown = this.showEdgeLabels();
     for (const e of edges) {
-      minX = Math.min(minX, e.labelX);
-      minY = Math.min(minY, e.labelY);
-      maxX = Math.max(maxX, e.labelX);
-      maxY = Math.max(maxY, e.labelY);
+      const w = labelsShown ? edgeLabelWidth(measure, e.label) : 0;
+      const before = e.labelAnchor === 'start' ? 0 : e.labelAnchor === 'end' ? w : w / 2;
+      minX = Math.min(minX, e.labelX - before);
+      maxX = Math.max(maxX, e.labelX - before + w);
+      minY = Math.min(minY, e.labelY - EDGE_LABEL_FONT_SIZE / 2);
+      maxY = Math.max(maxY, e.labelY + EDGE_LABEL_FONT_SIZE / 2);
     }
 
     return {

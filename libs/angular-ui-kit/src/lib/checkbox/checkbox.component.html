@@ -2,17 +2,17 @@
   <input
     type="checkbox"
     [id]="id()"
-    [checked]="computedChecked()"
-    [disabled]="computedDisabled()"
-    [indeterminate]="computedIndeterminate()"
+    [checked]="checked()"
+    [disabled]="isDisabled()"
+    [indeterminate]="indeterminate()"
     [required]="required()"
     [attr.aria-label]="ariaLabel() || null"
     [attr.aria-labelledby]="ariaLabelledBy() || null"
-    [attr.aria-describedby]="ariaDescribedBy() || null"
+    [attr.aria-describedby]="describedBy()"
     [attr.aria-required]="required() ? 'true' : null"
     [attr.aria-invalid]="error() ? 'true' : null"
-    [attr.aria-disabled]="computedDisabled() ? 'true' : null"
-    [attr.tabindex]="computedDisabled() ? -1 : 0"
+    [attr.aria-disabled]="isDisabled() ? 'true' : null"
+    [attr.tabindex]="isDisabled() ? -1 : 0"
     role="checkbox"
     class="checkbox-input"
     (change)="handleChange($event)"
@@ -26,7 +26,7 @@
       xmlns="http://www.w3.org/2000/svg"
     >
       <!-- Checkmark icon -->
-      @if (computedChecked() && !computedIndeterminate()) {
+      @if (checked() && !indeterminate()) {
         <path
           d="M13.5 4L6 11.5L2.5 8"
           stroke="currentColor"
@@ -36,7 +36,7 @@
         />
       }
       <!-- Indeterminate icon -->
-      @if (computedIndeterminate()) {
+      @if (indeterminate()) {
         <path
           d="M4 8H12"
           stroke="currentColor"
@@ -51,10 +51,10 @@
   }
 </label>
 
-@if (helpText() && !error()) {
-  <div class="checkbox-help-text">{{ helpText() }}</div>
+@if (helpTextId(); as helpId) {
+  <div [id]="helpId" class="checkbox-help-text">{{ helpText() }}</div>
 }
 
-@if (error() && errorMessage()) {
-  <div class="checkbox-error-message">{{ errorMessage() }}</div>
+@if (errorMessageId(); as errorId) {
+  <div [id]="errorId" class="checkbox-error-message">{{ errorMessage() }}</div>
 }

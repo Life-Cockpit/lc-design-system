@@ -13,6 +13,8 @@ import {
 } from '@angular/core';
 import { Overlay, OverlayRef, ConnectedPosition } from '@angular/cdk/overlay';
 import { ComponentPortal } from '@angular/cdk/portal';
+import { Subscription } from 'rxjs';
+import { OverlayStackService } from '../shared/overlay-stack.service';
 
 export type TooltipPosition = 'top' | 'bottom' | 'left' | 'right';
 
@@ -28,17 +30,17 @@ export type TooltipPosition = 'top' | 'bottom' | 'left' | 'right';
     `
       :host {
         display: block;
-        background-color: rgba(0, 0, 0, 0.9);
-        color: white;
+        /* Inverted surface: reads as a tooltip in both themes and keeps AAA
+           contrast — near-white on the dark theme, near-black on the light one. */
+        background-color: var(--color-text-primary);
+        color: var(--color-surface);
         padding: 0.5rem 0.75rem;
-        border-radius: 0.375rem;
-        font-size: 0.875rem;
+        border-radius: var(--border-radius-md, 0.375rem);
+        font-size: var(--font-size-sm, 0.875rem);
         line-height: 1.25rem;
         max-width: 300px;
         word-wrap: break-word;
-        box-shadow:
-          0 4px 6px -1px rgba(0, 0, 0, 0.1),
-          0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        box-shadow: var(--elevation-2);
       }
 
       .lc-tooltip-inner {
@@ -56,9 +58,56 @@ export class TooltipContentComponent {
   content = '';
 }
 
+const POSITIONS: Record<TooltipPosition, ConnectedPosition> = {
+  top: {
+    originX: 'center',
+    originY: 'top',
+    overlayX: 'center',
+    overlayY: 'bottom',
+    offsetY: -8,
+    panelClass: 'lc-tooltip--top',
+  },
+  bottom: {
+    originX: 'center',
+    originY: 'bottom',
+    overlayX: 'center',
+    overlayY: 'top',
+    offsetY: 8,
+    panelClass: 'lc-tooltip--bottom',
+  },
+  left: {
+    originX: 'start',
+    originY: 'center',
+    overlayX: 'end',
+    overlayY: 'center',
+    offsetX: -8,
+    panelClass: 'lc-tooltip--left',
+  },
+  right: {
+    originX: 'end',
+    originY: 'center',
+    overlayX: 'start',
+    overlayY: 'center',
+    offsetX: 8,
+    panelClass: 'lc-tooltip--right',
+  },
+};
+
+const POSITION_NAMES = Object.keys(POSITIONS) as TooltipPosition[];
+
+/** Fallback order when the preferred side does not fit the viewport. */
+const FALLBACKS: Record<TooltipPosition, TooltipPosition[]> = {
+  top: ['bottom', 'right', 'left'],
+  bottom: ['top', 'right', 'left'],
+  left: ['right', 'top', 'bottom'],
+  right: ['left', 'top', 'bottom'],
+};
+
 /**
  * Tooltip directive for displaying contextual information.
- * Uses Angular CDK Overlay for positioning.
+ * Uses Angular CDK Overlay for positioning; flips to the opposite side when
+ * the preferred one does not fit the viewport, and can be dismissed with
+ * Escape (WCAG 1.4.13).
  *
  * @example
  * ```html
@@ -72,6 +121,8 @@ export class TooltipContentComponent {
   standalone: true,
 })
 export class TooltipDirective implements OnDestroy {
+  private static nextId = 0;
+
   /**
    * Tooltip content text
    */
@@ -101,17 +152,21 @@ export class TooltipDirective implements OnDestroy {
    */
   tooltipDisabled = input<boolean>(false);
 
+  /** Id of the tooltip element; the host's `aria-describedby` points at it while shown. */
+  readonly tooltipId = `lc-tooltip-${++TooltipDirective.nextId}`;
+
   private overlayRef?: OverlayRef;
   private tooltipRef?: ComponentRef<TooltipContentComponent>;
+  private positionSubscription?: Subscription;
   private showTimeout?: number;
   private hideTimeout?: number;
-  private tooltipId?: string;
+  private escapeListener?: (event: KeyboardEvent) => void;
 
-  private readonly elementRef = inject(ElementRef<HTMLElement>);
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+  private readonly elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly overlay = inject(Overlay);
   private readonly viewContainerRef = inject(ViewContainerRef);
   private readonly renderer = inject(Renderer2);
+  private readonly overlayStack = inject(OverlayStackService);
 
   ngOnDestroy(): void {
     this.hide();
@@ -153,19 +208,27 @@ export class TooltipDirective implements OnDestroy {
     }
 
     if (!this.tooltipRef && this.overlayRef) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
       const portal = new ComponentPortal(TooltipContentComponent, this.viewContainerRef);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
       this.tooltipRef = this.overlayRef.attach(portal) as ComponentRef<TooltipContentComponent>;
       this.tooltipRef.instance.content = this.lcTooltip();
 
-      // Add position class to tooltip component
       const tooltipEl = this.tooltipRef.location.nativeElement as HTMLElement;
-      this.renderer.addClass(tooltipEl, `lc-tooltip--${this.tooltipPosition()}`);
+      // The id is what the host's aria-describedby points at
+      this.renderer.setAttribute(tooltipEl, 'id', this.tooltipId);
+      this.addDescribedBy();
+      this.setPositionClass(this.tooltipPosition());
 
-      // Generate unique ID for ARIA
-      this.tooltipId = `tooltip-${Math.random().toString(36).substr(2, 9)}`;
-      this.renderer.setAttribute(this.elementRef.nativeElement, 'aria-describedby', this.tooltipId);
+      // Escape dismisses the tooltip (WCAG 1.4.13) — only when it is the
+      // top-most overlay, so a modal underneath is not closed by the same key
+      this.overlayStack.push(this.tooltipId);
+      if (typeof document !== 'undefined') {
+        this.escapeListener = (event: KeyboardEvent) => {
+          if (event.key !== 'Escape' || !this.overlayStack.claim(this.tooltipId, event)) return;
+          event.stopPropagation();
+          this.hide();
+        };
+        document.addEventListener('keydown', this.escapeListener);
+      }
     }
   }
 
@@ -175,21 +238,22 @@ export class TooltipDirective implements OnDestroy {
   hide(): void {
     this.clearTimeouts();
 
+    if (this.escapeListener) {
+      document.removeEventListener('keydown', this.escapeListener);
+      this.escapeListener = undefined;
+    }
+    this.overlayStack.remove(this.tooltipId);
+
     if (this.tooltipRef) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
       this.tooltipRef.destroy();
       this.tooltipRef = undefined;
     }
 
     if (this.overlayRef) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
       this.overlayRef.detach();
     }
 
-    if (this.tooltipId) {
-      this.renderer.removeAttribute(this.elementRef.nativeElement, 'aria-describedby');
-      this.tooltipId = undefined;
-    }
+    this.removeDescribedBy();
   }
 
   /**
@@ -226,58 +290,57 @@ export class TooltipDirective implements OnDestroy {
   }
 
   private createOverlay(): void {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     const positionStrategy = this.overlay
       .position()
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
       .flexibleConnectedTo(this.elementRef)
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
       .withPositions(this.getPositions());
 
-    /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
+    // Keep the tooltip element's position class in sync with the side the
+    // overlay actually chose (it flips at viewport edges)
+    this.positionSubscription = positionStrategy.positionChanges.subscribe((change) => {
+      const applied = POSITION_NAMES.find((p) => POSITIONS[p] === change.connectionPair);
+      if (applied) this.setPositionClass(applied);
+    });
+
     this.overlayRef = this.overlay.create({
       positionStrategy,
       scrollStrategy: this.overlay.scrollStrategies.reposition(),
-      panelClass: `lc-tooltip--${this.tooltipPosition()}`,
     }) as OverlayRef;
-    /* eslint-enable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
   }
 
+  /** Preferred position first, then the fallbacks the overlay may flip to. */
   private getPositions(): ConnectedPosition[] {
     const position = this.tooltipPosition();
-    const positions: Record<TooltipPosition, ConnectedPosition> = {
-      top: {
-        originX: 'center',
-        originY: 'top',
-        overlayX: 'center',
-        overlayY: 'bottom',
-        offsetY: -8,
-      },
-      bottom: {
-        originX: 'center',
-        originY: 'bottom',
-        overlayX: 'center',
-        overlayY: 'top',
-        offsetY: 8,
-      },
-      left: {
-        originX: 'start',
-        originY: 'center',
-        overlayX: 'end',
-        overlayY: 'center',
-        offsetX: -8,
-      },
-      right: {
-        originX: 'end',
-        originY: 'center',
-        overlayX: 'start',
-        overlayY: 'center',
-        offsetX: 8,
-      },
-    };
+    return [position, ...FALLBACKS[position]].map((p) => POSITIONS[p]);
+  }
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-    return [positions[position]];
+  private setPositionClass(position: TooltipPosition): void {
+    const tooltipEl = this.tooltipRef?.location.nativeElement as HTMLElement | undefined;
+    if (!tooltipEl) return;
+    for (const p of POSITION_NAMES) {
+      this.renderer.removeClass(tooltipEl, `lc-tooltip--${p}`);
+    }
+    this.renderer.addClass(tooltipEl, `lc-tooltip--${position}`);
+  }
+
+  /** Append the tooltip id to the host's aria-describedby without clobbering ids the caller set. */
+  private addDescribedBy(): void {
+    const host = this.elementRef.nativeElement;
+    const ids = (host.getAttribute('aria-describedby') ?? '').split(/\s+/).filter(Boolean);
+    if (!ids.includes(this.tooltipId)) ids.push(this.tooltipId);
+    this.renderer.setAttribute(host, 'aria-describedby', ids.join(' '));
+  }
+
+  private removeDescribedBy(): void {
+    const host = this.elementRef.nativeElement;
+    const ids = (host.getAttribute('aria-describedby') ?? '').split(/\s+/).filter(Boolean);
+    if (!ids.includes(this.tooltipId)) return;
+    const rest = ids.filter((id) => id !== this.tooltipId);
+    if (rest.length) {
+      this.renderer.setAttribute(host, 'aria-describedby', rest.join(' '));
+    } else {
+      this.renderer.removeAttribute(host, 'aria-describedby');
+    }
   }
 
   private clearTimeouts(): void {
@@ -293,8 +356,9 @@ export class TooltipDirective implements OnDestroy {
 
   private cleanup(): void {
     this.clearTimeouts();
+    this.positionSubscription?.unsubscribe();
+    this.positionSubscription = undefined;
     if (this.overlayRef) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
       this.overlayRef.dispose();
       this.overlayRef = undefined;
     }

@@ -1,40 +1,44 @@
 // lc-spacer — pure CSS, density-aware fixed sizes, no Tailwind.
+//
+// Every rule targets the host via `:host(.spacer-*)`: the size classes are set
+// on <lc-spacer> itself, so plain `.spacer-*` selectors (scoped to the
+// component's *content* by emulated encapsulation) would never match.
 
 :host {
   display: block;
 }
 
 // Flex-grow mode (auto): fills remaining space in a flex parent.
-:host(.spacer-grow),
-.spacer-auto {
+:host(.spacer-auto),
+:host(.spacer-grow) {
   flex: 1 1 auto;
 }
 
-.spacer-xs {
+:host(.spacer-xs) {
   flex: 0 0 var(--lc-density-gap-xs, 0.25rem);
   width: var(--lc-density-gap-xs, 0.25rem);
   height: var(--lc-density-gap-xs, 0.25rem);
 }
 
-.spacer-sm {
+:host(.spacer-sm) {
   flex: 0 0 var(--lc-density-gap-sm, 0.5rem);
   width: var(--lc-density-gap-sm, 0.5rem);
   height: var(--lc-density-gap-sm, 0.5rem);
 }
 
-.spacer-md {
+:host(.spacer-md) {
   flex: 0 0 var(--lc-density-gap-md, 1rem);
   width: var(--lc-density-gap-md, 1rem);
   height: var(--lc-density-gap-md, 1rem);
 }
 
-.spacer-lg {
+:host(.spacer-lg) {
   flex: 0 0 var(--lc-density-gap-lg, 1.5rem);
   width: var(--lc-density-gap-lg, 1.5rem);
   height: var(--lc-density-gap-lg, 1.5rem);
 }
 
-.spacer-xl {
+:host(.spacer-xl) {
   flex: 0 0 var(--lc-density-gap-xl, 2rem);
   width: var(--lc-density-gap-xl, 2rem);
   height: var(--lc-density-gap-xl, 2rem);

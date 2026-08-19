@@ -1,4 +1,12 @@
-<svg [attr.width]="svgSize()" [attr.height]="svgSize()" [attr.viewBox]="viewBox()" class="lc-progress-ring" role="img" aria-label="Progress ring">
+<svg
+  [attr.width]="svgSize()" [attr.height]="svgSize()" [attr.viewBox]="viewBox()"
+  class="lc-progress-ring"
+  role="progressbar"
+  [attr.aria-valuenow]="clampedValue()"
+  aria-valuemin="0"
+  aria-valuemax="100"
+  [attr.aria-label]="ariaLabel()"
+>
   <circle
     [attr.cx]="center()" [attr.cy]="center()" [attr.r]="radius()"
     [attr.stroke-width]="strokeW()"
@@ -12,7 +20,7 @@
     [class]="'lc-progress-ring__value lc-progress-ring__value--' + color()"
     [attr.transform]="'rotate(-90 ' + center() + ' ' + center() + ')'"
   />
-  @if (showValue()) {
+  @if (shouldShowValue()) {
     <text [attr.x]="center()" [attr.y]="center()" text-anchor="middle" dominant-baseline="central" class="lc-progress-ring__text" [style.font-size]="fontSize()">
       {{ displayValue() }}
     </text>

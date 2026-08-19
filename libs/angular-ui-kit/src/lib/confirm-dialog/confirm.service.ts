@@ -4,7 +4,6 @@ import {
   createComponent,
   EnvironmentInjector,
   inject,
-  signal,
 } from '@angular/core';
 import { ConfirmDialogComponent, ConfirmDialogVariant, RequireTextConfig } from './confirm-dialog.component';
 

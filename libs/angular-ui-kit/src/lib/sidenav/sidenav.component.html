@@ -19,13 +19,21 @@
   <ng-container *ngTemplateOutlet="sidenavPanel" />
 }
 
-<!-- Shared sidenav panel template -->
+<!-- Shared sidenav panel template.
+     The <aside> is a plain complementary region; the navigation landmark is
+     the inner <nav> (nesting a role="navigation" wrapper around a <nav> gave
+     two navigation landmarks). In drawer mode the panel is a modal dialog:
+     focus is captured (close button first, see cdkFocusInitial), trapped
+     while open and restored to the opener when the panel is destroyed. -->
 <ng-template #sidenavPanel>
   <aside
     [class]="sidenavClasses()"
     [ngStyle]="sidenavStyles()"
-    role="navigation"
-    [attr.aria-label]="ariaLabel()">
+    [attr.role]="effectiveMode() === 'drawer' ? 'dialog' : null"
+    [attr.aria-modal]="effectiveMode() === 'drawer' ? 'true' : null"
+    [attr.aria-label]="effectiveMode() === 'drawer' ? ariaLabel() : null"
+    [cdkTrapFocus]="effectiveMode() === 'drawer'"
+    [cdkTrapFocusAutoCapture]="effectiveMode() === 'drawer'">
 
     <!-- Logo area (sidebar-first layout) -->
     @if (showLogo()) {
@@ -71,6 +79,7 @@
       <button
         type="button"
         class="lc-sidenav__close"
+        cdkFocusInitial
         (click)="handleClose()"
         aria-label="Close navigation">
         <svg
@@ -92,7 +101,10 @@
 
     <!-- Navigation items (if provided) -->
     @if (items().length > 0) {
-      <nav class="lc-sidenav__nav" [class.lc-sidenav__nav--docked]="effectiveMode() === 'docked'">
+      <nav
+        class="lc-sidenav__nav"
+        [class.lc-sidenav__nav--docked]="effectiveMode() === 'docked'"
+        [attr.aria-label]="ariaLabel()">
         @for (item of sortedItems(); track item.id) {
           <!-- Section headline -->
           @if (item.isSection) {
@@ -277,7 +289,7 @@
     }
 
     <!-- Content projection (for custom content) -->
-    <div class="lc-sidenav__content" [class.lc-sidenav__content--docked]="mode() === 'docked'">
+    <div class="lc-sidenav__content" [class.lc-sidenav__content--docked]="effectiveMode() === 'docked'">
       <ng-content></ng-content>
     </div>
   </aside>

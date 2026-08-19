@@ -12,7 +12,7 @@ const d = (offset: number, h = 0, m = 0) => {
 const sampleEvents: CalendarEvent[] = [
   { id: '1', title: 'Team Standup', start: d(0, 9, 0), end: d(0, 9, 30), color: 'primary' },
   { id: '2', title: 'Sprint Planning', start: d(1, 10, 0), end: d(1, 12, 0), color: 'info' },
-  { id: '3', title: 'Lunch with Anna', start: d(0, 12, 0), end: d(0, 13, 0), color: 'success' },
+  { id: '3', title: 'Lunch break', start: d(0, 12, 0), end: d(0, 13, 0), color: 'success' },
   { id: '4', title: 'Code Review', start: d(2, 14, 0), end: d(2, 15, 0), color: 'secondary' },
   { id: '5', title: 'Deadline: Release', start: d(3, 9, 0), end: d(3, 9, 30), color: 'error' },
   { id: '6', title: 'Design Workshop', start: d(-1, 13, 0), end: d(-1, 16, 0), color: 'warning' },

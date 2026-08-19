@@ -9,9 +9,17 @@ import {
   computed,
   signal,
 } from '@angular/core';
+import { chartColor } from '../shared/chart-palette';
+import {
+  ChartValueFormatter,
+  formatChartValue,
+  niceScale,
+  toFinite,
+} from '../shared/chart-scale';
 
 export interface StackedBarCategory {
   label: string;
+  /** One value per series. Negative values stack downward (left) from the zero baseline. */
   values: number[];
 }
 
@@ -22,16 +30,11 @@ export interface StackedBarLegend {
 
 export type StackedBarOrientation = 'vertical' | 'horizontal';
 
-const DEFAULT_COLORS = [
-  'var(--color-primary-500)',
-  'var(--color-secondary-500)',
-  'var(--color-success-default)',
-  'var(--color-warning-default)',
-  'var(--color-error-default)',
-  'var(--color-info-default)',
-  'var(--color-primary-300)',
-  'var(--color-secondary-300)',
-];
+/** viewBox width used until the container has been measured. */
+const DEFAULT_WIDTH = 400;
+
+/** Segments shorter than this along the value axis get no inline value label. */
+const MIN_SEGMENT_LABEL_PX = 14;
 
 @Component({
   selector: 'lc-stacked-bar-chart',
@@ -39,6 +42,9 @@ const DEFAULT_COLORS = [
   templateUrl: './stacked-bar-chart.component.html',
   styleUrls: ['./stacked-bar-chart.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    '[style.max-width.px]': 'width()',
+  },
 })
 /**
  * Stacked bar chart component for comparing category compositions.
@@ -46,7 +52,8 @@ const DEFAULT_COLORS = [
  * Features:
  * - Multiple stacked value segments per category
  * - Vertical and horizontal orientation
- * - Optional legend, grid, value labels, and axis labels
+ * - Negative values stacked downward from a zero baseline
+ * - Optional legend, grid, value labels (segments + totals), and axis labels
  * - Configurable bar gap spacing
  * - Color-coded segments with legend mapping
  * - Responsive SVG rendering
@@ -77,14 +84,31 @@ export class StackedBarChartComponent {
   /** Legend items mapping to each value index. */
   legends = input<StackedBarLegend[]>([]);
 
-  width = input<number>(400);
+  /**
+   * Intrinsic chart width in pixels. The chart fills its container (the SVG is
+   * `width="100%"` and its viewBox follows the measured container width);
+   * `width` is the viewBox width until the container has been measured and,
+   * when set, the host's `max-width`, so the chart never grows past it. Leave
+   * unset for a fully fluid chart.
+   */
+  width = input<number | undefined>(undefined);
   height = input<number>(200);
   orientation = input<StackedBarOrientation>('vertical');
   showLabels = input<boolean>(true);
+  /** Show the value inside each segment (when it fits) and the total at the end of each stack. */
   showValues = input<boolean>(false);
   showLegend = input<boolean>(true);
   showGrid = input<boolean>(true);
   barGap = input<number>(0.3);
+
+  /** Formats segment/total value labels and axis ticks. Defaults to a float-safe `String(value)`. */
+  formatValue = input<ChartValueFormatter>(formatChartValue);
+
+  /**
+   * Accessible name of the chart. Defaults to a generated summary listing the
+   * series names and every category's total.
+   */
+  ariaLabel = input<string>('');
 
   private readonly PL = 40;
   private readonly PR = 10;
@@ -92,88 +116,116 @@ export class StackedBarChartComponent {
   private readonly PB = 30;
 
   protected readonly effectiveWidth = computed(
-    () => this._containerWidth() || this.width()
+    () => this._containerWidth() || this.width() || DEFAULT_WIDTH
   );
 
   protected readonly viewBox = computed(() => `0 0 ${this.effectiveWidth()} ${this.height()}`);
 
-  protected readonly maxTotal = computed(() => {
-    const cats = this.categories();
-    if (!cats.length) return 0;
-    return Math.max(...cats.map(c => c.values.reduce((a, b) => a + b, 0)));
+  protected readonly isVertical = computed(() => this.orientation() === 'vertical');
+
+  private readonly plot = computed(() => ({
+    x: this.PL,
+    y: this.PT,
+    w: this.effectiveWidth() - this.PL - this.PR,
+    h: this.height() - this.PT - this.PB,
+  }));
+
+  /** Positive and negative stack extents per category (positives and negatives stack separately). */
+  private readonly extents = computed(() =>
+    (this.categories() ?? []).map((c) => {
+      let pos = 0;
+      let neg = 0;
+      for (const raw of c.values ?? []) {
+        const v = toFinite(raw);
+        if (v >= 0) pos += v;
+        else neg += v;
+      }
+      return { pos, neg, total: pos + neg };
+    })
+  );
+
+  /**
+   * One scale for grid *and* segments: nice tick bounds that always include
+   * zero and extend below it when a stack goes negative.
+   */
+  protected readonly scale = computed(() => {
+    const ext = this.extents();
+    const max = Math.max(0, ...ext.map((e) => e.pos));
+    const min = Math.min(0, ...ext.map((e) => e.neg));
+    return niceScale(min, max, 4);
   });
 
+  private valueToPos(value: number): number {
+    const { min, max } = this.scale();
+    const p = this.plot();
+    const frac = (value - min) / (max - min || 1);
+    return this.isVertical() ? p.y + p.h - frac * p.h : p.x + frac * p.w;
+  }
+
   protected readonly gridLines = computed(() => {
-    if (!this.showGrid() || this.orientation() !== 'vertical') return [];
-    const max = this.maxTotal();
-    if (!max) return [];
-    const steps = 4;
-    const stepVal = Math.ceil(max / steps);
-    const plotH = this.height() - this.PT - this.PB;
-    const lines: { y: number; label: string }[] = [];
-    for (let i = 0; i <= steps; i++) {
-      const val = i * stepVal;
-      const y = this.PT + plotH - (val / (stepVal * steps)) * plotH;
-      lines.push({ y, label: String(val) });
-    }
-    return lines;
+    if (!this.showGrid() || !this.categories()?.length) return [];
+    const fmt = this.formatValue();
+    return this.scale().ticks.map((tick) => ({ pos: this.valueToPos(tick), label: fmt(tick) }));
   });
 
   protected readonly stacks = computed(() => {
     const cats = this.categories();
     const legs = this.legends();
-    if (!cats.length) return [];
+    if (!cats?.length) return [];
 
-    const w = this.effectiveWidth();
+    const p = this.plot();
     const h = this.height();
-    const isV = this.orientation() === 'vertical';
-    const plotW = w - this.PL - this.PR;
-    const plotH = h - this.PT - this.PB;
-    const max = this.maxTotal() || 1;
+    const isV = this.isVertical();
     const gap = this.barGap();
+    const fmt = this.formatValue();
+    const ext = this.extents();
+
+    const slot = (isV ? p.w : p.h) / cats.length;
+    const thickness = slot * (1 - gap);
+    const off = (slot - thickness) / 2;
 
     return cats.map((cat, ci) => {
-      const total = cat.values.reduce((a, b) => a + b, 0);
-      let cumulative = 0;
+      const along = (isV ? p.x : p.y) + ci * slot + off;
+      let cumPos = 0;
+      let cumNeg = 0;
 
-      const segments = cat.values.map((val, vi) => {
-        const color = legs[vi]?.color || DEFAULT_COLORS[vi % DEFAULT_COLORS.length];
-        const frac = val / max;
-        let rect: { x: number; y: number; w: number; h: number };
+      const segments = (cat.values ?? []).map((raw, vi) => {
+        const val = toFinite(raw);
+        const color = legs[vi]?.color || chartColor(vi);
+        const from = val >= 0 ? cumPos : cumNeg;
+        const to = from + val;
+        if (val >= 0) cumPos = to;
+        else cumNeg = to;
 
-        if (isV) {
-          const totalBarW = plotW / cats.length;
-          const barW = totalBarW * (1 - gap);
-          const barOff = (totalBarW - barW) / 2;
-          const segH = frac * plotH;
-          rect = {
-            x: this.PL + ci * totalBarW + barOff,
-            y: this.PT + plotH - (cumulative / max) * plotH - segH,
-            w: barW,
-            h: segH,
-          };
-        } else {
-          const totalBarH = plotH / cats.length;
-          const barH = totalBarH * (1 - gap);
-          const barOff = (totalBarH - barH) / 2;
-          const segW = frac * plotW;
-          rect = {
-            x: this.PL + (cumulative / max) * plotW,
-            y: this.PT + ci * totalBarH + barOff,
-            w: segW,
-            h: barH,
-          };
-        }
-
-        cumulative += val;
-        return { ...rect, color, value: val };
+        const a = this.valueToPos(from);
+        const b = this.valueToPos(to);
+        const start = Math.min(a, b);
+        const len = Math.abs(b - a);
+        const rect = isV
+          ? { x: along, y: start, w: thickness, h: len }
+          : { x: start, y: along, w: len, h: thickness };
+        return {
+          ...rect,
+          color,
+          value: val,
+          valueText: fmt(val),
+          showValue: len >= MIN_SEGMENT_LABEL_PX,
+          valueX: rect.x + rect.w / 2,
+          valueY: rect.y + rect.h / 2,
+        };
       });
 
+      const total = ext[ci].total;
+      const posEnd = this.valueToPos(ext[ci].pos);
       const labelPos = isV
-        ? { x: this.PL + (ci + 0.5) * (plotW / cats.length), y: h - this.PB + 16 }
-        : { x: this.PL - 6, y: this.PT + (ci + 0.5) * (plotH / cats.length) };
+        ? { x: p.x + (ci + 0.5) * slot, y: h - this.PB + 16 }
+        : { x: p.x - 6, y: p.y + (ci + 0.5) * slot };
+      // Total sits past the positive end of the stack (or at the baseline for all-negative stacks).
+      const totalPos = isV
+        ? { x: along + thickness / 2, y: posEnd - 6, anchor: 'middle' }
+        : { x: posEnd + 6, y: along + thickness / 2, anchor: 'start' };
 
-      return { label: cat.label, segments, labelPos, total };
+      return { label: cat.label, segments, labelPos, total, totalText: fmt(total), totalPos };
     });
   });
 
@@ -181,16 +233,35 @@ export class StackedBarChartComponent {
     const legs = this.legends();
     return legs.map((l, i) => ({
       label: l.label,
-      color: l.color || DEFAULT_COLORS[i % DEFAULT_COLORS.length],
+      color: l.color || chartColor(i),
     }));
   });
 
-  protected readonly isVertical = computed(() => this.orientation() === 'vertical');
+  /** Value axis along the plot edge plus the zero baseline (inside the plot when data goes negative). */
+  protected readonly axisLine = computed(() => {
+    const p = this.plot();
+    const isV = this.isVertical();
+    const zero = this.categories()?.length ? this.valueToPos(0) : (isV ? p.y + p.h : p.x);
+    return {
+      vx1: isV ? p.x : zero, vy1: p.y,
+      vx2: isV ? p.x : zero, vy2: p.y + p.h,
+      hx1: p.x, hy1: isV ? zero : p.y + p.h,
+      hx2: p.x + p.w, hy2: isV ? zero : p.y + p.h,
+    };
+  });
 
-  protected readonly axisLine = computed(() => ({
-    vx1: this.PL, vy1: this.PT,
-    vx2: this.PL, vy2: this.height() - this.PB,
-    hx1: this.PL, hy1: this.height() - this.PB,
-    hx2: this.effectiveWidth() - this.PR, hy2: this.height() - this.PB,
-  }));
+  protected readonly plotBottom = computed(() => this.plot().y + this.plot().h);
+
+  protected readonly effectiveAriaLabel = computed(() => {
+    const explicit = this.ariaLabel();
+    if (explicit) return explicit;
+    const cats = this.categories() ?? [];
+    if (!cats.length) return 'Stacked bar chart: no data';
+    const fmt = this.formatValue();
+    const ext = this.extents();
+    const seriesNames = this.legends().map((l) => l.label).filter(Boolean);
+    const series = seriesNames.length ? ` (${seriesNames.join(', ')})` : '';
+    const totals = cats.map((c, i) => `${c.label} ${fmt(ext[i].total)}`).join(', ');
+    return `Stacked bar chart${series}: ${totals}`;
+  });
 }

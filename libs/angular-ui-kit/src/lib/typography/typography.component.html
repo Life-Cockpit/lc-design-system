@@ -1,42 +1,32 @@
+<!-- One <ng-content> only: Angular projects content into a single slot, and a
+     slot that sits inside a non-rendered @switch branch swallows it (the h1 case
+     used to render empty in the browser). The content lives in a template that
+     each branch stamps into its element. -->
+<ng-template #content><ng-content /></ng-template>
+
 @switch (elementTag()) {
   @case ('h1') {
-    <h1 [class]="typographyClasses()">
-      <ng-content></ng-content>
-    </h1>
+    <h1 [class]="typographyClasses()"><ng-container [ngTemplateOutlet]="content" /></h1>
   }
   @case ('h2') {
-    <h2 [class]="typographyClasses()">
-      <ng-content></ng-content>
-    </h2>
+    <h2 [class]="typographyClasses()"><ng-container [ngTemplateOutlet]="content" /></h2>
   }
   @case ('h3') {
-    <h3 [class]="typographyClasses()">
-      <ng-content></ng-content>
-    </h3>
+    <h3 [class]="typographyClasses()"><ng-container [ngTemplateOutlet]="content" /></h3>
   }
   @case ('h4') {
-    <h4 [class]="typographyClasses()">
-      <ng-content></ng-content>
-    </h4>
+    <h4 [class]="typographyClasses()"><ng-container [ngTemplateOutlet]="content" /></h4>
   }
   @case ('h5') {
-    <h5 [class]="typographyClasses()">
-      <ng-content></ng-content>
-    </h5>
+    <h5 [class]="typographyClasses()"><ng-container [ngTemplateOutlet]="content" /></h5>
   }
   @case ('h6') {
-    <h6 [class]="typographyClasses()">
-      <ng-content></ng-content>
-    </h6>
+    <h6 [class]="typographyClasses()"><ng-container [ngTemplateOutlet]="content" /></h6>
   }
   @case ('span') {
-    <span [class]="typographyClasses()">
-      <ng-content></ng-content>
-    </span>
+    <span [class]="typographyClasses()"><ng-container [ngTemplateOutlet]="content" /></span>
   }
   @default {
-    <p [class]="typographyClasses()">
-      <ng-content></ng-content>
-    </p>
+    <p [class]="typographyClasses()"><ng-container [ngTemplateOutlet]="content" /></p>
   }
 }

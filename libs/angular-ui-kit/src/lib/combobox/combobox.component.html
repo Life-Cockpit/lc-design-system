@@ -1,14 +1,14 @@
 <div [class]="containerClasses()">
   @if (label()) {
-    <label class="lc-combobox__label">{{ label() }}</label>
+    <label class="lc-combobox__label" [for]="inputId">{{ label() }}</label>
   }
 
-  <div class="lc-combobox__input-wrapper">
+  <div #inputWrapper class="lc-combobox__input-wrapper">
     <!-- Selected chips (multiple mode) -->
     @if (multiple()) {
       @for (sel of selectedMultiple(); track sel.value) {
         <lc-chip
-          [removable]="!disabled()"
+          [removable]="!isDisabled()"
           size="sm"
           (remove)="removeSelected(sel)"
         >{{ sel.label }}</lc-chip>
@@ -19,11 +19,16 @@
       #inputEl
       type="text"
       class="lc-combobox__input"
+      [id]="inputId"
       [placeholder]="multiple() && selectedMultiple().length > 0 ? '' : placeholder()"
       [value]="query()"
-      [disabled]="disabled()"
+      [disabled]="isDisabled()"
       role="combobox"
       [attr.aria-expanded]="isOpen()"
+      [attr.aria-controls]="isOpen() ? listboxId : null"
+      [attr.aria-activedescendant]="activeDescendantId()"
+      [attr.aria-invalid]="error() ? true : null"
+      [attr.aria-describedby]="describedBy()"
       aria-autocomplete="list"
       aria-haspopup="listbox"
       autocomplete="off"
@@ -39,7 +44,9 @@
       <button
         type="button"
         class="lc-combobox__clear"
-        (click)="selectOption({value: '', label: ''}); query.set('')"
+        [disabled]="isDisabled()"
+        (mousedown)="$event.preventDefault()"
+        (click)="onClearClick()"
         tabindex="-1"
         aria-label="Clear"
       >
@@ -48,24 +55,40 @@
     }
   </div>
 
-  <!-- Dropdown -->
-  @if (isOpen()) {
-    <div class="lc-combobox__dropdown" role="listbox">
+  <!-- Dropdown: rendered in the CDK overlay container so overflow-hidden
+       ancestors cannot clip it. Focus stays in the input (mousedown is
+       prevented on the panel), keyboard nav uses aria-activedescendant. -->
+  <ng-template
+    cdkConnectedOverlay
+    [cdkConnectedOverlayOrigin]="inputWrapper"
+    [cdkConnectedOverlayOpen]="isOpen()"
+    [cdkConnectedOverlayMatchWidth]="true"
+    (detach)="isOpen.set(false)"
+  >
+    <div
+      #dropdownEl
+      class="lc-combobox__dropdown"
+      role="listbox"
+      [id]="listboxId"
+      [attr.aria-multiselectable]="multiple() ? true : null"
+      (mousedown)="$event.preventDefault()"
+    >
       @for (group of groupedOptions(); track group.label) {
         @if (group.label) {
-          <div class="lc-combobox__group-header">{{ group.label }}</div>
+          <div class="lc-combobox__group-header" role="presentation">{{ group.label }}</div>
         }
-        @for (option of group.items; track option.value; let i = $index) {
+        @for (option of group.items; track option.value) {
+          @let idx = flatOptions().indexOf(option);
           <div
             class="lc-combobox__option"
-            [class.lc-combobox__option--highlighted]="flatOptions().indexOf(option) === highlightedIndex()"
+            [class.lc-combobox__option--highlighted]="idx === highlightedIndex()"
             [class.lc-combobox__option--disabled]="option.disabled"
             role="option"
-            [attr.aria-selected]="flatOptions().indexOf(option) === highlightedIndex()"
+            [id]="optionId(idx)"
+            [attr.aria-selected]="idx === highlightedIndex()"
             [attr.aria-disabled]="option.disabled"
-            (mousedown)="$event.preventDefault()"
             (click)="!option.disabled && selectOption(option)"
-            (mouseenter)="highlightedIndex.set(flatOptions().indexOf(option))"
+            (mouseenter)="highlightedIndex.set(idx)"
           >
             @if (option.icon) {
               <lc-icon [name]="option.icon" size="sm" class="lc-combobox__option-icon" />
@@ -84,7 +107,9 @@
         <div
           class="lc-combobox__option lc-combobox__option--create"
           [class.lc-combobox__option--highlighted]="highlightedIndex() === flatOptions().length"
-          (mousedown)="$event.preventDefault()"
+          role="option"
+          [id]="createOptionId"
+          [attr.aria-selected]="highlightedIndex() === flatOptions().length"
           (click)="onCreateNew()"
           (mouseenter)="highlightedIndex.set(flatOptions().length)"
         >
@@ -97,12 +122,12 @@
         <div class="lc-combobox__empty">{{ emptyMessage() }}</div>
       }
     </div>
-  }
+  </ng-template>
 
   @if (helperText() && !error()) {
-    <span class="lc-combobox__helper">{{ helperText() }}</span>
+    <span class="lc-combobox__helper" [id]="inputId + '-helper'">{{ helperText() }}</span>
   }
   @if (error()) {
-    <span class="lc-combobox__error">{{ error() }}</span>
+    <span class="lc-combobox__error" [id]="inputId + '-error'" role="alert">{{ error() }}</span>
   }
 </div>

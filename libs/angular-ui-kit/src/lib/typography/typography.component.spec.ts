@@ -1,6 +1,26 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { TypographyComponent } from './typography.component';
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { readFileSync } from 'fs';
+import { join } from 'path';
+
+type Variant =
+  | 'h1'
+  | 'h2'
+  | 'h3'
+  | 'h4'
+  | 'h5'
+  | 'h6'
+  | 'body1'
+  | 'body2'
+  | 'subtitle1'
+  | 'subtitle2'
+  | 'caption'
+  | 'overline';
+type Align = 'left' | 'center' | 'right' | 'justify';
+type Color = 'primary' | 'secondary' | 'disabled' | 'error' | 'success' | 'warning' | 'info';
+type Weight = 'regular' | 'medium' | 'semibold' | 'bold' | undefined;
+type Transform = 'none' | 'uppercase' | 'lowercase' | 'capitalize';
 
 @Component({
   selector: 'lc-test-wrapper',
@@ -9,42 +29,29 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <lc-typography
-      [variant]="variant"
-      [align]="align"
-      [color]="color"
-      [weight]="weight"
-      [transform]="transform"
-      [noWrap]="noWrap"
-      [lineClamp]="lineClamp"
-      [gutterBottom]="gutterBottom"
+      [variant]="variant()"
+      [align]="align()"
+      [color]="color()"
+      [weight]="weight()"
+      [transform]="transform()"
+      [noWrap]="noWrap()"
+      [lineClamp]="lineClamp()"
+      [gutterBottom]="gutterBottom()"
     >
-      {{ content }}
+      {{ content() }}
     </lc-typography>
   `,
 })
 class TestWrapperComponent {
-  variant:
-    | 'h1'
-    | 'h2'
-    | 'h3'
-    | 'h4'
-    | 'h5'
-    | 'h6'
-    | 'body1'
-    | 'body2'
-    | 'subtitle1'
-    | 'subtitle2'
-    | 'caption'
-    | 'overline' = 'body1';
-  align: 'left' | 'center' | 'right' | 'justify' = 'left';
-  color: 'primary' | 'secondary' | 'disabled' | 'error' | 'success' | 'warning' | 'info' =
-    'primary';
-  weight: 'regular' | 'medium' | 'semibold' | 'bold' = 'regular';
-  transform: 'none' | 'uppercase' | 'lowercase' | 'capitalize' = 'none';
-  noWrap = false;
-  lineClamp?: number;
-  gutterBottom = false;
-  content = 'Test content';
+  readonly variant = signal<Variant>('body1');
+  readonly align = signal<Align>('left');
+  readonly color = signal<Color>('primary');
+  readonly weight = signal<Weight>(undefined);
+  readonly transform = signal<Transform>('none');
+  readonly noWrap = signal(false);
+  readonly lineClamp = signal<number | undefined>(undefined);
+  readonly gutterBottom = signal(false);
+  readonly content = signal('Test content');
 }
 
 describe('TypographyComponent', () => {
@@ -76,7 +83,7 @@ describe('TypographyComponent', () => {
     });
 
     it('should render content', () => {
-      component.content = 'Hello World';
+      component.content.set('Hello World');
       fixture.detectChanges();
       const element = getTypographyElement();
       expect(element.textContent?.trim()).toBe('Hello World');
@@ -84,330 +91,160 @@ describe('TypographyComponent', () => {
   });
 
   describe('Variants - Semantic HTML Elements', () => {
-    it('should render h1 element for h1 variant', () => {
-      component.variant = 'h1';
+    it.each<[Variant, string]>([
+      ['h1', 'h1'],
+      ['h2', 'h2'],
+      ['h3', 'h3'],
+      ['h4', 'h4'],
+      ['h5', 'h5'],
+      ['h6', 'h6'],
+      ['body1', 'p'],
+      ['body2', 'p'],
+      ['subtitle1', 'p'],
+      ['subtitle2', 'p'],
+      ['caption', 'span'],
+      ['overline', 'span'],
+    ])('should render %s variant as <%s>', (variant, tag) => {
+      component.variant.set(variant);
       fixture.detectChanges();
-      const element = fixture.nativeElement.querySelector('h1');
+      const element = fixture.nativeElement.querySelector(tag);
       expect(element).toBeTruthy();
-      expect(element.classList.contains('typography-h1')).toBe(true);
-    });
-
-    it('should render h2 element for h2 variant', () => {
-      component.variant = 'h2';
-      fixture.detectChanges();
-      const element = fixture.nativeElement.querySelector('h2');
-      expect(element).toBeTruthy();
-      expect(element.classList.contains('typography-h2')).toBe(true);
-    });
-
-    it('should render h3 element for h3 variant', () => {
-      component.variant = 'h3';
-      fixture.detectChanges();
-      const element = fixture.nativeElement.querySelector('h3');
-      expect(element).toBeTruthy();
-      expect(element.classList.contains('typography-h3')).toBe(true);
-    });
-
-    it('should render h4 element for h4 variant', () => {
-      component.variant = 'h4';
-      fixture.detectChanges();
-      const element = fixture.nativeElement.querySelector('h4');
-      expect(element).toBeTruthy();
-      expect(element.classList.contains('typography-h4')).toBe(true);
-    });
-
-    it('should render h5 element for h5 variant', () => {
-      component.variant = 'h5';
-      fixture.detectChanges();
-      const element = fixture.nativeElement.querySelector('h5');
-      expect(element).toBeTruthy();
-      expect(element.classList.contains('typography-h5')).toBe(true);
-    });
-
-    it('should render h6 element for h6 variant', () => {
-      component.variant = 'h6';
-      fixture.detectChanges();
-      const element = fixture.nativeElement.querySelector('h6');
-      expect(element).toBeTruthy();
-      expect(element.classList.contains('typography-h6')).toBe(true);
-    });
-
-    it('should render p element for body1 variant (default)', () => {
-      component.variant = 'body1';
-      fixture.detectChanges();
-      const element = fixture.nativeElement.querySelector('p');
-      expect(element).toBeTruthy();
-      expect(element.classList.contains('typography-body1')).toBe(true);
-    });
-
-    it('should render p element for body2 variant', () => {
-      component.variant = 'body2';
-      fixture.detectChanges();
-      const element = fixture.nativeElement.querySelector('p');
-      expect(element).toBeTruthy();
-      expect(element.classList.contains('typography-body2')).toBe(true);
-    });
-
-    it('should render p element for subtitle1 variant', () => {
-      component.variant = 'subtitle1';
-      fixture.detectChanges();
-      const element = fixture.nativeElement.querySelector('p');
-      expect(element).toBeTruthy();
-      expect(element.classList.contains('typography-subtitle1')).toBe(true);
-    });
-
-    it('should render p element for subtitle2 variant', () => {
-      component.variant = 'subtitle2';
-      fixture.detectChanges();
-      const element = fixture.nativeElement.querySelector('p');
-      expect(element).toBeTruthy();
-      expect(element.classList.contains('typography-subtitle2')).toBe(true);
-    });
-
-    it('should render span element for caption variant', () => {
-      component.variant = 'caption';
-      fixture.detectChanges();
-      const element = fixture.nativeElement.querySelector('span');
-      expect(element).toBeTruthy();
-      expect(element.classList.contains('typography-caption')).toBe(true);
-    });
-
-    it('should render span element for overline variant', () => {
-      component.variant = 'overline';
-      fixture.detectChanges();
-      const element = fixture.nativeElement.querySelector('span');
-      expect(element).toBeTruthy();
-      expect(element.classList.contains('typography-overline')).toBe(true);
+      expect(element.classList.contains(`typography-${variant}`)).toBe(true);
     });
   });
 
   describe('Text Alignment', () => {
-    it('should apply left alignment by default', () => {
-      component.align = 'left';
+    it.each<Align>(['left', 'center', 'right', 'justify'])('should apply %s alignment', (align) => {
+      component.align.set(align);
       fixture.detectChanges();
       const element = getTypographyElement();
-      expect(element.classList.contains('text-left')).toBe(true);
+      expect(element.classList.contains(`lc-typography--align-${align}`)).toBe(true);
     });
 
-    it('should apply center alignment', () => {
-      component.align = 'center';
+    it('should not emit the Tailwind text-* alignment utilities', () => {
+      component.align.set('center');
       fixture.detectChanges();
       const element = getTypographyElement();
-      expect(element.classList.contains('text-center')).toBe(true);
-    });
-
-    it('should apply right alignment', () => {
-      component.align = 'right';
-      fixture.detectChanges();
-      const element = getTypographyElement();
-      expect(element.classList.contains('text-right')).toBe(true);
-    });
-
-    it('should apply justify alignment', () => {
-      component.align = 'justify';
-      fixture.detectChanges();
-      const element = getTypographyElement();
-      expect(element.classList.contains('text-justify')).toBe(true);
+      expect(element.classList.contains('text-center')).toBe(false);
     });
   });
 
   describe('Color Variants', () => {
-    it('should apply primary color by default', () => {
-      component.color = 'primary';
-      fixture.detectChanges();
-      const element = getTypographyElement();
-      expect(element.classList.contains('text-primary')).toBe(true);
-    });
-
-    it('should apply secondary color', () => {
-      component.color = 'secondary';
-      fixture.detectChanges();
-      const element = getTypographyElement();
-      expect(element.classList.contains('text-secondary')).toBe(true);
-    });
-
-    it('should apply disabled color', () => {
-      component.color = 'disabled';
-      fixture.detectChanges();
-      const element = getTypographyElement();
-      expect(element.classList.contains('text-disabled')).toBe(true);
-    });
-
-    it('should apply error color', () => {
-      component.color = 'error';
-      fixture.detectChanges();
-      const element = getTypographyElement();
-      expect(element.classList.contains('text-error')).toBe(true);
-    });
-
-    it('should apply success color', () => {
-      component.color = 'success';
-      fixture.detectChanges();
-      const element = getTypographyElement();
-      expect(element.classList.contains('text-success')).toBe(true);
-    });
-
-    it('should apply warning color', () => {
-      component.color = 'warning';
-      fixture.detectChanges();
-      const element = getTypographyElement();
-      expect(element.classList.contains('text-warning')).toBe(true);
-    });
-
-    it('should apply info color', () => {
-      component.color = 'info';
-      fixture.detectChanges();
-      const element = getTypographyElement();
-      expect(element.classList.contains('text-info')).toBe(true);
-    });
+    it.each<Color>(['primary', 'secondary', 'disabled', 'error', 'success', 'warning', 'info'])(
+      'should apply %s color',
+      (color) => {
+        component.color.set(color);
+        fixture.detectChanges();
+        const element = getTypographyElement();
+        expect(element.classList.contains(`lc-typography--color-${color}`)).toBe(true);
+      },
+    );
   });
 
   describe('Font Weights', () => {
-    it('should apply regular weight by default', () => {
-      component.weight = 'regular';
+    it('should not force a weight by default (variant weight applies)', () => {
+      component.variant.set('h1');
       fixture.detectChanges();
       const element = getTypographyElement();
-      expect(element.classList.contains('font-regular')).toBe(true);
+      expect(Array.from(element.classList).some((c) => c.startsWith('lc-typography--weight-'))).toBe(
+        false,
+      );
     });
 
-    it('should apply medium weight', () => {
-      component.weight = 'medium';
-      fixture.detectChanges();
-      const element = getTypographyElement();
-      expect(element.classList.contains('font-medium')).toBe(true);
-    });
-
-    it('should apply semibold weight', () => {
-      component.weight = 'semibold';
-      fixture.detectChanges();
-      const element = getTypographyElement();
-      expect(element.classList.contains('font-semibold')).toBe(true);
-    });
-
-    it('should apply bold weight', () => {
-      component.weight = 'bold';
-      fixture.detectChanges();
-      const element = getTypographyElement();
-      expect(element.classList.contains('font-bold')).toBe(true);
-    });
+    it.each<Exclude<Weight, undefined>>(['regular', 'medium', 'semibold', 'bold'])(
+      'should apply %s weight',
+      (weight) => {
+        component.weight.set(weight);
+        fixture.detectChanges();
+        const element = getTypographyElement();
+        expect(element.classList.contains(`lc-typography--weight-${weight}`)).toBe(true);
+        expect(element.classList.contains(`font-${weight}`)).toBe(false);
+      },
+    );
   });
 
   describe('Text Transform', () => {
     it('should apply no transform by default', () => {
-      component.transform = 'none';
+      component.transform.set('none');
       fixture.detectChanges();
       const element = getTypographyElement();
-      expect(element.classList.contains('uppercase')).toBe(false);
-      expect(element.classList.contains('lowercase')).toBe(false);
-      expect(element.classList.contains('capitalize')).toBe(false);
+      expect(element.classList.contains('lc-typography--uppercase')).toBe(false);
+      expect(element.classList.contains('lc-typography--lowercase')).toBe(false);
+      expect(element.classList.contains('lc-typography--capitalize')).toBe(false);
     });
 
-    it('should apply uppercase transform', () => {
-      component.transform = 'uppercase';
-      fixture.detectChanges();
-      const element = getTypographyElement();
-      expect(element.classList.contains('uppercase')).toBe(true);
-    });
-
-    it('should apply lowercase transform', () => {
-      component.transform = 'lowercase';
-      fixture.detectChanges();
-      const element = getTypographyElement();
-      expect(element.classList.contains('lowercase')).toBe(true);
-    });
-
-    it('should apply capitalize transform', () => {
-      component.transform = 'capitalize';
-      fixture.detectChanges();
-      const element = getTypographyElement();
-      expect(element.classList.contains('capitalize')).toBe(true);
-    });
+    it.each<Exclude<Transform, 'none'>>(['uppercase', 'lowercase', 'capitalize'])(
+      'should apply %s transform',
+      (transform) => {
+        component.transform.set(transform);
+        fixture.detectChanges();
+        const element = getTypographyElement();
+        expect(element.classList.contains(`lc-typography--${transform}`)).toBe(true);
+        expect(element.classList.contains(transform)).toBe(false);
+      },
+    );
   });
 
   describe('Text Wrapping', () => {
     it('should wrap text by default', () => {
-      component.noWrap = false;
+      component.noWrap.set(false);
       fixture.detectChanges();
       const element = getTypographyElement();
-      expect(element.classList.contains('whitespace-nowrap')).toBe(false);
+      expect(element.classList.contains('lc-typography--nowrap')).toBe(false);
     });
 
     it('should not wrap text when noWrap is true', () => {
-      component.noWrap = true;
+      component.noWrap.set(true);
       fixture.detectChanges();
       const element = getTypographyElement();
-      expect(element.classList.contains('whitespace-nowrap')).toBe(true);
-      expect(element.classList.contains('overflow-hidden')).toBe(true);
-      expect(element.classList.contains('text-ellipsis')).toBe(true);
+      expect(element.classList.contains('lc-typography--nowrap')).toBe(true);
+      expect(element.classList.contains('whitespace-nowrap')).toBe(false);
+      expect(element.classList.contains('overflow-hidden')).toBe(false);
     });
   });
 
   describe('Line Clamping', () => {
     it('should not clamp lines by default', () => {
-      component.lineClamp = undefined;
+      component.lineClamp.set(undefined);
       fixture.detectChanges();
       const element = getTypographyElement();
-      expect(element.classList.contains('line-clamp-1')).toBe(false);
-      expect(element.classList.contains('line-clamp-2')).toBe(false);
-      expect(element.classList.contains('line-clamp-3')).toBe(false);
+      expect(Array.from(element.classList).some((c) => c.startsWith('lc-typography--clamp-'))).toBe(
+        false,
+      );
     });
 
-    it('should clamp to 1 line', () => {
-      component.lineClamp = 1;
+    it.each([1, 2, 3, 4, 5, 6])('should clamp to %i line(s)', (lines) => {
+      component.lineClamp.set(lines);
       fixture.detectChanges();
       const element = getTypographyElement();
-      expect(element.classList.contains('line-clamp-1')).toBe(true);
+      expect(element.classList.contains(`lc-typography--clamp-${lines}`)).toBe(true);
+      expect(element.classList.contains(`line-clamp-${lines}`)).toBe(false);
     });
 
-    it('should clamp to 2 lines', () => {
-      component.lineClamp = 2;
+    it('should ignore out-of-range values', () => {
+      component.lineClamp.set(7);
       fixture.detectChanges();
       const element = getTypographyElement();
-      expect(element.classList.contains('line-clamp-2')).toBe(true);
-    });
-
-    it('should clamp to 3 lines', () => {
-      component.lineClamp = 3;
-      fixture.detectChanges();
-      const element = getTypographyElement();
-      expect(element.classList.contains('line-clamp-3')).toBe(true);
-    });
-
-    it('should clamp to 4 lines', () => {
-      component.lineClamp = 4;
-      fixture.detectChanges();
-      const element = getTypographyElement();
-      expect(element.classList.contains('line-clamp-4')).toBe(true);
-    });
-
-    it('should clamp to 5 lines', () => {
-      component.lineClamp = 5;
-      fixture.detectChanges();
-      const element = getTypographyElement();
-      expect(element.classList.contains('line-clamp-5')).toBe(true);
-    });
-
-    it('should clamp to 6 lines', () => {
-      component.lineClamp = 6;
-      fixture.detectChanges();
-      const element = getTypographyElement();
-      expect(element.classList.contains('line-clamp-6')).toBe(true);
+      expect(Array.from(element.classList).some((c) => c.startsWith('lc-typography--clamp-'))).toBe(
+        false,
+      );
     });
   });
 
   describe('Gutter Bottom', () => {
     it('should not have gutter bottom by default', () => {
-      component.gutterBottom = false;
+      component.gutterBottom.set(false);
       fixture.detectChanges();
       const element = getTypographyElement();
-      expect(element.classList.contains('mb-4')).toBe(false);
+      expect(element.classList.contains('lc-typography--gutter-bottom')).toBe(false);
     });
 
     it('should apply gutter bottom spacing', () => {
-      component.gutterBottom = true;
+      component.gutterBottom.set(true);
       fixture.detectChanges();
       const element = getTypographyElement();
-      expect(element.classList.contains('mb-4')).toBe(true);
+      expect(element.classList.contains('lc-typography--gutter-bottom')).toBe(true);
+      expect(element.classList.contains('mb-4')).toBe(false);
     });
   });
 
@@ -420,83 +257,85 @@ describe('TypographyComponent', () => {
     });
 
     it('should accept all input properties', () => {
-      component.variant = 'h1';
-      component.align = 'center';
-      component.color = 'error';
-      component.weight = 'bold';
-      component.transform = 'uppercase';
-      component.noWrap = true;
-      component.lineClamp = 2;
-      component.gutterBottom = true;
+      component.variant.set('h1');
+      component.align.set('center');
+      component.color.set('error');
+      component.weight.set('bold');
+      component.transform.set('uppercase');
+      component.noWrap.set(true);
+      component.lineClamp.set(2);
+      component.gutterBottom.set(true);
       fixture.detectChanges();
 
       const element = fixture.nativeElement.querySelector('h1');
       expect(element).toBeTruthy();
       expect(element.classList.contains('typography-h1')).toBe(true);
-      expect(element.classList.contains('text-center')).toBe(true);
-      expect(element.classList.contains('text-error')).toBe(true);
-      expect(element.classList.contains('font-bold')).toBe(true);
-      expect(element.classList.contains('uppercase')).toBe(true);
-      expect(element.classList.contains('whitespace-nowrap')).toBe(true);
-      expect(element.classList.contains('line-clamp-2')).toBe(true);
-      expect(element.classList.contains('mb-4')).toBe(true);
+      expect(element.classList.contains('lc-typography--align-center')).toBe(true);
+      expect(element.classList.contains('lc-typography--color-error')).toBe(true);
+      expect(element.classList.contains('lc-typography--weight-bold')).toBe(true);
+      expect(element.classList.contains('lc-typography--uppercase')).toBe(true);
+      expect(element.classList.contains('lc-typography--nowrap')).toBe(true);
+      expect(element.classList.contains('lc-typography--clamp-2')).toBe(true);
+      expect(element.classList.contains('lc-typography--gutter-bottom')).toBe(true);
+    });
+
+    it('should update classes when inputs change after the first render', () => {
+      fixture.detectChanges();
+      component.weight.set('semibold');
+      component.transform.set('capitalize');
+      fixture.detectChanges();
+      const element = getTypographyElement();
+      expect(element.classList.contains('lc-typography--weight-semibold')).toBe(true);
+      expect(element.classList.contains('lc-typography--capitalize')).toBe(true);
     });
   });
 
-  describe('Class Combinations', () => {
-    it('should combine variant, alignment, and color classes', () => {
-      component.variant = 'h2';
-      component.align = 'right';
-      component.color = 'success';
-      fixture.detectChanges();
+  describe('Stylesheet', () => {
+    // Component styles are stripped under jest, so the cascade is asserted on
+    // the stylesheet text: no `!important` (which made the weight modifier
+    // unable to win), modifiers at higher specificity, prefixed class names,
+    // ink tokens for status colours and the font-family token.
+    const scss = readFileSync(join(__dirname, 'typography.component.scss'), 'utf8');
 
-      const element = fixture.nativeElement.querySelector('h2');
-      expect(element.classList.contains('typography-h2')).toBe(true);
-      expect(element.classList.contains('text-right')).toBe(true);
-      expect(element.classList.contains('text-success')).toBe(true);
+    it('should not use !important anywhere', () => {
+      expect(scss).not.toContain('!important');
     });
 
-    it('should combine weight and transform classes', () => {
-      component.variant = 'body1';
-      component.weight = 'semibold';
-      component.transform = 'capitalize';
-      fixture.detectChanges();
-
-      const element = getTypographyElement();
-      expect(element.classList.contains('font-semibold')).toBe(true);
-      expect(element.classList.contains('capitalize')).toBe(true);
+    it('should let the weight modifier win over the variant weight via specificity', () => {
+      for (const weight of ['regular', 'medium', 'semibold', 'bold']) {
+        expect(scss).toMatch(
+          new RegExp(`\\.typography\\.lc-typography--weight-${weight}\\s*\\{[^}]*font-weight:`),
+        );
+      }
     });
 
-    it('should combine noWrap and gutterBottom classes', () => {
-      component.variant = 'subtitle1';
-      component.noWrap = true;
-      component.gutterBottom = true;
-      fixture.detectChanges();
-
-      const element = getTypographyElement();
-      expect(element.classList.contains('whitespace-nowrap')).toBe(true);
-      expect(element.classList.contains('mb-4')).toBe(true);
+    it('should not emit app-global Tailwind utility class names', () => {
+      const tailwindLike = [
+        /^\s*\.uppercase\b/m,
+        /^\s*\.lowercase\b/m,
+        /^\s*\.capitalize\b/m,
+        /^\s*\.mb-4\b/m,
+        /^\s*\.text-(left|center|right|justify|primary|secondary|error|success|warning|info|disabled|ellipsis)\b/m,
+        /^\s*\.font-(regular|medium|semibold|bold)\b/m,
+        /^\s*\.line-clamp-\d/m,
+        /^\s*\.overflow-hidden\b/m,
+        /^\s*\.whitespace-nowrap\b/m,
+      ];
+      for (const pattern of tailwindLike) {
+        expect(scss).not.toMatch(pattern);
+      }
     });
 
-    it('should handle all properties together', () => {
-      component.variant = 'h3';
-      component.align = 'justify';
-      component.color = 'warning';
-      component.weight = 'bold';
-      component.transform = 'lowercase';
-      component.lineClamp = 3;
-      component.gutterBottom = true;
-      fixture.detectChanges();
+    it('should use ink tokens for the status colours', () => {
+      expect(scss).toMatch(/lc-typography--color-error\s*\{[^}]*var\(--color-text-error\)/);
+      expect(scss).toMatch(/lc-typography--color-success\s*\{[^}]*var\(--color-text-success\)/);
+      expect(scss).toMatch(/lc-typography--color-warning\s*\{[^}]*var\(--color-text-warning\)/);
+      expect(scss).not.toMatch(/color:\s*var\(--color-(error|success|warning|info)\)/);
+    });
 
-      const element = fixture.nativeElement.querySelector('h3');
-      expect(element).toBeTruthy();
-      expect(element.classList.contains('typography-h3')).toBe(true);
-      expect(element.classList.contains('text-justify')).toBe(true);
-      expect(element.classList.contains('text-warning')).toBe(true);
-      expect(element.classList.contains('font-bold')).toBe(true);
-      expect(element.classList.contains('lowercase')).toBe(true);
-      expect(element.classList.contains('line-clamp-3')).toBe(true);
-      expect(element.classList.contains('mb-4')).toBe(true);
+    it('should use the font-family token instead of a literal font', () => {
+      expect(scss).not.toContain('Open Sans');
+      expect(scss).toMatch(/font-family:\s*var\(--font-family-base/);
     });
   });
 });

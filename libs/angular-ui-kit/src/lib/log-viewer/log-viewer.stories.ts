@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/angular';
+import { interval, map } from 'rxjs';
 import { LogViewerComponent, LogLine } from './log-viewer.component';
 
 const meta: Meta<LogViewerComponent> = {
@@ -10,7 +11,15 @@ const meta: Meta<LogViewerComponent> = {
         component: `
 The LogViewer component displays streaming or static log lines with
 virtualized rendering, ANSI color support, auto-scroll, level filtering,
-and search. Supports "log" (light) and "terminal" (dark) variants.
+and search. Supports a "log" variant (follows the theme surface) and a
+"terminal" variant (always dark).
+
+- The virtual window is sized from the *measured* scroll area, so any
+  \`height\` (\`400px\`, \`50vh\`, \`100%\` in a flex parent) renders correctly.
+  Row height comes from \`--lc-log-viewer-line-height\` (22px).
+- \`autoScroll\` follows new lines only while the reader is at the bottom;
+  scrolling up pauses it and shows a "Jump to bottom" button.
+- Set \`clickableLines\` when binding \`(lineClick)\` so rows are keyboard-operable.
         `,
       },
     },
@@ -25,6 +34,7 @@ and search. Supports "log" (light) and "terminal" (dark) variants.
     showTimestamps: { control: 'boolean' },
     showLineNumbers: { control: 'boolean' },
     ansiColors: { control: 'boolean' },
+    clickableLines: { control: 'boolean' },
   },
 };
 
@@ -105,6 +115,68 @@ export const ErrorsOnly: Story = {
   },
   parameters: {
     docs: { description: { story: 'Filtered to show only error-level lines.' } },
+  },
+};
+
+/** Live stream: a new line every 400 ms; scroll up to pause following. */
+export const Streaming: Story = {
+  render: (args) => ({
+    props: {
+      ...args,
+      stream$: interval(400).pipe(
+        map((i): LogLine => ({
+          text: `Tick ${i + 1}: ${['heartbeat ok', 'job processed', 'cache refreshed', 'queue drained'][i % 4]}`,
+          level: i % 9 === 8 ? 'warn' : 'info',
+          timestamp: new Date(),
+          source: 'worker',
+        })),
+      ),
+    },
+    template: `
+      <lc-log-viewer
+        [stream$]="stream$"
+        [variant]="variant"
+        [height]="height"
+        [showTimestamps]="showTimestamps"
+        [showLineNumbers]="showLineNumbers"
+        [autoScroll]="autoScroll"
+        [maxLines]="maxLines"
+      />
+    `,
+  }),
+  args: {
+    variant: 'terminal',
+    height: '320px',
+    showTimestamps: true,
+    showLineNumbers: true,
+    autoScroll: true,
+    maxLines: 500,
+  },
+  parameters: {
+    docs: { description: { story: 'Streaming mode with Pause/Resume and follow-mode auto-scroll.' } },
+  },
+};
+
+/** `height="100%"` inside a fixed-height flex parent — the window fills it. */
+export const FlexParent: Story = {
+  render: (args) => ({
+    props: { ...args, lines: generateLogs(500) },
+    template: `
+      <div style="display: flex; flex-direction: column; height: 60vh; gap: 8px;">
+        <p style="margin: 0; font: 13px/1.4 var(--font-family-sans)">The viewer below uses <code>height="100%"</code> and grows with its flex parent.</p>
+        <lc-log-viewer
+          style="display: block; flex: 1; min-height: 0;"
+          [lines]="lines"
+          height="100%"
+          [variant]="variant"
+          [showLineNumbers]="true"
+        />
+      </div>
+    `,
+  }),
+  args: { variant: 'log' },
+  parameters: {
+    docs: { description: { story: 'Percentage / flex heights render a full virtual window (measured, not parsed).' } },
   },
 };
 
