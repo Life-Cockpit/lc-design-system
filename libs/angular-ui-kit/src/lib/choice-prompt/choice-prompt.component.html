@@ -1,0 +1,90 @@
+<div
+  [class]="groupClasses()"
+  role="group"
+  [attr.aria-label]="promptLabel() || null"
+  [attr.aria-busy]="busy() ? 'true' : null"
+>
+  <div class="lc-choice-prompt__options">
+    @for (option of sortedOptions(); track option.id) {
+      <!-- The busy (clicked) option keeps focus: aria-disabled instead of the
+           native attribute, the click handler is guarded via locked(). -->
+      <button
+        #optionButton
+        type="button"
+        class="lc-choice-prompt__option"
+        [class.lc-choice-prompt__option--recommended]="option.recommended"
+        [class.lc-choice-prompt__option--busy]="isPendingOption(option.id)"
+        [attr.data-option-id]="option.id"
+        [disabled]="locked() && !isPendingOption(option.id)"
+        [attr.aria-disabled]="locked() ? 'true' : null"
+        [attr.title]="disabledTitle()"
+        (click)="chooseOption(option)"
+      >
+        <span class="lc-choice-prompt__option-main">
+          @if (isPendingOption(option.id)) {
+            <span class="lc-choice-prompt__spinner" aria-hidden="true"></span>
+          }
+          <span class="lc-choice-prompt__option-label">{{ option.label }}</span>
+          @if (option.recommended) {
+            <span class="lc-choice-prompt__badge">{{ recommendedLabel() }}</span>
+          }
+        </span>
+        @if (option.description) {
+          <span class="lc-choice-prompt__option-description">{{ option.description }}</span>
+        }
+      </button>
+    }
+
+    @if (allowCustom() && !customOpen()) {
+      <button
+        type="button"
+        class="lc-choice-prompt__custom-toggle"
+        [disabled]="locked()"
+        [attr.title]="disabledTitle()"
+        (click)="openCustom()"
+      >
+        {{ customToggleLabel() }}
+      </button>
+    }
+
+    @for (action of secondaryActions(); track action.id) {
+      <button
+        type="button"
+        class="lc-choice-prompt__secondary"
+        [disabled]="locked()"
+        [attr.title]="disabledTitle() ?? action.tooltip ?? null"
+        (click)="triggerSecondary(action)"
+      >
+        {{ action.label }}
+      </button>
+    }
+  </div>
+
+  @if (allowCustom() && customOpen()) {
+    <div class="lc-choice-prompt__custom">
+      <input
+        #customInput
+        type="text"
+        class="lc-choice-prompt__input"
+        [placeholder]="customPlaceholder()"
+        [value]="customText()"
+        [disabled]="locked()"
+        [attr.title]="disabledTitle()"
+        [attr.aria-label]="customToggleLabel()"
+        (input)="onCustomInput($event)"
+        (keydown.enter)="submitCustom()"
+      />
+      <lc-button
+        #submitButton
+        variant="primary"
+        [size]="size() === 'sm' ? 'xs' : 'sm'"
+        [loading]="busy() && pendingCustom()"
+        [disabled]="!canSubmitCustom()"
+        [disabledReason]="disabledTitle() ?? ''"
+        (clicked)="submitCustom()"
+      >
+        {{ submitLabel() }}
+      </lc-button>
+    </div>
+  }
+</div>

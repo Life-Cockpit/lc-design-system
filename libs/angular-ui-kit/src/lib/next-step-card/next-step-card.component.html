@@ -1,0 +1,62 @@
+<div [class]="cardClasses()" role="region" [attr.aria-label]="cardTitle()">
+  <div class="lc-next-step-card__icon" aria-hidden="true">
+    <lc-icon [name]="icon()" size="md" [decorative]="true" />
+  </div>
+
+  <div class="lc-next-step-card__body">
+    <div class="lc-next-step-card__title" [attr.aria-live]="announce() ? 'polite' : null">
+      {{ cardTitle() }}
+    </div>
+    @if (message()) {
+      <p class="lc-next-step-card__message">{{ message() }}</p>
+    }
+    <div class="lc-next-step-card__custom-message">
+      <ng-content />
+    </div>
+    <div class="lc-next-step-card__blockers">
+      <ng-content select="[slot='blockers']" />
+    </div>
+    <div class="lc-next-step-card__meta">
+      <ng-content select="[slot='meta']" />
+    </div>
+  </div>
+
+  <div class="lc-next-step-card__actions">
+    <div #actionsSlot class="lc-next-step-card__actions-slot">
+      <ng-content select="[slot='actions']" />
+    </div>
+    @if (!hasProjectedActions()) {
+      @if (secondaryLabel()) {
+        <lc-button variant="ghost" size="sm" (clicked)="secondaryClick.emit()">
+          {{ secondaryLabel() }}
+          <lc-icon slot="icon-after" name="chevron-right" size="xs" [decorative]="true" />
+        </lc-button>
+      }
+      @if (showLink()) {
+        <a
+          class="btn btn-secondary btn-sm lc-next-step-card__link"
+          [href]="linkHref()"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <lc-icon name="external-link" size="sm" [decorative]="true" />
+          {{ linkLabel() }}
+        </a>
+      } @else if (primaryLabel()) {
+        <lc-button
+          variant="primary"
+          size="sm"
+          [loading]="primaryLoading()"
+          [disabled]="primaryDisabled()"
+          [disabledReason]="primaryDisabledReason()"
+          (clicked)="primaryClick.emit()"
+        >
+          @if (primaryIcon()) {
+            <lc-icon slot="icon-before" [name]="primaryIcon()!" size="sm" [decorative]="true" />
+          }
+          {{ primaryLabel() }}
+        </lc-button>
+      }
+    }
+  </div>
+</div>

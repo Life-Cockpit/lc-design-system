@@ -2,6 +2,41 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.1.0] - 2026-08-28
+
+### Added
+
+- **`lc-next-step-card`** — the single status-and-action surface of a page
+  ("where does this stand, what is the one next step?"). Tonal accent rail +
+  tinted icon bubble (`neutral | primary | success | warning | info`, token
+  colors only), title/message, primary action with loading/disabled state
+  (disabled requires `primaryDisabledReason`; missing reason logs a dev
+  warning), ghost secondary action, or an external link instead of the primary
+  button. Slots: default (message markup), `[slot='blockers']` (rows under a
+  subtle divider, dot prefix — one projected element per row),
+  `[slot='meta']` (one footer line), `[slot='actions']` (replaces the built-in
+  buttons entirely). `role="region"` labelled by the title; optional
+  `announce` re-announces title changes via `aria-live="polite"`. Usage rule:
+  exactly one card per page; blockers are rows in the card, never extra
+  banners.
+- **`lc-choice-prompt`** — inline decision without a modal: option buttons
+  (with "Empfehlung" badge on the recommended option, sorted first), optional
+  free-text lane behind a toggle link (submit via button or Enter, empty text
+  never submits), `busy` state (clicked option shows a spinner, everything
+  else — including Enter — is blocked; focus returns to the triggering
+  element when busy ends), `disabled` + mandatory `disabledReason` (tooltip +
+  dev warning), subordinate `secondaryActions`, sizes `sm | md`.
+  `(decided)` emits `{ optionId?, customText? }`.
+- **`lc-timeline`: transcript extensions** (purely additive) — entry `state`
+  (`success | running | failed | pending`) coloring the marker from the
+  semantic tokens (`running` pulses, respecting `prefers-reduced-motion`);
+  composable header line with `titleMono` (monospace tool id), `badge` /
+  `badgeVariant` and right-aligned `meta`; new `lcTimelineContent` template
+  for free per-entry markup below the header (code block, prose, diff) and
+  `lcTimelineMeta` template for live meta values the app ticks itself. New
+  stories "Entry States" and "Transcript" (failed step with `lc-code-block`
+  command line, running step with live meta).
+
 ## [3.0.0] - 2026-08-19
 
 A library-wide review of every component (correctness, security, accessibility,

@@ -221,6 +221,7 @@ export * from './lib/drawer/drawer.component';
 
 // Timeline Component
 export * from './lib/timeline/timeline.component';
+export * from './lib/timeline/timeline-templates.directive';
 
 // Avatar Group Component
 export * from './lib/avatar-group/avatar-group.component';
@@ -233,6 +234,12 @@ export * from './lib/number-input/number-input.component';
 
 // Callout Component
 export * from './lib/callout/callout.component';
+
+// Next Step Card Component
+export * from './lib/next-step-card/next-step-card.component';
+
+// Choice Prompt Component
+export * from './lib/choice-prompt/choice-prompt.component';
 
 // Rating Component
 export * from './lib/rating/rating.component';

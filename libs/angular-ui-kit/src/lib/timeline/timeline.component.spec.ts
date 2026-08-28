@@ -3,6 +3,10 @@ import { Component, signal } from '@angular/core';
 import { By } from '@angular/platform-browser';
 import { provideHttpClient } from '@angular/common/http';
 import { TimelineComponent, TimelineItem } from './timeline.component';
+import {
+  TimelineContentDirective,
+  TimelineMetaDirective,
+} from './timeline-templates.directive';
 import { IconComponent } from '../icon/icon.component';
 
 @Component({
@@ -24,6 +28,42 @@ class TestHostComponent {
   ]);
   orientation: 'vertical' | 'horizontal' = 'vertical';
   compact = false;
+}
+
+@Component({
+  standalone: true,
+  imports: [TimelineComponent, TimelineContentDirective, TimelineMetaDirective],
+  template: `
+    <lc-timeline [items]="items()">
+      <ng-template lcTimelineMeta let-item>
+        @if (item.state === 'running') {
+          läuft seit {{ seconds() }} s
+        } @else if (item.meta) {
+          {{ item.meta }}
+        }
+      </ng-template>
+      <ng-template lcTimelineContent let-item>
+        @if (item.state === 'failed') {
+          <pre class="test-command">{{ item.title }} fehlgeschlagen</pre>
+        }
+      </ng-template>
+    </lc-timeline>
+  `,
+})
+class TranscriptHostComponent {
+  seconds = signal(42);
+  items = signal<TimelineItem[]>([
+    { title: 'Schritt eins', titleMono: 'step_one', state: 'success', meta: '3 s' },
+    {
+      title: 'Schritt zwei',
+      titleMono: 'step_two',
+      state: 'failed',
+      badge: 'Fehlgeschlagen',
+      badgeVariant: 'error',
+    },
+    { title: 'Schritt drei', state: 'running' },
+    { title: 'Schritt vier', state: 'pending' },
+  ]);
 }
 
 describe('TimelineComponent', () => {
@@ -126,5 +166,75 @@ describe('TimelineComponent', () => {
     fixture.detectChanges();
     const icon = fixture.debugElement.query(By.directive(IconComponent)).componentInstance as IconComponent;
     expect(icon.decorative()).toBe(true);
+  });
+});
+
+describe('TimelineComponent transcript extensions', () => {
+  let fixture: ComponentFixture<TranscriptHostComponent>;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [TranscriptHostComponent],
+      providers: [provideHttpClient()],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(TranscriptHostComponent);
+    fixture.detectChanges();
+  });
+
+  it('maps entry states onto semantic marker colors', () => {
+    const markers = fixture.debugElement.queryAll(By.css('.timeline__marker'));
+    expect(markers[0].nativeElement.classList).toContain('timeline__marker--success');
+    expect(markers[1].nativeElement.classList).toContain('timeline__marker--error');
+    expect(markers[2].nativeElement.classList).toContain('timeline__marker--primary');
+    expect(markers[3].nativeElement.classList).toContain('timeline__marker--neutral');
+  });
+
+  it('marks only the running entry with the pulse modifier', () => {
+    const markers = fixture.debugElement.queryAll(By.css('.timeline__marker'));
+    const running = markers.filter((m) =>
+      m.nativeElement.classList.contains('timeline__marker--running'),
+    );
+    expect(running.length).toBe(1);
+    expect(markers[2].nativeElement.classList).toContain('timeline__marker--running');
+  });
+
+  it('renders the mono title suffix in the header', () => {
+    const monos = fixture.debugElement.queryAll(By.css('.timeline__title-mono'));
+    expect(monos.map((m) => m.nativeElement.textContent.trim())).toEqual([
+      'step_one',
+      'step_two',
+    ]);
+  });
+
+  it('renders the header badge with its variant', () => {
+    const badges = fixture.debugElement.queryAll(By.css('.timeline__header .lc-badge'));
+    expect(badges.length).toBe(1);
+    expect(badges[0].nativeElement.textContent.trim()).toBe('Fehlgeschlagen');
+    expect(badges[0].nativeElement.classList).toContain('lc-badge--error');
+  });
+
+  it('renders the live meta template per item (static meta and live ticker)', () => {
+    const metas = fixture.debugElement.queryAll(By.css('.timeline__meta'));
+    const texts = metas.map((m) => m.nativeElement.textContent.trim());
+    expect(texts).toContain('3 s');
+    expect(texts).toContain('läuft seit 42 s');
+  });
+
+  it('renders free per-entry content only where the template produces it', () => {
+    const commands = fixture.debugElement.queryAll(By.css('.test-command'));
+    expect(commands.length).toBe(1);
+    expect(commands[0].nativeElement.textContent).toContain('Schritt zwei fehlgeschlagen');
+  });
+
+  it('falls back to the static meta string without a meta template', () => {
+    // Covered by the base host below: item.meta renders directly.
+    const staticFixture = TestBed.createComponent(TestHostComponent);
+    staticFixture.componentInstance.items.set([
+      { title: 'Nur Meta', meta: '12 s' },
+    ]);
+    staticFixture.detectChanges();
+    const meta = staticFixture.debugElement.query(By.css('.timeline__meta'));
+    expect(meta.nativeElement.textContent.trim()).toBe('12 s');
   });
 });

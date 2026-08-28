@@ -1,7 +1,7 @@
 <div [class]="timelineClasses()">
   @for (item of items(); track item.id ?? $index; let last = $last) {
     <div class="timeline__item" [class.timeline__item--last]="last">
-      <div class="timeline__marker" [class]="'timeline__marker--' + (item.color || 'primary')">
+      <div [class]="markerClasses(item)">
         @if (item.icon) {
           <lc-icon [name]="item.icon" class="timeline__icon" [decorative]="true"></lc-icon>
         } @else {
@@ -12,12 +12,42 @@
         <div class="timeline__connector"></div>
       }
       <div class="timeline__content">
-        <p class="timeline__title">{{ item.title }}</p>
+        <div class="timeline__header">
+          <p class="timeline__title">
+            {{ item.title }}
+            @if (item.titleMono) {
+              <code class="timeline__title-mono">{{ item.titleMono }}</code>
+            }
+          </p>
+          @if (item.badge) {
+            <lc-badge size="xs" [variant]="item.badgeVariant ?? 'default'">{{
+              item.badge
+            }}</lc-badge>
+          }
+          @if (metaTemplate(); as metaTpl) {
+            <span class="timeline__meta">
+              <ng-container
+                [ngTemplateOutlet]="metaTpl.template"
+                [ngTemplateOutletContext]="{ $implicit: item }"
+              />
+            </span>
+          } @else if (item.meta) {
+            <span class="timeline__meta">{{ item.meta }}</span>
+          }
+        </div>
         @if (item.description) {
           <p class="timeline__description">{{ item.description }}</p>
         }
         @if (item.timestamp) {
           <time class="timeline__timestamp">{{ item.timestamp }}</time>
+        }
+        @if (contentTemplate(); as contentTpl) {
+          <div class="timeline__body">
+            <ng-container
+              [ngTemplateOutlet]="contentTpl.template"
+              [ngTemplateOutletContext]="{ $implicit: item }"
+            />
+          </div>
         }
       </div>
     </div>

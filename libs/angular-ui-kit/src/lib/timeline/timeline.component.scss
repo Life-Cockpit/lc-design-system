@@ -146,14 +146,73 @@ $timeline-colors: (
   }
 }
 
+// Running entries pulse their marker content — opacity only, so no extra
+// color tokens are needed and the ring stays put.
+.timeline__marker--running {
+  .timeline__dot,
+  .timeline__icon {
+    animation: lc-timeline-running 1.6s ease-in-out infinite;
+  }
+}
+
+@keyframes lc-timeline-running {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .timeline__marker--running {
+    .timeline__dot,
+    .timeline__icon {
+      animation: none;
+    }
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Content typography
 // ---------------------------------------------------------------------------
+// Composable header line: title (+ mono suffix) · badge · right-aligned meta.
+// With only a title present this renders identically to the previous markup.
+.timeline__header {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
 .timeline__title {
   margin: 0;
   font-size: 0.875rem;
   font-weight: 600;
   color: var(--color-text-primary);
+}
+
+.timeline__title-mono {
+  margin-left: 0.25rem;
+  padding: 0.0625rem 0.3125rem;
+  background: var(--color-surface-hover);
+  border-radius: var(--border-radius-sm, 0.25rem);
+  font-family: var(--typography-font-family-mono, ui-monospace, monospace);
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--color-text-secondary);
+}
+
+.timeline__meta {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: var(--color-text-tertiary);
+  white-space: nowrap;
+}
+
+// Free per-entry content below the header (code block, prose, diff, …).
+.timeline__body {
+  margin-top: 0.5rem;
+
+  &:empty {
+    display: none;
+  }
 }
 
 .timeline__description {
