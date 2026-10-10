@@ -29,6 +29,10 @@
       "types": "./types/life-cockpit-angular-ui-kit.d.ts",
       "default": "./fesm2022/life-cockpit-angular-ui-kit.mjs"
     },
+    "./styles": {
+      "sass": "./src/styles/index.scss",
+      "default": "./src/styles/index.scss"
+    },
     "./styles/*": {
       "default": "./src/styles/*"
     },

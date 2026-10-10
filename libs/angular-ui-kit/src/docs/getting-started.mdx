@@ -18,14 +18,17 @@ In your `styles.scss` (or via `angular.json` under `styles`):
 @use '@life-cockpit/angular-ui-kit/styles';
 ```
 
-Or individually:
+Or individually — name the partial file with its underscore and extension (the
+package's `exports` map points straight at the files):
 
 ```scss
-@use '@life-cockpit/angular-ui-kit/styles/reset';
-@use '@life-cockpit/angular-ui-kit/styles/theme-light';
-@use '@life-cockpit/angular-ui-kit/styles/theme-dark';
-@use '@life-cockpit/angular-ui-kit/styles/typography';
-@use '@life-cockpit/angular-ui-kit/styles/utilities';
+@use '@life-cockpit/angular-ui-kit/styles/_theme-light.scss';
+@use '@life-cockpit/angular-ui-kit/styles/_theme-dark.scss';
+@use '@life-cockpit/angular-ui-kit/styles/_reset.scss';
+@use '@life-cockpit/angular-ui-kit/styles/_typography.scss';
+@use '@life-cockpit/angular-ui-kit/styles/_density.scss';
+@use '@life-cockpit/angular-ui-kit/styles/_utilities.scss';
+@import '@angular/cdk/overlay-prebuilt.css'; // overlays: select, datepicker, menu, tooltip …
 ```
 
 ## 3. Use components
