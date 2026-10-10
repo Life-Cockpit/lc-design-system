@@ -44,6 +44,9 @@ jobs:
           NODE_OPTIONS: '--max-old-space-size=8192'
         run: npx nx build-storybook angular-ui-kit --skipNxCache --verbose
 
+      - name: Test the components manifest extractor
+        run: npm run test:tools
+
       - name: Generate components manifest
         run: node tools/generate-components-manifest.mjs
 

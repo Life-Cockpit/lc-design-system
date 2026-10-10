@@ -25,6 +25,9 @@ jobs:
       - name: Run tests
         run: npx nx run angular-ui-kit:test --ci
 
+      - name: Test tools (components manifest extractor)
+        run: npm run test:tools
+
       - name: Build angular-ui-kit library
         run: npx nx build angular-ui-kit --configuration=production
 
