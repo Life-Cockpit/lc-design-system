@@ -241,6 +241,13 @@
   --color-text-disabled: #{$color-neutral-400};
   --color-neutral-white: #ffffff;
 
+  // Links in running text. Literal ramp values per palette (not the inverting
+  // --color-primary-* scale), so the token means the same thing in any
+  // context. #1a6a79 measures 5.64:1 on the page background, 6.21:1 on a card;
+  // the hover step 8.30:1 / 9.13:1. Pair with an underline (WCAG 1.4.1).
+  --color-link: #{$color-primary-600};
+  --color-link-hover: #{$color-primary-700};
+
   // Borders — three weights: border (outer edge) > divider (between rows) >
   // subtle (inner hairlines that should barely register).
   --color-border: #{$color-neutral-300};

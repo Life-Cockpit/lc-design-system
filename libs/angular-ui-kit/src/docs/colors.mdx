@@ -205,6 +205,24 @@ Additional colors for data visualization and categorization.
   </div>
 </div>
 
+## Semantic ink tokens
+
+Use these for text instead of the raw scales: the `--color-primary-*` and
+`--color-neutral-*` custom properties **invert** in the dark palette, the
+semantic tokens are tuned per palette. Ratios are WCAG contrast on the light /
+dark page background (`--color-background`) and on a card (`--color-surface`).
+
+| Token | Light | Dark | Use |
+|---|---|---|---|
+| `--color-text-primary` | `#111827` — 16.12:1 | `#f1f6f8` — 17.29:1 | body text, headings |
+| `--color-text-secondary` | `#4b5563` — 6.87:1 / 7.56:1 | `#c4d2d9` — 12.17:1 / 10.45:1 | secondary text **and small links** (footer, nav) |
+| `--color-text-tertiary` | `#6b7280` — **4.39:1** / 4.83:1 | `#93a4ad` — 7.31:1 / 6.28:1 | meta text on cards only — below 4.5:1 on the light page background |
+| `--color-link` | `#1a6a79` — 5.64:1 / 6.21:1 | `#a3d5df` — 11.78:1 / 10.12:1 | links in running text — **always underlined** (color alone fails WCAG 1.4.1) |
+| `--color-link-hover` | `#144f5b` — 8.30:1 / 9.13:1 | `#c1e3e9` — 13.84:1 / 11.89:1 | hovered links |
+| `--color-on-primary` on `--color-primary-fill` | `#ffffff` on `#1a6a79` — 6.21:1 | same — 6.21:1 | primary buttons, the focused skip link |
+
+The ratios are checked by `src/styles/theme-contrast.spec.ts` against the compiled themes.
+
 ## Usage in CSS
 
 ```css

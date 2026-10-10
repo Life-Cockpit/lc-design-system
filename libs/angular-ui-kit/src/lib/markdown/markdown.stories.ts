@@ -30,6 +30,20 @@ level), with optional \`changeHighlightFadeMs\` fade and \`scrollToFirstChange\`
 **Sources:** raw markdown via \`content\`, or a URL via \`src\`. Output is
 sanitized by default (\`sanitize\`); links honor \`linkTarget\` / \`baseUrl\` and emit
 \`linkClick\`.
+
+**Readable prose** (see *Readable Prose*):
+- Links are **underlined by default** — told apart from the text by color alone they fail
+  WCAG 1.4.1 — in the theme-aware \`--color-link\` / \`--color-link-hover\` tokens (light
+  \`#1a6a79\`: 5.64:1 on the page background, 6.21:1 on a card; dark \`#a3d5df\`: 11.78:1 /
+  10.12:1).
+- \`hyphens: auto\` hyphenates long words in the page language — set \`lang\` on \`<html>\`
+  (or on \`lc-markdown\`) — and \`overflow-wrap: anywhere\` breaks URLs and IDs that cannot
+  be hyphenated, so prose never scrolls sideways on a phone. Code is never hyphenated;
+  tables keep their columns and scroll.
+- CSS hooks on \`lc-markdown\`: \`--lc-markdown-link-color\`, \`--lc-markdown-link-hover-color\`,
+  \`--lc-markdown-link-decoration\` (e.g. \`none\` for a list of links that is clearly
+  navigation), \`--lc-markdown-hyphens\`, \`--lc-markdown-overflow-wrap\`, and the heading
+  sizes \`--lc-markdown-h1\` … \`--lc-markdown-h6\`.
         `,
       },
     },
@@ -141,6 +155,26 @@ const documentV2 = `## Section One
 
 A paragraph of body text that stays the same across edits.
 `;
+
+/** Long German compounds hyphenate in the page language; links are underlined. */
+export const ReadableProse: Story = {
+  name: 'Readable Prose (links, hyphenation)',
+  render: () => ({
+    props: {
+      content: `## Deine Daten. Deine Entscheidung.
+
+Wir lesen Daten aus den Diensten, die du verbindest – Verträge, Konten und
+Dokumente – und zeigen dir **Vermittlungsprämien**, Kündigungsfristen und die
+**Zwei-Faktor-Anmeldung** an einem Ort. Mehr dazu auf der Seite
+[So bauen wir](#so-bauen-wir) oder unter
+https://example.org/eine/sehr/lange/adresse/die/nicht/getrennt/werden/kann.`,
+    },
+    template: `
+      <div lang="de" style="max-width: 320px; border: 1px dashed var(--color-border); padding: 12px;">
+        <lc-markdown [content]="content" />
+      </div>`,
+  }),
+};
 
 export const ChangeHighlighting: Story = {
   args: {

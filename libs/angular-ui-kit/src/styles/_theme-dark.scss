@@ -236,6 +236,11 @@
   --color-text-disabled: #6c7e88;
   --color-neutral-white: #ffffff;
 
+  // Links in running text (see the light theme). #a3d5df measures 11.78:1 on
+  // the page background and 8.97:1 on a raised surface; hover 13.84:1 / 11.89:1.
+  --color-link: #{$color-primary-300};
+  --color-link-hover: #{$color-primary-200};
+
   // Borders
   --color-border: rgba(255, 255, 255, 0.08);
   --color-border-strong: rgba(132, 199, 212, 0.28);

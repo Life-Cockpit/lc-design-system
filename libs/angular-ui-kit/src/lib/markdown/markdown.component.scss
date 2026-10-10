@@ -3,6 +3,13 @@
   font-family: var(--font-family-sans);
   font-size: var(--font-size-base, 1rem);
   line-height: var(--line-height-relaxed, 1.75);
+  // Prose wraps instead of overflowing a phone screen: long compounds
+  // ("Vermittlungsprämien") are hyphenated in the language of the page — set
+  // `lang` on <html> or on lc-markdown — and URLs or IDs that cannot be
+  // hyphenated break anywhere. Code and tables opt out below. Hooks:
+  // --lc-markdown-hyphens, --lc-markdown-overflow-wrap.
+  hyphens: var(--lc-markdown-hyphens, auto);
+  overflow-wrap: var(--lc-markdown-overflow-wrap, anywhere);
 
   h1, h2, h3, h4, h5, h6 {
     color: var(--color-text-primary);
@@ -31,12 +38,27 @@
     margin: 0 0 1em;
   }
 
+  // Links are underlined by default: told apart from the text by color alone,
+  // they fail WCAG 1.4.1. The ink is the theme's link token (5.64:1 or better
+  // on every light surface, 8.97:1 or better in dark). Hooks:
+  // --lc-markdown-link-color, --lc-markdown-link-hover-color,
+  // --lc-markdown-link-decoration (e.g. `none` for a navigation list).
   a {
-    color: var(--color-primary-600, #2563eb);
-    text-decoration: none;
+    color: var(--lc-markdown-link-color, var(--color-link, #1a6a79));
+    text-decoration: var(--lc-markdown-link-decoration, underline);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.18em;
 
     &:hover {
-      text-decoration: underline;
+      color: var(--lc-markdown-link-hover-color, var(--color-link-hover, #144f5b));
+      text-decoration-line: underline;
+      text-decoration-thickness: 2px;
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--color-primary-500);
+      outline-offset: 2px;
+      border-radius: 2px;
     }
   }
 
@@ -44,6 +66,8 @@
     font-weight: var(--font-weight-semibold, 600);
   }
 
+  // Never hyphenate code: an inserted hyphen changes what it says. Long
+  // identifiers still break (overflow-wrap) instead of overflowing.
   code {
     background-color: var(--color-surface-hover);
     color: var(--color-text-primary);
@@ -51,11 +75,14 @@
     border-radius: var(--border-radius-sm, 0.25rem);
     font-family: var(--font-family-mono, monospace);
     font-size: 0.875em;
+    hyphens: none;
   }
 
   pre {
     margin: 1em 0;
     overflow-x: auto;
+    hyphens: none;
+    overflow-wrap: normal;
 
     code {
       background: none;
@@ -116,10 +143,15 @@
   }
 
   // Tables — wrapped so wide tables scroll horizontally instead of breaking layout.
+  // Tables keep their columns: hyphenation and break-anywhere would shrink a
+  // column's minimum width and squeeze words letter by letter instead of
+  // letting the wrapper scroll.
   &__table-wrap {
     margin: 1em 0;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    hyphens: manual;
+    overflow-wrap: break-word;
   }
 
   &__table {
@@ -193,7 +225,10 @@
   }
 
   // Heading anchor
-  &__anchor {
+  // `.lc-markdown a` (0,1,1) used to outrank the bare `&__anchor` class (0,1,0),
+  // so the anchor took the link ink; with links underlined it would also take
+  // the underline. Nested under the root (0,2,0) it keeps its own look.
+  & &__anchor {
     color: var(--color-text-tertiary);
     text-decoration: none;
     margin-right: 0.25em;
@@ -214,6 +249,8 @@
   lc-code-block {
     display: block;
     margin: 1em 0;
+    hyphens: none;
+    overflow-wrap: normal;
 
     // Keep full code blocks readable: inline markdown `code` styles should
     // not override the dark-theme code-block text color.
