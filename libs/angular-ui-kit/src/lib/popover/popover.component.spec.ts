@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { By } from '@angular/platform-browser';
 import { PopoverComponent, PopoverPosition, PopoverTrigger } from './popover.component';
 import { OverlayStackService } from '../shared/overlay-stack.service';
@@ -7,6 +7,7 @@ import { OverlayStackService } from '../shared/overlay-stack.service';
 @Component({
   standalone: true,
   imports: [PopoverComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <lc-popover [position]="position" [trigger]="trigger" [showArrow]="showArrow" (openChange)="onOpenChange($event)">
       <button popover-trigger>Click me</button>

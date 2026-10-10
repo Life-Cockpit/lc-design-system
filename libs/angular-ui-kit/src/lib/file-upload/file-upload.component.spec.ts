@@ -1,12 +1,13 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { By } from '@angular/platform-browser';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { FileUploadComponent, FileUploadFile } from './file-upload.component';
 
 @Component({
   standalone: true,
   imports: [FileUploadComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <lc-file-upload
       [accept]="accept"
@@ -49,7 +50,7 @@ describe('FileUploadComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [TestHostComponent],
-      providers: [provideHttpClient()],
+      providers: [provideHttpClient(withXhr())],
     }).compileComponents();
 
     fixture = TestBed.createComponent(TestHostComponent);

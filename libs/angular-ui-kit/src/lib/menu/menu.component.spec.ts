@@ -1,12 +1,13 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Component, signal } from '@angular/core';
-import { provideHttpClient } from '@angular/common/http';
+import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { MenuComponent, MenuItem } from './menu.component';
 
 @Component({
   standalone: true,
   imports: [MenuComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <lc-menu [items]="items()" [isOpen]="isOpen()" (itemClick)="clicked.push($event)" (closed)="onClosed()">
       <button trigger type="button" class="trigger" (click)="isOpen.set(!isOpen())">Open</button>
@@ -53,7 +54,7 @@ describe('MenuComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [TestHostComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideHttpClient(withXhr()), provideHttpClientTesting()],
     }).compileComponents();
 
     fixture = TestBed.createComponent(TestHostComponent);

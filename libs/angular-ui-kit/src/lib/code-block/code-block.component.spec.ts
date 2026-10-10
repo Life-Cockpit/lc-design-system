@@ -1,13 +1,14 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { CodeBlockComponent, CodeBlockLanguage } from './code-block.component';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 
 @Component({
   standalone: true,
   imports: [CodeBlockComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <lc-code-block
       [code]="code"
@@ -35,7 +36,7 @@ describe('CodeBlockComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [TestHostComponent],
-      providers: [provideHttpClient()],
+      providers: [provideHttpClient(withXhr())],
     }).compileComponents();
 
     fixture = TestBed.createComponent(TestHostComponent);

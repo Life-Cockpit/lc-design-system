@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/angular';
 import { moduleMetadata } from '@storybook/angular';
-import { Component, inject, input } from '@angular/core';
+import { Component, inject, input, ChangeDetectionStrategy } from '@angular/core';
 import { ToastOutletComponent } from './toast-outlet.component';
 import { ToastService, type ToastPosition, type ToastVariant } from './toast.service';
 import { ButtonComponent } from '../button/button.component';
@@ -17,6 +17,7 @@ const MESSAGES: Record<ToastVariant, string> = {
   selector: 'lc-toast-outlet-demo',
   standalone: true,
   imports: [ToastOutletComponent, ButtonComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
       <lc-button variant="primary" (clicked)="show('success')">Success</lc-button>

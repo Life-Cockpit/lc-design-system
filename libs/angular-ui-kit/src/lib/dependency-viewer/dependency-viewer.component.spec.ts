@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Component, Signal, WritableSignal, signal } from '@angular/core';
+import { Component, Signal, WritableSignal, signal, ChangeDetectionStrategy } from '@angular/core';
 import {
   DependencyViewerComponent,
   DependencyNode,
@@ -12,6 +12,7 @@ import {
 @Component({
   standalone: true,
   imports: [DependencyViewerComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `<lc-dependency-viewer
     [root]="root()"
     [layout]="layout()"

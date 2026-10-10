@@ -1,10 +1,11 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { StageItem, StageListComponent } from './stage-list.component';
 
 @Component({
   standalone: true,
   imports: [StageListComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <lc-stage-list
       [stages]="stages()"

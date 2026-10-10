@@ -1,11 +1,12 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Component, signal } from '@angular/core';
+import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { SliderComponent } from './slider.component';
 
 @Component({
   standalone: true,
   imports: [SliderComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <lc-slider
       [min]="min()"
@@ -34,6 +35,7 @@ class TestHostComponent {
 @Component({
   standalone: true,
   imports: [SliderComponent, ReactiveFormsModule],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <lc-slider label="First" [formControl]="first" [min]="10" [max]="20" />
     <lc-slider label="Second" [formControl]="second" />

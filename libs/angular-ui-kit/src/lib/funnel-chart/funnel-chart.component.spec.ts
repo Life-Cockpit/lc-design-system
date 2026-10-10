@@ -1,10 +1,11 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Component, signal } from '@angular/core';
+import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FunnelChartComponent, FunnelStep } from './funnel-chart.component';
 
 @Component({
   standalone: true,
   imports: [FunnelChartComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `<lc-funnel-chart
     [steps]="steps()"
     [width]="400"

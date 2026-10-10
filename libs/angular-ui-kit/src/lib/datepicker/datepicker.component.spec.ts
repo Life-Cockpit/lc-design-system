@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { Component, signal } from '@angular/core';
+import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
 import { By } from '@angular/platform-browser';
 import { DatepickerComponent } from './datepicker.component';
 
@@ -767,6 +767,7 @@ describe('DatepickerComponent', () => {
 @Component({
   standalone: true,
   imports: [DatepickerComponent, ReactiveFormsModule],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <lc-datepicker [formControl]="control" [readonly]="readonly()" ariaLabel="Host date" />
   `,

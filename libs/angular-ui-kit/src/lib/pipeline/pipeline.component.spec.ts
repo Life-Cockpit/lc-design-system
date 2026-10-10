@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import {
   PipelineComponent,
@@ -10,6 +10,7 @@ import {
 @Component({
   standalone: true,
   imports: [PipelineComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <lc-pipeline
       [steps]="steps()"

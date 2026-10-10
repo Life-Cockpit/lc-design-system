@@ -1,5 +1,5 @@
 import { applicationConfig, moduleMetadata } from '@storybook/angular';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideAnimations } from '@angular/platform-browser/animations';
 import { provideRouter } from '@angular/router';
 import { withThemeByClassName } from '@storybook/addon-themes';
@@ -121,7 +121,7 @@ const preview: Preview = {
       ],
     }),
     applicationConfig({
-      providers: [provideHttpClient(), provideAnimations(), provideRouter([])],
+      providers: [provideHttpClient(withXhr()), provideAnimations(), provideRouter([])],
     }),
     withThemeByClassName({
       themes: {

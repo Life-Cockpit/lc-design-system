@@ -1,10 +1,11 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Component, signal } from '@angular/core';
+import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ToolbarComponent } from './toolbar.component';
 
 @Component({
   standalone: true,
   imports: [ToolbarComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <lc-toolbar>
       <span slot="start">Title</span>
@@ -17,6 +18,7 @@ class SlotsHostComponent {}
 @Component({
   standalone: true,
   imports: [ToolbarComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <lc-toolbar aria-label="Table filters">
       <button slot="start" id="b1">One</button>

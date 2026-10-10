@@ -1,10 +1,11 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Component, signal } from '@angular/core';
+import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
 import { SplitPaneComponent } from './split-pane.component';
 
 @Component({
   standalone: true,
   imports: [SplitPaneComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <lc-split-pane
       [initialSize]="360"

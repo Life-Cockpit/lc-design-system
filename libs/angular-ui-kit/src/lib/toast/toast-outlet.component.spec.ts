@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ToastOutletComponent } from './toast-outlet.component';
 import { ToastService } from './toast.service';
@@ -17,7 +17,7 @@ describe('ToastOutletComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [ToastOutletComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideHttpClient(withXhr()), provideHttpClientTesting()],
     }).compileComponents();
 
     service = TestBed.inject(ToastService);

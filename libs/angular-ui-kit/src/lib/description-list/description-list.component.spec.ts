@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import {
   DescriptionListComponent,
@@ -10,6 +10,7 @@ import {
 @Component({
   standalone: true,
   imports: [DescriptionListComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <lc-description-list
       [items]="items()"

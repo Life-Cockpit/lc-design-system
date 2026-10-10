@@ -1,13 +1,14 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Component, signal } from '@angular/core';
+import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
 import { By } from '@angular/platform-browser';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { SearchInputComponent, SearchInputSize } from './search-input.component';
 
 @Component({
   standalone: true,
   imports: [SearchInputComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <label [for]="inputId">Find</label>
     <lc-search-input
@@ -60,7 +61,7 @@ describe('SearchInputComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [TestHostComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideHttpClient(withXhr()), provideHttpClientTesting()],
     }).compileComponents();
 
     fixture = TestBed.createComponent(TestHostComponent);

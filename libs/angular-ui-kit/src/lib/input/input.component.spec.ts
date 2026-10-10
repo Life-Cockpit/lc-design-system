@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ReactiveFormsModule, FormControl } from '@angular/forms';
 import { InputComponent } from './input.component';
@@ -6,6 +6,7 @@ import { InputComponent } from './input.component';
 @Component({
   standalone: true,
   imports: [InputComponent, ReactiveFormsModule],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <lc-input label="Bound" [(value)]="text" (valueChange)="changes.push($event)" />
     <lc-input label="One-way" [value]="preset()" />

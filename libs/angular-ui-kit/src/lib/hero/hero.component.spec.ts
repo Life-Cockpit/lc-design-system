@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { By } from '@angular/platform-browser';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
@@ -8,6 +8,7 @@ import { HeroComponent, HeroColor, HeroSize, HeroVariant } from './hero.componen
 @Component({
   standalone: true,
   imports: [HeroComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <lc-hero
       [title]="title"

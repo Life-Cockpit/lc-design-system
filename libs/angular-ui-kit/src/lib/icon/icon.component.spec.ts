@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { IconComponent, resetIconCache, resetIconWarnings } from './icon.component';
 import { HttpTestingController } from '@angular/common/http/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 
 // Sample SVG for testing
@@ -17,7 +17,7 @@ describe('IconComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [IconComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideHttpClient(withXhr()), provideHttpClientTesting()],
     }).compileComponents();
 
     resetIconWarnings();

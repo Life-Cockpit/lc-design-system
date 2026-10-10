@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/angular';
-import { Component, signal, computed } from '@angular/core';
+import { Component, signal, computed, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { IconComponent } from './icon.component';
 // The package's exports map only exposes ./icons/*, so the catalogue JSON has to be
@@ -13,6 +13,7 @@ const ALL_ICONS = Object.keys(tablerIcons).sort((a, b) => a.localeCompare(b));
   selector: 'icon-gallery',
   standalone: true,
   imports: [IconComponent, FormsModule],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <div style="margin-bottom: 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
       <input

@@ -1,12 +1,13 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Component, signal } from '@angular/core';
+import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
 import { DocumentViewerComponent, DocumentType } from './document-viewer.component';
 import { CodeBlockLanguage } from '../code-block/code-block.component';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 
 @Component({
   standalone: true,
   imports: [DocumentViewerComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <lc-document-viewer
       [src]="src()"
@@ -40,7 +41,7 @@ describe('DocumentViewerComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [TestHostComponent],
-      providers: [provideHttpClient()],
+      providers: [provideHttpClient(withXhr())],
     }).compileComponents();
 
     fixture = TestBed.createComponent(TestHostComponent);

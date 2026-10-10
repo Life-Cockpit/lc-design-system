@@ -1,12 +1,13 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { PasswordInputComponent, PasswordStrength } from './password-input.component';
 
 @Component({
   standalone: true,
   imports: [PasswordInputComponent, ReactiveFormsModule],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <lc-password-input
       [formControl]="control"
@@ -34,6 +35,7 @@ class FormHostComponent {
 @Component({
   standalone: true,
   imports: [PasswordInputComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <lc-password-input label="Password" [disabled]="disabled()" />
     <lc-password-input label="Confirm Password" />
@@ -65,7 +67,7 @@ describe('PasswordInputComponent', () => {
     beforeEach(async () => {
       await TestBed.configureTestingModule({
         imports: [FormHostComponent],
-        providers: [provideHttpClient()],
+        providers: [provideHttpClient(withXhr())],
       }).compileComponents();
 
       fixture = TestBed.createComponent(FormHostComponent);
@@ -221,7 +223,7 @@ describe('PasswordInputComponent', () => {
     beforeEach(async () => {
       await TestBed.configureTestingModule({
         imports: [TwoInstancesHostComponent],
-        providers: [provideHttpClient()],
+        providers: [provideHttpClient(withXhr())],
       }).compileComponents();
 
       fixture = TestBed.createComponent(TwoInstancesHostComponent);
@@ -257,7 +259,7 @@ describe('PasswordInputComponent', () => {
     beforeEach(async () => {
       await TestBed.configureTestingModule({
         imports: [PasswordInputComponent],
-        providers: [provideHttpClient()],
+        providers: [provideHttpClient(withXhr())],
       }).compileComponents();
 
       fixture = TestBed.createComponent(PasswordInputComponent);

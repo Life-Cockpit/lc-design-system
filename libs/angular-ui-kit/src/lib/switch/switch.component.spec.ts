@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { SwitchComponent } from './switch.component';
@@ -6,6 +6,7 @@ import { SwitchComponent } from './switch.component';
 @Component({
   standalone: true,
   imports: [SwitchComponent, ReactiveFormsModule],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <lc-switch
       [formControl]="control"
@@ -35,6 +36,7 @@ class FormHostComponent {
 @Component({
   standalone: true,
   imports: [SwitchComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <lc-switch label="First" [checked]="checked()" [disabled]="disabled()" (checkedChange)="checked.set($event)" />
     <lc-switch label="Second" />

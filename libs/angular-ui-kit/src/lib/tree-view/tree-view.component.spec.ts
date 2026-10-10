@@ -1,12 +1,13 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Component, signal } from '@angular/core';
-import { provideHttpClient } from '@angular/common/http';
+import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { TreeViewComponent, type TreeNode } from './tree-view.component';
 import { resolveFileIcon } from './file-icons';
 
 @Component({
   standalone: true,
   imports: [TreeViewComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `<lc-tree-view
     [nodes]="nodes()"
     [showToolbar]="showToolbar()"
@@ -37,7 +38,7 @@ describe('TreeViewComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [TestHost],
-      providers: [provideHttpClient()],
+      providers: [provideHttpClient(withXhr())],
     }).compileComponents();
     fixture = TestBed.createComponent(TestHost);
     host = fixture.componentInstance;

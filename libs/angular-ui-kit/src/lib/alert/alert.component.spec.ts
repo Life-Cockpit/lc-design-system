@@ -3,7 +3,7 @@ import { By } from '@angular/platform-browser';
 import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { AlertComponent } from './alert.component';
 import { HttpTestingController } from '@angular/common/http/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 
 const MOCK_SVG =
@@ -18,7 +18,7 @@ describe('AlertComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [AlertComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideHttpClient(withXhr()), provideHttpClientTesting()],
     }).compileComponents();
 
     fixture = TestBed.createComponent(AlertComponent);

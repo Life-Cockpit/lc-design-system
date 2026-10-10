@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Component } from '@angular/core';
-import { provideHttpClient } from '@angular/common/http';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import {
   ChoicePromptComponent,
   ChoicePromptDecision,
@@ -11,6 +11,7 @@ import {
 @Component({
   standalone: true,
   imports: [ChoicePromptComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <lc-choice-prompt
       [options]="options"
@@ -58,7 +59,7 @@ describe('ChoicePromptComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [TestHostComponent],
-      providers: [provideHttpClient()],
+      providers: [provideHttpClient(withXhr())],
     }).compileComponents();
 
     fixture = TestBed.createComponent(TestHostComponent);

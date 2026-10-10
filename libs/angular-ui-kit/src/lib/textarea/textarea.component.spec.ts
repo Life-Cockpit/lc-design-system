@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { TextareaComponent } from './textarea.component';
@@ -6,6 +6,7 @@ import { TextareaComponent } from './textarea.component';
 @Component({
   standalone: true,
   imports: [TextareaComponent, ReactiveFormsModule],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <lc-textarea
       [formControl]="control"
@@ -49,6 +50,7 @@ class FormHostComponent {
 @Component({
   standalone: true,
   imports: [TextareaComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <lc-textarea label="First" [disabled]="disabled()" />
     <lc-textarea label="Second" />

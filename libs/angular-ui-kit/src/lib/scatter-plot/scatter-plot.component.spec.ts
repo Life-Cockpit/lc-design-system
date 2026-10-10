@@ -1,10 +1,11 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Component, signal } from '@angular/core';
+import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ScatterPlotComponent, ScatterSeries } from './scatter-plot.component';
 
 @Component({
   standalone: true,
   imports: [ScatterPlotComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `<lc-scatter-plot
     [series]="series()"
     [width]="400"

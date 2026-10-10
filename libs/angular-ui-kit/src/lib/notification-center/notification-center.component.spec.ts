@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Component, signal } from '@angular/core';
-import { provideHttpClient } from '@angular/common/http';
+import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { By } from '@angular/platform-browser';
 import { NotificationCenterComponent, Notification } from './notification-center.component';
 
@@ -10,6 +10,7 @@ const ago = (mins: number) => new Date(now.getTime() - mins * 60000);
 @Component({
   standalone: true,
   imports: [NotificationCenterComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `<lc-notification-center
     [notifications]="notifications()"
     [title]="title()"
@@ -53,7 +54,7 @@ describe('NotificationCenterComponent', () => {
   let el: HTMLElement;
 
   beforeEach(async () => {
-    await TestBed.configureTestingModule({ imports: [TestHost], providers: [provideHttpClient()] }).compileComponents();
+    await TestBed.configureTestingModule({ imports: [TestHost], providers: [provideHttpClient(withXhr())] }).compileComponents();
     fixture = TestBed.createComponent(TestHost);
     host = fixture.componentInstance;
     fixture.detectChanges();

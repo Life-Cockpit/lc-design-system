@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, ChangeDetectionStrategy } from '@angular/core';
 import { AccordionComponent } from './accordion.component';
 import { AccordionHeaderDirective } from './accordion-header.directive';
 import { AccordionContentDirective } from './accordion-content.directive';
@@ -8,6 +8,7 @@ import { AccordionContentDirective } from './accordion-content.directive';
 @Component({
   selector: 'lc-test-probe',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: '<span class="probe">probe</span>',
 })
 class ProbeComponent implements OnInit {

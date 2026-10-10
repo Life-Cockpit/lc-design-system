@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Component, signal } from '@angular/core';
+import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
 import { By } from '@angular/platform-browser';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { TimelineComponent, TimelineItem } from './timeline.component';
 import {
   TimelineContentDirective,
@@ -12,6 +12,7 @@ import { IconComponent } from '../icon/icon.component';
 @Component({
   standalone: true,
   imports: [TimelineComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <lc-timeline
       [items]="items()"
@@ -33,6 +34,7 @@ class TestHostComponent {
 @Component({
   standalone: true,
   imports: [TimelineComponent, TimelineContentDirective, TimelineMetaDirective],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <lc-timeline [items]="items()">
       <ng-template lcTimelineMeta let-item>
@@ -73,7 +75,7 @@ describe('TimelineComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [TestHostComponent],
-      providers: [provideHttpClient()],
+      providers: [provideHttpClient(withXhr())],
     }).compileComponents();
 
     fixture = TestBed.createComponent(TestHostComponent);
@@ -175,7 +177,7 @@ describe('TimelineComponent transcript extensions', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [TranscriptHostComponent],
-      providers: [provideHttpClient()],
+      providers: [provideHttpClient(withXhr())],
     }).compileComponents();
 
     fixture = TestBed.createComponent(TranscriptHostComponent);

@@ -1,10 +1,11 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Component, signal } from '@angular/core';
+import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
 import { PageHeaderComponent } from './page-header.component';
 
 @Component({
   standalone: true,
   imports: [PageHeaderComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <lc-page-header title="Reports" subtitle="Compare metrics">
       <span slot="breadcrumbs">Home / Reports</span>
@@ -19,6 +20,7 @@ class SlotsHostComponent {}
 @Component({
   standalone: true,
   imports: [PageHeaderComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <lc-page-header title="Reports" [level]="level()">
       <span slot="title-suffix" class="suffix">beta</span>

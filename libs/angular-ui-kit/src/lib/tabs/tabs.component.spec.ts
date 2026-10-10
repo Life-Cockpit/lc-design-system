@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { TabsComponent, TabComponent } from './tabs.component';
-import { Component, signal } from '@angular/core';
+import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
 import { By } from '@angular/platform-browser';
 import { readFileSync } from 'fs';
 import { join } from 'path';
@@ -9,6 +9,7 @@ import { join } from 'path';
   selector: 'lc-test-tabs',
   standalone: true,
   imports: [TabsComponent, TabComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <lc-tabs [orientation]="orientation()" [selectedIndexInput]="selectedIndex()">
       <lc-tab label="Tab 1">Content 1</lc-tab>
@@ -27,6 +28,7 @@ class TestTabsComponent {
   selector: 'lc-test-tabs-disabled',
   standalone: true,
   imports: [TabsComponent, TabComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <lc-tabs>
       <lc-tab label="Tab 1">Content 1</lc-tab>
@@ -41,6 +43,7 @@ class TestTabsDisabledComponent {}
   selector: 'lc-test-tabs-vertical',
   standalone: true,
   imports: [TabsComponent, TabComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <lc-tabs orientation="vertical">
       <lc-tab label="Tab 1">Content 1</lc-tab>
@@ -55,6 +58,7 @@ class TestTabsVerticalComponent {}
   selector: 'lc-test-tabs-dynamic',
   standalone: true,
   imports: [TabsComponent, TabComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <lc-tabs [(selectedIndex)]="selected">
       @for (label of labels(); track label) {

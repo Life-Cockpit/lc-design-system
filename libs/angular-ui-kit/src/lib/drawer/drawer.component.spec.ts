@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Component, signal } from '@angular/core';
-import { provideHttpClient } from '@angular/common/http';
+import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { InteractivityChecker } from '@angular/cdk/a11y';
 import { DrawerComponent } from './drawer.component';
@@ -9,6 +9,7 @@ import { OverlayStackService } from '../shared/overlay-stack.service';
 @Component({
   standalone: true,
   imports: [DrawerComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <button type="button" class="opener" (click)="open.set(true)">Open</button>
     <lc-drawer
@@ -51,7 +52,7 @@ describe('DrawerComponent', () => {
     await TestBed.configureTestingModule({
       imports: [TestHostComponent],
       providers: [
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         provideHttpClientTesting(),
         { provide: InteractivityChecker, useValue: interactivityCheckerStub },
       ],

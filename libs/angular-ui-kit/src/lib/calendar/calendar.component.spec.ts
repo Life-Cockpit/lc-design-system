@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Component, signal } from '@angular/core';
+import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
 import { CalendarComponent, CalendarView } from './calendar.component';
 
 describe('CalendarComponent', () => {
@@ -183,6 +183,7 @@ describe('CalendarComponent accessibility', () => {
 @Component({
   standalone: true,
   imports: [CalendarComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `<lc-calendar [(view)]="view" (viewChange)="changes.push($event)" [labels]="{ today: 'Today' }" />`,
 })
 class CalendarHostComponent {

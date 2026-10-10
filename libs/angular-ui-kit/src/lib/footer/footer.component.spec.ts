@@ -1,13 +1,14 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { FooterComponent, FooterSection, FooterVariant } from './footer.component';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 
 @Component({
   standalone: true,
   imports: [FooterComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <lc-footer
       [sections]="sections"
@@ -33,7 +34,7 @@ describe('FooterComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [TestHostComponent],
-      providers: [provideHttpClient()],
+      providers: [provideHttpClient(withXhr())],
     }).compileComponents();
 
     fixture = TestBed.createComponent(TestHostComponent);

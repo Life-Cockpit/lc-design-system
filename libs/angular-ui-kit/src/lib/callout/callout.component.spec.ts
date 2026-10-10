@@ -1,13 +1,14 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Component, signal } from '@angular/core';
+import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
 import { By } from '@angular/platform-browser';
 import { CalloutComponent, CalloutVariant } from './callout.component';
 import { IconComponent } from '../icon/icon.component';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 
 @Component({
   standalone: true,
   imports: [CalloutComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <lc-callout
       [variant]="variant"
@@ -39,7 +40,7 @@ describe('CalloutComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [TestHostComponent],
-      providers: [provideHttpClient()],
+      providers: [provideHttpClient(withXhr())],
     }).compileComponents();
 
     fixture = TestBed.createComponent(TestHostComponent);

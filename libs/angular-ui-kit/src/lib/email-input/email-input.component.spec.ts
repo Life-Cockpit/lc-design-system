@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { EmailInputComponent } from './email-input.component';
@@ -6,6 +6,7 @@ import { EmailInputComponent } from './email-input.component';
 @Component({
   standalone: true,
   imports: [EmailInputComponent, ReactiveFormsModule],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `<lc-email-input [formControl]="control" />`,
 })
 class FormHostComponent {

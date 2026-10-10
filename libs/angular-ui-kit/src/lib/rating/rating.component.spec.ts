@@ -1,12 +1,13 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Component, signal } from '@angular/core';
+import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { RatingComponent, RatingSize } from './rating.component';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 
 @Component({
   standalone: true,
   imports: [RatingComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <lc-rating
       [max]="max()"
@@ -39,6 +40,7 @@ class TestHostComponent {
 @Component({
   standalone: true,
   imports: [RatingComponent, ReactiveFormsModule],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `<lc-rating label="Score" [formControl]="control" />`,
 })
 class FormHostComponent {
@@ -71,7 +73,7 @@ describe('RatingComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [TestHostComponent, FormHostComponent],
-      providers: [provideHttpClient()],
+      providers: [provideHttpClient(withXhr())],
     }).compileComponents();
 
     fixture = TestBed.createComponent(TestHostComponent);

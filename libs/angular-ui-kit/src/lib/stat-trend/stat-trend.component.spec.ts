@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { StatTrendComponent } from './stat-trend.component';
 import { IconComponent } from '../icon/icon.component';
 
@@ -11,7 +11,7 @@ describe('StatTrendComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [StatTrendComponent],
-      providers: [provideHttpClient()],
+      providers: [provideHttpClient(withXhr())],
     }).compileComponents();
 
     fixture = TestBed.createComponent(StatTrendComponent);

@@ -1,11 +1,12 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { By } from '@angular/platform-browser';
 import { DividerComponent, DividerOrientation, DividerVariant, DividerSpacing } from './divider.component';
 
 @Component({
   standalone: true,
   imports: [DividerComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <lc-divider
       [orientation]="orientation"

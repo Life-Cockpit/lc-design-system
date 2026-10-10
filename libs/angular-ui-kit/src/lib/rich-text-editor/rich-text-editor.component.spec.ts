@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { By } from '@angular/platform-browser';
@@ -7,6 +7,7 @@ import { RichTextEditorComponent } from './rich-text-editor.component';
 @Component({
   standalone: true,
   imports: [RichTextEditorComponent, ReactiveFormsModule],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `<lc-rich-text-editor [formControl]="control" [mode]="mode()" />`,
 })
 class FormHost {

@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Component, signal } from '@angular/core';
+import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { Observable, of, throwError } from 'rxjs';
 import { ComboboxComponent, ComboboxOption, ComboboxValue } from './combobox.component';
@@ -11,6 +11,7 @@ const dropdown = (): HTMLElement | null =>
 @Component({
   standalone: true,
   imports: [ComboboxComponent, ReactiveFormsModule],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `<lc-combobox label="Fruit" [options]="options()" [formControl]="control" />`,
 })
 class FormHost {

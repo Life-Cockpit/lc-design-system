@@ -6,7 +6,7 @@ import { OverlayStackService } from '../shared/overlay-stack.service';
 import { OverlayModule } from '@angular/cdk/overlay';
 import { InteractivityChecker } from '@angular/cdk/a11y';
 import { HttpTestingController } from '@angular/common/http/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 
 const MOCK_SVG =
@@ -20,7 +20,7 @@ describe('ModalComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [ModalComponent, OverlayModule],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideHttpClient(withXhr()), provideHttpClientTesting()],
     }).compileComponents();
 
     fixture = TestBed.createComponent(ModalComponent);
@@ -476,7 +476,7 @@ describe('ModalComponent', () => {
       await TestBed.configureTestingModule({
         imports: [FocusHostComponent],
         providers: [
-          provideHttpClient(),
+          provideHttpClient(withXhr()),
           provideHttpClientTesting(),
           {
             provide: InteractivityChecker,

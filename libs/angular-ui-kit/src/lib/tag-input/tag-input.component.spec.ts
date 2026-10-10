@@ -1,11 +1,12 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Component, signal } from '@angular/core';
+import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { TagInputComponent } from './tag-input.component';
 
 @Component({
   standalone: true,
   imports: [TagInputComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `<lc-tag-input
     [placeholder]="placeholder()"
     [maxTags]="maxTags()"
@@ -33,6 +34,7 @@ class TestHost {
 @Component({
   standalone: true,
   imports: [TagInputComponent, ReactiveFormsModule],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `<lc-tag-input label="Tags" [formControl]="control" />`,
 })
 class FormHost {

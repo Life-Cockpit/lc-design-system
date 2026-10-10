@@ -1,11 +1,12 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Component, signal } from '@angular/core';
+import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { DateRangePickerComponent, DateRange } from './date-range-picker.component';
 
 @Component({
   standalone: true,
   imports: [DateRangePickerComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `<lc-date-range-picker
     [label]="label()"
     [placeholder]="placeholder()"
@@ -29,6 +30,7 @@ class TestHost {
 @Component({
   standalone: true,
   imports: [DateRangePickerComponent, ReactiveFormsModule],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `<lc-date-range-picker label="Period" [formControl]="control" />`,
 })
 class FormHost {

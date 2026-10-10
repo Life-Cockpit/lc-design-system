@@ -1,11 +1,12 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Component, signal } from '@angular/core';
+import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
 import { By } from '@angular/platform-browser';
 import { DiffViewerComponent, DiffViewMode } from './diff-viewer.component';
 
 @Component({
   standalone: true,
   imports: [DiffViewerComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `<lc-diff-viewer
     [oldText]="oldText()"
     [newText]="newText()"

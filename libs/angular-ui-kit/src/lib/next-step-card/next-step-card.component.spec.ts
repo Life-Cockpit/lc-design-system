@@ -1,11 +1,12 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Component } from '@angular/core';
-import { provideHttpClient } from '@angular/common/http';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { NextStepCardComponent, NextStepCardTone } from './next-step-card.component';
 
 @Component({
   standalone: true,
   imports: [NextStepCardComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <lc-next-step-card
       [tone]="tone"
@@ -69,7 +70,7 @@ describe('NextStepCardComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [TestHostComponent],
-      providers: [provideHttpClient()],
+      providers: [provideHttpClient(withXhr())],
     }).compileComponents();
 
     fixture = TestBed.createComponent(TestHostComponent);

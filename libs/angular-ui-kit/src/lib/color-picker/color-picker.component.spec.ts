@@ -1,11 +1,12 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Component, signal } from '@angular/core';
+import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { ColorPickerComponent } from './color-picker.component';
 
 @Component({
   standalone: true,
   imports: [ColorPickerComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <lc-color-picker
       [label]="label()"
@@ -30,6 +31,7 @@ class TestHostComponent {
 @Component({
   standalone: true,
   imports: [ColorPickerComponent, ReactiveFormsModule],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <lc-color-picker label="Primary" [formControl]="primary" [swatches]="['#ef4444', '#22c55e']" />
     <lc-color-picker label="Secondary" [formControl]="secondary" [swatches]="['#ef4444', '#22c55e']" />

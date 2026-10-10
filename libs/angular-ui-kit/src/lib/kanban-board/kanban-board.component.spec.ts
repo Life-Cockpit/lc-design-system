@@ -1,11 +1,12 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Component, signal } from '@angular/core';
-import { provideHttpClient } from '@angular/common/http';
+import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { KanbanBoardComponent, KanbanColumn, KanbanMoveEvent, KanbanCard } from './kanban-board.component';
 
 @Component({
   standalone: true,
   imports: [KanbanBoardComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `<lc-kanban-board
     [columns]="columns()"
     [showCardCount]="showCardCount()"
@@ -48,7 +49,7 @@ describe('KanbanBoardComponent', () => {
   let el: HTMLElement;
 
   beforeEach(async () => {
-    await TestBed.configureTestingModule({ imports: [TestHost], providers: [provideHttpClient()] }).compileComponents();
+    await TestBed.configureTestingModule({ imports: [TestHost], providers: [provideHttpClient(withXhr())] }).compileComponents();
     fixture = TestBed.createComponent(TestHost);
     host = fixture.componentInstance;
     fixture.detectChanges();

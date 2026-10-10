@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { FormsModule, ReactiveFormsModule, FormControl } from '@angular/forms';
@@ -8,6 +8,7 @@ import { RadioComponent } from './radio.component';
 @Component({
   standalone: true,
   imports: [RadioComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <lc-radio name="fruit" value="a" label="A" (checkedChange)="log('a', $event)" />
     <lc-radio name="fruit" value="b" label="B" (checkedChange)="log('b', $event)" />
@@ -25,6 +26,7 @@ class UnboundGroupHostComponent {
 @Component({
   standalone: true,
   imports: [RadioComponent, ReactiveFormsModule],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <lc-radio name="plan" value="a" label="A" [formControl]="control" />
     <lc-radio name="plan" value="b" label="B" [formControl]="control" />

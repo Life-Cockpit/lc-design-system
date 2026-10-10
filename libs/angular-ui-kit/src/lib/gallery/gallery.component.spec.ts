@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { GalleryComponent, GalleryItem, GalleryLayout, GallerySize } from './gallery.component';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 
 const MOCK_ITEMS: GalleryItem[] = [
   { src: '/img/1.jpg', alt: 'Image 1', caption: 'First image', category: 'Nature' },
@@ -13,6 +13,7 @@ const MOCK_ITEMS: GalleryItem[] = [
 @Component({
   standalone: true,
   imports: [GalleryComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <lc-gallery
       [items]="items"
@@ -44,7 +45,7 @@ describe('GalleryComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [TestHostComponent],
-      providers: [provideHttpClient()],
+      providers: [provideHttpClient(withXhr())],
     }).compileComponents();
 
     fixture = TestBed.createComponent(TestHostComponent);

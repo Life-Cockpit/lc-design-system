@@ -41,6 +41,18 @@ export default [
     },
   },
   {
+    // Test hosts and story demos are not shipped. They mutate plain fields and
+    // rely on eager change detection, which Angular 22 no longer applies by
+    // default — the v22 migration pinned them to `ChangeDetectionStrategy.Eager`.
+    // Shipped components stay under the rule: every one declares OnPush
+    // explicitly, so the default-strategy change between Angular 21 (Eager) and
+    // 22 (OnPush) can never alter how the library renders in either major.
+    files: ['**/*.spec.ts', '**/*.stories.ts'],
+    rules: {
+      '@angular-eslint/prefer-on-push-component-change-detection': 'off',
+    },
+  },
+  {
     files: ['**/*.html'],
     // Override or add rules here
     rules: {},

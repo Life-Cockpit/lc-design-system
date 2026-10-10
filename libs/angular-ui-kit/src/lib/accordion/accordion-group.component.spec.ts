@@ -1,11 +1,12 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Component, signal } from '@angular/core';
+import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
 import { AccordionGroupComponent } from './accordion-group.component';
 import { AccordionComponent } from './accordion.component';
 
 @Component({
   standalone: true,
   imports: [AccordionGroupComponent, AccordionComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <lc-accordion-group [multi]="multi">
       <lc-accordion title="One"></lc-accordion>
@@ -120,6 +121,7 @@ describe('AccordionGroupComponent', () => {
 @Component({
   standalone: true,
   imports: [AccordionGroupComponent, AccordionComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <lc-accordion-group [multi]="false">
       @for (item of items(); track item) {

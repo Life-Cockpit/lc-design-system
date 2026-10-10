@@ -5,7 +5,7 @@ import { ListComponent, ListItem } from './list.component';
 import { ListItemTemplateDirective } from './list-item-template.directive';
 import { IconComponent } from '../icon/icon.component';
 import { HttpTestingController } from '@angular/common/http/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 
 const MOCK_SVG =
@@ -20,7 +20,7 @@ describe('ListComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [ListComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideHttpClient(withXhr()), provideHttpClientTesting()],
     }).compileComponents();
 
     fixture = TestBed.createComponent(ListComponent);

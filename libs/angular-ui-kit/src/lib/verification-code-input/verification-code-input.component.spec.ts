@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { VerificationCodeInputComponent } from './verification-code-input.component';
@@ -6,6 +6,7 @@ import { VerificationCodeInputComponent } from './verification-code-input.compon
 @Component({
   standalone: true,
   imports: [VerificationCodeInputComponent, ReactiveFormsModule],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <lc-verification-code-input
       [formControl]="control"
@@ -35,6 +36,7 @@ class FormHostComponent {
 @Component({
   standalone: true,
   imports: [VerificationCodeInputComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <lc-verification-code-input label="First" [length]="4" [disabled]="disabled()" />
     <lc-verification-code-input label="Second" [length]="4" [autofocus]="true" />

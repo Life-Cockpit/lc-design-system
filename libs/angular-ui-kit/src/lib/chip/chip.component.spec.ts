@@ -4,7 +4,7 @@ import { By } from '@angular/platform-browser';
 import { ChipComponent } from './chip.component';
 import { IconComponent } from '../icon/icon.component';
 import { HttpTestingController } from '@angular/common/http/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 
 const MOCK_SVG =
@@ -19,7 +19,7 @@ describe('ChipComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [ChipComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideHttpClient(withXhr()), provideHttpClientTesting()],
     }).compileComponents();
 
     fixture = TestBed.createComponent(ChipComponent);

@@ -15,7 +15,6 @@ import {
 } from '@angular/core';
 import { CdkTrapFocus } from '@angular/cdk/a11y';
 import { IconComponent } from '../icon/icon.component';
-import { SpinnerComponent } from '../spinner/spinner.component';
 import { NgStyle } from '@angular/common';
 import { isSafeImageUrl } from '../shared/safe-url';
 
@@ -69,7 +68,7 @@ const SIZE_COLUMNS: Record<GallerySize, number> = {
 @Component({
   selector: 'lc-gallery',
   standalone: true,
-  imports: [IconComponent, SpinnerComponent, NgStyle, CdkTrapFocus],
+  imports: [IconComponent, NgStyle, CdkTrapFocus],
   templateUrl: './gallery.component.html',
   styleUrls: ['./gallery.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

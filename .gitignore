@@ -51,3 +51,7 @@ __screenshots__/
 storybook-static
 # CDK
 cdk.out
+
+.nx/polygraph
+.nx/self-healing
+.nx/migrate-runs

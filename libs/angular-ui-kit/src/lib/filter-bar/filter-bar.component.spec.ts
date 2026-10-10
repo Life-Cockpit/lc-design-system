@@ -1,12 +1,13 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { FilterBarComponent, FilterConfig, FilterValues } from './filter-bar.component';
 
 @Component({
   standalone: true,
   imports: [FilterBarComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `<lc-filter-bar [filters]="filters" [values]="values()" (valuesChange)="values.set($event)" />`,
 })
 class HostComponent {
@@ -55,7 +56,7 @@ describe('FilterBarComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [FilterBarComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideHttpClient(withXhr()), provideHttpClientTesting()],
     }).compileComponents();
 
     fixture = TestBed.createComponent(FilterBarComponent);
@@ -176,7 +177,7 @@ describe('FilterBarComponent in a host', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [HostComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideHttpClient(withXhr()), provideHttpClientTesting()],
     }).compileComponents();
     fixture = TestBed.createComponent(HostComponent);
     host = fixture.componentInstance;

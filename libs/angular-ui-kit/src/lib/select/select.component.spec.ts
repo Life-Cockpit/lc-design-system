@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { Component, signal } from '@angular/core';
+import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
 import { By } from '@angular/platform-browser';
 import { SelectComponent, SelectOption, SelectValue } from './select.component';
 
@@ -762,6 +762,7 @@ describe('SelectComponent', () => {
 @Component({
   standalone: true,
   imports: [SelectComponent, ReactiveFormsModule],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <lc-select
       [options]="options()"

@@ -1,10 +1,11 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ToggleGroupComponent, ToggleOption } from './toggle-group.component';
-import { Component, signal } from '@angular/core';
+import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
 
 @Component({
   standalone: true,
   imports: [ToggleGroupComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `
     <lc-toggle-group
       [options]="options()"

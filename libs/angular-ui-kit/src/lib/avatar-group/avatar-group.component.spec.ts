@@ -1,11 +1,12 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { AvatarGroupComponent, AvatarGroupItem } from './avatar-group.component';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 
 @Component({
   standalone: true,
   imports: [AvatarGroupComponent],
+  changeDetection: ChangeDetectionStrategy.Eager,
   template: `<lc-avatar-group [avatars]="avatars" [size]="size" [max]="max" />`,
 })
 class TestHostComponent {
@@ -25,7 +26,7 @@ describe('AvatarGroupComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [TestHostComponent],
-      providers: [provideHttpClient()],
+      providers: [provideHttpClient(withXhr())],
     }).compileComponents();
 
     fixture = TestBed.createComponent(TestHostComponent);

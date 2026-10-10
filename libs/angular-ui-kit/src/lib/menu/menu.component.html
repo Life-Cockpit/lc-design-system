@@ -47,12 +47,12 @@
               }
               <span class="lc-menu__item-content">
                 <span class="lc-menu__item-label">{{ item.label }}</span>
-                @if (item.metadata?.subtitle) {
-                  <span class="lc-menu__item-subtitle">{{ item.metadata?.subtitle }}</span>
+                @if (item.metadata?.subtitle; as subtitle) {
+                  <span class="lc-menu__item-subtitle">{{ subtitle }}</span>
                 }
               </span>
-              @if (item.metadata?.badge) {
-                <span class="lc-menu__item-badge">{{ item.metadata?.badge }}</span>
+              @if (item.metadata?.badge; as badge) {
+                <span class="lc-menu__item-badge">{{ badge }}</span>
               }
             </a>
           } @else {
@@ -73,12 +73,12 @@
               }
               <span class="lc-menu__item-content">
                 <span class="lc-menu__item-label">{{ item.label }}</span>
-                @if (item.metadata?.subtitle) {
-                  <span class="lc-menu__item-subtitle">{{ item.metadata?.subtitle }}</span>
+                @if (item.metadata?.subtitle; as subtitle) {
+                  <span class="lc-menu__item-subtitle">{{ subtitle }}</span>
                 }
               </span>
-              @if (item.metadata?.badge) {
-                <span class="lc-menu__item-badge">{{ item.metadata?.badge }}</span>
+              @if (item.metadata?.badge; as badge) {
+                <span class="lc-menu__item-badge">{{ badge }}</span>
               }
             </button>
           }
