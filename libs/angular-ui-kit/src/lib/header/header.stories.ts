@@ -70,6 +70,41 @@ const meta: Meta<HeaderComponent> = {
       description: 'Size of the profile dropdown menu',
       table: { defaultValue: { summary: 'sm' } },
     },
+    showUserMenu: {
+      control: 'boolean',
+      description: 'Render the account menu (avatar trigger with Profile / Logout)',
+      table: { defaultValue: { summary: 'true' } },
+    },
+    homeHref: {
+      description:
+        'Plain URL for the brand link. When set the brand is a native `<a href>` (no router needed); empty keeps `routerLink="/"`',
+      table: { defaultValue: { summary: "''" } },
+    },
+    navItems: {
+      control: 'object',
+      description:
+        'Main navigation `{ label, href, current? }[]` → `<nav aria-label><ul><li><a href>`; `current` sets `aria-current="page"`. Below 1024 px the nav takes a second, wrapping row',
+    },
+    navAriaLabel: { description: 'Accessible name of the `<nav>`', table: { defaultValue: { summary: 'Main navigation' } } },
+    titleTag: {
+      control: 'select',
+      options: ['h1', 'h2', 'h3', 'p', 'span', 'div'],
+      description: 'Element for the title — use `span` when the page has its own `<h1>`',
+      table: { defaultValue: { summary: 'h1' } },
+    },
+    sticky: {
+      control: 'boolean',
+      description: 'Keep the header at the top while scrolling',
+      table: { defaultValue: { summary: 'true' } },
+    },
+    homeAriaLabel: { description: 'Accessible name of the brand link', table: { defaultValue: { summary: 'Go to home' } } },
+    hamburgerAriaLabel: { description: 'Accessible name of the hamburger', table: { defaultValue: { summary: 'Toggle sidebar menu' } } },
+    userMenuAriaLabel: { description: 'Accessible name of the account menu trigger', table: { defaultValue: { summary: 'Open user menu' } } },
+    themeToDarkAriaLabel: { description: 'Theme button label in the light theme', table: { defaultValue: { summary: 'Switch to dark mode' } } },
+    themeToLightAriaLabel: { description: 'Theme button label in the dark theme', table: { defaultValue: { summary: 'Switch to light mode' } } },
+    contextAriaLabel: { description: 'Accessible name of the context button', table: { defaultValue: { summary: 'Context info' } } },
+    profileLabel: { description: 'Label of the Profile menu entry', table: { defaultValue: { summary: 'Profile' } } },
+    logoutLabel: { description: 'Label of the Logout menu entry', table: { defaultValue: { summary: 'Logout' } } },
   },
 
   parameters: {
@@ -96,6 +131,25 @@ AppHeaderComponent - Global application header for Life-Cockpit shell
 - \`theme\` input (\`auto\` | \`light\` | \`dark\`) with internal CSS tokens
 - Logo auto-adapts color to the header's theme
 - OnPush change detection for performance
+
+**Public, prerendered sites** (see the *Public Site* stories):
+- \`homeHref\` — the brand becomes a plain \`<a href>\`; no router and no JavaScript needed.
+- \`navItems\` (\`{ label, href, current? }[]\`) — rendered as
+  \`<nav aria-label="…"><ul><li><a href aria-current="page">\`; the current page is
+  marked by an underline as well as by color. From 1024 px the nav sits in the bar;
+  below it takes a second row and wraps, links are 44 px high. Label: \`navAriaLabel\`.
+- \`[slot='end']\` — content at the end of the first row, e.g. a language link
+  (\`<a slot="end" lcButton variant="ghost" hreflang="en" lang="en">\`). DOM and focus
+  order: brand → nav → end slot.
+- \`showUserMenu\` (default \`true\`) hides the account menu, \`titleTag\` renders the
+  title as \`h1 | h2 | h3 | p | span | div\` (default \`h1\`), \`sticky\` (default
+  \`true\`) can be switched off.
+- The \`ThemeService\` — which reads and writes the theme class and \`localStorage\` —
+  is only created when \`showThemeButton\` is on.
+
+**Labels** (English defaults, one input each): \`homeAriaLabel\`, \`hamburgerAriaLabel\`,
+\`userMenuAriaLabel\`, \`navAriaLabel\`, \`themeToDarkAriaLabel\`, \`themeToLightAriaLabel\`,
+\`contextAriaLabel\`, \`profileLabel\`, \`logoutLabel\`.
 
 **Theming Tokens:** \`--lc-header-bg\`, \`--lc-header-fg\`, \`--lc-header-fg-secondary\`, \`--lc-header-border\`, \`--lc-header-hover-bg\`, \`--lc-header-trigger-border\`, \`--lc-header-trigger-fg\`
 `,
@@ -269,4 +323,96 @@ export const LogoSizes: Story = {
       </div>`,
     props: { sizes: ['xs', 'sm', 'md', 'lg', 'xl'] as const },
   }),
+};
+
+const publicNav = [
+  { label: 'Sicherheit', href: '#sicherheit', current: true },
+  { label: 'So bauen wir', href: '#so-bauen-wir' },
+  { label: 'Roadmap', href: '#roadmap' },
+];
+
+export const PublicSite: Story = {
+  name: 'Public Site (no router, labelled nav, end slot)',
+  parameters: {
+    layout: 'fullscreen',
+    docs: {
+      description: {
+        story:
+          'Frame of a static, prerendered website: plain home link (`homeHref`), labelled main navigation with the current page marked, a language link in `[slot=\'end\']`, no account menu, no sticky position and no `<h1>` in the header. Nothing here needs JavaScript. Resize below 1024 px to see the nav move to its own wrapping row.',
+      },
+    },
+  },
+  render: () => ({
+    props: { navItems: publicNav },
+    template: `
+      <lc-header
+        size="sm"
+        [sticky]="false"
+        [showUserMenu]="false"
+        homeHref="#start"
+        homeAriaLabel="Produkt – Startseite"
+        navAriaLabel="Hauptnavigation"
+        [navItems]="navItems"
+      >
+        <a slot="end" lcButton variant="ghost" href="#en" hreflang="en" lang="en"
+           aria-label="Open this page in English">English</a>
+      </lc-header>`,
+  }),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const nav = canvas.getByRole('navigation', { name: 'Hauptnavigation' });
+    await expect(within(nav).getByRole('link', { name: 'Sicherheit' }).getAttribute('aria-current')).toBe('page');
+    await expect(canvas.getByRole('link', { name: 'Produkt – Startseite' }).getAttribute('href')).toBe('#start');
+    await expect(canvasElement.querySelector('h1')).toBeNull();
+  },
+};
+
+export const PublicSitePhone: Story = {
+  name: 'Public Site on a Phone (two rows)',
+  // The breakpoint is the viewport (1024 px), so this story opens in the mobile
+  // viewport; in the docs page it renders at the page width.
+  globals: { viewport: { value: 'mobile1', isRotated: false } },
+  parameters: {
+    layout: 'fullscreen',
+    docs: {
+      description: {
+        story:
+          'Below a 1024 px viewport the navigation takes a second row under brand and language link and wraps when the labels do not fit. Open the story in the canvas (mobile viewport) to see it.',
+      },
+    },
+  },
+  render: () => ({
+    props: { navItems: [...publicNav, { label: 'Neuigkeiten', href: '#neuigkeiten' }] },
+    template: `
+      <lc-header size="sm" [sticky]="false" [showUserMenu]="false" homeHref="#start"
+                 homeAriaLabel="Produkt – Startseite" navAriaLabel="Hauptnavigation" [navItems]="navItems">
+        <a slot="end" lcButton variant="ghost" href="#en" hreflang="en" lang="en">English</a>
+      </lc-header>`,
+  }),
+};
+
+export const TranslatedLabels: Story = {
+  name: 'Translated Labels',
+  parameters: {
+    docs: {
+      description: {
+        story: 'Every built-in label is an input; the defaults stay English.',
+      },
+    },
+  },
+  args: {
+    title: 'Life-Cockpit',
+    titleTag: 'span',
+    userName: 'Sarah Connor',
+    userEmail: 'sarah@example.com',
+    showHamburger: true,
+    showThemeButton: true,
+    homeAriaLabel: 'Zur Startseite',
+    hamburgerAriaLabel: 'Seitenleiste ein- oder ausblenden',
+    userMenuAriaLabel: 'Benutzermenü öffnen',
+    themeToDarkAriaLabel: 'Zum dunklen Design wechseln',
+    themeToLightAriaLabel: 'Zum hellen Design wechseln',
+    profileLabel: 'Profil',
+    logoutLabel: 'Abmelden',
+  },
 };

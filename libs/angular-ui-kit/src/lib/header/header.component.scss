@@ -36,13 +36,101 @@
   z-index: 1000;
 
   // Explicit size variants (use to align the header with a sidebar brand block).
-  &.lc-header--size-sm { min-height: 56px; }
-  &.lc-header--size-md { min-height: 64px; }
-  &.lc-header--size-lg { min-height: 80px; }
-  &.lc-header--size-xl { min-height: 112px; }
+  // --lc-header-row-height is the height of the first row when the header
+  // wraps into two rows (navItems below 1024 px).
+  &.lc-header--size-sm { min-height: 56px; --lc-header-row-height: 56px; }
+  &.lc-header--size-md { min-height: 64px; --lc-header-row-height: 64px; }
+  &.lc-header--size-lg { min-height: 80px; --lc-header-row-height: 80px; }
+  &.lc-header--size-xl { min-height: 112px; --lc-header-row-height: 112px; }
 
   @media (max-width: 768px) {
     --lc-header-padding-x: var(--lc-density-padding-md, var(--spacing-4));
+  }
+}
+
+// `[sticky]="false"` — scrolls away with the page. `relative` (not `static`)
+// keeps the z-index, so the account menu still layers above the content.
+.lc-header--static {
+  position: relative;
+}
+
+// ── Main navigation (`navItems`) ──────────────────────────────────────────
+// From 1024 px the nav sits in the row between brand and the end content.
+// Below, the header wraps: the nav takes a second row of its own (order +
+// full basis) and its list wraps line by line, so a long German label or 200 %
+// text never scrolls sideways. DOM order stays brand → nav → end slot, which is
+// the focus order in both layouts.
+.lc-header--has-nav {
+  flex-wrap: wrap;
+  row-gap: 0;
+
+  // The first row keeps the header's size: the brand is always rendered, so
+  // its min-height defines the row and everything else centers in it.
+  .lc-header__brand {
+    min-height: var(--lc-header-row-height, 64px);
+  }
+}
+
+.lc-header__nav {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.lc-header__nav-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 var(--lc-header-nav-gap, var(--spacing-1));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lc-header__nav-item {
+  display: flex;
+}
+
+.lc-header__nav-link {
+  display: inline-flex;
+  align-items: center;
+  // 44 px touch target (WCAG 2.5.5 / the kit's --size-min-touch-height).
+  min-height: var(--size-min-touch-height, 2.75rem);
+  padding: 0 var(--spacing-3);
+  border-radius: var(--border-radius-md);
+  color: var(--lc-header-fg-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-tight);
+  text-decoration: none;
+  transition: color 0.15s ease, background-color 0.15s ease;
+
+  &:hover {
+    color: var(--lc-header-fg);
+    background-color: var(--lc-header-hover-bg);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: 2px;
+  }
+
+  // The current page is marked by more than color (WCAG 1.4.1): full ink and
+  // an underline bar under the label.
+  &[aria-current='page'] {
+    color: var(--lc-header-fg);
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.45em;
+  }
+}
+
+@media (max-width: 1023.98px) {
+  .lc-header--has-nav .lc-header__nav {
+    order: 1;
+    flex-basis: 100%;
+    // Line the first link's text up with the brand above it.
+    margin-left: calc(-1 * var(--spacing-3));
   }
 }
 

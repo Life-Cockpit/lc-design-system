@@ -6,6 +6,8 @@
   [class.lc-header--size-md]="size() === 'md'"
   [class.lc-header--size-lg]="size() === 'lg'"
   [class.lc-header--size-xl]="size() === 'xl'"
+  [class.lc-header--has-nav]="navItems().length > 0"
+  [class.lc-header--static]="!sticky()"
 >
   <!-- Hamburger menu icon (mobile only) -->
   @if (showHamburger()) {
@@ -14,7 +16,7 @@
       variant="ghost"
       size="sm"
       [iconOnly]="true"
-      [ariaLabel]="'Toggle sidebar menu'"
+      [ariaLabel]="hamburgerAriaLabel()"
       (clicked)="onHamburgerClick()"
       class="lc-header__hamburger"
     >
@@ -25,24 +27,40 @@
   <!-- Logo (clickable, navigates to home) -->
   <div class="lc-header__brand">
     @if (showLogo()) {
-      <a routerLink="/" class="lc-header__logo" aria-label="Go to home">
-        <lc-logo
-          [variant]="logo() ? 'full' : 'emblem'"
-          [size]="logoSize()"
-          [clickable]="false"
-          [colorMode]="theme() === 'dark' ? 'dark' : theme() === 'light' ? 'light' : 'auto'"
-          [src]="logoSrc()"
-          [emblemSrc]="logoEmblemSrc()"
-          [darkSrc]="logoDarkSrc()"
-          [darkEmblemSrc]="logoDarkEmblemSrc()"
-          [alt]="logoAlt() || title() || 'Logo'"
-        />
-      </a>
+      @if (homeHref()) {
+        <!-- Plain link: works without the router and without JavaScript. -->
+        <a [href]="homeHref()" class="lc-header__logo" [attr.aria-label]="homeAriaLabel()">
+          <ng-container [ngTemplateOutlet]="brandLogo" />
+        </a>
+      } @else {
+        <a routerLink="/" class="lc-header__logo" [attr.aria-label]="homeAriaLabel()">
+          <ng-container [ngTemplateOutlet]="brandLogo" />
+        </a>
+      }
     }
-    
+
     @if (title()) {
       <div class="lc-header__title-group">
-        <h1 class="lc-header__title">{{ title() }}</h1>
+        @switch (titleTag()) {
+          @case ('h1') {
+            <h1 class="lc-header__title">{{ title() }}</h1>
+          }
+          @case ('h2') {
+            <h2 class="lc-header__title">{{ title() }}</h2>
+          }
+          @case ('h3') {
+            <h3 class="lc-header__title">{{ title() }}</h3>
+          }
+          @case ('p') {
+            <p class="lc-header__title">{{ title() }}</p>
+          }
+          @case ('div') {
+            <div class="lc-header__title">{{ title() }}</div>
+          }
+          @default {
+            <span class="lc-header__title">{{ title() }}</span>
+          }
+        }
         @if (subtitle()) {
           <span class="lc-header__subtitle">{{ subtitle() }}</span>
         }
@@ -50,7 +68,27 @@
     }
   </div>
 
+  <!-- Main navigation: inline from 1024 px, its own wrapping row below. -->
+  @if (navItems().length > 0) {
+    <nav class="lc-header__nav" [attr.aria-label]="navAriaLabel()">
+      <ul class="lc-header__nav-list">
+        @for (item of navItems(); track $index) {
+          <li class="lc-header__nav-item">
+            <a
+              class="lc-header__nav-link"
+              [href]="item.href"
+              [attr.aria-current]="item.current ? 'page' : null"
+            >{{ item.label }}</a>
+          </li>
+        }
+      </ul>
+    </nav>
+  }
+
   <div class="lc-header__spacer"></div>
+
+  <!-- End of the first row, e.g. a language link. -->
+  <ng-content select="[slot='end']" />
 
   <!-- Theme toggle button -->
   @if (showThemeButton()) {
@@ -58,7 +96,7 @@
       variant="ghost"
       size="sm"
       [iconOnly]="true"
-      [ariaLabel]="themeService.isDark() ? 'Switch to light mode' : 'Switch to dark mode'"
+      [ariaLabel]="themeService.isDark() ? themeToLightAriaLabel() : themeToDarkAriaLabel()"
       (clicked)="onThemeButtonClick()"
       class="lc-header__theme-toggle"
     >
@@ -72,7 +110,7 @@
       type="button"
       class="lc-header__context-info"
       [attr.title]="contextName()"
-      aria-label="Context info"
+      [attr.aria-label]="contextAriaLabel()"
       (click)="contextClick.emit()"
     >
       @if (contextLabel()) {
@@ -83,40 +121,56 @@
   }
 
   <!-- User profile menu -->
-  <lc-menu
-    [items]="menuItems()"
-    [isOpen]="isDropdownOpen()"
-    position="bottom-right"
-    minWidth="220px"
-    [size]="menuSize()"
-    (itemClick)="onMenuItemClick($event)"
-    (closed)="closeDropdown()"
-  >
-    <!-- Menu header with avatar, name and email -->
-    @if (userName() || userEmail()) {
-      <div header class="lc-header__menu-header">
-        <lc-avatar [name]="userName()" size="md" />
-        <div class="lc-header__menu-user-info">
-          @if (userName()) {
-            <div class="lc-header__menu-user-name">{{ userName() }}</div>
-          }
-          @if (userEmail()) {
-            <div class="lc-header__menu-user-email">{{ userEmail() }}</div>
-          }
-        </div>
-      </div>
-    }
-
-    <button
-      trigger
-      class="lc-header__profile-trigger"
-      type="button"
-      aria-label="Open user menu"
-      [attr.aria-expanded]="isDropdownOpen()"
-      (click)="toggleDropdown()"
+  @if (showUserMenu()) {
+    <lc-menu
+      [items]="menuItems()"
+      [isOpen]="isDropdownOpen()"
+      position="bottom-right"
+      minWidth="220px"
+      [size]="menuSize()"
+      (itemClick)="onMenuItemClick($event)"
+      (closed)="closeDropdown()"
     >
-      <lc-icon name="user" size="sm" />
-      <lc-icon name="chevron-down" size="xs" />
-    </button>
-  </lc-menu>
+      <!-- Menu header with avatar, name and email -->
+      @if (userName() || userEmail()) {
+        <div header class="lc-header__menu-header">
+          <lc-avatar [name]="userName()" size="md" />
+          <div class="lc-header__menu-user-info">
+            @if (userName()) {
+              <div class="lc-header__menu-user-name">{{ userName() }}</div>
+            }
+            @if (userEmail()) {
+              <div class="lc-header__menu-user-email">{{ userEmail() }}</div>
+            }
+          </div>
+        </div>
+      }
+
+      <button
+        trigger
+        class="lc-header__profile-trigger"
+        type="button"
+        [attr.aria-label]="userMenuAriaLabel()"
+        [attr.aria-expanded]="isDropdownOpen()"
+        (click)="toggleDropdown()"
+      >
+        <lc-icon name="user" size="sm" />
+        <lc-icon name="chevron-down" size="xs" />
+      </button>
+    </lc-menu>
+  }
 </header>
+
+<ng-template #brandLogo>
+  <lc-logo
+    [variant]="logo() ? 'full' : 'emblem'"
+    [size]="logoSize()"
+    [clickable]="false"
+    [colorMode]="theme() === 'dark' ? 'dark' : theme() === 'light' ? 'light' : 'auto'"
+    [src]="logoSrc()"
+    [emblemSrc]="logoEmblemSrc()"
+    [darkSrc]="logoDarkSrc()"
+    [darkEmblemSrc]="logoDarkEmblemSrc()"
+    [alt]="logoAlt() || title() || 'Logo'"
+  />
+</ng-template>
