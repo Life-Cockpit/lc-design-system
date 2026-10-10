@@ -1,4 +1,5 @@
 import type { StorybookConfig } from '@storybook/angular';
+import remarkGfm from 'remark-gfm';
 
 const config: StorybookConfig = {
   stories: [
@@ -6,7 +7,12 @@ const config: StorybookConfig = {
     '../src/**/*.@(mdx|stories.@(js|jsx|ts|tsx))',
   ],
   addons: [
-    '@storybook/addon-docs',
+    {
+      name: '@storybook/addon-docs',
+      // MDX 3 has no GitHub-flavoured Markdown of its own: without remark-gfm
+      // the tables in the .mdx docs render as raw pipes.
+      options: { mdxPluginOptions: { mdxCompileOptions: { remarkPlugins: [remarkGfm] } } },
+    },
     '@storybook/addon-themes',
     '@storybook/addon-mcp',
   ],
