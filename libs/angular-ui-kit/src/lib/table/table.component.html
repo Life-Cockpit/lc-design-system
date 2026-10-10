@@ -194,13 +194,13 @@
 <ng-template #cellContent let-row="row" let-column="column" let-absIndex="absIndex">
   @if (isEditing(row, column.key)) {
     <input
+      #editInput
       type="text"
       class="lc-table__edit-input"
       [value]="editValue()"
       (input)="editValue.set(getInputValue($event))"
       (blur)="commitEdit(row, column.key)"
       (keydown)="onEditKeydown($event, row, column.key)"
-      autofocus
     />
   } @else if (hasCustomTemplate(column.key)) {
     <ng-container *ngTemplateOutlet="getCellTemplate(column.key)!.template; context: { $implicit: row }"></ng-container>

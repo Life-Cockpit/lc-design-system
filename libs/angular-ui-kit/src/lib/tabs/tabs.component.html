@@ -3,6 +3,7 @@
   [class.lc-tabs__container--horizontal]="orientation() === 'horizontal'"
   [class.lc-tabs__container--vertical]="orientation() === 'vertical'"
 >
+  <!-- eslint-disable-next-line @angular-eslint/template/interactive-supports-focus -- keydown bubbles from the focused tab (roving tabindex) -->
   <div
     [ngClass]="tabListClasses()"
     role="tablist"

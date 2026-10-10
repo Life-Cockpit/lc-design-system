@@ -31,6 +31,7 @@
           @for (cell of week; track cell.date.getTime()) {
             <!-- The cell stays a mouse target for the whole area; keyboard users reach the
                  date through the day-number button and each event through its own button. -->
+            <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -- mouse target for the whole cell; keyboard users use the day-number button -->
             <div
               class="lc-calendar__day-cell"
               [class.lc-calendar__day-cell--today]="cell.isToday"
@@ -93,6 +94,7 @@
           }
         </div>
         @for (day of weekDays(); track day.date.getTime()) {
+          <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -- mouse target for the empty column; events and dates have their own buttons -->
           <div class="lc-calendar__time-col" (click)="onDateClick(day.date)">
             @for (slot of hourSlots(); track slot.hour) {
               <div class="lc-calendar__time-slot"></div>
@@ -126,6 +128,7 @@
             <div class="lc-calendar__time-label">{{ slot.label }}</div>
           }
         </div>
+        <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -- mouse target for the empty column; events and dates have their own buttons -->
         <div class="lc-calendar__time-col lc-calendar__time-col--single" (click)="onDateClick(currentDate())">
           @for (slot of hourSlots(); track slot.hour) {
             <div class="lc-calendar__time-slot"></div>

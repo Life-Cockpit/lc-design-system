@@ -3,6 +3,7 @@
   (mouseenter)="onMouseEnter()"
   (mouseleave)="onMouseLeave()"
 >
+  <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -- the projected trigger is the focusable control; its click bubbles here -->
   <div class="popover__trigger" (click)="trigger() === 'click' ? toggle() : null">
     <ng-content select="[popover-trigger]"></ng-content>
   </div>

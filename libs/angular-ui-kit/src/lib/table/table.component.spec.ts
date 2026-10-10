@@ -663,6 +663,18 @@ describe('TableComponent', () => {
       ]);
     });
 
+    it('moves focus into the edit input when editing starts', () => {
+      // `autofocus` only works for elements present at page load; an input
+      // inserted on double-click has to be focused by the component.
+      const cell = fixture.debugElement.queryAll(By.css('tbody td'))[1];
+      cell.triggerEventHandler('dblclick', {});
+      fixture.detectChanges();
+      const editInput = fixture.debugElement.query(By.css('.lc-table__edit-input'));
+      expect(editInput).toBeTruthy();
+      expect(document.activeElement).toBe(editInput.nativeElement);
+      expect(editInput.nativeElement.hasAttribute('autofocus')).toBe(false);
+    });
+
     it('should not commit again when blur follows Enter or Escape', () => {
       const emitted: unknown[] = [];
       component.cellEdit.subscribe((e) => emitted.push(e));

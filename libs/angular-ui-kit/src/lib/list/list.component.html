@@ -40,6 +40,7 @@
       }
       @if (item.action) {
         <!-- The action is its own control: its click must not also activate the row. -->
+        <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -- only stops the action click from also activating the row; the action is a real button -->
         <span class="lc-list__action-area" (click)="$event.stopPropagation()">
           <lc-button
             variant="ghost"
@@ -71,6 +72,7 @@
         </div>
       </div>
     } @else {
+      <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events -- non-clickable lists keep reporting mouse clicks (backward compatible); use clickable for keyboard rows -->
       <div
         [class]="getItemClasses(item)"
         role="listitem"

@@ -79,6 +79,7 @@
         }
         @for (option of group.items; track option.value) {
           @let idx = flatOptions().indexOf(option);
+          <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -- listbox option: focus stays in the input, keyboard selection via aria-activedescendant -->
           <div
             class="lc-combobox__option"
             [class.lc-combobox__option--highlighted]="idx === highlightedIndex()"
@@ -104,6 +105,7 @@
       }
 
       @if (showCreateOption()) {
+        <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -- listbox option: focus stays in the input, keyboard selection via aria-activedescendant -->
         <div
           class="lc-combobox__option lc-combobox__option--create"
           [class.lc-combobox__option--highlighted]="highlightedIndex() === flatOptions().length"

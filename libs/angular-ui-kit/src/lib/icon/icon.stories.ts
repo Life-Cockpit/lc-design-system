@@ -10,7 +10,7 @@ import tablerIcons from '../../../../../node_modules/@tabler/icons/icons.json';
 const ALL_ICONS = Object.keys(tablerIcons).sort((a, b) => a.localeCompare(b));
 
 @Component({
-  selector: 'icon-gallery',
+  selector: 'lc-icon-gallery',
   standalone: true,
   imports: [IconComponent, FormsModule],
   changeDetection: ChangeDetectionStrategy.Eager,
@@ -33,16 +33,17 @@ const ALL_ICONS = Object.keys(tablerIcons).sort((a, b) => a.localeCompare(b));
     </div>
     <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 4px;">
       @for (icon of filtered(); track icon) {
-        <div
-          style="display: flex; flex-direction: column; align-items: center; padding: 12px 4px; border-radius: 8px; cursor: pointer; transition: background 0.15s;"
+        <button
+          type="button"
+          style="display: flex; flex-direction: column; align-items: center; padding: 12px 4px; border: 0; border-radius: 8px; background: transparent; color: inherit; font: inherit; cursor: pointer; transition: background 0.15s;"
           (mouseenter)="$event.currentTarget.style.background='#F3F4F6'"
           (mouseleave)="$event.currentTarget.style.background='transparent'"
           (click)="copyName(icon)"
           [title]="'Click to copy: ' + icon"
         >
-          <lc-icon [name]="icon" [variant]="showSolid() ? 'solid' : 'outline'" size="md"></lc-icon>
+          <lc-icon [name]="icon" [variant]="showSolid() ? 'solid' : 'outline'" size="md" [decorative]="true"></lc-icon>
           <span style="font-size: 10px; color: #6B7280; margin-top: 6px; text-align: center; word-break: break-all; line-height: 1.3;">{{ icon }}</span>
-        </div>
+        </button>
       }
     </div>
     @if (filtered().length === 0) {
@@ -233,7 +234,7 @@ export const AllIcons: Story = {
   name: 'All Icons (Tabler Catalog)',
   render: () => ({
     moduleMetadata: { imports: [IconGalleryComponent] },
-    template: `<icon-gallery></icon-gallery>`,
+    template: `<lc-icon-gallery></lc-icon-gallery>`,
   }),
 };
 

@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  inject,
   input,
   computed,
   signal,
@@ -212,7 +213,7 @@ export class CodeBlockComponent {
 
   protected copied = signal(false);
 
-  constructor(private sanitizer: DomSanitizer) {}
+  private readonly sanitizer = inject(DomSanitizer);
 
   protected highlightedLines = computed<SafeHtml[]>(() => {
     const highlighted = highlightCode(this.code(), this.language());

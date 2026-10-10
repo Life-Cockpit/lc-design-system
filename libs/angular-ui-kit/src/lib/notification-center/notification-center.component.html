@@ -93,6 +93,7 @@
                keyboard and screen-reader users can activate it (its click bubbles
                to the row), and the dismiss/action buttons stop propagation. -->
           @for (n of group.items; track n.id) {
+            <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -- row is a mouse target; its title is a real button for keyboard users -->
             <div
               class="lc-nc__item"
               [class.lc-nc__item--unread]="!n.read"

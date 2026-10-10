@@ -7,7 +7,9 @@ import {
   computed,
   signal,
   linkedSignal,
+  viewChild,
   viewChildren,
+  afterRenderEffect,
   ContentChildren,
   QueryList,
 } from '@angular/core';
@@ -360,6 +362,23 @@ export class TableComponent {
   protected columnFilters = signal<Record<string, string>>({});
   protected editingCell = signal<{ key: unknown; column: string } | null>(null);
   protected editValue = signal<string>('');
+
+  /** The inline-edit input while a cell is being edited. */
+  private readonly editInput = viewChild<ElementRef<HTMLInputElement>>('editInput');
+  private focusedEditInput: HTMLInputElement | null = null;
+
+  constructor() {
+    // The edit input is inserted on double-click. `autofocus` is only honoured
+    // for elements present when the page loads, so the input never received
+    // focus (and Enter/Escape/blur never reached it); focus it once it renders.
+    afterRenderEffect(() => {
+      const el = this.editInput()?.nativeElement ?? null;
+      if (el && el !== this.focusedEditInput) {
+        el.focus();
+      }
+      this.focusedEditInput = el;
+    });
+  }
 
   /** The key of every row currently in `data()`. */
   private readonly rowKeys = computed(() => new Set(this.data().map((row) => this.rowKey(row))));

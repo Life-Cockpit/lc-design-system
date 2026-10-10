@@ -2,6 +2,7 @@
   @if (label()) {
     <span class="rating__label" [id]="labelId">{{ label() }}</span>
   }
+  <!-- eslint-disable-next-line @angular-eslint/template/interactive-supports-focus -- keydown bubbles from the focused star radio (roving tabindex) -->
   <div
     class="rating__stars"
     role="radiogroup"

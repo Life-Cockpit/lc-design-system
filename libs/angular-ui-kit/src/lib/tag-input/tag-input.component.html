@@ -2,6 +2,7 @@
   <label class="lc-tag-input__label" [for]="inputId">{{ label() }}</label>
 }
 
+<!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -- container click only forwards focus to the input, which is focusable itself -->
 <div
   class="lc-tag-input__container"
   [class.lc-tag-input__container--focused]="focused()"

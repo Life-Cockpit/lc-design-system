@@ -2,6 +2,7 @@
   <!-- Backdrop (the lc-modal does NOT use CDK Overlay; do not add the
        `cdk-overlay-backdrop` class here — it would be styled by global CDK
        rules and, vice versa, leak modal styling onto other overlays.) -->
+  <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -- backdrop click is a mouse shortcut; Escape and the close button close the modal -->
   <div
     class="lc-modal-backdrop"
     (click)="onBackdropClick($event)"
