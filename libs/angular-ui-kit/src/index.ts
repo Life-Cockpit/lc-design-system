@@ -39,6 +39,7 @@ export * from './lib/accordion/accordion-content.directive';
 
 // Button Component
 export * from './lib/button/button.component';
+export * from './lib/button/button-link.component';
 
 // Card Component
 export * from './lib/card/card.component';

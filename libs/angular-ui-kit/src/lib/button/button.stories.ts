@@ -20,6 +20,9 @@ It supports multiple variants, sizes, states, and slots for icons.
 - Icon slots (before/after)
 - Full-width option
 - Accessible with ARIA attributes
+
+**Navigation?** Use a link, not a button: \`<a lcButton href="…">\` gives an anchor the
+same variants and sizes and works without JavaScript (see **Components / Button Link**).
         `,
       },
     },

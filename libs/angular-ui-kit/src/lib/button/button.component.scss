@@ -31,6 +31,18 @@
   }
 }
 
+// a[lcButton] — the host is the link itself.
+// - No underline, also in apps that do not load the kit reset; the link
+//   variant keeps its hover underline (its selector is more specific).
+// - Labels wrap instead of overflowing: link labels run longer than button
+//   labels, and a nowrap label wider than the viewport breaks reflow at 320 px
+//   / 400 % zoom (WCAG 1.4.10). A row of links still wraps item by item first.
+a.btn {
+  text-decoration: none;
+  white-space: normal;
+  text-align: center;
+}
+
 // Variants
 .btn-primary {
   background-color: var(--color-primary-fill);

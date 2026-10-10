@@ -30,13 +30,14 @@ export default [
           style: 'camelCase',
         },
       ],
+      // Components are `lc-*` elements; an attribute selector is allowed for
+      // components that must keep a native host element (`a[lcButton]`).
       '@angular-eslint/component-selector': [
         'error',
-        {
-          type: 'element',
-          prefix: 'lc',
-          style: 'kebab-case',
-        },
+        [
+          { type: 'element', prefix: 'lc', style: 'kebab-case' },
+          { type: 'attribute', prefix: 'lc', style: 'camelCase' },
+        ],
       ],
     },
   },

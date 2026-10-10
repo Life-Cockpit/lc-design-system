@@ -13,6 +13,7 @@ import { AvatarComponent } from '../src/lib/avatar/avatar.component';
 import { BadgeComponent } from '../src/lib/badge/badge.component';
 import { BreadcrumbsComponent } from '../src/lib/breadcrumbs/breadcrumbs.component';
 import { ButtonComponent } from '../src/lib/button/button.component';
+import { ButtonLinkComponent } from '../src/lib/button/button-link.component';
 import { CardComponent } from '../src/lib/card/card.component';
 import { CheckboxComponent } from '../src/lib/checkbox/checkbox.component';
 import { ChipComponent } from '../src/lib/chip/chip.component';
@@ -79,6 +80,7 @@ const preview: Preview = {
         BadgeComponent,
         BreadcrumbsComponent,
         ButtonComponent,
+        ButtonLinkComponent,
         CardComponent,
         CheckboxComponent,
         ChipComponent,
