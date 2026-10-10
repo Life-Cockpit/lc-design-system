@@ -2,6 +2,131 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.2.0] - 2026-10-11
+
+Angular 22 support — the package is now built with Angular 22 and works in apps
+on Angular 21 and 22 — plus what a public, prerendered website needs from the
+kit: links that look like buttons, a site header and footer that pass WCAG 2.2
+AA, readable prose, a usable skip link, and texts and locales that can be
+translated everywhere.
+
+### Compatibility
+
+- **Angular 21 and 22** — the peer range is `^21.0.0 || ^22.0.0` (was
+  `^21.0.0`) for `@angular/core`, `common`, `forms`, `router`,
+  `platform-browser` and `cdk`. The package is built with Angular 22.2 (Nx 23,
+  TypeScript 6.0, ng-packagr 22, Storybook 10.6). Partial-compilation output is
+  linked by the app's own compiler, so "works in 21" was verified, not assumed:
+  no declaration needs more than Angular 17.2, every symbol the bundle imports
+  exists in Angular 21, every component declares `OnPush` explicitly (21
+  defaults to Eager, 22 to OnPush), and no template depends on `?.` yielding
+  `null` rather than `undefined` (Angular 22 apps get the native semantics for
+  libraries built with 22). A consumer app — strict peer resolution, AOT with
+  `strictTemplates`, static prerendering of 76 components and directives
+  including the new ones — builds and renders on Angular 21.0.9, 21.2.25,
+  22.0.8 and 22.2.2. `tools/compat/check-angular-majors.mjs` repeats that check
+  in CI on every push.
+- **Node 24** for the workspace and CI (Angular CLI 22 requires `^22.22.3 ||
+  ^24.15.0 || >=26`). Apps keep whatever Node their Angular major needs.
+
+### Added
+
+- **`a[lcButton]` — buttons that are links** (`ButtonLinkComponent`). The
+  `lc-button` look on a native anchor: the host *is* the `<a>`, so `href`,
+  `hreflang`, `lang`, `rel`, `target`, `download`, `title` and `aria-*` pass
+  through untouched and the component adds no listeners — after SSR or
+  prerendering the markup is a plain `<a class="btn btn-primary btn-lg" href="…">`
+  that works without JavaScript; `routerLink` can sit on the same anchor. Same
+  variants, sizes, `fullWidth` / `iconOnly` / `inline` and icon slots as
+  `lc-button`. Labels wrap instead of overflowing (WCAG 1.4.10); `size="lg"` is
+  48.5 px high. Stories: *Components / Button Link*.
+- **`lc-header` for public sites** — `homeHref` renders the brand as a plain
+  link (no Router needed); `navItems` (`{ label, href, current? }[]`) render a
+  `<nav aria-label><ul><li><a>` with `aria-current="page"` and an underline on
+  the current page, 44 px links; from 1024 px the nav sits in the bar, below it
+  takes a second row (the first keeps the header size) and wraps. New:
+  `[slot='end']` (e.g. a language link), `showUserMenu`, `titleTag`
+  (`h1 | h2 | h3 | p | span | div`, default `h1`), `sticky`, and inputs for every
+  label: `homeAriaLabel`, `hamburgerAriaLabel`, `userMenuAriaLabel`,
+  `navAriaLabel`, `themeToDarkAriaLabel`, `themeToLightAriaLabel`,
+  `contextAriaLabel`, `profileLabel`, `logoutLabel`. Stories: *Public Site*,
+  *Public Site on a Phone*, *Translated Labels*.
+- **`lc-footer`** — `headingLevel` (2–6, default 4) for the section titles,
+  `navAriaLabel` for the new `<nav>` around the sections, `FooterLink.current`
+  (`aria-current="page"`) and `FooterLink.rel` (e.g. `me`; replaces the
+  `noopener noreferrer` default of external links), `externalLinkHint` — the
+  visually hidden "(opens in a new tab)" now read after every external link.
+- **Every built-in text is an input** (gap G-14 and its siblings): 182 label
+  inputs on 37 components — `lc-drawer`'s `closeAriaLabel` among them — each
+  defaulting to the text the component always showed, so nothing changes until
+  an app sets them. String inputs on purpose: Angular i18n translates them as
+  static attributes (`closeAriaLabel="…" i18n-closeAriaLabel`). Locales:
+  `lc-chat` `locale` (default `de-DE`, was hard-coded), `lc-log-viewer` `locale`
+  (default `en-US`, was hard-coded), `lc-datepicker` `locale` (default `''` =
+  the English names as before) and `firstDayOfWeek` (default `0`, Sunday, as
+  before). `lc-rich-text-editor` takes `actionTitles` for its 15 toolbar
+  actions. See the new docs page *Internationalization*.
+- **Link tokens** — `--color-link` / `--color-link-hover` in both palettes,
+  literal values instead of the inverting `--color-primary-*` scale: light
+  `#1a6a79` (5.64:1 on the page background, 6.21:1 on a card), dark `#a3d5df`
+  (11.78:1 / 10.12:1).
+- **Docs** — *Utilities / Accessibility (sr-only, skip-to-content)* and
+  *Internationalization (i18n, locale, labels)*; the colors page lists the
+  semantic ink tokens with their contrast. `src/styles/theme-contrast.spec.ts`
+  asserts 4.5:1 for the link, secondary-text and primary-fill inks on every
+  surface of both compiled palettes.
+
+### Changed
+
+- **`lc-header` creates the `ThemeService` only when the theme button is
+  shown** (the service reads and writes the theme class and `localStorage`,
+  which a site without a theme switch must not do). An app that showed no theme
+  button but relied on the header to restore the persisted theme at startup
+  should inject `ThemeService` once itself (root component or app initializer).
+- **`lc-markdown` links are underlined by default** and use `--color-link`;
+  opt out per instance with `--lc-markdown-link-decoration: none`. Prose gets
+  `hyphens: auto` (in the page's `lang`) and `overflow-wrap: anywhere`, hooks
+  `--lc-markdown-hyphens` / `--lc-markdown-overflow-wrap`; code is never
+  hyphenated and tables keep their columns. Heading anchors keep their own
+  tertiary ink (the link rule used to outrank them).
+- **`lc-footer` links are 44 px high** and the list lost its gap, so footers
+  grow taller; hover and the current page add an underline.
+
+### Fixed
+
+- **Skip link contrast and size** (`.skip-to-content`, G-15) — white on
+  `--color-primary-500` measured 4.37:1 in light and 1.89:1 in dark (the token
+  inverts to `#84c7d4`). Now `--color-on-primary` on `--color-primary-fill`,
+  6.21:1 in both palettes, at least 44 px high (was 40 px), hidden with a
+  transform (`top: -40px` would leave part of the taller box visible), above
+  the sticky header (z-index 1100), with an inset focus ring.
+- **Footer contrast** (G-3) — links and the copyright line drew
+  `--color-text-tertiary`: 4.39:1 on the light page background, below 4.5:1 for
+  14 px text. They use `--color-text-secondary` now: 6.87:1 (7.56:1 on a white
+  surface, 12.17:1 / 10.45:1 in dark). The external-link icon is `aria-hidden`
+  and uses the canonical Tabler name; the docs no longer promise social media
+  icon links, which never existed.
+- **The documented style import failed** — `@use
+  '@life-cockpit/angular-ui-kit/styles'` (Installation, step 2) could not be
+  resolved in an Angular app; a `./styles` export fixes it. The "individually"
+  example names the partials as files (`styles/_reset.scss`, …).
+- **`lc-table` inline edit never got focus** — the input relied on
+  `autofocus`, which browsers only honour on page load, so Enter, Escape and
+  blur never reached it after a double-click. It is focused after render now.
+- **MCP props were incomplete** — the manifest generator behind
+  design.life-cockpit.de/mcp missed every `input.required()` (38) and `model()`
+  (14) and inputs with nested generic types (6). It reads the components with
+  the TypeScript compiler now, marks required inputs and two-way models, names
+  the selector, adds each member's JSDoc and the exported types (e.g.
+  `HeaderNavItem`, `FooterLink`); a test against the whole library guards it.
+- **Docs tables** — Markdown tables in the MDX pages (Installation, Colors)
+  rendered as raw pipes; the docs build uses remark-gfm now.
+- **Lint** — the 38 errors `main` already had: real fixes (table focus,
+  `inject()` in `lc-code-block`, the icon story's demo) and documented
+  exceptions for container patterns whose keyboard path lives elsewhere
+  (listbox options via `aria-activedescendant`, roving-tabindex groups,
+  backdrops closed by Escape).
+
 ## [3.1.0] - 2026-08-28
 
 ### Added
