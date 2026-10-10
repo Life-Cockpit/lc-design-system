@@ -148,6 +148,11 @@ The `colorMode="dark"` applies `filter: invert(1) hue-rotate(180deg)` to maintai
 
 | Dependency | Version |
 |---|---|
-| Angular | >= 19 |
-| TypeScript | >= 5.4 |
-| Node.js | >= 20 |
+| Angular (`core`, `common`, `forms`, `router`, `platform-browser`, `cdk`) | 21 or 22 (`^21.0.0 \|\| ^22.0.0`) |
+| TypeScript | the version your Angular major requires (5.9 for 21, 6.0 for 22) |
+| Node.js | the version your Angular CLI requires (Angular 22: `^22.22.3 \|\| ^24.15.0 \|\| >=26`) |
+| mermaid (optional) | `^11` — only for diagrams in `lc-markdown` |
+
+The package is built with Angular 22 in partial-compilation mode; every release is
+checked by building and prerendering a consumer app on Angular 21.0, the latest 21,
+22.0 and the latest 22 (`tools/compat/check-angular-majors.mjs`).

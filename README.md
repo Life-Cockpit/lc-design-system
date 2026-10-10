@@ -1,6 +1,6 @@
 # Life Cockpit Design System
 
-A standalone Angular component library (`@life-cockpit/angular-ui-kit`) with 47+ accessible, themeable components built with Angular 21, TailwindCSS, and design tokens.
+A standalone Angular component library (`@life-cockpit/angular-ui-kit`) with 47+ accessible, themeable components built with Angular 22 (apps on Angular 21 and 22 are supported), TailwindCSS, and design tokens.
 
 ## Structure
 
@@ -42,9 +42,9 @@ npm publish --access public
 
 ## Tech Stack
 
-- **Angular** 21 (standalone components, signals, OnPush)
+- **Angular** 22 (standalone components, signals, OnPush); peer range `^21.0.0 || ^22.0.0`
 - **TailwindCSS** 3.4 with custom theme
-- **Nx** 22 monorepo tooling
+- **Nx** 23 monorepo tooling (Node.js 24)
 - **ng-packagr** for library builds
 
 [More about running tasks in the docs &raquo;](https://nx.dev/features/run-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)

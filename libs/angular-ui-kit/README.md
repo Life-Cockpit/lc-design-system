@@ -1,6 +1,6 @@
 # @life-cockpit/angular-ui-kit
 
-Angular UI component library for the **Life Cockpit Design System** — 60+ accessible, themeable Angular 21 standalone components with signal-based inputs, OnPush change detection, light/dark themes, and a full density token system (`compact` / `cosy` / `comfortable`).
+Angular UI component library for the **Life Cockpit Design System** — 60+ accessible, themeable Angular standalone components (for apps on Angular 21 and 22) with signal-based inputs, OnPush change detection, light/dark themes, and a full density token system (`compact` / `cosy` / `comfortable`).
 
 ## Resources
 

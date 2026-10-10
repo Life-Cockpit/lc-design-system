@@ -1,0 +1,81 @@
+<lc-header title="Compat" subtitle="Check" [showHamburger]="true" />
+<lc-container>
+  <lc-stack>
+    <lc-hero title="Weniger Papierkram." />
+    <lc-page-header title="Seite" />
+    <lc-breadcrumbs [items]="breadcrumbs" />
+    <lc-typography variant="h2">Überschrift</lc-typography>
+    <lc-button variant="primary" size="lg">Speichern</lc-button>
+    <lc-button variant="outline" [loading]="true">Laden</lc-button>
+    <lc-card title="Karte" subtitle="Untertitel">Inhalt</lc-card>
+    <lc-badge variant="success">Neu</lc-badge>
+    <lc-chip>Chip</lc-chip>
+    <lc-status-dot />
+    <lc-alert variant="info" title="Info">Text</lc-alert>
+    <lc-callout variant="info">Hinweis</lc-callout>
+    <lc-next-step-card cardTitle="Nächster Schritt" message="Weiter" primaryLabel="Los" />
+    <lc-choice-prompt [options]="choices" />
+    <lc-empty-state title="Leer" />
+    <lc-input label="Name" placeholder="Max" />
+    <lc-textarea label="Notiz" />
+    <lc-checkbox label="Zustimmen" [(checked)]="checked" />
+    <lc-switch label="An" />
+    <lc-select label="Wahl" [options]="selectOptions" />
+    <lc-number-input label="Zahl" />
+    <lc-slider label="Lautstärke" />
+    <lc-rating label="Bewertung" />
+    <lc-tag-input label="Tags" />
+    <lc-toggle-group [options]="toggleOptions" />
+    <lc-tabs>
+      <lc-tab label="Eins">Tab 1</lc-tab>
+      <lc-tab label="Zwei">Tab 2</lc-tab>
+    </lc-tabs>
+    <lc-accordion title="Mehr">Akkordeon</lc-accordion>
+    <lc-table [columns]="columns" [data]="rows" />
+    <lc-list [items]="listItems" />
+    <lc-description-list [items]="dlItems" />
+    <lc-tree-view [nodes]="tree" />
+    <lc-timeline [items]="timeline" />
+    <lc-pipeline [steps]="pipeline" />
+    <lc-stepper [steps]="steps" />
+    <lc-stage-list [stages]="stages" />
+    <lc-kanban-board [columns]="kanban" />
+    <lc-notification-center [notifications]="notifications" />
+    <lc-avatar name="Eric F" />
+    <lc-avatar-group [avatars]="[{ name: 'A B' }, { name: 'C D' }]" />
+    <lc-progress-bar [value]="40" />
+    <lc-progress-ring [value]="70" />
+    <lc-spinner />
+    <lc-skeleton />
+    <lc-stat-trend value="1.234" />
+    <lc-bar-chart [data]="[{ label: 'A', value: 3 }, { label: 'B', value: -1 }]" />
+    <lc-line-chart [series]="[{ label: 'S', data: [1, 3, 2] }]" [labels]="['a', 'b', 'c']" />
+    <lc-area-chart [series]="[{ label: 'S', data: [1, 3, 2] }]" [labels]="['a', 'b', 'c']" />
+    <lc-donut-chart [segments]="[{ label: 'A', value: 2 }, { label: 'B', value: 1 }]" />
+    <lc-pie-chart [segments]="[{ label: 'A', value: 2 }, { label: 'B', value: 1 }]" />
+    <lc-sparkline [data]="[1, 2, 3, 2]" />
+    <lc-gauge [value]="62" />
+    <lc-heatmap [data]="[[1, 2], [3, 4]]" />
+    <lc-radar-chart [series]="[{ label: 'R', data: [3, 4, 5] }]" [axes]="['x', 'y', 'z']" />
+    <lc-scatter-plot [series]="[{ label: 'P', data: [{ x: 1, y: 2 }] }]" />
+    <lc-funnel-chart [steps]="[{ label: 'Visit', value: 100 }, { label: 'Buy', value: 10 }]" />
+    <lc-waterfall-chart [data]="[{ label: 'Start', value: 10, type: 'total' }, { label: 'Plus', value: 5 }]" />
+    <lc-stacked-bar-chart [categories]="[{ label: 'Q1', values: [1, 2] }]" />
+    <lc-gantt-chart [tasks]="gantt" />
+    <lc-code-block code="const a = 1;" language="typescript" />
+    <lc-markdown [content]="markdown" />
+    <lc-diff-viewer oldText="a" newText="b" />
+    <lc-divider />
+    <lc-section>Abschnitt</lc-section>
+    <lc-toolbar>Toolbar</lc-toolbar>
+    <lc-pagination [totalItems]="50" />
+    <span lcTooltip="Tipp">Tooltip-Ziel</span>
+    <lc-icon name="check" />
+    <lc-logo />
+    <lc-modal title="Dialog">Modal</lc-modal>
+    <lc-drawer title="Drawer">Drawer</lc-drawer>
+    <lc-menu [items]="[{ id: 'a', label: 'A' }]" />
+    <!-- COMPAT-3.2-TEMPLATE -->
+  </lc-stack>
+</lc-container>
+<lc-footer [sections]="footerSections" copyright="© 2026 Compat" />

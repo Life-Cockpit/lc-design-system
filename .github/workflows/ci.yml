@@ -33,3 +33,32 @@ jobs:
           NX_DAEMON: 'false'
           NODE_OPTIONS: '--max-old-space-size=8192'
         run: npx nx build-storybook angular-ui-kit --skipNxCache --verbose
+
+  # The package is built with Angular 22 in partial-compilation mode, and the
+  # consumer's compiler links it. The peer range claims Angular 21 and 22, so
+  # every claimed release line gets a real consumer build: install the packed
+  # library with strict peer resolution, AOT-compile a broad template with
+  # strictTemplates, prerender it (runs the components on the server) and
+  # check the HTML.
+  angular-compat:
+    name: Consumer app on Angular ${{ matrix.angular }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        angular: ['21.0', '21', '22.0', '22']
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Build angular-ui-kit library
+        run: npx nx build angular-ui-kit --configuration=production
+
+      - name: Build and prerender a consumer app against the packed library
+        run: node tools/compat/check-angular-majors.mjs --only=${{ matrix.angular }}
