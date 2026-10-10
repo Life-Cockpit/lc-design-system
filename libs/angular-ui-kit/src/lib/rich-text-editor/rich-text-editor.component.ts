@@ -149,6 +149,36 @@ export class RichTextEditorComponent implements ControlValueAccessor {
   /** Whether to show word count */
   showWordCount = input<boolean>(true);
 
+  /** Tooltips and accessible names of the toolbar actions, by action (`{ bold: 'Fett' }`); missing ones keep the English default. */
+  actionTitles = input<Partial<Record<ToolbarAction, string>>>({});
+
+  /** Label of the rich-text mode button. */
+  richModeLabel = input('Rich');
+
+  /** Tooltip of the rich-text mode button. */
+  richModeTitle = input('Rich Text');
+
+  /** Label of the Markdown mode button. */
+  markdownModeLabel = input('MD');
+
+  /** Tooltip of the Markdown mode button. */
+  markdownModeTitle = input('Markdown');
+
+  /** Label of the split-view mode button. */
+  splitModeLabel = input('Split');
+
+  /** Tooltip of the split-view mode button. */
+  splitModeTitle = input('Split View');
+
+  /** Accessible name of the Markdown text area. */
+  markdownEditorAriaLabel = input('Markdown editor');
+
+  /** Unit after the word count (`showWordCount`). */
+  wordsLabel = input('words');
+
+  /** Unit after the character count (`showWordCount`). */
+  charactersLabel = input('characters');
+
   /** Emitted on every content change */
   readonly contentChange = output<string>();
 
@@ -467,7 +497,7 @@ export class RichTextEditorComponent implements ControlValueAccessor {
       image: 'Insert Image',
       hr: 'Horizontal Rule',
     };
-    return titles[action] || action;
+    return this.actionTitles()[action] || titles[action] || action;
   }
 
   // -- Markdown <-> HTML conversion (simple built-in) --

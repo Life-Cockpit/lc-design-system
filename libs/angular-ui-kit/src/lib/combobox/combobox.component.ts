@@ -120,6 +120,12 @@ export class ComboboxComponent implements ControlValueAccessor {
   /** Empty state message */
   readonly emptyMessage = input<string>('No results');
 
+  /** Accessible name of the clear button. */
+  readonly clearAriaLabel = input('Clear');
+
+  /** Label before the query in the "create" option (`allowCreate`): `Create "query"`. */
+  readonly createOptionLabel = input('Create');
+
   /** Size */
   readonly size = input<ComboboxSize>('md');
 

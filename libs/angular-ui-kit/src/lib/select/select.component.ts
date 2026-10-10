@@ -137,6 +137,18 @@ export class SelectComponent implements ControlValueAccessor {
    */
   readonly options = input<SelectOption[] | SelectOptionGroup[]>([]);
 
+  /** Accessible name of the clear button. */
+  readonly clearAriaLabel = input('Clear selection');
+
+  /** Placeholder of the search field (`searchable`). */
+  readonly searchPlaceholder = input('Search...');
+
+  /** Accessible name of the search field. Empty: "Search " + `ariaLabel`, or "Search options". */
+  readonly searchAriaLabel = input('');
+
+  /** Shown when the search matches no option. */
+  readonly noOptionsLabel = input('No options found');
+
   /**
    * Emitted when selection changes
    */

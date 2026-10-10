@@ -141,6 +141,60 @@ export class LogViewerComponent {
    */
   readonly clickableLines = input<boolean>(false);
 
+  /** BCP 47 locale of the line timestamps (24-hour clock). */
+  readonly locale = input('en-US');
+
+  /** Tooltip of the pause button while streaming. */
+  readonly pauseLabel = input('Pause');
+
+  /** Tooltip of the pause button while paused. */
+  readonly resumeLabel = input('Resume');
+
+  /** Accessible name of the pause button while streaming. */
+  readonly pauseAriaLabel = input('Pause stream');
+
+  /** Accessible name of the pause button while paused. */
+  readonly resumeAriaLabel = input('Resume stream');
+
+  /** Tooltip of the clear button. */
+  readonly clearLabel = input('Clear');
+
+  /** Accessible name of the clear button. */
+  readonly clearAriaLabel = input('Clear log');
+
+  /** Tooltip of the copy button. */
+  readonly copyLabel = input('Copy all');
+
+  /** Accessible name of the copy button. */
+  readonly copyAriaLabel = input('Copy all lines');
+
+  /** Tooltip of the search toggle. */
+  readonly searchLabel = input('Search (/)');
+
+  /** Accessible name of the search toggle. */
+  readonly searchAriaLabel = input('Search log');
+
+  /** Label of the search field (visually hidden). */
+  readonly searchInputLabel = input('Search logs');
+
+  /** Placeholder of the search field. */
+  readonly searchPlaceholder = input('Search logs...');
+
+  /** Unit after the error count in the level filter. */
+  readonly errorsLabel = input('errors');
+
+  /** Unit after the warning count in the level filter. */
+  readonly warningsLabel = input('warnings');
+
+  /** Unit after the line count. */
+  readonly linesLabel = input('lines');
+
+  /** Accessible name of the log region. */
+  readonly outputAriaLabel = input('Log output');
+
+  /** Label of the jump-to-bottom button. */
+  readonly jumpToBottomLabel = input('Jump to bottom');
+
   /** Emitted when a line is clicked (or activated with Enter/Space) */
   readonly lineClick = output<LogLine>();
 
@@ -418,7 +472,7 @@ export class LogViewerComponent {
 
   protected formatTimestamp(date?: Date): string {
     if (!date) return '';
-    return date.toLocaleTimeString('en-US', { hour12: false } as Intl.DateTimeFormatOptions);
+    return date.toLocaleTimeString(this.locale(), { hour12: false } as Intl.DateTimeFormatOptions);
   }
 
   /**

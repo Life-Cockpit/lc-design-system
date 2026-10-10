@@ -11,7 +11,7 @@
       [disabled]="isDisabled()"
       (input)="onNativeInput($event)"
       (blur)="onBlur()"
-      [attr.aria-label]="label() ? null : 'Color picker'"
+      [attr.aria-label]="label() ? null : ariaLabel()"
     />
     <span
       class="color-picker__swatch-preview"
@@ -27,7 +27,7 @@
         maxlength="7"
         (input)="onHexInput($event)"
         (blur)="onBlur()"
-        [attr.aria-label]="(label() ? label() + ' – ' : '') + 'Hex color value'"
+        [attr.aria-label]="(label() ? label() + ' – ' : '') + hexAriaLabel()"
       />
     }
   </div>
@@ -35,7 +35,7 @@
     <div
       class="color-picker__swatches"
       role="radiogroup"
-      [attr.aria-label]="(label() ? label() + ' – ' : '') + 'Color swatches'"
+      [attr.aria-label]="(label() ? label() + ' – ' : '') + swatchesAriaLabel()"
     >
       @for (swatch of swatches(); track swatch; let i = $index) {
         <button

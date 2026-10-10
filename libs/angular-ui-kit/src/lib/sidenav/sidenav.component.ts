@@ -141,6 +141,18 @@ export class SidenavComponent implements OnDestroy {
   /** Theme variant for the sidenav */
   readonly theme = input<'light' | 'dark' | 'auto'>('auto');
 
+  /** Accessible name of the logo button that collapses/expands the sidebar. */
+  readonly toggleAriaLabel = input('Toggle sidebar');
+
+  /** Accessible name of the collapse button. Empty: "Collapse navigation to the left/right" by `position`. */
+  readonly collapseAriaLabel = input('');
+
+  /** Tooltip of the collapse button. */
+  readonly collapseTitle = input('Collapse sidebar');
+
+  /** Accessible name of the close button (drawer mode). */
+  readonly closeAriaLabel = input('Close navigation');
+
   /**
    * Ids of the expanded parent items — the single source of truth for
    * `isExpanded`. Seeded with the active child's parent whenever `activeRoute`

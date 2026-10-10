@@ -50,6 +50,9 @@ export class ChipComponent {
   /** Whether the chip can be removed */
   removable = input<boolean>(false);
 
+  /** Accessible name of the remove button (`removable`). */
+  removeAriaLabel = input('Remove chip');
+
   /**
    * Whether the chip acts as a button (e.g. for navigation). Renders the chip
    * as a `<button type="button">` with hover / active / focus-visible states.

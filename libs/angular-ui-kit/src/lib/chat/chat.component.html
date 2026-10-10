@@ -8,7 +8,7 @@
     <div class="lc-chat__header">
       <span class="lc-chat__title">{{ title() }}</span>
       @if (isStreaming()) {
-        <span class="lc-chat__streaming-badge">Streaming…</span>
+        <span class="lc-chat__streaming-badge">{{ streamingLabel() }}</span>
       }
     </div>
   }
@@ -154,7 +154,7 @@
                 type="button"
                 class="lc-chat__pending-remove"
                 (click)="removeAttachment(att.id)"
-                [attr.aria-label]="'Entfernen: ' + att.name"
+                [attr.aria-label]="removeAttachmentAriaLabel() + ' ' + att.name"
               >
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
                   <path d="M3 3l6 6M9 3l-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
@@ -193,7 +193,7 @@
             class="lc-chat__attach-btn"
             [disabled]="disabled()"
             (click)="openFilePicker()"
-            aria-label="Datei anhängen"
+            [attr.aria-label]="attachAriaLabel()"
           >
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
               <path d="M14.5 9.5l-5 5a3 3 0 0 1-4.243-4.243l6.364-6.364a2 2 0 0 1 2.829 2.829l-6.364 6.364a1 1 0 1 1-1.415-1.415L11.5 6.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -204,7 +204,7 @@
           class="lc-chat__send-btn"
           [disabled]="(!inputValue().trim() && !pendingAttachments().length) || disabled()"
           (click)="send()"
-          aria-label="Send"
+          [attr.aria-label]="sendAriaLabel()"
         >
           <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
             <path d="M3 10l7-7m0 0l7 7m-7-7v14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" transform="rotate(90 10 10)"/>

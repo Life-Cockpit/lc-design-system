@@ -51,7 +51,7 @@
           type="button"
           class="lc-select__clear"
           (click)="clear(); $event.stopPropagation()"
-          aria-label="Clear selection"
+          [attr.aria-label]="clearAriaLabel()"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -99,11 +99,11 @@
           <input
             type="text"
             class="lc-select__search-input"
-            placeholder="Search..."
+            [placeholder]="searchPlaceholder()"
             aria-autocomplete="list"
             [attr.aria-controls]="listboxId"
             [attr.aria-activedescendant]="activeDescendantId()"
-            [attr.aria-label]="ariaLabel() ? 'Search ' + ariaLabel() : 'Search options'"
+            [attr.aria-label]="searchAriaLabel() || (ariaLabel() ? 'Search ' + ariaLabel() : 'Search options')"
             [(ngModel)]="searchQuery"
             (keydown)="onKeyDown($event)"
             (click)="$event.stopPropagation()"
@@ -125,7 +125,7 @@
             aria-disabled="true"
             aria-selected="false"
           >
-            No options found
+            {{ noOptionsLabel() }}
           </div>
         } @else {
           @for (option of filteredOptions(); track option.value; let i = $index) {

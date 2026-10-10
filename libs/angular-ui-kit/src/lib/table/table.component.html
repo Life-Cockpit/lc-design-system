@@ -13,8 +13,8 @@
                 <lc-input
                   class="lc-table__filter-input"
                   size="xs"
-                  [placeholder]="'Filter ' + column.label"
-                  [ariaLabel]="'Filter by ' + column.label"
+                  [placeholder]="filterPlaceholderLabel() + ' ' + column.label"
+                  [ariaLabel]="filterAriaLabel() + ' ' + column.label"
                   [ngModel]="getFilterValue(column.key)"
                   (ngModelChange)="onFilterChange(column.key, $event)"
                 />
@@ -36,7 +36,7 @@
               [checked]="allSelected()"
               [indeterminate]="someSelected()"
               (change)="toggleSelectAll()"
-              aria-label="Select all rows"
+              [attr.aria-label]="selectAllAriaLabel()"
             />
           </th>
         }
@@ -53,7 +53,7 @@
             (keydown)="column.sortable ? onHeaderKeydown($event, column.key) : null">
             {{ column.label }}
             @if (column.sortable && getSortState(column.key)) {
-              <span class="sort-indicator" [attr.aria-label]="getSortState(column.key) === 'asc' ? 'sorted ascending' : 'sorted descending'">
+              <span class="sort-indicator" [attr.aria-label]="getSortState(column.key) === 'asc' ? sortedAscendingLabel() : sortedDescendingLabel()">
                 @if (getSortState(column.key) === 'asc') {
                   ↑
                 } @else {
@@ -110,7 +110,7 @@
                   [checked]="isRowSelected(dr.row)"
                   (change)="toggleRowSelect(dr.row)"
                   (click)="$event.stopPropagation()"
-                  [attr.aria-label]="'Select row ' + (dr.absIndex + 1)"
+                  [attr.aria-label]="selectRowAriaLabel() + ' ' + (dr.absIndex + 1)"
                 />
               </td>
             }
@@ -132,7 +132,7 @@
                           type="button"
                           class="lc-table__chevron-btn"
                           [class.lc-table__chevron-btn--expanded]="dr.expanded"
-                          [attr.aria-label]="(dr.expanded ? 'Einklappen: ' : 'Aufklappen: ') + treeCellLabel(dr.row)"
+                          [attr.aria-label]="(dr.expanded ? collapseRowAriaLabel() : expandRowAriaLabel()) + ' ' + treeCellLabel(dr.row)"
                           [attr.aria-expanded]="dr.expanded"
                           (click)="onChevronClick(dr, $event)"
                         >
@@ -213,7 +213,7 @@
 @if (paginate()) {
   <div class="lc-table-pagination">
     <div class="lc-table-pagination__info">
-      {{ paginationStart }}–{{ paginationEnd }} of {{ totalRows() }}
+      {{ paginationStart }}–{{ paginationEnd }} {{ rangeOfLabel() }} {{ totalRows() }}
     </div>
     <div class="lc-table-pagination__controls">
       <lc-select
@@ -221,7 +221,7 @@
         [size]="size() === 'sm' ? 'sm' : size() === 'lg' ? 'lg' : 'md'"
         [options]="pageSizeSelectOptions()"
         [ngModel]="internalPageSize()"
-        [ariaLabel]="'Rows per page'"
+        [ariaLabel]="rowsPerPageAriaLabel()"
         (ngModelChange)="onPageSizeModelChange($event)"
       />
       <button
@@ -229,7 +229,7 @@
         class="lc-table-pagination__btn"
         [disabled]="currentPage() === 0"
         (click)="goToPage(currentPage() - 1)"
-        aria-label="Previous page"
+        [attr.aria-label]="previousPageAriaLabel()"
       >‹</button>
       <span class="lc-table-pagination__page">
         {{ currentPage() + 1 }} / {{ totalPages() }}
@@ -239,7 +239,7 @@
         class="lc-table-pagination__btn"
         [disabled]="currentPage() >= totalPages() - 1"
         (click)="goToPage(currentPage() + 1)"
-        aria-label="Next page"
+        [attr.aria-label]="nextPageAriaLabel()"
       >›</button>
     </div>
   </div>

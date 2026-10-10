@@ -17,7 +17,7 @@
           type="button"
           class="lc-tag-input__tag-remove"
           (click)="removeTag($index); $event.stopPropagation()"
-          [attr.aria-label]="'Remove ' + tag"
+          [attr.aria-label]="removeTagAriaLabel() + ' ' + tag"
         >×</button>
       }
     </span>
@@ -46,7 +46,7 @@
 </div>
 
 @if (showSuggestions()) {
-  <ul class="lc-tag-input__suggestions" role="listbox" [id]="listboxId" [attr.aria-label]="label() || 'Suggestions'">
+  <ul class="lc-tag-input__suggestions" role="listbox" [id]="listboxId" [attr.aria-label]="label() || suggestionsAriaLabel()">
     @for (sug of filteredSuggestions(); track sug; let i = $index) {
       <li
         class="lc-tag-input__suggestion"

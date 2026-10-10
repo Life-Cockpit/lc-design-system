@@ -135,6 +135,30 @@ export class DatepickerComponent implements ControlValueAccessor {
    */
   readonly disableWeekends = input<boolean>(false);
 
+  /** BCP 47 locale for month and weekday names and the day buttons' accessible names (e.g. `'de-DE'`). Empty keeps the built-in English names. */
+  readonly locale = input('');
+
+  /** First column of the grid: 0 Sunday (default) … 6 Saturday — 1 for Monday. */
+  readonly firstDayOfWeek = input(0);
+
+  /** Accessible name of the clear button. */
+  readonly clearAriaLabel = input('Clear date');
+
+  /** Accessible name of the calendar dialog. */
+  readonly dialogAriaLabel = input('Choose date');
+
+  /** Accessible name of the previous-month button. */
+  readonly previousMonthAriaLabel = input('Previous month');
+
+  /** Accessible name of the next-month button. */
+  readonly nextMonthAriaLabel = input('Next month');
+
+  /** Label of the "go to today" button. */
+  readonly todayLabel = input('Today');
+
+  /** Appended to the selected day's accessible name (`…, selected`). */
+  readonly selectedAriaLabel = input('selected');
+
   /**
    * Emitted when date selection changes
    */
@@ -192,8 +216,31 @@ export class DatepickerComponent implements ControlValueAccessor {
     'December',
   ];
 
+  /** Month name in the header: `locale` when set, the English names otherwise. */
   readonly currentMonthName = computed(() => {
-    return this.monthNames[this.currentMonth()];
+    const locale = this.locale();
+    return locale
+      ? new Date(this.currentYear(), this.currentMonth(), 1).toLocaleDateString(locale, { month: 'long' })
+      : this.monthNames[this.currentMonth()];
+  });
+
+  /** Weekday headers in grid order, starting at `firstDayOfWeek`. */
+  readonly weekdayLabels = computed(() => {
+    const locale = this.locale();
+    const first = this.gridStart();
+    // 1 Jan 2023 was a Sunday, so day d of that week has getDay() === d.
+    const names = locale
+      ? Array.from({ length: 7 }, (_, d) =>
+          new Date(2023, 0, 1 + d).toLocaleDateString(locale, { weekday: 'short' }).replace(/\.$/, ''),
+        )
+      : this.weekDays;
+    return Array.from({ length: 7 }, (_, i) => names[(first + i) % 7]);
+  });
+
+  /** `firstDayOfWeek` clamped to 0–6. */
+  private readonly gridStart = computed(() => {
+    const day = Math.trunc(Number(this.firstDayOfWeek()));
+    return Number.isFinite(day) ? ((day % 7) + 7) % 7 : 0;
   });
 
   /** id of the helper/error text the input is described by (aria-describedby) */
@@ -352,6 +399,15 @@ export class DatepickerComponent implements ControlValueAccessor {
     return this.isSameDate(date, today);
   }
 
+  /** Accessible name of a day button: the full date, plus `selectedAriaLabel` when selected. */
+  protected dayAriaLabel(date: Date): string {
+    const locale = this.locale();
+    const name = locale
+      ? date.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+      : date.toDateString();
+    return this.isSelectedDate(date) ? `${name}, ${this.selectedAriaLabel()}` : name;
+  }
+
   /**
    * Check if date is selected
    */
@@ -372,9 +428,9 @@ export class DatepickerComponent implements ControlValueAccessor {
 
     const days: Date[] = [];
 
-    // Add previous month's days
-    const firstDayOfWeek = firstDay.getDay();
-    for (let i = firstDayOfWeek - 1; i >= 0; i--) {
+    // Add previous month's days, so the first column is `firstDayOfWeek`.
+    const leadingDays = (firstDay.getDay() - this.gridStart() + 7) % 7;
+    for (let i = leadingDays - 1; i >= 0; i--) {
       const date = new Date(year, month, -i);
       days.push(date);
     }

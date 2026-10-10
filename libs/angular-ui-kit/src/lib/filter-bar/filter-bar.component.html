@@ -16,7 +16,7 @@
           <lc-select
             class="lc-filter-bar__select"
             [size]="size() === 'sm' ? 'sm' : 'md'"
-            [placeholder]="filter.placeholder ?? 'Select an option'"
+            [placeholder]="filter.placeholder ?? selectPlaceholder()"
             [options]="selectOptions(filter.key)"
             [ariaLabel]="filter.label || filter.placeholder || filter.key"
             [ngModel]="getValue(filter.key)"
@@ -51,7 +51,7 @@
             [inputId]="fieldId(filter.key)"
             [ariaLabelledBy]="filter.label ? labelId(filter.key) : undefined"
             [ariaLabel]="filter.label ? undefined : filter.placeholder || filter.key"
-            [placeholder]="filter.placeholder ?? 'Search...'"
+            [placeholder]="filter.placeholder ?? searchPlaceholder()"
             [size]="size() === 'sm' ? 'sm' : 'md'"
             [debounceMs]="0"
             [value]="getValue(filter.key)"

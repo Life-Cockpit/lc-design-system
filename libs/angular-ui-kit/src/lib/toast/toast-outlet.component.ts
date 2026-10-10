@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, computed, inject } from '@angular/core';
+import { Component, ChangeDetectionStrategy, computed, inject, input } from '@angular/core';
 import { ToastComponent } from './toast.component';
 import { ToastService, type Toast, type ToastPosition } from './toast.service';
 
@@ -41,6 +41,9 @@ export class ToastOutletComponent {
   protected readonly liveLevels: readonly ToastLive[] = ['assertive', 'polite'];
 
   private readonly toastService = inject(ToastService);
+
+  /** Accessible name of every toast's close button (forwarded to lc-toast). */
+  readonly closeAriaLabel = input('Close notification');
 
   /** Toasts keyed by `${position}:${politeness}` in the order they were shown. */
   private readonly groups = computed(() => {

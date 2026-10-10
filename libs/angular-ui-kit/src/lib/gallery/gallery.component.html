@@ -7,7 +7,7 @@
       [class.gallery__filter-btn--active]="activeFilter() === null"
       (click)="setFilter(null)"
     >
-      All
+      {{ filterAllLabel() }}
     </button>
     @for (cat of categories(); track cat) {
       <button
@@ -36,7 +36,7 @@
       (keyup.space)="openLightbox(i, $event)"
       [attr.tabindex]="enableLightbox() ? 0 : null"
       [attr.role]="enableLightbox() ? 'button' : null"
-      [attr.aria-label]="item.alt || 'Image ' + (i + 1)"
+      [attr.aria-label]="item.alt || imageFallbackLabel() + ' ' + (i + 1)"
     >
       @if (!isLoaded(i)) {
         <div class="gallery__placeholder"></div>
@@ -61,7 +61,7 @@
     class="gallery__lightbox"
     role="dialog"
     aria-modal="true"
-    aria-label="Image lightbox"
+    [attr.aria-label]="lightboxAriaLabel()"
     tabindex="-1"
     cdkTrapFocus
     (keydown)="onKeydown($event)"
@@ -74,20 +74,20 @@
     <div class="gallery__lightbox-toolbar">
       <div class="gallery__lightbox-counter">{{ lightboxCounter() }}</div>
       <div class="gallery__lightbox-actions">
-        <button type="button" class="gallery__lightbox-btn" aria-label="Zoom out" (click)="zoomOut()">
+        <button type="button" class="gallery__lightbox-btn" [attr.aria-label]="zoomOutAriaLabel()" (click)="zoomOut()">
           <lc-icon name="minus" size="sm" />
         </button>
         <span class="gallery__lightbox-zoom">{{ lightboxZoom() }}%</span>
-        <button type="button" class="gallery__lightbox-btn" aria-label="Zoom in" (click)="zoomIn()">
+        <button type="button" class="gallery__lightbox-btn" [attr.aria-label]="zoomInAriaLabel()" (click)="zoomIn()">
           <lc-icon name="plus" size="sm" />
         </button>
-        <button type="button" class="gallery__lightbox-btn" aria-label="Reset zoom" (click)="resetZoom()">
+        <button type="button" class="gallery__lightbox-btn" [attr.aria-label]="resetZoomAriaLabel()" (click)="resetZoom()">
           <lc-icon name="arrows-pointing-out" size="xs" />
         </button>
-        <button type="button" class="gallery__lightbox-btn" aria-label="Download" (click)="downloadCurrent()">
+        <button type="button" class="gallery__lightbox-btn" [attr.aria-label]="downloadAriaLabel()" (click)="downloadCurrent()">
           <lc-icon name="arrow-down-tray" size="sm" />
         </button>
-        <button #closeBtn type="button" class="gallery__lightbox-btn" aria-label="Close" (click)="closeLightbox()">
+        <button #closeBtn type="button" class="gallery__lightbox-btn" [attr.aria-label]="closeAriaLabel()" (click)="closeLightbox()">
           <lc-icon name="x-mark" size="sm" />
         </button>
       </div>
@@ -98,7 +98,7 @@
       <button
         type="button"
         class="gallery__lightbox-nav gallery__lightbox-nav--prev"
-        aria-label="Previous image"
+        [attr.aria-label]="previousAriaLabel()"
         (click)="goToPrev()"
       >
         <lc-icon name="chevron-left" size="lg" />
@@ -108,7 +108,7 @@
       <button
         type="button"
         class="gallery__lightbox-nav gallery__lightbox-nav--next"
-        aria-label="Next image"
+        [attr.aria-label]="nextAriaLabel()"
         (click)="goToNext()"
       >
         <lc-icon name="chevron-right" size="lg" />

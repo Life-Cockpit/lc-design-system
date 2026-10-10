@@ -102,6 +102,12 @@ export class NumberInputComponent implements ControlValueAccessor {
   /** Disabled state */
   disabled = input<boolean>(false);
 
+  /** Accessible name of the minus button. */
+  decrementAriaLabel = input('Decrease value');
+
+  /** Accessible name of the plus button. */
+  incrementAriaLabel = input('Increase value');
+
   /** Emits value on change */
   valueChange = output<number>();
 

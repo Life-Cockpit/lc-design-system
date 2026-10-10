@@ -19,7 +19,7 @@
       type="button"
       class="search-input__clear"
       (click)="clear()"
-      aria-label="Clear search"
+      [attr.aria-label]="clearAriaLabel()"
       [disabled]="disabled()"
     >
       <lc-icon name="x-mark" class="search-input__clear-icon" [decorative]="true"></lc-icon>

@@ -149,6 +149,24 @@ export class MarkdownComponent implements OnDestroy {
   /** Scroll the first changed block into view when highlights appear. */
   readonly scrollToFirstChange = input<boolean>(false);
 
+  /** Screen-reader marker put in front of each highlighted block (`highlightChanges`). */
+  readonly changedMarkerLabel = input('(geändert)');
+
+  /** Announced after the count when one block changed: `1 Abschnitt geändert`. */
+  readonly changedSummaryOneLabel = input('Abschnitt geändert');
+
+  /** Announced after the count when several blocks changed: `3 Abschnitte geändert`. */
+  readonly changedSummaryManyLabel = input('Abschnitte geändert');
+
+  /** Shown while a Mermaid diagram renders. */
+  readonly mermaidLoadingLabel = input('Rendering Mermaid diagram...');
+
+  /** Shown above the source when a Mermaid diagram fails. */
+  readonly mermaidErrorLabel = input('Mermaid diagram could not be rendered.');
+
+  /** Shown above the source when the optional `mermaid` package cannot be loaded. */
+  readonly mermaidUnavailableLabel = input('Mermaid runtime is not available.');
+
   /** Emitted when a link is clicked */
   readonly linkClick = output<MarkdownLinkClick>();
 
@@ -200,7 +218,7 @@ export class MarkdownComponent implements OnDestroy {
   protected readonly changeSummary = computed(() => {
     const n = this.changedCount();
     if (n <= 0) return '';
-    return `${n} ${n === 1 ? 'Abschnitt' : 'Abschnitte'} geändert`;
+    return `${n} ${n === 1 ? this.changedSummaryOneLabel() : this.changedSummaryManyLabel()}`;
   });
 
   /** Whether the current highlights have faded out (after `changeHighlightFadeMs`). */
@@ -358,7 +376,7 @@ export class MarkdownComponent implements OnDestroy {
       el.classList.add('lc-markdown__block--changed');
       const sr = document.createElement('span');
       sr.className = 'lc-markdown__sr-only';
-      sr.textContent = '(geändert) ';
+      sr.textContent = `${this.changedMarkerLabel()} `;
       el.insertBefore(sr, el.firstChild);
       count++;
     };
@@ -798,7 +816,7 @@ export class MarkdownComponent implements OnDestroy {
           // Mermaid output here and rely on Mermaid's strict security mode.
           nextSvgs[part.index] = this.sanitizer.bypassSecurityTrustHtml(svg);
         } catch {
-          nextErrors[part.index] = 'Mermaid diagram could not be rendered.';
+          nextErrors[part.index] = this.mermaidErrorLabel();
         }
       }
 
@@ -809,7 +827,7 @@ export class MarkdownComponent implements OnDestroy {
       if (runId !== this.mermaidRenderRun) return;
       const fallbackErrors: Record<number, string> = {};
       for (const part of mermaidParts) {
-        fallbackErrors[part.index] = 'Mermaid runtime is not available.';
+        fallbackErrors[part.index] = this.mermaidUnavailableLabel();
       }
       this.mermaidErrors.set(fallbackErrors);
     }

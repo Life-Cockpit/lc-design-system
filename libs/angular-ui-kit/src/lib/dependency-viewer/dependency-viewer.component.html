@@ -3,10 +3,10 @@
 @if (showToolbar()) {
   <div class="dep-viewer__toolbar">
     @if (interactive()) {
-      <button class="dep-viewer__btn" (click)="zoomIn()" title="Zoom in">+</button>
+      <button class="dep-viewer__btn" (click)="zoomIn()" [attr.title]="zoomInLabel()" [attr.aria-label]="zoomInLabel()">+</button>
       <span class="dep-viewer__zoom">{{ zoomLabel() }}%</span>
-      <button class="dep-viewer__btn" (click)="zoomOut()" title="Zoom out">−</button>
-      <button class="dep-viewer__btn dep-viewer__btn--reset" (click)="resetZoom()" title="Reset">⟲</button>
+      <button class="dep-viewer__btn" (click)="zoomOut()" [attr.title]="zoomOutLabel()" [attr.aria-label]="zoomOutLabel()">−</button>
+      <button class="dep-viewer__btn dep-viewer__btn--reset" (click)="resetZoom()" [attr.title]="resetZoomLabel()" [attr.aria-label]="resetZoomLabel()">⟲</button>
     }
     <span class="dep-viewer__direction-label">{{ direction() === 'horizontal' ? '→' : '↓' }}</span>
   </div>
@@ -219,13 +219,13 @@
       <p class="dep-viewer__detail-desc">{{ node.description }}</p>
     }
     <div class="dep-viewer__detail-meta">
-      <span>Depth: {{ node.depth }}</span>
-      <span>Children: {{ node.outgoingCount }}</span>
-      <span>Depends on: {{ node.incomingCount }}</span>
+      <span>{{ depthLabel() }} {{ node.depth }}</span>
+      <span>{{ childrenLabel() }} {{ node.outgoingCount }}</span>
+      <span>{{ dependsOnLabel() }} {{ node.incomingCount }}</span>
     </div>
     @if (selectedDependsOn().length) {
       <div class="dep-viewer__detail-deps">
-        <strong>Dependencies:</strong>
+        <strong>{{ dependenciesLabel() }}</strong>
         <ul>
           @for (dep of selectedDependsOn(); track dep.id) {
             <li>

@@ -136,6 +136,57 @@ export class DocumentViewerComponent implements OnDestroy {
   /** Height of the viewer container */
   readonly height = input('500px');
 
+  /** Accessible name of the zoom-out button. */
+  readonly zoomOutAriaLabel = input('Zoom out');
+
+  /** Accessible name of the zoom-in button. */
+  readonly zoomInAriaLabel = input('Zoom in');
+
+  /** Accessible name of the reset-zoom button. */
+  readonly resetZoomAriaLabel = input('Reset zoom');
+
+  /** Accessible name of the toolbar download button. */
+  readonly downloadAriaLabel = input('Download');
+
+  /** Accessible name of the fullscreen button. */
+  readonly fullscreenAriaLabel = input('Fullscreen');
+
+  /** Accessible name of the fullscreen button while in fullscreen. */
+  readonly exitFullscreenAriaLabel = input('Exit fullscreen');
+
+  /** Shown while the document loads. */
+  readonly loadingLabel = input('Loading document…');
+
+  /** Title shown for file types without a preview. */
+  readonly previewUnavailableTitle = input('Preview not available');
+
+  /** Message shown for file types without a preview. */
+  readonly previewUnavailableMessage = input('This file type cannot be previewed.');
+
+  /** Label of the download button shown instead of a preview. */
+  readonly downloadFileLabel = input('Download file');
+
+  /** Toolbar name when neither `filename` nor a file name in `src` is available. */
+  readonly untitledLabel = input('Document');
+
+  /** Type badge for Markdown documents. */
+  readonly markdownTypeLabel = input('Markdown');
+
+  /** Type badge for images. */
+  readonly imageTypeLabel = input('Image');
+
+  /** Type badge for plain text. */
+  readonly textTypeLabel = input('Text');
+
+  /** Type badge for other files. */
+  readonly fileTypeLabel = input('File');
+
+  /** Prefix of the error shown when fetching the document fails. */
+  readonly loadErrorLabel = input('Failed to load document:');
+
+  /** Error shown when `src` is not an allowed URL (e.g. `javascript:`). */
+  readonly blockedUrlMessage = input('This document URL cannot be displayed');
+
   // ── Internal state ───────────────────────────────────────────────────────
 
   protected loading = signal(true);
@@ -162,13 +213,13 @@ export class DocumentViewerComponent implements OnDestroy {
   protected displayName = computed(() => {
     if (this.filename()) return this.filename();
     const src = this.src();
-    if (!src) return 'Document';
+    if (!src) return this.untitledLabel();
     try {
       const url = new URL(src, 'http://localhost');
       const segments = url.pathname.split('/');
-      return segments[segments.length - 1] || 'Document';
+      return segments[segments.length - 1] || this.untitledLabel();
     } catch {
-      return src.split('/').pop() || 'Document';
+      return src.split('/').pop() || this.untitledLabel();
     }
   });
 
@@ -180,11 +231,11 @@ export class DocumentViewerComponent implements OnDestroy {
     const t = this.resolvedType();
     switch (t) {
       case 'pdf': return 'PDF';
-      case 'markdown': return 'Markdown';
-      case 'image': return 'Image';
-      case 'text': return 'Text';
+      case 'markdown': return this.markdownTypeLabel();
+      case 'image': return this.imageTypeLabel();
+      case 'text': return this.textTypeLabel();
       case 'code': return this.resolvedLanguage().toUpperCase();
-      default: return 'File';
+      default: return this.fileTypeLabel();
     }
   });
 
@@ -269,7 +320,7 @@ export class DocumentViewerComponent implements OnDestroy {
     if (type === 'pdf' || type === 'image') {
       if (!this.srcEmbeddable()) {
         this.loading.set(false);
-        this.error.set('This document URL cannot be displayed');
+        this.error.set(this.blockedUrlMessage());
         return;
       }
       // Not "loading": the frame/img element only exists once loading is off,
@@ -387,7 +438,7 @@ export class DocumentViewerComponent implements OnDestroy {
     } catch (err) {
       if (controller?.signal.aborted) return;
       this.loading.set(false);
-      this.error.set(`Failed to load document: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      this.error.set(`${this.loadErrorLabel()} ${err instanceof Error ? err.message : 'Unknown error'}`);
     }
   }
 }

@@ -241,6 +241,39 @@ export class TableComponent {
   /** Text shown when data is empty */
   emptyText = input<string>('No data available');
 
+  /** Placeholder prefix of the column filters, followed by the column label (`filterable`). */
+  filterPlaceholderLabel = input('Filter');
+
+  /** Accessible name of the select-all checkbox (`selectable`). */
+  selectAllAriaLabel = input('Select all rows');
+
+  /** Accessible name of a row checkbox, followed by the row number. */
+  selectRowAriaLabel = input('Select row');
+
+  /** Screen-reader state of a column sorted ascending. */
+  sortedAscendingLabel = input('sorted ascending');
+
+  /** Screen-reader state of a column sorted descending. */
+  sortedDescendingLabel = input('sorted descending');
+
+  /** Tree mode: accessible name prefix of the expand toggle, followed by the row label. */
+  expandRowAriaLabel = input('Aufklappen:');
+
+  /** Tree mode: accessible name prefix of the collapse toggle, followed by the row label. */
+  collapseRowAriaLabel = input('Einklappen:');
+
+  /** Pagination: word between the shown range and the total (`1–10 of 42`). */
+  rangeOfLabel = input('of');
+
+  /** Accessible name of the page-size select. */
+  rowsPerPageAriaLabel = input('Rows per page');
+
+  /** Accessible name of the previous-page button. */
+  previousPageAriaLabel = input('Previous page');
+
+  /** Accessible name of the next-page button. */
+  nextPageAriaLabel = input('Next page');
+
   // -- Pagination --
   /** Enable pagination */
   paginate = input<boolean>(false);
@@ -309,6 +342,9 @@ export class TableComponent {
 
   /** Indentation per depth level, in px. Default: 20. */
   indentSize = input<number>(20);
+
+  /** Accessible name prefix of a column filter, followed by the column label. */
+  filterAriaLabel = input('Filter by');
 
   /** Emitted when a sortable column header is clicked */
   readonly sort = output<SortEvent>();

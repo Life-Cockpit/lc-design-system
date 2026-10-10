@@ -22,7 +22,7 @@
   <button
     type="button"
     class="lc-chip__delete"
-    aria-label="Remove chip"
+    [attr.aria-label]="removeAriaLabel()"
     (click)="onRemove($event)"
   >
     <svg

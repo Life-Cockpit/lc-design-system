@@ -27,7 +27,7 @@
         [value]="digit"
         [disabled]="isDisabled()"
         [required]="required()"
-        [attr.aria-label]="'Digit ' + (i + 1) + ' of ' + length()"
+        [attr.aria-label]="digitLabel(i)"
         [attr.aria-required]="required() || null"
         [attr.aria-invalid]="error() ? 'true' : null"
         [attr.aria-describedby]="error() ? errorId : null"

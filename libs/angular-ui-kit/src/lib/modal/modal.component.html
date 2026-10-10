@@ -26,7 +26,7 @@
         <button
           type="button"
           class="lc-modal__close"
-          aria-label="Close modal"
+          [attr.aria-label]="closeAriaLabel()"
           (click)="onCloseClick($event)"
         >
           <lc-icon name="x-mark" size="md" />

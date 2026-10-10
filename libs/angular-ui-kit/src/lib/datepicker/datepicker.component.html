@@ -30,7 +30,7 @@
           type="button"
           class="lc-datepicker-clear"
           (click)="clear(); $event.stopPropagation()"
-          aria-label="Clear date"
+          [attr.aria-label]="clearAriaLabel()"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -79,7 +79,7 @@
       [class.lc-datepicker-calendar--open]="isOpen()"
       [id]="inputId + '-calendar'"
       role="dialog"
-      aria-label="Choose date"
+      [attr.aria-label]="dialogAriaLabel()"
     >
       <!-- Calendar Header -->
       <div class="lc-datepicker-header">
@@ -87,7 +87,7 @@
           type="button"
           class="lc-datepicker-nav-button"
           (click)="previousMonth()"
-          aria-label="Previous month"
+          [attr.aria-label]="previousMonthAriaLabel()"
         >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
             <path
@@ -106,7 +106,7 @@
           type="button"
           class="lc-datepicker-nav-button"
           (click)="nextMonth()"
-          aria-label="Next month"
+          [attr.aria-label]="nextMonthAriaLabel()"
         >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
             <path
@@ -125,13 +125,13 @@
           class="lc-datepicker-today-button"
           (click)="goToToday()"
         >
-          Today
+          {{ todayLabel() }}
         </button>
       </div>
 
       <!-- Weekday Headers -->
       <div class="lc-datepicker-weekdays" aria-hidden="true">
-        @for (day of weekDays; track day) {
+        @for (day of weekdayLabels(); track $index) {
           <div class="lc-datepicker-weekday">{{ day }}</div>
         }
       </div>
@@ -148,7 +148,7 @@
             [class.lc-datepicker-day--disabled]="isDateDisabled(date)"
             [disabled]="isDateDisabled(date)"
             [attr.aria-current]="isToday(date) ? 'date' : null"
-            [attr.aria-label]="date.toDateString() + (isSelectedDate(date) ? ', selected' : '')"
+            [attr.aria-label]="dayAriaLabel(date)"
             (click)="selectDate(date)"
           >
             {{ date.getDate() }}

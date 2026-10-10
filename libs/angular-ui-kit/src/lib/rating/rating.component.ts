@@ -70,6 +70,9 @@ export class RatingComponent implements ControlValueAccessor {
   /** Whether to show the numeric value */
   showValue = input<boolean>(false);
 
+  /** Accessible name of the star group when no visible `label` is set. */
+  ariaLabel = input('Rating');
+
   /** Emits the selected rating */
   ratingChange = output<number>();
 

@@ -7,7 +7,7 @@
     class="rating__stars"
     role="radiogroup"
     [attr.aria-labelledby]="label() ? labelId : null"
-    [attr.aria-label]="label() ? null : 'Rating'"
+    [attr.aria-label]="label() ? null : ariaLabel()"
     [attr.aria-readonly]="readonly() ? true : null"
     [attr.aria-disabled]="isDisabled() ? true : null"
     (keydown)="onKeydown($event)"

@@ -104,6 +104,51 @@ export class PasswordInputComponent implements ControlValueAccessor {
   /** Error message to display (also sets aria-invalid) */
   readonly error = input<string | undefined>(undefined);
 
+  /** Accessible name of the visibility toggle while the password is hidden. */
+  readonly showPasswordAriaLabel = input('Show password');
+
+  /** Accessible name of the visibility toggle while the password is shown. */
+  readonly hidePasswordAriaLabel = input('Hide password');
+
+  /** Screen-reader prefix of the strength level (`showStrengthMeter`). */
+  readonly strengthLabel = input('Password strength:');
+
+  /** Shown for strength level `Weak`. */
+  readonly weakLabel = input('Weak');
+
+  /** Shown for strength level `Fair`. */
+  readonly fairLabel = input('Fair');
+
+  /** Shown for strength level `Good`. */
+  readonly goodLabel = input('Good');
+
+  /** Shown for strength level `Strong`. */
+  readonly strongLabel = input('Strong');
+
+  /** Accessible name of the requirement list (`showRequirements`). */
+  readonly requirementsAriaLabel = input('Password requirements');
+
+  /** Requirement: at least 8 characters. */
+  readonly minLengthRequirementLabel = input('At least 8 characters');
+
+  /** Requirement: one uppercase letter. */
+  readonly uppercaseRequirementLabel = input('One uppercase letter (A-Z)');
+
+  /** Requirement: one lowercase letter. */
+  readonly lowercaseRequirementLabel = input('One lowercase letter (a-z)');
+
+  /** Requirement: one digit. */
+  readonly digitRequirementLabel = input('One digit (0-9)');
+
+  /** Requirement: one symbol. */
+  readonly symbolRequirementLabel = input('One symbol (!@#$%^&*)');
+
+  /** Screen-reader suffix of a met requirement. */
+  readonly requirementMetLabel = input('(met)');
+
+  /** Screen-reader suffix of an unmet requirement. */
+  readonly requirementNotMetLabel = input('(not met)');
+
   /** Emitted whenever the value (and thus the strength) is recalculated */
   readonly strengthChange = output<PasswordStrength>();
 
@@ -125,11 +170,11 @@ export class PasswordInputComponent implements ControlValueAccessor {
   readonly requirements = computed<PasswordRequirement[]>(() => {
     const password = this.value();
     const checks: Array<[string, boolean]> = [
-      ['At least 8 characters', password.length >= 8],
-      ['One uppercase letter (A-Z)', /[A-Z]/.test(password)],
-      ['One lowercase letter (a-z)', /[a-z]/.test(password)],
-      ['One digit (0-9)', /[0-9]/.test(password)],
-      ['One symbol (!@#$%^&*)', SYMBOL_PATTERN.test(password)],
+      [this.minLengthRequirementLabel(), password.length >= 8],
+      [this.uppercaseRequirementLabel(), /[A-Z]/.test(password)],
+      [this.lowercaseRequirementLabel(), /[a-z]/.test(password)],
+      [this.digitRequirementLabel(), /[0-9]/.test(password)],
+      [this.symbolRequirementLabel(), SYMBOL_PATTERN.test(password)],
     ];
     return checks.map(([label, met]) => ({ label, met, icon: met ? '✓' : '✗' }));
   });
@@ -149,6 +194,20 @@ export class PasswordInputComponent implements ControlValueAccessor {
     }
 
     return { score, level, percentage };
+  });
+
+  /** The strength level as shown to the user (the level itself stays English: it is API and class name). */
+  readonly strengthText = computed(() => {
+    switch (this.strength().level) {
+      case 'Strong':
+        return this.strongLabel();
+      case 'Good':
+        return this.goodLabel();
+      case 'Fair':
+        return this.fairLabel();
+      default:
+        return this.weakLabel();
+    }
   });
 
   /** Lower-cased level for the modifier classes (lc-strength-weak …) */

@@ -84,6 +84,14 @@ export class VerificationCodeInputComponent implements ControlValueAccessor {
   /** Focus the first digit input once rendered (opt-in) */
   readonly autofocus = input<boolean>(false);
 
+  /** Accessible name of each box; `{n}` and `{total}` are replaced. */
+  readonly digitAriaLabel = input('Digit {n} of {total}');
+
+  /** Accessible name of box `index` (zero-based). */
+  protected digitLabel(index: number): string {
+    return this.digitAriaLabel().replace('{n}', String(index + 1)).replace('{total}', String(this.length()));
+  }
+
   /** Emitted once with the full code when all digits are entered */
   readonly complete = output<string>();
 

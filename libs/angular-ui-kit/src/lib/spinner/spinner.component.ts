@@ -37,5 +37,8 @@ export class SpinnerComponent {
    */
   readonly message = input<string>();
 
+  /** Screen-reader text while no visible `message` is set. */
+  readonly loadingLabel = input('Loading');
+
   protected readonly hostClasses = computed(() => `spinner spinner--${this.size()}`);
 }

@@ -80,6 +80,12 @@ export class FilterBarComponent {
   /** Size variant */
   size = input<'sm' | 'md'>('md');
 
+  /** Placeholder of select filters without their own `placeholder`. */
+  selectPlaceholder = input('Select an option');
+
+  /** Placeholder of search filters without their own `placeholder`. */
+  searchPlaceholder = input('Search...');
+
   /** Emitted when any filter value changes */
   valuesChange = output<FilterValues>();
 

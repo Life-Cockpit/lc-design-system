@@ -219,6 +219,33 @@ export class ChatComponent {
   /** Maximum file size in bytes. `0` disables the check. */
   maxFileSize = input<number>(0);
 
+  /** BCP 47 locale of the message times (hour and minute). */
+  locale = input('de-DE');
+
+  /** Header badge while a message is streaming. */
+  streamingLabel = input('Streaming…');
+
+  /** Accessible name of the attach button (`allowFileUpload`). */
+  attachAriaLabel = input('Datei anhängen');
+
+  /** Accessible name of the send button. */
+  sendAriaLabel = input('Send');
+
+  /** Screen-reader prefix of messages with status `info`. */
+  statusInfoLabel = input('Info:');
+
+  /** Screen-reader prefix of messages with status `success`. */
+  statusSuccessLabel = input('Erfolg:');
+
+  /** Screen-reader prefix of messages with status `warning`. */
+  statusWarningLabel = input('Warnung:');
+
+  /** Screen-reader prefix of messages with status `error`. */
+  statusErrorLabel = input('Fehler:');
+
+  /** Accessible name prefix of a pending attachment's remove button, followed by the file name. */
+  removeAttachmentAriaLabel = input('Entfernen:');
+
   /** Emits when user sends a message. */
   messageSend = output<ChatSendEvent>();
 
@@ -424,7 +451,7 @@ export class ChatComponent {
 
   protected formatTime(date: Date | undefined): string {
     if (!date) return '';
-    return date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleTimeString(this.locale(), { hour: '2-digit', minute: '2-digit' });
   }
 
   /**
@@ -502,13 +529,13 @@ export class ChatComponent {
   protected statusLabel(status: ChatMessageStatus | undefined): string {
     switch (status) {
       case 'info':
-        return 'Info:';
+        return this.statusInfoLabel();
       case 'success':
-        return 'Erfolg:';
+        return this.statusSuccessLabel();
       case 'warning':
-        return 'Warnung:';
+        return this.statusWarningLabel();
       case 'error':
-        return 'Fehler:';
+        return this.statusErrorLabel();
       default:
         return '';
     }

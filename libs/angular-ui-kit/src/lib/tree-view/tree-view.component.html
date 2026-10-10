@@ -1,12 +1,12 @@
 @if (showToolbar()) {
   <div class="lc-tree-view__toolbar">
-    <button type="button" class="lc-tree-view__tool-btn" (click)="expandAll()" title="Expand all">
+    <button type="button" class="lc-tree-view__tool-btn" (click)="expandAll()" [attr.title]="expandAllLabel()">
       <lc-icon name="fold-down" size="xs" [decorative]="true" />
-      <span>Expand all</span>
+      <span>{{ expandAllLabel() }}</span>
     </button>
-    <button type="button" class="lc-tree-view__tool-btn" (click)="collapseAll()" title="Collapse all">
+    <button type="button" class="lc-tree-view__tool-btn" (click)="collapseAll()" [attr.title]="collapseAllLabel()">
       <lc-icon name="fold-up" size="xs" [decorative]="true" />
-      <span>Collapse all</span>
+      <span>{{ collapseAllLabel() }}</span>
     </button>
   </div>
 }
@@ -47,7 +47,7 @@
             class="lc-tree-view__chevron-btn"
             [class.lc-tree-view__chevron-btn--expanded]="node.expanded"
             (click)="onToggleClick(node, $event)"
-            [attr.aria-label]="node.expanded ? 'Collapse' : 'Expand'"
+            [attr.aria-label]="node.expanded ? collapseAriaLabel() : expandAriaLabel()"
             tabindex="-1"
           >
             <lc-icon name="chevron-right" size="xs" [decorative]="true" />

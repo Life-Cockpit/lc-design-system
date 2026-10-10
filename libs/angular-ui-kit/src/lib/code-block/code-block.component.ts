@@ -211,6 +211,18 @@ export class CodeBlockComponent {
   /** Whether the code block has a header bar */
   showHeader = input<boolean>(true);
 
+  /** Visible label of the copy button. */
+  copyLabel = input('Copy');
+
+  /** Accessible name of the copy button. */
+  copyAriaLabel = input('Copy code');
+
+  /** Label of the copy button after copying (also its accessible name). */
+  copiedLabel = input('Copied');
+
+  /** Announced to screen readers after copying. */
+  copiedAnnouncement = input('Copied to clipboard');
+
   protected copied = signal(false);
 
   private readonly sanitizer = inject(DomSanitizer);

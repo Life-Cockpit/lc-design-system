@@ -55,6 +55,12 @@ export class KanbanBoardComponent {
   readonly showWipLimit = input(true);
   readonly readonly = input(false);
 
+  /** Placeholder text of an empty column. */
+  readonly emptyColumnLabel = input('Drop here');
+
+  /** Accessible name prefix of a card's priority marker, followed by the priority. */
+  readonly priorityAriaLabel = input('Priority:');
+
   readonly cardMoved = output<KanbanMoveEvent>();
   readonly cardClick = output<{ card: KanbanCard; columnId: string }>();
 

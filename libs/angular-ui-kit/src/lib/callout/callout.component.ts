@@ -45,6 +45,9 @@ export class CalloutComponent {
   /** Whether the callout can be dismissed */
   dismissible = input<boolean>(false);
 
+  /** Accessible name of the dismiss button (`dismissible`). */
+  dismissAriaLabel = input('Dismiss');
+
   /** Emits when dismiss button is clicked */
   dismissed = output<void>();
 

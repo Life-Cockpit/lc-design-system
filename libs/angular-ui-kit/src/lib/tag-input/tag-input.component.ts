@@ -37,6 +37,15 @@ export class TagInputComponent implements ControlValueAccessor {
   readonly suggestions = input<string[]>([]);
   readonly label = input('');
 
+  /** Placeholder once `maxTags` is reached; `{max}` is replaced by the limit. */
+  readonly maxTagsReachedLabel = input('Maximum of {max} tags reached');
+
+  /** Accessible name prefix of a tag's remove button, followed by the tag. */
+  readonly removeTagAriaLabel = input('Remove');
+
+  /** Accessible name of the suggestion list when no `label` is set. */
+  readonly suggestionsAriaLabel = input('Suggestions');
+
   readonly tagAdded = output<string>();
   readonly tagRemoved = output<string>();
 
@@ -84,7 +93,7 @@ export class TagInputComponent implements ControlValueAccessor {
    * focus to `<body>`); it becomes read-only and says why.
    */
   protected readonly inputPlaceholder = computed(() => {
-    if (!this.canAdd()) return `Maximum of ${this.maxTags()} tags reached`;
+    if (!this.canAdd()) return this.maxTagsReachedLabel().replace('{max}', String(this.maxTags()));
     return this.tags().length ? '' : this.placeholder();
   });
 

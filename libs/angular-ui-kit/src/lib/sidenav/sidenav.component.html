@@ -45,7 +45,7 @@
         [class.lc-sidenav__logo--size-lg]="logoSize() === 'lg'"
         [class.lc-sidenav__logo--size-xl]="logoSize() === 'xl'"
       >
-        <button type="button" class="lc-sidenav__logo-link" aria-label="Toggle sidebar" (click)="toggleCollapsed()">
+        <button type="button" class="lc-sidenav__logo-link" [attr.aria-label]="toggleAriaLabel()" (click)="toggleCollapsed()">
           <lc-logo
             [variant]="collapsed() ? 'emblem' : 'full'"
             [size]="collapsed() ? 'sm' : logoSize()"
@@ -63,8 +63,8 @@
             type="button"
             class="lc-sidenav__logo-toggle"
             (click)="toggleCollapsed()"
-            [attr.aria-label]="position() === 'right' ? 'Collapse navigation to the right' : 'Collapse navigation to the left'"
-            title="Collapse sidebar">
+            [attr.aria-label]="collapseAriaLabel() || (position() === 'right' ? 'Collapse navigation to the right' : 'Collapse navigation to the left')"
+            [attr.title]="collapseTitle()">
             <lc-icon
               [name]="position() === 'right' ? 'chevron-right' : 'chevron-left'"
               size="sm"
@@ -81,7 +81,7 @@
         class="lc-sidenav__close"
         cdkFocusInitial
         (click)="handleClose()"
-        aria-label="Close navigation">
+        [attr.aria-label]="closeAriaLabel()">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           width="24"

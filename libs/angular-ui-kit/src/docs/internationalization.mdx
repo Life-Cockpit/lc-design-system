@@ -1,0 +1,106 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Internationalization (i18n, locale, labels)" />
+
+# Internationalization
+
+Every text the kit renders by itself — button labels, accessible names,
+placeholders, status words, relative times — is an **input**. Its default is
+the text the component has always shown, so nothing changes until you set it.
+Dates and times use a **`locale`** input wherever a component formats them.
+
+## Translating labels
+
+Set the inputs per instance. Static values work with Angular's own i18n
+(`i18n-<input>` marks a static attribute for translation):
+
+```html
+<lc-modal [open]="open" closeAriaLabel="Dialog schließen" i18n-closeAriaLabel>…</lc-modal>
+
+<lc-datepicker
+  locale="de-DE"
+  [firstDayOfWeek]="1"
+  todayLabel="Heute"
+  previousMonthAriaLabel="Vorheriger Monat"
+  nextMonthAriaLabel="Nächster Monat"
+  clearAriaLabel="Datum löschen"
+/>
+```
+
+Labels that are followed by data are prefixes (`dismissAriaLabel` +
+the title, `selectRowAriaLabel` + the row number). Labels with a placeholder
+replace it: `{n}` (`minutesAgoLabel="vor {n} Min."`), `{max}`
+(`maxTagsReachedLabel`), `{n}` and `{total}` (`digitAriaLabel`).
+
+## Locales
+
+| Component | Input | Default | Formats |
+|---|---|---|---|
+| `lc-calendar` | `locale`, `firstDayOfWeek`, `labels` | `de-DE`, `1` | month/week/day titles, weekday headers, event times |
+| `lc-date-range-picker` | `locale` | `de-DE` | dates, month title, weekday headers (Monday first) |
+| `lc-datepicker` | `locale`, `firstDayOfWeek` | `''` (English names), `0` (Sunday) | month title, weekday headers, the day buttons' accessible names |
+| `lc-gantt-chart` | `locale` | `de-DE` | month headers |
+| `lc-notification-center` | `dateLocale` | `de-DE` | dates older than a week |
+| `lc-chat` | `locale` | `de-DE` | message times |
+| `lc-log-viewer` | `locale` | `en-US` | line timestamps (24-hour) |
+
+Charts format numbers through `formatValue` and describe themselves through a
+generated English summary; set `ariaLabel` to give a chart a translated name.
+
+The defaults are fixed values, not the visitor's browser setting, so server
+and browser render the same text — set `locale` to the language of the page.
+
+## Label inputs
+
+Defaults are the texts the components always had — mostly English; `lc-chat`,
+`lc-markdown`'s change highlighting and `lc-table`'s tree toggles were German.
+
+| Component | Inputs and defaults |
+|---|---|
+| `lc-header` | `homeAriaLabel` `Go to home`<br />`hamburgerAriaLabel` `Toggle sidebar menu`<br />`userMenuAriaLabel` `Open user menu`<br />`navAriaLabel` `Main navigation`<br />`themeToDarkAriaLabel` `Switch to dark mode`<br />`themeToLightAriaLabel` `Switch to light mode`<br />`contextAriaLabel` `Context info`<br />`profileLabel` `Profile`<br />`logoutLabel` `Logout` |
+| `lc-footer` | `navAriaLabel` `Footer`<br />`externalLinkHint` `(opens in a new tab)` |
+| `lc-alert` | `closeAriaLabel` `Close alert` |
+| `lc-callout` | `dismissAriaLabel` `Dismiss` |
+| `lc-chat` | `streamingLabel` `Streaming…`<br />`attachAriaLabel` `Datei anhängen`<br />`sendAriaLabel` `Send`<br />`statusInfoLabel` `Info:`<br />`statusSuccessLabel` `Erfolg:`<br />`statusWarningLabel` `Warnung:`<br />`statusErrorLabel` `Fehler:`<br />`removeAttachmentAriaLabel` `Entfernen:` |
+| `lc-chip` | `removeAriaLabel` `Remove chip` |
+| `lc-code-block` | `copyLabel` `Copy`<br />`copyAriaLabel` `Copy code`<br />`copiedLabel` `Copied`<br />`copiedAnnouncement` `Copied to clipboard` |
+| `lc-color-picker` | `ariaLabel` `Color picker`<br />`hexAriaLabel` `Hex color value`<br />`swatchesAriaLabel` `Color swatches` |
+| `lc-combobox` | `clearAriaLabel` `Clear`<br />`createOptionLabel` `Create` |
+| `lc-date-range-picker` | `clearAriaLabel` `Clear`<br />`previousMonthAriaLabel` `Previous month`<br />`nextMonthAriaLabel` `Next month` |
+| `lc-datepicker` | `clearAriaLabel` `Clear date`<br />`dialogAriaLabel` `Choose date`<br />`previousMonthAriaLabel` `Previous month`<br />`nextMonthAriaLabel` `Next month`<br />`todayLabel` `Today`<br />`selectedAriaLabel` `selected` |
+| `lc-dependency-viewer` | `zoomInLabel` `Zoom in`<br />`zoomOutLabel` `Zoom out`<br />`resetZoomLabel` `Reset`<br />`depthLabel` `Depth:`<br />`childrenLabel` `Children:`<br />`dependsOnLabel` `Depends on:`<br />`dependenciesLabel` `Dependencies:` |
+| `lc-document-viewer` | `zoomOutAriaLabel` `Zoom out`<br />`zoomInAriaLabel` `Zoom in`<br />`resetZoomAriaLabel` `Reset zoom`<br />`downloadAriaLabel` `Download`<br />`fullscreenAriaLabel` `Fullscreen`<br />`exitFullscreenAriaLabel` `Exit fullscreen`<br />`loadingLabel` `Loading document…`<br />`previewUnavailableTitle` `Preview not available`<br />`previewUnavailableMessage` `This file type cannot be previewed.`<br />`downloadFileLabel` `Download file`<br />`untitledLabel` `Document`<br />`markdownTypeLabel` `Markdown`<br />`imageTypeLabel` `Image`<br />`textTypeLabel` `Text`<br />`fileTypeLabel` `File`<br />`loadErrorLabel` `Failed to load document:`<br />`blockedUrlMessage` `This document URL cannot be displayed` |
+| `lc-drawer` | `closeAriaLabel` `Close drawer` |
+| `lc-email-input` | `requiredMessage` `Email address is required`<br />`invalidMessage` `Please enter a valid email address` |
+| `lc-error-display` | `errorTitleLabel` `Error`<br />`warningTitleLabel` `Warning`<br />`infoTitleLabel` `Information` |
+| `lc-file-upload` | `acceptedLabel` `Accepted:`<br />`maxSizeLabel` `Max:`<br />`removeFileAriaLabel` `Remove file` |
+| `lc-filter-bar` | `selectPlaceholder` `Select an option`<br />`searchPlaceholder` `Search...` |
+| `lc-gallery` | `filterAllLabel` `All`<br />`lightboxAriaLabel` `Image lightbox`<br />`zoomOutAriaLabel` `Zoom out`<br />`zoomInAriaLabel` `Zoom in`<br />`resetZoomAriaLabel` `Reset zoom`<br />`downloadAriaLabel` `Download`<br />`closeAriaLabel` `Close`<br />`previousAriaLabel` `Previous image`<br />`nextAriaLabel` `Next image`<br />`imageFallbackLabel` `Image` |
+| `lc-input` | `requiredAriaLabel` `required` |
+| `lc-kanban-board` | `emptyColumnLabel` `Drop here`<br />`priorityAriaLabel` `Priority:` |
+| `lc-log-viewer` | `pauseLabel` `Pause`<br />`resumeLabel` `Resume`<br />`pauseAriaLabel` `Pause stream`<br />`resumeAriaLabel` `Resume stream`<br />`clearLabel` `Clear`<br />`clearAriaLabel` `Clear log`<br />`copyLabel` `Copy all`<br />`copyAriaLabel` `Copy all lines`<br />`searchLabel` `Search (/)`<br />`searchAriaLabel` `Search log`<br />`searchInputLabel` `Search logs`<br />`searchPlaceholder` `Search logs...`<br />`errorsLabel` `errors`<br />`warningsLabel` `warnings`<br />`linesLabel` `lines`<br />`outputAriaLabel` `Log output`<br />`jumpToBottomLabel` `Jump to bottom` |
+| `lc-markdown` | `changedMarkerLabel` `(geändert)`<br />`changedSummaryOneLabel` `Abschnitt geändert`<br />`changedSummaryManyLabel` `Abschnitte geändert`<br />`mermaidLoadingLabel` `Rendering Mermaid diagram...`<br />`mermaidErrorLabel` `Mermaid diagram could not be rendered.`<br />`mermaidUnavailableLabel` `Mermaid runtime is not available.` |
+| `lc-modal` | `closeAriaLabel` `Close modal` |
+| `lc-notification-center` | `markAllReadLabel` `Mark all read`<br />`clearAllLabel` `Clear all`<br />`searchPlaceholder` `Search notifications…`<br />`filterAllLabel` `All`<br />`filterErrorLabel` `Error`<br />`filterWarningLabel` `Warning`<br />`filterSuccessLabel` `Success`<br />`filterInfoLabel` `Info`<br />`dismissAriaLabel` `Dismiss notification:`<br />`otherCategoryLabel` `Other`<br />`lowPriorityLabel` `Low`<br />`highPriorityLabel` `High`<br />`urgentPriorityLabel` `Urgent`<br />`justNowLabel` `Just now`<br />`minutesAgoLabel` `{n}m ago`<br />`hoursAgoLabel` `{n}h ago`<br />`daysAgoLabel` `{n}d ago` |
+| `lc-number-input` | `decrementAriaLabel` `Decrease value`<br />`incrementAriaLabel` `Increase value` |
+| `lc-password-input` | `showPasswordAriaLabel` `Show password`<br />`hidePasswordAriaLabel` `Hide password`<br />`strengthLabel` `Password strength:`<br />`weakLabel` `Weak`<br />`fairLabel` `Fair`<br />`goodLabel` `Good`<br />`strongLabel` `Strong`<br />`requirementsAriaLabel` `Password requirements`<br />`minLengthRequirementLabel` `At least 8 characters`<br />`uppercaseRequirementLabel` `One uppercase letter (A-Z)`<br />`lowercaseRequirementLabel` `One lowercase letter (a-z)`<br />`digitRequirementLabel` `One digit (0-9)`<br />`symbolRequirementLabel` `One symbol (!@#$%^&*)`<br />`requirementMetLabel` `(met)`<br />`requirementNotMetLabel` `(not met)` |
+| `lc-rating` | `ariaLabel` `Rating` |
+| `lc-rich-text-editor` | `actionTitles` `{}` (per action)<br />`richModeLabel` `Rich`<br />`richModeTitle` `Rich Text`<br />`markdownModeLabel` `MD`<br />`markdownModeTitle` `Markdown`<br />`splitModeLabel` `Split`<br />`splitModeTitle` `Split View`<br />`markdownEditorAriaLabel` `Markdown editor`<br />`wordsLabel` `words`<br />`charactersLabel` `characters` |
+| `lc-search-input` | `clearAriaLabel` `Clear search` |
+| `lc-select` | `clearAriaLabel` `Clear selection`<br />`searchPlaceholder` `Search...`<br />`searchAriaLabel` built-in by context<br />`noOptionsLabel` `No options found` |
+| `lc-sidenav` | `toggleAriaLabel` `Toggle sidebar`<br />`collapseAriaLabel` built-in by context<br />`collapseTitle` `Collapse sidebar`<br />`closeAriaLabel` `Close navigation` |
+| `lc-spinner` | `loadingLabel` `Loading` |
+| `lc-table` | `filterPlaceholderLabel` `Filter`<br />`selectAllAriaLabel` `Select all rows`<br />`selectRowAriaLabel` `Select row`<br />`sortedAscendingLabel` `sorted ascending`<br />`sortedDescendingLabel` `sorted descending`<br />`expandRowAriaLabel` `Aufklappen:`<br />`collapseRowAriaLabel` `Einklappen:`<br />`rangeOfLabel` `of`<br />`rowsPerPageAriaLabel` `Rows per page`<br />`previousPageAriaLabel` `Previous page`<br />`nextPageAriaLabel` `Next page`<br />`filterAriaLabel` `Filter by` |
+| `lc-tag-input` | `maxTagsReachedLabel` `Maximum of {max} tags reached`<br />`removeTagAriaLabel` `Remove`<br />`suggestionsAriaLabel` `Suggestions` |
+| `lc-toast-outlet` | `closeAriaLabel` `Close notification` |
+| `lc-toast` | `closeAriaLabel` `Close notification` |
+| `lc-tree-view` | `expandAllLabel` `Expand all`<br />`collapseAllLabel` `Collapse all`<br />`expandAriaLabel` `Expand`<br />`collapseAriaLabel` `Collapse` |
+| `lc-verification-code-input` | `digitAriaLabel` `Digit {n} of {total}` |
+
+Components that already had label inputs before 3.2 — `lc-pagination`,
+`lc-breadcrumbs`, `lc-stepper`, `lc-split-pane`, `lc-choice-prompt`,
+`lc-progress-bar`, `lc-progress-ring`, `lc-verification-code-input` (`label`,
+`hint`), `lc-password-input` (`label`, `placeholder`), `lc-tag-input`
+(`placeholder`), `lc-combobox` (`emptyMessage`), `lc-table` (`emptyText`),
+`lc-notification-center` (`title`, `emptyMessage`), `lc-calendar` (`labels`) —
+keep them.

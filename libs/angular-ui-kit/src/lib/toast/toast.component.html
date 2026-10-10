@@ -21,7 +21,7 @@
     <button
       type="button"
       class="lc-toast__close"
-      aria-label="Close notification"
+      [attr.aria-label]="closeAriaLabel()"
       (click)="onCloseClick($event)"
     >
       <lc-icon name="x-mark" size="sm" />

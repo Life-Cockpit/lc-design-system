@@ -48,7 +48,7 @@
         (mousedown)="$event.preventDefault()"
         (click)="onClearClick()"
         tabindex="-1"
-        aria-label="Clear"
+        [attr.aria-label]="clearAriaLabel()"
       >
         <lc-icon name="x-mark" size="xs" />
       </button>
@@ -116,7 +116,7 @@
           (mouseenter)="highlightedIndex.set(flatOptions().length)"
         >
           <lc-icon name="plus" size="sm" />
-          <span>Create "{{ query() }}"</span>
+          <span>{{ createOptionLabel() }} "{{ query() }}"</span>
         </div>
       }
 

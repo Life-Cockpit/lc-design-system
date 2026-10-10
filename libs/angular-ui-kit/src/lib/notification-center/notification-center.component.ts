@@ -60,6 +60,57 @@ export class NotificationCenterComponent {
   /** Locale used for absolute dates (older than a week). */
   readonly dateLocale = input('de-DE');
 
+  /** Label of the mark-all-read action. */
+  readonly markAllReadLabel = input('Mark all read');
+
+  /** Label of the clear-all action. */
+  readonly clearAllLabel = input('Clear all');
+
+  /** Placeholder of the search field. */
+  readonly searchPlaceholder = input('Search notifications…');
+
+  /** Label of the "all" filter (the count follows in parentheses). */
+  readonly filterAllLabel = input('All');
+
+  /** Label of the error filter. */
+  readonly filterErrorLabel = input('Error');
+
+  /** Label of the warning filter. */
+  readonly filterWarningLabel = input('Warning');
+
+  /** Label of the success filter. */
+  readonly filterSuccessLabel = input('Success');
+
+  /** Label of the info filter. */
+  readonly filterInfoLabel = input('Info');
+
+  /** Accessible name of a dismiss button, followed by the notification's title. */
+  readonly dismissAriaLabel = input('Dismiss notification:');
+
+  /** Group header for notifications without `category` (`groupByCategory`). */
+  readonly otherCategoryLabel = input('Other');
+
+  /** Priority badge for `low` (`showPriority`). */
+  readonly lowPriorityLabel = input('Low');
+
+  /** Priority badge for `high` (`showPriority`). */
+  readonly highPriorityLabel = input('High');
+
+  /** Priority badge for `urgent` (`showPriority`). */
+  readonly urgentPriorityLabel = input('Urgent');
+
+  /** Timestamp of notifications younger than a minute. */
+  readonly justNowLabel = input('Just now');
+
+  /** Timestamp under an hour; `{n}` is replaced by the minutes. */
+  readonly minutesAgoLabel = input('{n}m ago');
+
+  /** Timestamp under a day; `{n}` is replaced by the hours. */
+  readonly hoursAgoLabel = input('{n}h ago');
+
+  /** Timestamp under a week; `{n}` is replaced by the days (older ones show the date in `dateLocale`). */
+  readonly daysAgoLabel = input('{n}d ago');
+
   readonly notificationClick = output<Notification>();
   readonly notificationDismiss = output<string>();
   readonly notificationAction = output<Notification>();
@@ -109,7 +160,7 @@ export class NotificationCenterComponent {
     if (!this.groupByCategory()) return [{ category: null, items }];
     const map = new Map<string, Notification[]>();
     for (const n of items) {
-      const cat = n.category || 'Other';
+      const cat = n.category || this.otherCategoryLabel();
       if (!map.has(cat)) map.set(cat, []);
       map.get(cat)!.push(n);
     }
@@ -134,19 +185,28 @@ export class NotificationCenterComponent {
   }
 
   protected getPriorityLabel(priority?: NotificationPriority): string {
-    return priority ? PRIORITY_LABELS[priority] : '';
+    switch (priority) {
+      case 'low':
+        return this.lowPriorityLabel();
+      case 'high':
+        return this.highPriorityLabel();
+      case 'urgent':
+        return this.urgentPriorityLabel();
+      default:
+        return priority ? PRIORITY_LABELS[priority] : '';
+    }
   }
 
   protected formatTime(date: Date): string {
     const now = new Date();
     const diff = now.getTime() - date.getTime();
     const mins = Math.floor(diff / 60000);
-    if (mins < 1) return 'Just now';
-    if (mins < 60) return `${mins}m ago`;
+    if (mins < 1) return this.justNowLabel();
+    if (mins < 60) return this.minutesAgoLabel().replace('{n}', String(mins));
     const hours = Math.floor(mins / 60);
-    if (hours < 24) return `${hours}h ago`;
+    if (hours < 24) return this.hoursAgoLabel().replace('{n}', String(hours));
     const days = Math.floor(hours / 24);
-    if (days < 7) return `${days}d ago`;
+    if (days < 7) return this.daysAgoLabel().replace('{n}', String(days));
     return date.toLocaleDateString(this.dateLocale(), { day: '2-digit', month: '2-digit', year: 'numeric' });
   }
 

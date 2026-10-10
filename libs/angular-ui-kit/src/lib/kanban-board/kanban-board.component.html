@@ -42,7 +42,7 @@
             (keydown)="onCardKeydown($event, card, col.id)"
           >
             @if (card.priority) {
-              <lc-icon [name]="getPriorityIcon(card.priority)" size="xs" [color]="getPriorityColor(card.priority)" class="lc-kanban__card-priority" [ariaLabel]="'Priority: ' + card.priority"></lc-icon>
+              <lc-icon [name]="getPriorityIcon(card.priority)" size="xs" [color]="getPriorityColor(card.priority)" class="lc-kanban__card-priority" [ariaLabel]="priorityAriaLabel() + ' ' + card.priority"></lc-icon>
             }
             <span class="lc-kanban__card-title">{{ card.title }}</span>
 
@@ -74,7 +74,7 @@
             (dragover)="onDragOver($event, col.id, 0)"
             (drop)="onDrop($event, col.id, 0)"
           >
-            Drop here
+            {{ emptyColumnLabel() }}
           </div>
         }
       </div>

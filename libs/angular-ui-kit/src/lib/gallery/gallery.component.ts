@@ -101,6 +101,36 @@ export class GalleryComponent implements OnDestroy {
   /** Aspect ratio for grid items (ignored in masonry mode) */
   readonly aspectRatio = input('1 / 1');
 
+  /** Label of the "all" category filter (shown when the items span more than one category). */
+  readonly filterAllLabel = input('All');
+
+  /** Accessible name of the lightbox dialog. */
+  readonly lightboxAriaLabel = input('Image lightbox');
+
+  /** Accessible name of the lightbox zoom-out button. */
+  readonly zoomOutAriaLabel = input('Zoom out');
+
+  /** Accessible name of the lightbox zoom-in button. */
+  readonly zoomInAriaLabel = input('Zoom in');
+
+  /** Accessible name of the lightbox reset-zoom button. */
+  readonly resetZoomAriaLabel = input('Reset zoom');
+
+  /** Accessible name of the lightbox download button. */
+  readonly downloadAriaLabel = input('Download');
+
+  /** Accessible name of the lightbox close button. */
+  readonly closeAriaLabel = input('Close');
+
+  /** Accessible name of the previous-image button. */
+  readonly previousAriaLabel = input('Previous image');
+
+  /** Accessible name of the next-image button. */
+  readonly nextAriaLabel = input('Next image');
+
+  /** Accessible name of a thumbnail without `alt`, followed by its number. */
+  readonly imageFallbackLabel = input('Image');
+
   /** Emitted when lightbox opens with item index */
   readonly lightboxOpen = output<number>();
 

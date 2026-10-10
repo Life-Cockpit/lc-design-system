@@ -36,6 +36,11 @@ Use it for secondary navigation, detail panels, filters, and forms.
     },
     open: { control: 'boolean', description: 'Controls visibility' },
     heading: { control: 'text', description: 'Drawer heading text' },
+    closeAriaLabel: {
+      control: 'text',
+      description: 'Accessible name of the close button — translate it with the page',
+      table: { defaultValue: { summary: 'Close drawer' } },
+    },
   },
 };
 

@@ -56,6 +56,9 @@ export class ToastComponent {
    */
   announce = input<boolean>(true);
 
+  /** Accessible name of the close button (`toast.showCloseButton`). */
+  closeAriaLabel = input('Close notification');
+
   /**
    * Emitted when toast is closed
    */

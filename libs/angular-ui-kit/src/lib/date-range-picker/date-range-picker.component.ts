@@ -60,6 +60,15 @@ export class DateRangePickerComponent implements ControlValueAccessor {
   /** BCP 47 locale for the displayed dates, month title and weekday headers */
   readonly locale = input('de-DE');
 
+  /** Accessible name of the clear button. */
+  readonly clearAriaLabel = input('Clear');
+
+  /** Accessible name of the previous-month button. */
+  readonly previousMonthAriaLabel = input('Previous month');
+
+  /** Accessible name of the next-month button. */
+  readonly nextMonthAriaLabel = input('Next month');
+
   readonly rangeChange = output<DateRange>();
 
   protected isOpen = signal(false);

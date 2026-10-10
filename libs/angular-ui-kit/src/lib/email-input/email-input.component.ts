@@ -105,6 +105,12 @@ export class EmailInputComponent implements ControlValueAccessor {
    */
   readonly ariaLabel = input<string>();
 
+  /** Error shown for an empty `required` field. */
+  readonly requiredMessage = input('Email address is required');
+
+  /** Error shown for a malformed address. */
+  readonly invalidMessage = input('Please enter a valid email address');
+
   // Output Events
   /**
    * Emitted when email value changes
@@ -170,10 +176,10 @@ export class EmailInputComponent implements ControlValueAccessor {
 
     const val = this.value();
     if (this.required() && !val) {
-      return 'Email address is required';
+      return this.requiredMessage();
     }
     if (val && !this.isValid()) {
-      return 'Please enter a valid email address';
+      return this.invalidMessage();
     }
     return undefined;
   });

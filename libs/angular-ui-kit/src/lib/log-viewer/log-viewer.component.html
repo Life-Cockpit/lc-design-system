@@ -13,8 +13,8 @@
           class="lc-log-viewer__tool-btn"
           [class.lc-log-viewer__tool-btn--active]="paused()"
           (click)="togglePause()"
-          [title]="paused() ? 'Resume' : 'Pause'"
-          [attr.aria-label]="paused() ? 'Resume stream' : 'Pause stream'"
+          [title]="paused() ? resumeLabel() : pauseLabel()"
+          [attr.aria-label]="paused() ? resumeAriaLabel() : pauseAriaLabel()"
           [attr.aria-pressed]="paused()"
         >
           <lc-icon [name]="paused() ? 'player-play' : 'player-pause'" size="xs" />
@@ -24,8 +24,8 @@
         type="button"
         class="lc-log-viewer__tool-btn"
         (click)="clearBuffer()"
-        title="Clear"
-        aria-label="Clear log"
+        [attr.title]="clearLabel()"
+        [attr.aria-label]="clearAriaLabel()"
       >
         <lc-icon name="trash" size="xs" />
       </button>
@@ -33,8 +33,8 @@
         type="button"
         class="lc-log-viewer__tool-btn"
         (click)="onCopyAll()"
-        title="Copy all"
-        aria-label="Copy all lines"
+        [attr.title]="copyLabel()"
+        [attr.aria-label]="copyAriaLabel()"
       >
         <lc-icon name="clipboard-document" size="xs" />
       </button>
@@ -43,8 +43,8 @@
         class="lc-log-viewer__tool-btn"
         [class.lc-log-viewer__tool-btn--active]="showSearch()"
         (click)="toggleSearch()"
-        title="Search (/)"
-        aria-label="Search log"
+        [attr.title]="searchLabel()"
+        [attr.aria-label]="searchAriaLabel()"
         [attr.aria-expanded]="showSearch()"
       >
         <lc-icon name="magnifying-glass" size="xs" />
@@ -61,7 +61,7 @@
           [attr.aria-pressed]="internalLevelFilter().has('error')"
           (click)="toggleLevelFilter('error')"
         >
-          {{ levelCounts().error }} errors
+          {{ levelCounts().error }} {{ errorsLabel() }}
         </button>
       }
       @if (levelCounts().warn > 0) {
@@ -72,10 +72,10 @@
           [attr.aria-pressed]="internalLevelFilter().has('warn')"
           (click)="toggleLevelFilter('warn')"
         >
-          {{ levelCounts().warn }} warnings
+          {{ levelCounts().warn }} {{ warningsLabel() }}
         </button>
       }
-      <span class="lc-log-viewer__line-count">{{ filteredLines().length }} lines</span>
+      <span class="lc-log-viewer__line-count">{{ filteredLines().length }} {{ linesLabel() }}</span>
     </div>
   </div>
 
@@ -83,13 +83,13 @@
   @if (showSearch()) {
     <div class="lc-log-viewer__search">
       <lc-icon name="magnifying-glass" size="xs" />
-      <label class="lc-log-viewer__sr-only" [for]="searchInputId">Search logs</label>
+      <label class="lc-log-viewer__sr-only" [for]="searchInputId">{{ searchInputLabel() }}</label>
       <input
         #searchInput
         type="text"
         [id]="searchInputId"
         class="lc-log-viewer__search-input"
-        placeholder="Search logs..."
+        [placeholder]="searchPlaceholder()"
         [value]="internalSearch()"
         (input)="internalSearch.set(getInputValue($event))"
       />
@@ -106,7 +106,7 @@
     class="lc-log-viewer__content"
     role="log"
     aria-live="off"
-    aria-label="Log output"
+    [attr.aria-label]="outputAriaLabel()"
   >
     <div
       class="lc-log-viewer__spacer"
@@ -160,7 +160,7 @@
       (click)="scrollToBottom()"
     >
       <lc-icon name="arrow-down" size="xs" />
-      Jump to bottom
+      {{ jumpToBottomLabel() }}
     </button>
   }
 </div>

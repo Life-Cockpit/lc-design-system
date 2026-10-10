@@ -126,6 +126,9 @@ export class InputComponent implements ControlValueAccessor {
    */
   readonly ariaLabel = input<string>();
 
+  /** Accessible name of the `*` marker shown for `required` fields. */
+  readonly requiredAriaLabel = input('required');
+
   /**
    * Current value (two-way bindable: `[value]` / `[(value)]`). Emits
    * `valueChange` whenever it changes — once per user keystroke, on `clear()`

@@ -90,6 +90,9 @@ export class AlertComponent {
    */
   ariaLabel = input<string>();
 
+  /** Accessible name of the close button (`dismissible`). */
+  closeAriaLabel = input('Close alert');
+
   /**
    * Emitted when alert is dismissed
    */

@@ -9,10 +9,10 @@
     </div>
     <div class="lc-nc__header-actions">
       @if (unreadCount() > 0) {
-        <button type="button" class="lc-nc__action-btn" (click)="onMarkAllRead()">Mark all read</button>
+        <button type="button" class="lc-nc__action-btn" (click)="onMarkAllRead()">{{ markAllReadLabel() }}</button>
       }
       @if (notifications().length > 0) {
-        <button type="button" class="lc-nc__action-btn lc-nc__action-btn--danger" (click)="onClearAll()">Clear all</button>
+        <button type="button" class="lc-nc__action-btn lc-nc__action-btn--danger" (click)="onClearAll()">{{ clearAllLabel() }}</button>
       }
     </div>
   </div>
@@ -21,7 +21,7 @@
   <div class="lc-nc__search">
     <lc-search-input
       class="lc-nc__search-field"
-      placeholder="Search notifications…"
+      [placeholder]="searchPlaceholder()"
       [debounceMs]="0"
       (searchChange)="onSearch($event)"
     />
@@ -36,7 +36,7 @@
         [class.lc-nc__filter--active]="activeFilter() === 'all'"
         [attr.aria-pressed]="activeFilter() === 'all'"
         (click)="setFilter('all')"
-      >All ({{ filterCounts().all }})</button>
+      >{{ filterAllLabel() }} ({{ filterCounts().all }})</button>
       @if (filterCounts().error > 0) {
         <button
           type="button"
@@ -44,7 +44,7 @@
           [class.lc-nc__filter--active]="activeFilter() === 'error'"
           [attr.aria-pressed]="activeFilter() === 'error'"
           (click)="setFilter('error')"
-        >Error ({{ filterCounts().error }})</button>
+        >{{ filterErrorLabel() }} ({{ filterCounts().error }})</button>
       }
       @if (filterCounts().warning > 0) {
         <button
@@ -53,7 +53,7 @@
           [class.lc-nc__filter--active]="activeFilter() === 'warning'"
           [attr.aria-pressed]="activeFilter() === 'warning'"
           (click)="setFilter('warning')"
-        >Warning ({{ filterCounts().warning }})</button>
+        >{{ filterWarningLabel() }} ({{ filterCounts().warning }})</button>
       }
       @if (filterCounts().success > 0) {
         <button
@@ -62,7 +62,7 @@
           [class.lc-nc__filter--active]="activeFilter() === 'success'"
           [attr.aria-pressed]="activeFilter() === 'success'"
           (click)="setFilter('success')"
-        >Success ({{ filterCounts().success }})</button>
+        >{{ filterSuccessLabel() }} ({{ filterCounts().success }})</button>
       }
       @if (filterCounts().info > 0) {
         <button
@@ -71,7 +71,7 @@
           [class.lc-nc__filter--active]="activeFilter() === 'info'"
           [attr.aria-pressed]="activeFilter() === 'info'"
           (click)="setFilter('info')"
-        >Info ({{ filterCounts().info }})</button>
+        >{{ filterInfoLabel() }} ({{ filterCounts().info }})</button>
       }
     </div>
   }
@@ -129,7 +129,7 @@
                 type="button"
                 class="lc-nc__item-dismiss"
                 (click)="onDismiss(n.id, $event)"
-                [attr.aria-label]="'Dismiss notification: ' + n.title"
+                [attr.aria-label]="dismissAriaLabel() + ' ' + n.title"
               >×</button>
             </div>
           }

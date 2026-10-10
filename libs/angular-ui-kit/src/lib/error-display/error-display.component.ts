@@ -109,6 +109,15 @@ export class ErrorDisplayComponent {
    */
   readonly autoDismissDelay = input<number>(5000);
 
+  /** Default title for severity `error` (when no `title` is set). */
+  readonly errorTitleLabel = input('Error');
+
+  /** Default title for severity `warning`. */
+  readonly warningTitleLabel = input('Warning');
+
+  /** Default title for severity `info`. */
+  readonly infoTitleLabel = input('Information');
+
   /**
    * Internal visibility state
    */
@@ -155,9 +164,9 @@ export class ErrorDisplayComponent {
     if (this.title()) return this.title();
 
     const severity = this.severity();
-    if (severity === 'warning') return 'Warning';
-    if (severity === 'info') return 'Information';
-    return 'Error';
+    if (severity === 'warning') return this.warningTitleLabel();
+    if (severity === 'info') return this.infoTitleLabel();
+    return this.errorTitleLabel();
   });
 
   /**

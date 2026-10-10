@@ -21,22 +21,22 @@
         class="lc-rich-text-editor__mode-btn"
         [class.active]="activeMode() === 'rich'"
         (click)="switchMode('rich')"
-        title="Rich Text"
-      >Rich</button>
+        [attr.title]="richModeTitle()"
+      >{{ richModeLabel() }}</button>
       <button
         type="button"
         class="lc-rich-text-editor__mode-btn"
         [class.active]="activeMode() === 'markdown'"
         (click)="switchMode('markdown')"
-        title="Markdown"
-      >MD</button>
+        [attr.title]="markdownModeTitle()"
+      >{{ markdownModeLabel() }}</button>
       <button
         type="button"
         class="lc-rich-text-editor__mode-btn"
         [class.active]="activeMode() === 'split'"
         (click)="switchMode('split')"
-        title="Split View"
-      >Split</button>
+        [attr.title]="splitModeTitle()"
+      >{{ splitModeLabel() }}</button>
     </div>
   </div>
 
@@ -78,7 +78,7 @@
           (input)="onMarkdownInput($event)"
           (blur)="onBlur()"
           spellcheck="false"
-          aria-label="Markdown editor"
+          [attr.aria-label]="markdownEditorAriaLabel()"
         ></textarea>
       }
       @case ('split') {
@@ -93,7 +93,7 @@
             (input)="onMarkdownInput($event)"
             (blur)="onBlur()"
             spellcheck="false"
-            aria-label="Markdown editor"
+            [attr.aria-label]="markdownEditorAriaLabel()"
           ></textarea>
           <div
             class="lc-rich-text-editor__split-preview"
@@ -107,8 +107,8 @@
   <!-- Footer -->
   @if (showWordCount()) {
     <div class="lc-rich-text-editor__footer">
-      <span>{{ wordCount() }} words</span>
-      <span>{{ charCount() }} characters</span>
+      <span>{{ wordCount() }} {{ wordsLabel() }}</span>
+      <span>{{ charCount() }} {{ charactersLabel() }}</span>
     </div>
   }
 </div>

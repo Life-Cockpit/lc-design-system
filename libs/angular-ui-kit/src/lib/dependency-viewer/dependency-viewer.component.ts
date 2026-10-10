@@ -1600,6 +1600,27 @@ export class DependencyViewerComponent {
   /** Node types to hide, matched against `DependencyNode.type`. */
   readonly hiddenTypes = input<readonly string[]>([]);
 
+  /** Tooltip and accessible name of the zoom-in button. */
+  readonly zoomInLabel = input('Zoom in');
+
+  /** Tooltip and accessible name of the zoom-out button. */
+  readonly zoomOutLabel = input('Zoom out');
+
+  /** Tooltip and accessible name of the reset-zoom button. */
+  readonly resetZoomLabel = input('Reset');
+
+  /** Prefix of the depth in the detail panel. */
+  readonly depthLabel = input('Depth:');
+
+  /** Prefix of the child count in the detail panel. */
+  readonly childrenLabel = input('Children:');
+
+  /** Prefix of the dependency count in the detail panel. */
+  readonly dependsOnLabel = input('Depends on:');
+
+  /** Heading of the dependency list in the detail panel. */
+  readonly dependenciesLabel = input('Dependencies:');
+
   /** Fires when a node is selected (not on deselect), with the original node incl. `data`. */
   readonly nodeSelect = output<DependencyNode>();
 

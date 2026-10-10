@@ -26,10 +26,10 @@
     <lc-icon name="cloud-arrow-up" class="file-upload__icon"></lc-icon>
     <p class="file-upload__hint">{{ hint() }}</p>
     @if (accept()) {
-      <p class="file-upload__accept">Accepted: {{ accept() }}</p>
+      <p class="file-upload__accept">{{ acceptedLabel() }} {{ accept() }}</p>
     }
     @if (maxSizeBytes() > 0) {
-      <p class="file-upload__accept">Max: {{ formatSize(maxSizeBytes()) }}</p>
+      <p class="file-upload__accept">{{ maxSizeLabel() }} {{ formatSize(maxSizeBytes()) }}</p>
     }
   </div>
 </div>
@@ -45,7 +45,7 @@
           type="button"
           class="file-upload__file-remove"
           (click)="removeFile(i); $event.stopPropagation()"
-          aria-label="Remove file"
+          [attr.aria-label]="removeFileAriaLabel()"
         >
           <lc-icon name="x-mark"></lc-icon>
         </button>

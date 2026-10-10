@@ -24,7 +24,7 @@
     </span>
   </button>
   @if (displayValue() && !isDisabled()) {
-    <button type="button" class="lc-drp__clear" (click)="clearRange($event)" aria-label="Clear">×</button>
+    <button type="button" class="lc-drp__clear" (click)="clearRange($event)" [attr.aria-label]="clearAriaLabel()">×</button>
   }
 </div>
 
@@ -37,9 +37,9 @@
     [attr.aria-label]="label() || placeholder()"
   >
     <div class="lc-drp__header">
-      <button type="button" class="lc-drp__nav" aria-label="Previous month" (click)="prevMonth()">‹</button>
+      <button type="button" class="lc-drp__nav" [attr.aria-label]="previousMonthAriaLabel()" (click)="prevMonth()">‹</button>
       <span class="lc-drp__month" aria-live="polite">{{ monthLabel() }}</span>
-      <button type="button" class="lc-drp__nav" aria-label="Next month" (click)="nextMonth()">›</button>
+      <button type="button" class="lc-drp__nav" [attr.aria-label]="nextMonthAriaLabel()" (click)="nextMonth()">›</button>
     </div>
 
     <div class="lc-drp__weekdays" aria-hidden="true">

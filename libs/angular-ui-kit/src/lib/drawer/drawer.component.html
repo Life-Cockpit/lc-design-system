@@ -30,7 +30,7 @@
             type="button"
             class="lc-drawer__close"
             (click)="close()"
-            aria-label="Close drawer"
+            [attr.aria-label]="closeAriaLabel()"
           >
             <lc-icon name="x-mark" size="sm" />
           </button>
@@ -40,7 +40,7 @@
           type="button"
           class="lc-drawer__close lc-drawer__close--floating"
           (click)="close()"
-          aria-label="Close drawer"
+          [attr.aria-label]="closeAriaLabel()"
         >
           <lc-icon name="x-mark" size="sm" />
         </button>

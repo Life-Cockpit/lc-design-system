@@ -8,7 +8,7 @@
       class="number-input__button number-input__button--decrement"
       [disabled]="isDisabled() || !canDecrement()"
       (click)="decrement()"
-      aria-label="Decrease value"
+      [attr.aria-label]="decrementAriaLabel()"
     >
       <lc-icon name="minus" size="sm" [decorative]="true" />
     </button>
@@ -35,7 +35,7 @@
       class="number-input__button number-input__button--increment"
       [disabled]="isDisabled() || !canIncrement()"
       (click)="increment()"
-      aria-label="Increase value"
+      [attr.aria-label]="incrementAriaLabel()"
     >
       <lc-icon name="plus" size="sm" [decorative]="true" />
     </button>

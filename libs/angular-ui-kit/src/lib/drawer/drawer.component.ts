@@ -76,6 +76,9 @@ export class DrawerComponent implements OnDestroy {
   /** ARIA label for assistive technology. */
   readonly ariaLabel = input<string>('');
 
+  /** Accessible name of the close button. */
+  readonly closeAriaLabel = input('Close drawer');
+
   /** Emitted when the drawer should close. */
   readonly closed = output<void>();
 

@@ -95,6 +95,9 @@ export class ModalComponent implements OnDestroy {
    */
   ariaDescribedBy = input<string>();
 
+  /** Accessible name of the close button (`showCloseButton`). */
+  closeAriaLabel = input('Close modal');
+
   /**
    * Emitted when modal opens
    */

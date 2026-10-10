@@ -62,6 +62,15 @@ export class ColorPickerComponent implements ControlValueAccessor {
   /** Whether the picker is disabled */
   disabled = input<boolean>(false);
 
+  /** Accessible name of the picker when no visible `label` is set. */
+  ariaLabel = input('Color picker');
+
+  /** Accessible name of the hex field (after `label` and a dash when set). */
+  hexAriaLabel = input('Hex color value');
+
+  /** Accessible name of the swatch group (after `label` and a dash when set). */
+  swatchesAriaLabel = input('Color swatches');
+
   /** Emits the selected color hex value */
   colorChange = output<string>();
 

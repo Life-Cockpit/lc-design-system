@@ -171,8 +171,20 @@ export class TreeViewComponent {
   /** Show the expand-all / collapse-all toolbar. */
   readonly showToolbar = input(true);
 
+  /** Label of the toolbar's expand-all button. */
+  readonly expandAllLabel = input('Expand all');
+
+  /** Label of the toolbar's collapse-all button. */
+  readonly collapseAllLabel = input('Collapse all');
+
   /** Icon size for node icons. */
   readonly iconSize = input<'xs' | 'sm' | 'md'>('sm');
+
+  /** Accessible name of a folder's expand toggle. */
+  readonly expandAriaLabel = input('Expand');
+
+  /** Accessible name of a folder's collapse toggle. */
+  readonly collapseAriaLabel = input('Collapse');
 
   /** Emitted when a node is clicked / activated. */
   readonly nodeClick = output<TreeNode>();

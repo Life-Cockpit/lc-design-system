@@ -12,7 +12,7 @@
           <button
             type="button"
             class="doc-viewer__btn"
-            aria-label="Zoom out"
+            [attr.aria-label]="zoomOutAriaLabel()"
             (click)="zoomOut()"
           >
             <lc-icon name="minus" size="xs" />
@@ -21,7 +21,7 @@
           <button
             type="button"
             class="doc-viewer__btn"
-            aria-label="Zoom in"
+            [attr.aria-label]="zoomInAriaLabel()"
             (click)="zoomIn()"
           >
             <lc-icon name="plus" size="xs" />
@@ -29,7 +29,7 @@
           <button
             type="button"
             class="doc-viewer__btn"
-            aria-label="Reset zoom"
+            [attr.aria-label]="resetZoomAriaLabel()"
             (click)="resetZoom()"
           >
             <lc-icon name="arrows-pointing-out" size="xs" />
@@ -40,7 +40,7 @@
         <button
           type="button"
           class="doc-viewer__btn"
-          aria-label="Download"
+          [attr.aria-label]="downloadAriaLabel()"
           (click)="download()"
         >
           <lc-icon name="arrow-down-tray" size="sm" />
@@ -49,7 +49,7 @@
       <button
         type="button"
         class="doc-viewer__btn"
-        [attr.aria-label]="isFullscreen() ? 'Exit fullscreen' : 'Fullscreen'"
+        [attr.aria-label]="isFullscreen() ? exitFullscreenAriaLabel() : fullscreenAriaLabel()"
         (click)="toggleFullscreen()"
       >
         <lc-icon [name]="isFullscreen() ? 'arrows-pointing-in' : 'arrows-pointing-out'" size="sm" />
@@ -63,7 +63,7 @@
   @if (loading()) {
     <div class="doc-viewer__loading">
       <lc-spinner size="lg" />
-      <span>Loading document…</span>
+      <span>{{ loadingLabel() }}</span>
     </div>
   }
 
@@ -125,12 +125,12 @@
       @default {
         <div class="doc-viewer__unsupported">
           <lc-icon name="document" size="lg" />
-          <span class="doc-viewer__unsupported-title">Preview not available</span>
-          <span class="doc-viewer__unsupported-msg">This file type cannot be previewed.</span>
+          <span class="doc-viewer__unsupported-title">{{ previewUnavailableTitle() }}</span>
+          <span class="doc-viewer__unsupported-msg">{{ previewUnavailableMessage() }}</span>
           @if (src()) {
             <button type="button" class="doc-viewer__download-btn" (click)="download()">
               <lc-icon name="arrow-down-tray" size="sm" />
-              Download file
+              {{ downloadFileLabel() }}
             </button>
           }
         </div>

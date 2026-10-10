@@ -97,6 +97,9 @@ export class SearchInputComponent {
   /** id(s) of external element(s) labelling the input (wins over `ariaLabel`). */
   readonly ariaLabelledBy = input<string>();
 
+  /** Accessible name of the clear button. */
+  readonly clearAriaLabel = input('Clear search');
+
   /**
    * Current query (two-way bindable). Writing it from outside updates the
    * field without emitting `searchChange`; `valueChange` emits on every

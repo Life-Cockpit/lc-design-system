@@ -84,6 +84,15 @@ export class FileUploadComponent {
    */
   hint = input<string>('Drag & drop files here, or click to browse');
 
+  /** Prefix of the accepted file types line (`accept`). */
+  acceptedLabel = input('Accepted:');
+
+  /** Prefix of the maximum file size line (`maxSizeBytes`). */
+  maxSizeLabel = input('Max:');
+
+  /** Accessible name of a selected file's remove button. */
+  removeFileAriaLabel = input('Remove file');
+
   /**
    * Emitted with selected files after validation.
    */
