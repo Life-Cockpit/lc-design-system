@@ -3,7 +3,8 @@
  * Common utility classes for spacing, display, and more
  */
 
-// Screen reader only
+// Screen reader only: hidden on screen, read by assistive technology.
+// Documented in Storybook under "Utilities / Accessibility".
 .sr-only {
   position: absolute;
   width: 1px;
@@ -22,20 +23,39 @@
   outline-offset: 2px;
 }
 
-// Skip to content link (accessibility)
+// Skip to content link: the first focusable element of a page,
+// `<a class="skip-to-content" href="#main">`. Moved out of view until it gets
+// focus, then shown top-left above everything (the sticky lc-header sits at
+// z-index 1000).
+// - Ink: --color-on-primary on --color-primary-fill, 6.21:1 in both palettes.
+//   It used to be white on --color-primary-500: 4.37:1 in light and 1.89:1 in
+//   dark, where that token inverts to #84c7d4.
+// - At least 44 px high (it was 40 px: 16 px text at line-height 1.5 plus
+//   2 × 8 px padding). Hidden with a transform, which hides any height —
+//   the old `top: -40px` would leave 4 px of the taller box on screen.
+// - Focus ring inset in the ink color, so it shows on the teal fill.
 .skip-to-content {
   position: absolute;
-  top: -40px;
+  top: 0;
   left: 0;
-  z-index: 100;
+  z-index: 1100;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--size-min-touch-height, 2.75rem);
   padding: 0.5rem 1rem;
-  background-color: var(--color-primary-500, #208497);
-  color: white;
+  background-color: var(--color-primary-fill, #1a6a79);
+  color: var(--color-on-primary, #ffffff);
+  font-weight: var(--font-weight-semibold, 600);
+  line-height: var(--line-height-tight, 1.25);
   text-decoration: none;
   border-radius: 0 0 0.25rem 0;
+  transform: translateY(-100%);
+  transition: transform var(--animation-duration-base, 150ms) ease;
 
   &:focus {
-    top: 0;
+    transform: none;
+    outline: 2px solid var(--color-on-primary, #ffffff);
+    outline-offset: -4px;
   }
 }
 
