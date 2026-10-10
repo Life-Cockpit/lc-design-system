@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import { FooterComponent, FooterSection, FooterVariant } from './footer.component';
+import { FooterComponent, FooterHeadingLevel, FooterSection, FooterVariant } from './footer.component';
 import { provideHttpClient, withXhr } from '@angular/common/http';
 
 @Component({
@@ -16,6 +16,9 @@ import { provideHttpClient, withXhr } from '@angular/common/http';
       [showBorder]="showBorder"
       [compact]="compact"
       [variant]="variant"
+      [headingLevel]="headingLevel"
+      [navAriaLabel]="navAriaLabel"
+      [externalLinkHint]="externalLinkHint"
     />
   `,
 })
@@ -25,6 +28,9 @@ class TestHostComponent {
   showBorder = true;
   compact = false;
   variant: FooterVariant = 'default';
+  headingLevel: FooterHeadingLevel = 4;
+  navAriaLabel = 'Footer';
+  externalLinkHint = '(opens in a new tab)';
 }
 
 describe('FooterComponent', () => {
@@ -165,5 +171,118 @@ describe('FooterComponent', () => {
     const link = fixture.nativeElement.querySelector('.footer__link');
     expect(link.getAttribute('target')).toBe('_blank');
     expect(link.getAttribute('rel')).toBe('noopener noreferrer');
+  });
+
+  describe('accessibility (G-3)', () => {
+    const sections: FooterSection[] = [
+      {
+        title: 'Seiten',
+        links: [
+          { label: 'Sicherheit', href: '/de/sicherheit', current: true },
+          { label: 'Roadmap', href: '/de/roadmap' },
+        ],
+      },
+      {
+        title: 'Mitverfolgen',
+        links: [
+          { label: 'LinkedIn', href: 'https://www.linkedin.com/in/x', rel: 'me' },
+          { label: 'GitHub', href: 'https://github.com/x', external: true },
+          { label: 'Mastodon', href: 'https://mastodon.social/@x', external: true, rel: 'me noopener' },
+        ],
+      },
+    ];
+
+    beforeEach(() => {
+      host.sections = sections;
+    });
+
+    it('wraps the sections in a labelled <nav>', () => {
+      fixture.detectChanges();
+      const nav = fixture.nativeElement.querySelector('footer nav');
+      expect(nav).toBeTruthy();
+      expect(nav.getAttribute('aria-label')).toBe('Footer');
+      expect(nav.querySelectorAll('.footer__section').length).toBe(2);
+
+      host.navAriaLabel = 'Fußzeile';
+      fixture.changeDetectorRef.markForCheck();
+      fixture.detectChanges();
+      expect(nav.getAttribute('aria-label')).toBe('Fußzeile');
+    });
+
+    it('renders section titles as <h4> by default', () => {
+      fixture.detectChanges();
+      const titles = fixture.nativeElement.querySelectorAll('.footer__section-title');
+      expect([...titles].map((t: Element) => t.tagName)).toEqual(['H4', 'H4']);
+    });
+
+    it.each<[FooterHeadingLevel, string]>([
+      [2, 'H2'],
+      [3, 'H3'],
+      [5, 'H5'],
+      [6, 'H6'],
+    ])('renders section titles at headingLevel %s', (level, tag) => {
+      host.headingLevel = level;
+      fixture.detectChanges();
+      const titles = fixture.nativeElement.querySelectorAll('.footer__section-title');
+      expect([...titles].map((t: Element) => t.tagName)).toEqual([tag, tag]);
+      expect(titles[0].textContent.trim()).toBe('Seiten');
+    });
+
+    it('marks the current page with aria-current="page"', () => {
+      fixture.detectChanges();
+      const links = [...fixture.nativeElement.querySelectorAll('.footer__link')] as HTMLAnchorElement[];
+      expect(links.map((a) => a.getAttribute('aria-current'))).toEqual(['page', null, null, null, null]);
+      expect(links[0].classList).toContain('footer__link--current');
+    });
+
+    it('uses the given rel, and noopener noreferrer for external links without one', () => {
+      fixture.detectChanges();
+      const links = [...fixture.nativeElement.querySelectorAll('.footer__link')] as HTMLAnchorElement[];
+      expect(links[1].getAttribute('rel')).toBeNull();
+      expect(links[2].getAttribute('rel')).toBe('me');
+      expect(links[2].getAttribute('target')).toBe('_self');
+      expect(links[3].getAttribute('rel')).toBe('noopener noreferrer');
+      expect(links[4].getAttribute('rel')).toBe('me noopener');
+    });
+
+    it('tells screen-reader users that an external link opens a new tab', () => {
+      fixture.detectChanges();
+      const external = fixture.nativeElement.querySelectorAll('.footer__link')[3] as HTMLAnchorElement;
+      const hint = external.querySelector('.footer__sr-only');
+      expect(hint?.textContent?.trim()).toBe('(opens in a new tab)');
+      expect(external.textContent?.replace(/\s+/g, ' ').trim()).toBe('GitHub (opens in a new tab)');
+      // The icon is decoration; the hint carries the meaning.
+      expect(external.querySelector('lc-icon')?.getAttribute('aria-hidden')).toBe('true');
+
+      host.externalLinkHint = '(öffnet in neuem Tab)';
+      fixture.changeDetectorRef.markForCheck();
+      fixture.detectChanges();
+      expect(external.querySelector('.footer__sr-only')?.textContent?.trim()).toBe('(öffnet in neuem Tab)');
+    });
+
+    it('adds no hint to internal links', () => {
+      fixture.detectChanges();
+      const internal = fixture.nativeElement.querySelectorAll('.footer__link')[0] as HTMLAnchorElement;
+      expect(internal.querySelector('.footer__sr-only')).toBeNull();
+    });
+  });
+
+  describe('Stylesheet contract (G-3)', () => {
+    const scss = readFileSync(resolve(__dirname, 'footer.component.scss'), 'utf-8');
+
+    it('draws default links and the copyright line in the secondary ink, not the tertiary one', () => {
+      // Tertiary (#6b7280) measures 4.39:1 on the light page background
+      // (#f3f4f6) — below 4.5:1 for 14 px text. Secondary measures 6.87:1.
+      const link = scss.slice(scss.indexOf('&__link {'), scss.indexOf('&__external-icon'));
+      expect(link).toMatch(/color:\s*var\(--color-text-secondary\)/);
+      expect(link).not.toMatch(/--color-text-tertiary/);
+      const copyright = scss.slice(scss.indexOf('&__copyright {'));
+      expect(copyright.slice(0, copyright.indexOf('}'))).toMatch(/var\(--color-text-secondary\)/);
+    });
+
+    it('gives every link a 44 px minimum height', () => {
+      const link = scss.slice(scss.indexOf('&__link {'), scss.indexOf('&__external-icon'));
+      expect(link).toMatch(/min-height:\s*var\(--size-min-touch-height, 2\.75rem\)/);
+    });
   });
 });

@@ -1,21 +1,46 @@
 <footer [class]="footerClasses()" role="contentinfo">
   @if (sections().length > 0 && !compact()) {
-    <div class="footer__sections">
+    <nav class="footer__sections" [attr.aria-label]="navAriaLabel()">
       @for (section of sections(); track section.title) {
         <div class="footer__section">
-          <h4 class="footer__section-title">{{ section.title }}</h4>
+          @switch (headingLevel()) {
+            @case (2) {
+              <h2 class="footer__section-title">{{ section.title }}</h2>
+            }
+            @case (3) {
+              <h3 class="footer__section-title">{{ section.title }}</h3>
+            }
+            @case (5) {
+              <h5 class="footer__section-title">{{ section.title }}</h5>
+            }
+            @case (6) {
+              <h6 class="footer__section-title">{{ section.title }}</h6>
+            }
+            @default {
+              <h4 class="footer__section-title">{{ section.title }}</h4>
+            }
+          }
           <ul class="footer__links">
             @for (link of section.links; track link.href) {
               <li>
                 <a
                   class="footer__link"
+                  [class.footer__link--current]="link.current"
                   [href]="link.href"
                   [target]="link.external ? '_blank' : '_self'"
-                  [rel]="link.external ? 'noopener noreferrer' : null"
+                  [attr.rel]="linkRel(link)"
+                  [attr.aria-current]="link.current ? 'page' : null"
                 >
                   {{ link.label }}
                   @if (link.external) {
-                    <lc-icon name="arrow-top-right-on-square" size="xs" class="footer__external-icon" />
+                    <span class="footer__sr-only">{{ externalLinkHint() }}</span>
+                    <lc-icon
+                      name="external-link"
+                      size="xs"
+                      class="footer__external-icon"
+                      aria-hidden="true"
+                      [decorative]="true"
+                    />
                   }
                 </a>
               </li>
@@ -23,7 +48,7 @@
           </ul>
         </div>
       }
-    </div>
+    </nav>
   }
   <div class="footer__bottom">
     <ng-content />
