@@ -22,7 +22,7 @@ import {
   type SelectOption, type StageItem, type StepperStep, type TableColumn, type TimelineItem,
   type ToggleOption, type TreeNode,
 } from '@life-cockpit/angular-ui-kit';
-// COMPAT-3.2-IMPORTS
+import { ButtonLinkComponent, type HeaderNavItem } from '@life-cockpit/angular-ui-kit';
 
 @Component({
   selector: 'lc-compat-root',
@@ -44,7 +44,7 @@ import {
     TagInputComponent, TextareaComponent, TimelineComponent, ToggleGroupComponent,
     ToolbarComponent, TooltipDirective, TreeViewComponent, TypographyComponent,
     WaterfallChartComponent,
-    // COMPAT-3.2-COMPONENTS
+    ButtonLinkComponent,
   ],
   templateUrl: './app.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -94,7 +94,12 @@ export class App {
   ];
   protected readonly breadcrumbs: BreadcrumbItem[] = [{ label: 'Start', url: '/' }, { label: 'Seite' }];
   protected readonly footerSections: FooterSection[] = [
-    { title: 'Seiten', links: [{ label: 'Sicherheit', href: '/de/sicherheit' }] },
+    { title: 'Seiten', links: [{ label: 'Sicherheit', href: '/de/sicherheit', current: true }] },
+    { title: 'Mitverfolgen', links: [{ label: 'LinkedIn', href: 'https://www.linkedin.com/', rel: 'me' }] },
+  ];
+  protected readonly navItems: HeaderNavItem[] = [
+    { label: 'Sicherheit', href: '/de/sicherheit', current: true },
+    { label: 'Roadmap', href: '/de/roadmap' },
   ];
   protected readonly markdown = 'Ein [Link](https://example.org) in **Fließtext** mit Vermittlungsprämien.';
 }

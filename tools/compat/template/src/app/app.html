@@ -1,4 +1,19 @@
-<lc-header title="Compat" subtitle="Check" [showHamburger]="true" />
+<a class="skip-to-content" href="#main">Zum Inhalt springen</a>
+<lc-header
+  size="sm"
+  title="Compat"
+  titleTag="span"
+  [sticky]="false"
+  [showUserMenu]="false"
+  homeHref="/de/"
+  homeAriaLabel="Produkt – Startseite"
+  navAriaLabel="Hauptnavigation"
+  [navItems]="navItems"
+>
+  <a slot="end" lcButton variant="ghost" href="/en/" hreflang="en" lang="en">English</a>
+</lc-header>
+<lc-header title="Shell" subtitle="Check" [showHamburger]="true" />
+<main id="main">
 <lc-container>
   <lc-stack>
     <lc-hero title="Weniger Papierkram." />
@@ -75,7 +90,8 @@
     <lc-modal title="Dialog">Modal</lc-modal>
     <lc-drawer title="Drawer">Drawer</lc-drawer>
     <lc-menu [items]="[{ id: 'a', label: 'A' }]" />
-    <!-- COMPAT-3.2-TEMPLATE -->
+    <a lcButton variant="primary" size="lg" href="/de/neuigkeiten">Schau uns beim Bauen zu</a>
   </lc-stack>
 </lc-container>
-<lc-footer [sections]="footerSections" copyright="© 2026 Compat" />
+</main>
+<lc-footer [sections]="footerSections" [headingLevel]="2" navAriaLabel="Fußzeile" copyright="© 2026 Compat" />

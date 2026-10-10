@@ -30,8 +30,11 @@ npm install @angular/cdk @angular/common @angular/core @angular/forms @angular/p
 Import the global styles in your `styles.scss`:
 
 ```scss
-@import '@life-cockpit/angular-ui-kit/styles/index.scss';
+@use '@life-cockpit/angular-ui-kit/styles';
 ```
+
+Every built-in text is an input (English or German defaults), and components that
+format dates take a `locale` — see **Internationalization** in the docs.
 
 ## Usage
 
@@ -60,6 +63,7 @@ export class MyComponent {}
 |-----------|----------|-------------|
 | Accordion | `lc-accordion` | Expandable/collapsible panels with optional rich header template (`lcAccordionHeader`) and lazy/deferred body (`lcAccordionContent` + `[lazy]`/`[destroyOnClose]`) |
 | Button | `lc-button` | Primary, secondary, and text buttons |
+| Button link | `a[lcButton]` | `lc-button` look on a native `<a href>` — native attributes pass through, works without JavaScript |
 | Card | `lc-card` | Content container with elevation; optional leading brand-tile header icon (`[icon]` / `[iconVariant]`) |
 | Chat | `lc-chat` | Conversational UI with streaming, custom message templates |
 | Icon | `lc-icon` | Tabler SVG icons; fail-loud on unknown names (dev warning + visible placeholder, optional `[strict]` throw); exports `ICON_NAMES` / `isValidIconName` / `ICON_ALIASES` (+ `icon-names.json`) for static checking |
@@ -99,7 +103,7 @@ export class MyComponent {}
 | Component | Selector | Description |
 |-----------|----------|-------------|
 | Breadcrumbs | `lc-breadcrumbs` | Breadcrumb navigation |
-| Header | `lc-header` | Page header |
+| Header | `lc-header` | App shell or public-site header: plain `homeHref`, labelled `navItems`, `[slot='end']`, translatable labels |
 | Pagination | `lc-pagination` | Page navigation |
 | Sidenav | `lc-sidenav` | Side navigation |
 | Tabs | `lc-tabs` | Tab navigation |

@@ -49,6 +49,14 @@ const EXPECT_IN_HTML = [
   ['table row', /Internet/],
   ['footer', /<footer[^>]*role="contentinfo"/],
   ['chart svg', /<svg[^>]*role="img"/],
+  // 3.2 features, rendered on the server (no JavaScript needed)
+  ['a[lcButton] link', /<a(?=[^>]*href="\/de\/neuigkeiten")(?=[^>]*class="[^"]*btn-primary[^"]*btn-lg)[^>]*>/],
+  ['language link', /<a(?=[^>]*hreflang="en")(?=[^>]*lang="en")(?=[^>]*class="[^"]*btn-ghost)[^>]*>/],
+  ['header nav', /<nav[^>]*aria-label="Hauptnavigation"/],
+  ['current page', /<a(?=[^>]*aria-current="page")[^>]*href="\/de\/sicherheit"/],
+  ['plain home link', /<a(?=[^>]*href="\/de\/")(?=[^>]*class="lc-header__logo")[^>]*>/],
+  ['footer heading level', /<h2 class="footer__section-title"/],
+  ['footer nav', /<nav[^>]*aria-label="Fußzeile"/],
 ];
 
 function run(cmd, cmdArgs, cwd) {
