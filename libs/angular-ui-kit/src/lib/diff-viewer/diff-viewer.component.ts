@@ -40,11 +40,19 @@ function diffLines(a: readonly string[], b: readonly string[]): DiffOp[] {
   if (start > 0) ops.push(['unchanged', a.slice(0, start)]);
   const midA = a.slice(start, a.length - end);
   const midB = b.slice(start, b.length - end);
-  if (midA.length && midB.length) ops.push(...bisect(midA, midB));
-  else if (midA.length) ops.push(['removed', midA]);
+  if (midA.length && midB.length) {
+    // Disjoint inputs are Myers' worst case (D = N + M); answer them in linear time.
+    if (sharesLine(midA, midB)) ops.push(...bisect(midA, midB));
+    else ops.push(['removed', midA], ['added', midB]);
+  } else if (midA.length) ops.push(['removed', midA]);
   else if (midB.length) ops.push(['added', midB]);
   if (end > 0) ops.push(['unchanged', a.slice(a.length - end)]);
   return ops;
+}
+
+function sharesLine(a: readonly string[], b: readonly string[]): boolean {
+  const seen = new Set(a);
+  return b.some(line => seen.has(line));
 }
 
 /** Myers middle-snake bisection (as in diff-match-patch), on line arrays. */

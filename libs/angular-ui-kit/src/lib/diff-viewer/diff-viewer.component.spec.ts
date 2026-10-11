@@ -211,27 +211,67 @@ describe('DiffViewerComponent', () => {
       return direct.componentInstance['diffLines']();
     };
 
-    it('diffs two 5 000-line inputs with scattered edits quickly', () => {
+    // Space, not wall-clock time: the old implementation built an N × M table
+    // (25M numbers for two 5 000-line inputs); Myers keeps two vectors of at
+    // most N + M per call. Counting allocations is deterministic on any CI runner.
+    const int32Allocations = (run: () => void): number[] => {
+      const RealInt32Array = globalThis.Int32Array;
+      const sizes: number[] = [];
+      globalThis.Int32Array = class extends RealInt32Array {
+        constructor(length: number) {
+          super(length);
+          sizes.push(length);
+        }
+      } as unknown as Int32ArrayConstructor;
+      try {
+        run();
+      } finally {
+        globalThis.Int32Array = RealInt32Array;
+      }
+      return sizes;
+    };
+
+    it('diffs two 5 000-line inputs with scattered edits in linear space', () => {
       const oldLines = Array.from({ length: 5000 }, (_, i) => `line ${i}`);
       const newLines = oldLines.map((l, i) => (i % 97 === 0 ? `${l} changed` : l));
       newLines.splice(2500, 0, 'inserted A', 'inserted B');
-      const started = performance.now();
-      const lines = diffOnly(oldLines.join('\n'), newLines.join('\n'));
-      expect(performance.now() - started).toBeLessThan(500);
+      let lines: Line[] = [];
+      const sizes = int32Allocations(() => {
+        lines = diffOnly(oldLines.join('\n'), newLines.join('\n'));
+      });
       expect(lines.filter(l => l.type === 'added').length).toBe(52 + 2);
       expect(lines.filter(l => l.type === 'removed').length).toBe(52);
       expect(lines.filter(l => l.type === 'unchanged').length).toBe(5000 - 52);
+      const inputLines = oldLines.length + newLines.length;
+      expect(Math.max(...sizes)).toBeLessThanOrEqual(inputLines + 2);
+      expect(sizes.reduce((sum, n) => sum + n, 0)).toBeLessThan(inputLines * 64);
     });
 
-    it('does not blow up on two large inputs with nothing in common', () => {
-      const started = performance.now();
-      const lines = diffOnly(
-        Array.from({ length: 5000 }, (_, i) => `old ${i}`).join('\n'),
-        Array.from({ length: 5000 }, (_, i) => `new ${i}`).join('\n'),
-      );
-      expect(performance.now() - started).toBeLessThan(2000);
+    it('answers two large inputs with nothing in common without running Myers', () => {
+      let lines: Line[] = [];
+      const sizes = int32Allocations(() => {
+        lines = diffOnly(
+          Array.from({ length: 5000 }, (_, i) => `old ${i}`).join('\n'),
+          Array.from({ length: 5000 }, (_, i) => `new ${i}`).join('\n'),
+        );
+      });
+      expect(sizes).toEqual([]);
       expect(lines.length).toBe(10_000);
-      expect(lines.filter(l => l.type === 'unchanged').length).toBe(0);
+      expect(lines.slice(0, 5000).every(l => l.type === 'removed')).toBe(true);
+      expect(lines.slice(5000).every(l => l.type === 'added')).toBe(true);
+    });
+
+    it('still runs Myers when large inputs share a single line', () => {
+      const oldLines = Array.from({ length: 300 }, (_, i) => `old ${i}`);
+      const newLines = Array.from({ length: 300 }, (_, i) => `new ${i}`);
+      oldLines[150] = newLines[100] = 'shared';
+      let lines: Line[] = [];
+      const sizes = int32Allocations(() => {
+        lines = diffOnly(oldLines.join('\n'), newLines.join('\n'));
+      });
+      expect(sizes.length).toBeGreaterThan(0);
+      expect(lines.filter(l => l.type === 'unchanged').map(l => l.content)).toEqual(['shared']);
+      expect(lines.length).toBe(600 - 1);
     });
   });
 
