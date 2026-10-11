@@ -45,21 +45,31 @@ jobs:
           echo "Publishing version:"
           node -p "require('./dist/libs/angular-ui-kit/package.json').version"
 
-      # Publishes only via npm trusted publishing (OIDC, id-token: write); the trusted
-      # publisher is configured on npmjs.com for Life-Cockpit/lc-design-system and this
-      # workflow file. No npm token is used. Provenance is generated automatically.
-      - name: Publish
+      # Staged publishing via npm trusted publishing (OIDC, id-token: write; no npm token).
+      # The version is uploaded but stays unavailable until a maintainer approves it with
+      # 2FA, so a compromised repository or CI run cannot release anything on its own.
+      - name: Stage the release for approval
         run: |
           cd dist/libs/angular-ui-kit
+          version=$(node -p "require('./package.json').version")
           set -o pipefail
-          if npm publish --access public 2>&1 | tee /tmp/npm-publish.log; then
-            echo "Published successfully."
+          if npm stage publish --access public --provenance 2>&1 | tee /tmp/npm-stage.log; then
+            {
+              echo "### @life-cockpit/angular-ui-kit@${version} is staged"
+              echo ""
+              echo "It is not public until approved. On a machine logged in to npm:"
+              echo ""
+              echo '```sh'
+              echo "npm stage list @life-cockpit/angular-ui-kit"
+              echo "npm stage approve <stage-id>   # asks for 2FA"
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
           else
             status=$?
-            if grep -q -E "EPUBLISHCONFLICT|cannot publish over the previously published versions|You cannot publish over the previously published versions" /tmp/npm-publish.log; then
-              echo "::warning::Version already published, skipping."
+            if grep -q -E "EPUBLISHCONFLICT|previously published|already (exists|staged)" /tmp/npm-stage.log; then
+              echo "::warning::Version ${version} is already published or staged, skipping."
               exit 0
             fi
-            echo "::error::npm publish failed with exit code $status"
+            echo "::error::npm stage publish failed with exit code $status"
             exit $status
           fi

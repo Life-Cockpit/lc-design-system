@@ -15,8 +15,9 @@ All notable changes to this project will be documented in this file.
 
 ### Build
 
-- **Published via npm trusted publishing** — releases are published from GitHub
-  Actions with OIDC instead of an npm token, and carry a provenance statement
+- **Published via npm trusted publishing with staged releases** — GitHub Actions
+  stages each release with OIDC instead of an npm token; it only becomes public
+  after a maintainer approves it with 2FA. Releases carry a provenance statement
   that links the package to its source commit and workflow run.
 
 ## [3.2.0] - 2026-10-11
