@@ -45,10 +45,9 @@ jobs:
           echo "Publishing version:"
           node -p "require('./dist/libs/angular-ui-kit/package.json').version"
 
-      # Publishes via trusted publishing (OIDC, id-token: write) once the package's
-      # trusted publisher is configured on npmjs.com; npm tries OIDC first and only
-      # then falls back to NODE_AUTH_TOKEN. Remove the token and the NPM_TOKEN secret
-      # after the first release published via OIDC.
+      # Publishes only via npm trusted publishing (OIDC, id-token: write); the trusted
+      # publisher is configured on npmjs.com for Life-Cockpit/lc-design-system and this
+      # workflow file. No npm token is used. Provenance is generated automatically.
       - name: Publish
         run: |
           cd dist/libs/angular-ui-kit
@@ -64,5 +63,3 @@ jobs:
             echo "::error::npm publish failed with exit code $status"
             exit $status
           fi
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
