@@ -70,6 +70,9 @@ jobs:
               echo "::warning::Version ${version} is already published or staged, skipping."
               exit 0
             fi
+            echo "::group::OIDC lines from the npm debug log (tokens are redacted by npm)"
+            grep -ih "oidc" "$HOME"/.npm/_logs/*-debug-0.log | tail -20 || true
+            echo "::endgroup::"
             echo "::error::npm stage publish failed with exit code $status"
             exit $status
           fi
