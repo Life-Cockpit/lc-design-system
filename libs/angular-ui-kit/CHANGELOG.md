@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.2.1] - 2026-10-11
+
+### Performance
+
+- **Diff viewer: inputs without a shared line are answered in linear time**
+  (`lc-diff-viewer`) — two texts with no line in common are Myers' worst case;
+  two 5 000-line inputs took about 2 s and now take milliseconds. The result is
+  unchanged (everything removed, then everything added). The performance tests
+  count allocations instead of measuring wall-clock time, so they no longer
+  depend on the speed of the CI runner.
+
+### Build
+
+- **Published via npm trusted publishing** — releases are published from GitHub
+  Actions with OIDC instead of an npm token, and carry a provenance statement
+  that links the package to its source commit and workflow run.
+
 ## [3.2.0] - 2026-10-11
 
 Angular 22 support — the package is now built with Angular 22 and works in apps
