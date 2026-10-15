@@ -346,6 +346,18 @@ changes what you see, *Changed* or *Fixed* says so.
   stories' template helpers (413 snippets, was 394), adds story descriptions,
   and lists subcomponents' props with the component (`lc-app-page` with
   `lc-app-shell`, `lc-radio` with `lc-radio-group`).
+- **MCP `get-documentation` shows the props**: it only rendered docgen fields
+  that Angular doesn't have, so the props reached agents through
+  `search_component` alone. The manifest now carries every component's
+  inputs, models and outputs in the structured shape `get-documentation`
+  renders (type, default, required, description; models as two-way bindings,
+  outputs as `(name)`), each subcomponent with its own props, and the
+  exported types as a "Types" section. `list-all-documentation` shows a
+  one-line summary instead of the whole props block. Checked against all 112
+  components through the server: 109 with props, no errors.
+- **MCP manifest URLs**: the server joined its Storybook URL and
+  `./manifests/…` by plain concatenation, which only worked through a
+  trailing-dot host name; it resolves the path as a URL now.
 
 ## [3.2.1] - 2026-10-11
 

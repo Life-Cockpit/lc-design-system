@@ -219,6 +219,44 @@ function propLine(p) {
   return `${decorator} ${p.property}: ${p.type.replace(/\s+/g, ' ')}${def};${notes.length ? ` // ${notes.join('; ')}` : ''}`;
 }
 
+const flat = (text) => text.replace(/\s+/g, ' ').trim();
+
+/**
+ * One class's inputs, models and outputs in the docgen shape @storybook/mcp renders
+ * as the "## Props" section of `get-documentation` (it reads `reactComponentMeta`,
+ * `reactDocgenTypescript` or `reactDocgen`; Angular has none of them, so we write
+ * the framework-neutral shape ourselves). Outputs appear as `(name)`; a model's
+ * `nameChange` output is described on the model input instead.
+ * @param {{ inputs: object[], outputs: object[] }} cls
+ * @returns {{ props: Record<string, { description?: string, type: { name: string, raw: string }, defaultValue?: { value: string }, required: boolean }> }}
+ */
+export function toComponentMeta(cls) {
+  const props = {};
+  for (const p of cls.inputs) {
+    const notes = [];
+    if (p.kind === 'model') notes.push(`model(): two-way binding [(${p.name})], emits ${p.name}Change`);
+    if (p.name !== p.property) notes.push(`alias of the class property ${p.property}`);
+    if (p.transform) notes.push(`transform: ${p.transform}`);
+    const type = flat(p.type);
+    props[p.name] = {
+      description: [p.description, ...notes].filter(Boolean).join(' · ') || undefined,
+      type: { name: type, raw: type },
+      defaultValue: p.default !== undefined ? { value: flat(p.default) } : undefined,
+      required: !!p.required,
+    };
+  }
+  for (const o of cls.outputs) {
+    if (o.kind === 'model') continue;
+    const type = flat(o.type);
+    props[`(${o.name})`] = {
+      description: [o.description, `output: emits ${type}`].filter(Boolean).join(' · '),
+      type: { name: type, raw: type },
+      required: false,
+    };
+  }
+  return { props };
+}
+
 /**
  * The TypeScript-like "Props" block of a component in the manifest.
  * @param {ReturnType<typeof extractComponentApi>} api

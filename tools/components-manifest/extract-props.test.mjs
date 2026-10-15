@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { extractComponentApi, formatApiSummary } from './extract-props.mjs';
+import { extractComponentApi, formatApiSummary, toComponentMeta } from './extract-props.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '../..');
 const LIB = join(ROOT, 'libs/angular-ui-kit/src/lib');
@@ -181,3 +181,35 @@ test('known props of the library reach the summary', () => {
   assert.match(header, /export interface HeaderNavItem/);
   assert.match(summaryOf('button/button-link.component.ts'), /^\/\/ Selector: a\[lcButton\]$/m);
 });
+
+test('toComponentMeta gives get-documentation every input, model and output', () => {
+  const { classes } = extractComponentApi(FIXTURE);
+  const { props } = toComponentMeta(classes[0]);
+  // the shape @storybook/mcp renders: { description, type: { raw }, defaultValue: { value }, required }
+  assert.deepEqual(props.a, { description: 'Plain input with a default.', type: { name: 'string', raw: 'string' }, defaultValue: { value: "'x'" }, required: false });
+  assert.equal(props.c.required, true);
+  assert.equal(props.c.defaultValue, undefined);
+  assert.match(props.dee.description, /alias of the class property d/);
+  assert.match(props.e.description, /^Two-way value\. · model\(\): two-way binding \[\(e\)\], emits eChange$/);
+  assert.equal(props.i.type.raw, "'a' | 'b'");
+  assert.match(props.h.description, /transform: booleanAttribute/);
+  // outputs appear as (name); a model's change output is not listed twice
+  assert.match(props['(clicked)'].description, /^Emits on click\. · output: emits void$/);
+  assert.equal(props['(renamedEvent)'].required, false);
+  assert.equal(props['(eChange)'], undefined);
+});
+
+test('every library component with an API yields props for get-documentation', () => {
+  for (const file of sources) {
+    const api = extractComponentApi(readFileSync(file, 'utf-8'), file);
+    for (const cls of api.classes) {
+      if (!cls.inputs.length && !cls.outputs.length) continue;
+      const { props } = toComponentMeta(cls);
+      assert.ok(Object.keys(props).length > 0, `${relative(ROOT, file)} ${cls.name}`);
+      for (const [name, prop] of Object.entries(props)) {
+        assert.ok(prop.type.raw && !/\s{2}/.test(prop.type.raw), `${cls.name}.${name}: type ${prop.type.raw}`);
+      }
+    }
+  }
+});
+

@@ -18,7 +18,9 @@ const CORS_HEADERS: Record<string, string> = {
 };
 
 async function fetchManifest(_request: unknown, path: string) {
-  const url = `${STORYBOOK_URL}${path}`;
+  // @storybook/mcp asks for './manifests/…', our own tools for '/manifests/…': resolve both
+  // against the Storybook root (plain concatenation only worked through a trailing-dot host).
+  const url = new URL(path.replace(/^\.?\//, ''), `${STORYBOOK_URL.replace(/\/+$/, '')}/`).href;
   const res = await fetch(url);
   if (!res.ok) {
     throw new Error(`Failed to fetch manifest from ${url}: ${res.status}`);
@@ -53,7 +55,10 @@ async function getDocsManifest(): Promise<Record<string, unknown>> {
 function formatComponent(comp: Record<string, unknown>): string {
   let text = `## ${comp.name}\n`;
   if (comp.description) text += `\n${comp.description}\n`;
-  if (comp.summary) text += `\n### Props\n\`\`\`typescript\n${comp.summary}\n\`\`\`\n`;
+  // `api` holds the full Angular API block since 3.3; `summary` is a one-line description now
+  // (manifests from 3.2 and earlier kept the API in `summary`).
+  const api = comp.api ?? (comp.reactComponentMeta ? undefined : comp.summary);
+  if (api) text += `\n### Props\n\`\`\`typescript\n${api}\n\`\`\`\n`;
   const stories = comp.stories as Array<{ id: string; name: string; snippet?: string }> | undefined;
   if (stories?.length) {
     text += `\n### Stories\n`;

@@ -11,8 +11,8 @@
  * TypeScript compiler (components-manifest/extract-story-data.mjs).
  */
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
-import { dirname, join, resolve } from 'path';
-import { extractComponentApi, formatApiSummary } from './components-manifest/extract-props.mjs';
+import { dirname, join, relative, resolve } from 'path';
+import { extractComponentApi, formatApiSummary, toComponentMeta } from './components-manifest/extract-props.mjs';
 import { extractStoryData } from './components-manifest/extract-story-data.mjs';
 
 const ROOT = process.cwd();
@@ -32,10 +32,12 @@ function extractProps(componentPath, subcomponentPaths = []) {
   const absPath = resolve(ROOT, componentPath.replace(/^\.\//, ''));
   if (!existsSync(absPath)) return null;
   const api = extractComponentApi(readFileSync(absPath, 'utf-8'), absPath);
+  for (const cls of api.classes) cls.path = componentPath;
   for (const subPath of subcomponentPaths) {
     if (subPath === absPath || !existsSync(subPath)) continue;
     const sub = extractComponentApi(readFileSync(subPath, 'utf-8'), subPath);
     for (const cls of sub.classes) {
+      cls.path = `./${relative(ROOT, subPath)}`;
       if (!api.classes.some((c) => c.name === cls.name)) api.classes.push(cls);
     }
     for (const type of sub.types) {
@@ -44,6 +46,52 @@ function extractProps(componentPath, subcomponentPaths = []) {
   }
   const hasMembers = api.classes.some((c) => c.inputs.length || c.outputs.length);
   return hasMembers ? api : null;
+}
+
+/** One line for `list-all-documentation`: the description's first sentence, without markdown. */
+function oneLineSummary(description) {
+  if (!description) return undefined;
+  const plain = description
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/`([^`]*)`/g, '$1')
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/[*_#>]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const sentence = plain.match(/^.*?[.!?](?=\s|$)/)?.[0] ?? plain;
+  return sentence.length > 160 ? `${sentence.slice(0, 157).trimEnd()}...` : sentence || undefined;
+}
+
+/**
+ * The structured API @storybook/mcp's `get-documentation` renders: the main class's
+ * props (`reactComponentMeta`), every other class as a subcomponent with its own
+ * props, and the exported types as a "Types" doc entry.
+ */
+function documentationFields(id, name, api) {
+  const withMembers = api.classes.filter((c) => c.inputs.length || c.outputs.length);
+  const [main, ...others] = withMembers;
+  const fields = {};
+  if (main) fields.reactComponentMeta = toComponentMeta(main);
+  if (others.length) {
+    fields.subcomponents = Object.fromEntries(
+      others.map((cls) => [
+        cls.name,
+        { name: cls.name, description: cls.selector ? `Selector: \`${cls.selector}\`` : undefined, path: cls.path, reactComponentMeta: toComponentMeta(cls) },
+      ]),
+    );
+  }
+  if (api.types.length) {
+    fields.docs = {
+      types: {
+        id: `${id}--types`,
+        name: 'Types',
+        title: `${name}: types`,
+        path: main?.path ?? '',
+        content: ['The types the props refer to:', '', '```typescript', ...api.types, '```'].join('\n'),
+      },
+    };
+  }
+  return fields;
 }
 
 /** Component description, story descriptions and template snippets of a .stories.ts file */
@@ -108,7 +156,11 @@ for (const group of componentGroups.values()) {
     path: group.componentPath || group.importPath,
     name,
     description: description || undefined,
-    summary: propsSummary || undefined,
+    // One line for list-all-documentation; the full API goes to `api` (search_component)
+    // and to the structured fields get-documentation renders (documentationFields).
+    summary: oneLineSummary(description),
+    api: propsSummary || undefined,
+    ...(props ? documentationFields(id, name, props) : {}),
     stories: group.stories.map(s => ({
       id: s.id,
       name: s.name,
@@ -141,7 +193,7 @@ if (existsSync(CHANGELOG_SRC)) {
 let totalSnippets = 0;
 let totalWithProps = 0;
 for (const comp of Object.values(components)) {
-  if (comp.summary) totalWithProps++;
+  if (comp.reactComponentMeta) totalWithProps++;
   for (const s of comp.stories) {
     if (s.snippet) totalSnippets++;
   }
