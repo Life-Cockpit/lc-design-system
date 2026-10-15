@@ -12,14 +12,15 @@
   &__control {
     display: inline-flex;
     align-items: center;
-    border: 1px solid var(--color-border);
+    // 3.3 (SI-8): the field boundary needs 3:1 against the page (WCAG 1.4.11).
+    border: 1px solid var(--color-field-border);
     border-radius: var(--border-radius-md);
     overflow: hidden;
     background: var(--color-surface-2);
     transition: border-color 0.15s ease;
 
     &:hover {
-      border-color: var(--color-border-strong);
+      border-color: var(--color-text-secondary);
     }
 
     &:focus-within {

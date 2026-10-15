@@ -3,7 +3,7 @@
   @if (label()) {
     <span [id]="labelId" class="lc-label">
       {{ label() }}
-      @if (required()) {
+      @if (required() && requiredIndicator()) {
         <span class="lc-required" aria-hidden="true">*</span>
       }
     </span>
@@ -12,6 +12,7 @@
   <div
     [id]="groupId"
     class="lc-digit-inputs"
+    [class.lc-digit-inputs--compact]="gap() === 'compact'"
     role="group"
     [attr.aria-labelledby]="label() ? labelId : null"
     [attr.aria-describedby]="describedBy()"
@@ -23,7 +24,6 @@
         type="text"
         inputmode="numeric"
         [attr.autocomplete]="i === 0 ? 'one-time-code' : 'off'"
-        maxlength="1"
         [value]="digit"
         [disabled]="isDisabled()"
         [required]="required()"

@@ -87,7 +87,7 @@ export const ChevronSeparator: Story = {
     items: [
       { label: 'Home', url: '/' },
       { label: 'Projects', url: '/projects' },
-      { label: 'Life-Cockpit' },
+      { label: 'LifeCorner' },
     ],
     size: 'md',
     separator: '›',
@@ -151,7 +151,7 @@ export const InPageHeader: Story = {
       items: [
         { label: 'Home', url: '/' },
         { label: 'Projects', url: '/projects' },
-        { label: 'Life-Cockpit', url: '/projects/lc' },
+        { label: 'LifeCorner', url: '/projects/lc' },
         { label: 'Settings' },
       ],
     },

@@ -15,6 +15,12 @@ import type { ThemeMode, ThemeState } from './theme.types';
  * under {@link ThemeService.STORAGE_KEY} from a previous visit, then the
  * dark-first default. `setTheme` persists the choice; `useSystemPreference`
  * follows the OS setting live until the next explicit `setTheme`.
+ *
+ * Following the OS without a script (3.3, G-6): with `<html class="system">`
+ * the stylesheets themselves switch with `prefers-color-scheme`, from the
+ * first paint on. The service then only mirrors the OS (`currentTheme`,
+ * `isDark`, the meta theme-color) and adds no `light` / `dark` class, until an
+ * explicit `setTheme` replaces `system` with the chosen class.
  */
 @Injectable({
   providedIn: 'root',
@@ -22,6 +28,9 @@ import type { ThemeMode, ThemeState } from './theme.types';
 export class ThemeService {
   /** localStorage key under which the chosen mode is persisted. */
   public static readonly STORAGE_KEY = 'lc-theme';
+
+  /** Root class that lets the stylesheets follow the OS color scheme (G-6). */
+  public static readonly SYSTEM_CLASS = 'system';
 
   private readonly platformId = inject(PLATFORM_ID);
   private readonly isBrowser = isPlatformBrowser(this.platformId);
@@ -31,7 +40,7 @@ export class ThemeService {
   // each palette (`--color-background`), so the chrome continues the page.
   private static readonly META_COLOR: Record<ThemeMode, string> = {
     dark: '#0a121b',
-    light: '#f3f4f6',
+    light: '#ffffff',
   };
 
   // Reactive theme state using Angular signals. Dark by default (DS 2.0).
@@ -46,17 +55,26 @@ export class ThemeService {
 
   /** OS color-scheme query while `useSystemPreference()` is following it. */
   private systemQuery: MediaQueryList | null = null;
+  /**
+   * True while the root carries the `system` class: the CSS follows the OS,
+   * so the service mirrors it and leaves the root classes alone.
+   */
+  private cssFollowsSystem = false;
   private readonly systemChangeHandler = (event: MediaQueryListEvent): void => {
     this.themeState.update((state) => ({ ...state, prefersDark: event.matches }));
     this.applyMode(event.matches ? 'dark' : 'light');
   };
 
   constructor() {
-    const initial = this.readInitialMode();
-    this.themeState.update((state) => ({ ...state, currentMode: initial }));
-    // Applying is idempotent for a class that is already on the root (the
-    // pre-bootstrap case) and additionally syncs the meta theme-color.
-    this.applyTheme(initial);
+    if (this.rootFollowsSystem()) {
+      this.useSystemPreference();
+    } else {
+      const initial = this.readInitialMode();
+      this.themeState.update((state) => ({ ...state, currentMode: initial }));
+      // Applying is idempotent for a class that is already on the root (the
+      // pre-bootstrap case) and additionally syncs the meta theme-color.
+      this.applyTheme(initial);
+    }
     this.destroyRef.onDestroy(() => this.stopFollowingSystem());
   }
 
@@ -67,6 +85,12 @@ export class ThemeService {
    */
   public setTheme(mode: ThemeMode): void {
     this.stopFollowingSystem();
+    if (this.cssFollowsSystem) {
+      this.cssFollowsSystem = false;
+      if (this.isBrowser) {
+        document.documentElement.classList.remove(ThemeService.SYSTEM_CLASS);
+      }
+    }
     this.applyMode(mode);
     this.persist(mode);
   }
@@ -81,12 +105,15 @@ export class ThemeService {
   /**
    * Adopt the OS-level color-scheme preference and keep following it: a later
    * change of the OS setting switches the theme too, until `setTheme` is called.
+   * Under a `system` root class the stylesheets already follow the OS; the
+   * service then only mirrors it and sets no `light` / `dark` class.
    */
   public useSystemPreference(): void {
     if (!this.isBrowser) {
       return;
     }
     this.stopFollowingSystem();
+    this.cssFollowsSystem = this.rootFollowsSystem();
     const query = window.matchMedia?.('(prefers-color-scheme: dark)') ?? null;
     const prefersDark = query?.matches ?? true;
     this.themeState.update((state) => ({ ...state, prefersDark }));
@@ -106,6 +133,15 @@ export class ThemeService {
   private applyMode(mode: ThemeMode): void {
     this.themeState.update((state) => ({ ...state, currentMode: mode }));
     this.applyTheme(mode);
+  }
+
+  /** The root asks the CSS to follow the OS: `system` without `light` / `dark`. */
+  private rootFollowsSystem(): boolean {
+    if (!this.isBrowser) {
+      return false;
+    }
+    const root = document.documentElement.classList;
+    return root.contains(ThemeService.SYSTEM_CLASS) && !root.contains('light') && !root.contains('dark');
   }
 
   /**
@@ -152,9 +188,12 @@ export class ThemeService {
       return;
     }
 
-    const root = document.documentElement;
-    root.classList.toggle('dark', mode === 'dark');
-    root.classList.toggle('light', mode === 'light');
+    // Under `system` the stylesheets follow the OS; a class would pin it.
+    if (!this.cssFollowsSystem) {
+      const root = document.documentElement;
+      root.classList.toggle('dark', mode === 'dark');
+      root.classList.toggle('light', mode === 'light');
+    }
 
     // Update meta theme-color for mobile browsers
     const metaThemeColor = document.querySelector('meta[name="theme-color"]');

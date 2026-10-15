@@ -60,10 +60,10 @@ describe('FooterComponent', () => {
   });
 
   it('should render copyright text', () => {
-    host.copyright = '© 2026 Life-Cockpit';
+    host.copyright = '© 2026 LifeCorner';
     fixture.detectChanges();
     const copyright = fixture.nativeElement.querySelector('.footer__copyright');
-    expect(copyright.textContent.trim()).toBe('© 2026 Life-Cockpit');
+    expect(copyright.textContent.trim()).toBe('© 2026 LifeCorner');
   });
 
   it('should render sections with links', () => {

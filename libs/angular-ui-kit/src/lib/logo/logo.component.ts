@@ -9,7 +9,7 @@ import {
 
 /**
  * Injection token for the base path used to resolve the built-in
- * Life-Cockpit logo assets. Defaults to `'/assets'` so consuming apps
+ * LifeCorner logo assets. Defaults to `'/assets'` so consuming apps
  * that copy the package's `assets/` folder to their public root keep
  * working out of the box.
  *
@@ -28,23 +28,31 @@ export const LC_LOGO_BASE_PATH = new InjectionToken<string>('LC_LOGO_BASE_PATH',
   factory: () => '/assets',
 });
 
+/** Sizes at or below 32 px, which use the small emblem (heavier arms, filled points). */
+const SMALL_EMBLEM_SIZES: ReadonlySet<string> = new Set(['xs', 'sm']);
+
 /**
  * Logo component for displaying a brand identity.
  *
- * Defaults to the Life-Cockpit logo but accepts custom `src` / `emblemSrc`
- * (and optional `darkSrc` / `darkEmblemSrc`) so consuming apps can drop in
- * their own brand assets without forking the component.
+ * Defaults to the LifeCorner logo (Edu, the emblem, and the LifeCorner
+ * lockup) but accepts custom `src` / `emblemSrc` (and optional `darkSrc` /
+ * `darkEmblemSrc`) so consuming apps can drop in their own brand assets
+ * without forking the component.
  *
  * Features:
- * - Full logo and emblem-only variants
+ * - Full lockup and emblem-only variants; the emblem switches to its small
+ *   drawing at `xs` and `sm` (32 px and below)
  * - Multiple size options (xs, sm, md, lg, xl)
- * - Optional dark-variant sources that follow the APP theme (`:root.light`
- *   opt-in, dark otherwise) — not the OS `prefers-color-scheme`, which the
- *   app theme may well contradict. `colorMode="light|dark"` pins one source.
- * - Falls back to a CSS `invert` filter only for the built-in Life-Cockpit
- *   assets (custom logos are never auto-inverted to avoid color distortion)
+ * - Light and dark sources that follow the APP theme exactly as the theme
+ *   stylesheets do: dark under `:root.dark`, under a root without a theme
+ *   class (dark-first default), and under `:root.system` when the OS is dark;
+ *   light under `:root.light` and under `:root.system` when the OS is light.
+ *   `colorMode="light|dark"` pins one source.
+ * - The built-in logo ships its own dark drawings; nothing is inverted or
+ *   recoloured by CSS. A custom logo without a dark partner stays as it is.
+ * - The logo is flat and fixed: never animated, posed or distorted.
  *
- * @example Default Life-Cockpit logo
+ * @example Default LifeCorner logo
  * ```html
  * <lc-logo variant="full" size="md"></lc-logo>
  * ```
@@ -70,15 +78,15 @@ export const LC_LOGO_BASE_PATH = new InjectionToken<string>('LC_LOGO_BASE_PATH',
 export class LogoComponent {
   /**
    * Logo variant to display
-   * - 'full': Full logo with text
-   * - 'emblem': Just the emblem/icon
+   * - 'full': the lockup (emblem and name)
+   * - 'emblem': just the emblem
    */
   readonly variant = input<'full' | 'emblem'>('full');
 
   /**
    * Size of the logo
-   * - 'xs': 24px height
-   * - 'sm': 32px height
+   * - 'xs': 24px height (small emblem)
+   * - 'sm': 32px height (small emblem)
    * - 'md': 48px height (default)
    * - 'lg': 64px height
    * - 'xl': 96px height
@@ -86,9 +94,10 @@ export class LogoComponent {
   readonly size = input<'xs' | 'sm' | 'md' | 'lg' | 'xl'>('md');
 
   /**
-   * Alt text for accessibility
+   * Alt text for accessibility. Defaults to the name of the built-in logo;
+   * set it to your brand name when you pass your own sources.
    */
-  readonly alt = input('Life-Cockpit');
+  readonly alt = input('LifeCorner');
 
   /**
    * Makes the logo appear clickable
@@ -96,30 +105,30 @@ export class LogoComponent {
   readonly clickable = input(false);
 
   /**
-   * Color mode for different backgrounds (only affects the built-in
-   * Life-Cockpit assets via CSS `invert`; custom logos are never inverted).
-   * - 'auto': Follows global theme
-   * - 'light': Optimized for light backgrounds
-   * - 'dark': Inverted for dark backgrounds
+   * Which source to show.
+   * - 'auto': follows the app theme (light source on light, dark source on dark)
+   * - 'light': always the light source (for light backgrounds)
+   * - 'dark': always the dark source (for dark backgrounds); falls back to the
+   *   light source when a custom logo has no dark partner
    */
   readonly colorMode = input<'auto' | 'light' | 'dark'>('auto');
 
   /**
    * Custom URL for the full logo. When set, overrides the built-in
-   * Life-Cockpit asset (and disables the auto-invert filter).
+   * LifeCorner lockup.
    */
   readonly src = input<string>('');
 
   /**
    * Custom URL for the emblem-only logo. When set, overrides the built-in
-   * Life-Cockpit emblem (and disables the auto-invert filter).
+   * LifeCorner emblem at every size.
    */
   readonly emblemSrc = input<string>('');
 
   /**
    * Optional dark-theme URL for the full logo. When provided, the logo swaps
-   * with the app theme: shown under the dark-first default and `:root.dark`,
-   * the light `src` under `:root.light` (or force one via `colorMode`).
+   * with the app theme (see `colorMode`). Without it a custom `src` is shown
+   * on dark too; the built-in lockup brings its own dark drawing.
    */
   readonly darkSrc = input<string>('');
 
@@ -135,18 +144,40 @@ export class LogoComponent {
 
   private readonly basePath = inject(LC_LOGO_BASE_PATH);
 
-  readonly logoSrc = computed(() => {
-    const isEmblem = this.variant() === 'emblem';
+  /** The built-in LifeCorner pair for the current variant and size. */
+  private readonly builtIn = computed(() => {
     const base = this.basePath.replace(/\/$/, '');
-    if (isEmblem) {
-      return this.emblemSrc() || `${base}/life-cockpit-emblem.svg`;
+    if (this.variant() === 'emblem') {
+      const small = SMALL_EMBLEM_SIZES.has(this.size()) ? '-small' : '';
+      return {
+        light: `${base}/lifecorner-emblem${small}.svg`,
+        dark: `${base}/lifecorner-emblem${small}-on-dark.svg`,
+      };
     }
-    return this.src() || `${base}/life-cockpit-logo.svg`;
+    return {
+      light: `${base}/lifecorner-logo.svg`,
+      dark: `${base}/lifecorner-logo-on-dark.svg`,
+    };
   });
 
-  /** Dark-theme source for the current variant, or empty string if none. */
+  /** Custom light source for the current variant, or empty string. */
+  private readonly customSrc = computed(() =>
+    this.variant() === 'emblem' ? this.emblemSrc() : this.src(),
+  );
+
+  readonly logoSrc = computed(() => this.customSrc() || this.builtIn().light);
+
+  /**
+   * Dark-theme source for the current variant: the custom dark source, else
+   * the built-in dark drawing — unless a custom light logo is set without a
+   * dark partner (the kit never recolours a brand), then empty string.
+   */
   readonly logoDarkSrc = computed(() => {
-    return this.variant() === 'emblem' ? this.darkEmblemSrc() : this.darkSrc();
+    const customDark = this.variant() === 'emblem' ? this.darkEmblemSrc() : this.darkSrc();
+    if (customDark) {
+      return customDark;
+    }
+    return this.customSrc() ? '' : this.builtIn().dark;
   });
 
   /**
@@ -164,15 +195,6 @@ export class LogoComponent {
     const classes = [`size-${this.size()}`];
     if (this.clickable()) {
       classes.push('clickable');
-    }
-    // Auto-invert filter only applies to the built-in Life-Cockpit assets
-    // to avoid distorting customer brand colors.
-    if (!this.hasCustomSrc()) {
-      if (this.colorMode() === 'dark') {
-        classes.push('lc-logo--dark');
-      } else if (this.colorMode() === 'auto') {
-        classes.push('lc-logo--auto');
-      }
     }
     return classes.join(' ');
   });

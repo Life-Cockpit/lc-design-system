@@ -8,13 +8,19 @@ import {
 } from '@angular/core';
 import { IconComponent } from '../icon/icon.component';
 
+/** Visual variant of `lc-card`. */
+export type CardVariant = 'elevated' | 'outlined' | 'flat' | 'raised' | 'dashed';
+
+/** Heading level of `lc-card`'s built-in title. */
+export type CardHeadingLevel = 2 | 3 | 4 | 5 | 6;
+
 /**
  * Card component for content grouping and visual hierarchy.
  *
  * Features:
- * - Variant styles (elevated, outlined, filled)
- * - Configurable padding (none, sm, md, lg)
- * - Border radius options (none, sm, md, lg, xl)
+ * - Variant styles (elevated, outlined, flat, raised, dashed)
+ * - Configurable padding (none, xs, sm, md, lg)
+ * - Border radius options (none, sm, md, lg, xl, full)
  * - Optional title display, with an optional leading icon tile
  * - Content projection for flexible body content
  *
@@ -88,11 +94,17 @@ export class CardComponent {
   /**
    * Visual variant of the card
    * - elevated: Box shadow (default)
-   * - outlined: Border only
+   * - outlined: Border only (the hairline `--color-border`, no shadow) — the
+   *   content card on the "Weite" sky with `borderRadius="xl"`
    * - flat: No shadow or border
+   * - raised: plain surface, hairline border and the long, soft
+   *   `--shadow-auth-card`, no accent line — the sign-in card
+   * - dashed: the muted "coming soon" tile — `--color-muted-tile` fill, 1 px
+   *   dashed `--color-muted-tile-border`, secondary ink, icons in
+   *   `--color-muted-tile-icon`. Never clickable: `clickable` is ignored
    * @default 'elevated'
    */
-  variant = input<'elevated' | 'outlined' | 'flat'>('elevated');
+  variant = input<CardVariant>('elevated');
 
   /**
    * Padding inside the card
@@ -113,10 +125,18 @@ export class CardComponent {
   selected = input<boolean>(false);
 
   /**
-   * Border radius size
+   * Border radius size: `none`, `sm`, `md`, `lg` (18 px), `xl` (24 px, the
+   * "Weite" content card) or `full`.
    * @default 'md'
    */
-  borderRadius = input<'none' | 'sm' | 'md' | 'lg' | 'full'>('md');
+  borderRadius = input<'none' | 'sm' | 'md' | 'lg' | 'xl' | 'full'>('md');
+
+  /**
+   * Heading level of the built-in `title` (`h2`–`h6`), so the card fits the
+   * page's outline. Semantics only, the look stays the same.
+   * @default 3
+   */
+  headingLevel = input<CardHeadingLevel>(3);
 
   /**
    * ARIA label for accessibility
@@ -129,6 +149,12 @@ export class CardComponent {
   readonly cardClick = output<MouseEvent>();
 
   /**
+   * Whether the card acts as a button: `clickable`, except for the dashed
+   * "coming soon" tile, which is never interactive.
+   */
+  protected isClickable = computed(() => this.clickable() && this.variant() !== 'dashed');
+
+  /**
    * Compute card CSS classes based on inputs
    */
   protected cardClasses = computed(() => {
@@ -139,11 +165,12 @@ export class CardComponent {
       `card-radius-${this.borderRadius()}`,
     ];
 
-    if (this.clickable()) {
+    if (this.isClickable()) {
       classes.push('card-clickable');
     }
 
-    if (this.selected()) {
+    // The dashed tile is never interactive, so it is never selected either.
+    if (this.selected() && this.variant() !== 'dashed') {
       classes.push('card-selected');
     }
 
@@ -153,13 +180,13 @@ export class CardComponent {
   /**
    * Compute ARIA role based on clickable state
    */
-  protected role = computed(() => (this.clickable() ? 'button' : 'article'));
+  protected role = computed(() => (this.isClickable() ? 'button' : 'article'));
 
   /**
    * Handle card click events
    */
   protected handleClick(event: MouseEvent): void {
-    if (this.clickable()) {
+    if (this.isClickable()) {
       this.cardClick.emit(event);
     }
   }
@@ -169,7 +196,7 @@ export class CardComponent {
    */
   @HostListener('keydown', ['$event'])
   protected handleKeydown(event: KeyboardEvent): void {
-    if (this.clickable() && (event.key === 'Enter' || event.key === ' ')) {
+    if (this.isClickable() && (event.key === 'Enter' || event.key === ' ')) {
       event.preventDefault();
       const mouseEvent = new MouseEvent('click', {
         bubbles: true,

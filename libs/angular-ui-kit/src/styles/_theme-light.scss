@@ -129,6 +129,7 @@
   --typography-font-size-4xl: #{$typography-font-size-4xl};
   --typography-font-size-5xl: #{$typography-font-size-5xl};
   --typography-font-size-6xl: #{$typography-font-size-6xl};
+  --typography-font-size-7xl: #{$typography-font-size-7xl};
 
   // ============================================================================
   // Typography - Font Weights
@@ -220,8 +221,17 @@
   //   surface          card / panel
   //   surface-raised   menus, popovers (white + elevation in light)
   //   surface-sunken   recessed strips inside a card: table heads, meta, code
-  --color-background: #{$color-neutral-100};
-  --app-background-image: none;
+  //
+  // 3.3 ("Weite", LK-1/LK-11): the light page is a white SKY (was neutral-100
+  // #f3f4f6). Cards on it carry the teal hairline border instead of relying on
+  // a darker page; the sky fades into --color-background-low towards the
+  // bottom of the page through --app-background-image.
+  --color-background: #ffffff;
+  --color-background-low: #f6fafb;
+  // The sky. Apply on the app shell / <body> with `background-color:
+  // var(--color-background); background-image: var(--app-background-image)`
+  // (two properties: the dark value is a list of two layers).
+  --app-background-image: linear-gradient(180deg, #ffffff 55%, #f6fafb);
   --color-surface: #ffffff;
   --color-surface-raised: #ffffff;
   --color-surface-2: #{$color-neutral-50};
@@ -230,14 +240,20 @@
   // Sidebar reads as a subtle off-white rail against the white content area.
   --color-sidebar: #{$color-neutral-50};
   --color-surface-hover: #{$color-neutral-100};
-  --color-surface-selected: #{$color-primary-50};
+  // Selected item (nav pill, active row) and the ink that goes on it
+  // (3.3, LK-11: was primary-50 #f0f8fa; #144f5b on #e0f1f4 is 7.85:1).
+  --color-surface-selected: #{$color-primary-100};
+  --color-on-surface-selected: #{$color-primary-700};
   --color-surface-muted: #{$color-neutral-50};
   --gradient-surface: linear-gradient(180deg, #ffffff, #{$color-neutral-50});
 
   // Text
   --color-text-primary: #{$color-neutral-900};
   --color-text-secondary: #{$color-neutral-600};
-  --color-text-tertiary: #{$color-neutral-500};
+  // 3.3 (LK-11): #5c6672, was neutral-500 #6b7280. The old value measured
+  // 4.16–4.44:1 on the tinted "Weite" surfaces (soft cards, muted tiles, land,
+  // the old #f3f4f6 page); #5c6672 holds 4.5:1 on every light surface.
+  --color-text-tertiary: #5c6672;
   --color-text-disabled: #{$color-neutral-400};
   --color-neutral-white: #ffffff;
 
@@ -250,10 +266,18 @@
 
   // Borders — three weights: border (outer edge) > divider (between rows) >
   // subtle (inner hairlines that should barely register).
-  --color-border: #{$color-neutral-300};
+  // 3.3 (LK-11): the outer edge is the teal hairline #d7ebef (was
+  // neutral-300 #d1d5db). It is decorative; a boundary a user must find to
+  // operate a control (a form field) uses --color-field-border (≥ 3:1).
+  --color-border: #d7ebef;
   --color-border-strong: #{$color-primary-300};
   --color-divider: #{$color-neutral-200};
   --color-border-subtle: #{$color-neutral-100};
+  // Hairlines between list rows and along a docked panel's edge.
+  --color-hairline: #d7ebef;
+  // Form field boundary (SI-8, WCAG 1.4.11): #6b7280 is 4.83:1 on white,
+  // 4.39:1 on neutral-100. --color-border is 1.2:1 and decorative only.
+  --color-field-border: #{$color-neutral-500};
 
   // Brand alias (some components reference bare --color-primary)
   --color-primary: var(--color-primary-500);
@@ -301,7 +325,9 @@
   // that renders a semantic as *text* must use these instead.
   --color-on-primary-subtle: #{$color-primary-700};
   --color-on-success-subtle: #{$color-success-dark};
-  --color-on-warning-subtle: #{$color-warning-dark};
+  // 3.3 (HS-5): #855a22, was warning-dark #9b6b2b, which measured 4.25:1 on
+  // --color-warning-subtle (a warning badge failed 1.4.3); now 5.52:1.
+  --color-on-warning-subtle: #855a22;
   --color-on-error-subtle: #{$color-error-dark};
   --color-on-info-subtle: #{$color-info-dark};
 
@@ -322,6 +348,68 @@
   --shadow-glow: 0 0 24px rgba(32, 132, 151, 0.10);
   --gradient-text: linear-gradient(100deg, #{$color-primary-500}, #{$color-primary-600} 55%, #{$color-accent-violet});
   --gradient-brand-tile: linear-gradient(135deg, #{$color-primary-400}, #{$color-primary-600});
+
+  // ============================================================================
+  // "Weite" look (3.3: LK-1, LK-4, LK-5, LK-7, LK-10, LK-11)
+  // ============================================================================
+  // Overline text above a page title (the date on Today, section labels):
+  // 7.85:1 on the sky, 7.27:1 on the soft fills.
+  --color-overline: #{$color-primary-700};
+
+  // Soft next-step card fills (lc-next-step-card, LK-4). No border, no rail;
+  // text on them stays primary / secondary / tertiary ink.
+  --color-next-step-soft-neutral: #f2f6f7;
+  --color-next-step-soft-primary: #e6f3f6;
+  --color-next-step-soft-success: #eef4ea;
+  --color-next-step-soft-warning: #fdf4e4;
+  // The icon bubble on a soft card: white disc, 1 px teal ring, teal icon
+  // (6.21:1 on the bubble).
+  --color-bubble: #ffffff;
+  --color-bubble-ring: #{$color-primary-200};
+  --color-bubble-icon: #{$color-primary-600};
+
+  // Muted "coming soon" tile (LK-10): fill, dashed border, decorative icon.
+  // Its text uses --color-text-secondary (7.14:1).
+  --color-muted-tile: #f6f9fa;
+  --color-muted-tile-border: #e3eef1;
+  --color-muted-tile-icon: #{$color-neutral-500};
+
+  // Horizon block (.lc-horizon, LK-1): the line, the land (top to bottom),
+  // the sun (centre to rim), its ring and halo. Decorative; never behind text
+  // except the compact footer on the land (link 5.50:1 on --color-land-1).
+  --color-horizon-line: #{$color-primary-400};
+  --color-land-1: #e9f3f5;
+  --color-land-2: #f4f8f9;
+  --color-land-3: #fafcfc;
+  --color-sun-1: #d3ecf0;
+  --color-sun-2: #c6e5eb;
+  --color-sun-3: #b3dbe2;
+  --color-sun-ring: #{$color-primary-100};
+  --color-sun-halo: rgba(163, 213, 223, 0.3);
+
+  // Member colours (LK-7): one per household member in join order, with
+  // white initials (--color-on-member, 4.62–8.87:1). The same in both themes.
+  --color-member-1: #{$color-member-1};
+  --color-member-2: #{$color-member-2};
+  --color-member-3: #{$color-member-3};
+  --color-member-4: #{$color-member-4};
+  --color-member-5: #{$color-member-5};
+  --color-member-6: #{$color-member-6};
+  --color-on-member: #ffffff;
+
+  // Floating bottom bar (lc-bottom-nav variant="floating", LK-5).
+  --color-floating-bar-surface: #ffffff;
+  --color-floating-bar-border: #{$color-neutral-200};
+  --shadow-floating-bar: 0 10px 30px -10px rgba(13, 53, 61, 0.28);
+
+  // The sign-in card on desktop: a hairline contact shadow plus a long, soft
+  // teal-tinted drop.
+  --shadow-auth-card: 0 1px 2px rgba(16, 24, 40, 0.04), 0 30px 60px -30px rgba(13, 53, 61, 0.25);
+
+  // Skeleton fill and its shimmer highlight (AS-7): visible on the white sky
+  // and on white cards (the surface tokens are 1.04:1 there).
+  --color-skeleton: #e6eff1;
+  --color-skeleton-highlight: #f2f7f8;
 
   // ============================================================================
   // Short Aliases for Common Usage (Component Convenience)

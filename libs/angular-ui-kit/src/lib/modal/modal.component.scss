@@ -29,6 +29,7 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
+  box-sizing: border-box;
   // DS2.0: gradient panel with a teal-tinted border and deep elevation
   background-color: var(--color-surface);
   background-image: var(--gradient-surface);
@@ -38,6 +39,7 @@
   color: var(--color-text-primary);
   z-index: 1000;
   max-height: 90vh;
+  max-height: 90dvh;
   display: flex;
   flex-direction: column;
   animation: modalFadeIn 0.15s ease-out;
@@ -85,7 +87,12 @@
   }
 }
 
+// 44 px touch target (3.3, AC-4): the 24 px icon in a 44 × 44 px button; the
+// negative margin keeps the header's rhythm.
 .lc-modal__close {
+  flex-shrink: 0;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
   background: transparent;
   border: none;
   cursor: pointer;
@@ -135,6 +142,47 @@
   max-width: none;
   max-height: none;
   border-radius: 0;
+}
+
+// ── Bottom sheet (3.3, AC-4) ───────────────────────────────────────────────
+// Full width at the bottom, top corners rounded, clear of the home indicator;
+// at most 90 % of the dynamic viewport, the body scrolls between a fixed
+// header and footer. `full` keeps its own geometry.
+@mixin bottom-sheet {
+  top: auto;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  transform: none;
+  width: 100%;
+  max-width: none;
+  max-height: 90vh;
+  max-height: 90dvh;
+  border-width: 1px 0 0;
+  border-radius: var(--border-radius-xl, 1.5rem) var(--border-radius-xl, 1.5rem) 0 0;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  animation: modalSheetIn 0.2s ease-out;
+}
+
+.lc-modal--placement-sheet:not(.lc-modal--full) {
+  @include bottom-sheet;
+}
+
+@media (max-width: 639.98px) {
+  .lc-modal--placement-auto:not(.lc-modal--full) {
+    @include bottom-sheet;
+  }
+}
+
+@keyframes modalSheetIn {
+  from {
+    opacity: 0;
+    transform: translateY(1.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 // Animations
@@ -194,5 +242,12 @@
       opacity: 0;
       transform: translate(-50%, -50%);
     }
+  }
+
+  // The sheet sets its own animation (at a higher specificity), so it needs
+  // its own opt-out.
+  .lc-modal.lc-modal--placement-sheet,
+  .lc-modal.lc-modal--placement-auto {
+    animation: none;
   }
 }

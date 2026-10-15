@@ -9,6 +9,20 @@ import { NgTemplateOutlet } from '@angular/common';
 import { IconComponent } from '../icon/icon.component';
 
 /**
+ * Visual size of the page header.
+ * - `compact`     — dense data-tool pages and section headings (18 px)
+ * - `default`     — standard app pages (24 px)
+ * - `comfortable` — landing-page hero feel (30 px)
+ * - `title`       — the "Weite" page title: 32 px on phones, 40 / 44 / 48 px
+ *                   from 1024 / 1440 / 1920 px (`--font-size-title`)
+ * - `display`     — the display greeting: 40 px on phones, 52 / 56 / 60 / 72 px
+ *                   from 1024 / 1280 / 1440 / 1920 px (`--font-size-display`)
+ * - `auth`        — the sign-in and registration `<h1>`: 30 px, 34 px from
+ *                   1024 px (`--font-size-auth-title`)
+ */
+export type PageHeaderSize = 'compact' | 'default' | 'comfortable' | 'title' | 'display' | 'auth';
+
+/**
  * Page header — top-of-page title block with optional subtitle,
  * breadcrumbs, badge, description and an actions area.
  *
@@ -22,6 +36,10 @@ import { IconComponent } from '../icon/icon.component';
  *  - `[slot="actions"]`       — right-aligned actions (buttons, menus)
  *  - `[slot="meta"]`          — secondary metadata under the title row (chips, tags)
  *  - default                  — short header-internal description text
+ *
+ * `overline` renders a short uppercase label (a date, a section) **above** the
+ * title but **after** it in the DOM, so a screen reader that lands on the
+ * heading reads the title first and the overline next.
  *
  * Full-blown navigation primitives like `lc-tabs` — which render both the tab
  * strip **and** their panel content — belong **below** the page header, never
@@ -82,6 +100,15 @@ export class PageHeaderComponent {
   subtitle = input<string | undefined>(undefined);
 
   /**
+   * Short label shown above the title (e.g. the date on a daily view, a
+   * section name): uppercase through CSS (write it in sentence case), bold,
+   * letter spacing 0.12 em, in `--color-overline`; 13 px on phones, 14 / 15 /
+   * 16 px from 1024 / 1440 / 1920 px. Rendered right after the heading in the
+   * DOM, so the heading is read first.
+   */
+  overline = input<string | undefined>(undefined);
+
+  /**
    * Heading level for the title — affects semantics, not size.
    * @default 1
    */
@@ -89,11 +116,15 @@ export class PageHeaderComponent {
 
   /**
    * Visual size of the page header.
-   * - `compact`     — dense data-tool pages
-   * - `default`     — standard app pages
-   * - `comfortable` — landing-page hero feel
+   * - `compact`     — dense data-tool pages and section headings (18 px)
+   * - `default`     — standard app pages (24 px)
+   * - `comfortable` — landing-page hero feel (30 px)
+   * - `title`       — page title on the responsive title scale, 32–48 px
+   * - `display`     — the display greeting, 40–72 px, weight 700
+   * - `auth`        — the sign-in and registration `<h1>`, 30 / 34 px
+   * @default 'default'
    */
-  size = input<'compact' | 'default' | 'comfortable'>('default');
+  size = input<PageHeaderSize>('default');
 
   /**
    * Whether to render a divider line below the header.
@@ -113,11 +144,25 @@ export class PageHeaderComponent {
    */
   noPaddingX = input<boolean>(false);
 
+  /**
+   * Classes of the heading: the global type-scale class (`lc-title`,
+   * `lc-display`, `lc-auth-title`) joins the component class for the 3.3 sizes.
+   */
+  protected titleClasses = computed(() => {
+    const scale: Partial<Record<PageHeaderSize, string>> = {
+      title: 'lc-title',
+      display: 'lc-display',
+      auth: 'lc-auth-title',
+    };
+    return ['lc-page-header__title', scale[this.size()]].filter(Boolean).join(' ');
+  });
+
   protected hostClasses = computed(() =>
     [
       'lc-page-header',
       `lc-page-header--size-${this.size()}`,
       this.showDivider() ? 'lc-page-header--divided' : null,
+      this.overline() ? 'lc-page-header--has-overline' : null,
       this.noPaddingX() ? 'lc-page-header--flush-x' : null,
     ]
       .filter(Boolean)

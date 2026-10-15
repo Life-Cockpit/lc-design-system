@@ -23,7 +23,8 @@
   line-height: var(--line-height-base);
   color: var(--color-text-primary);
   background-color: var(--color-surface);
-  border: 1px solid var(--color-border);
+  // 3.3 (SI-8): the field boundary needs 3:1 against the page (WCAG 1.4.11).
+  border: 1px solid var(--color-field-border);
   border-radius: var(--border-radius-md);
   transition: all var(--animation-duration-base) var(--animation-timing-ease);
   resize: vertical;
@@ -66,7 +67,7 @@
   // Variant styles
   &--outline {
     background-color: var(--color-surface);
-    border-color: var(--color-border);
+    border-color: var(--color-field-border);
     
     &:hover:not(:disabled):not(:read-only) {
       border-color: var(--color-primary-400);

@@ -86,6 +86,11 @@ export class MenuComponent implements OnDestroy {
   readonly position = input<'bottom-left' | 'bottom-right' | 'top-left' | 'top-right'>('bottom-right');
   readonly size = input<'sm' | 'md' | 'lg'>('md');
   readonly minWidth = input('220px');
+  /**
+   * Maximum width of the panel (any CSS width, e.g. `min(18rem, calc(100vw - 2rem))`).
+   * Empty leaves it unbounded. Long item labels and header lines wrap within it.
+   */
+  readonly maxWidth = input('');
 
   readonly itemClick = output<MenuItem>();
   readonly closed = output<void>();

@@ -55,6 +55,18 @@ const meta: Meta<SidenavComponent> = {
       options: ['auto', 'light', 'dark'],
       description: 'Theme variant — sets internal tokens (--lc-sidenav-bg, --lc-sidenav-fg, etc.)',
     },
+    variant: {
+      control: 'select',
+      options: ['default', 'transparent'],
+      description:
+        '`default`: the rail with background and border. `transparent`: no background or border when docked, items as 48 px pills (radius full, 16 px labels), the current one on `--color-surface-selected`; a drawer keeps its surface',
+      table: { defaultValue: { summary: 'default' } },
+    },
+    items: {
+      control: 'object',
+      description:
+        'Navigation items (`NavigationItem[]`): `id`, `icon`, `label`, `route`, `displayOrder`; optional `children` (collapsible group), `isSection` (section headline), `badge { value, variant? }`, `action { icon, ariaLabel? }` (emits `itemAction`), `requiredRole` (for the app\'s own filtering)',
+    },
   },
 
   parameters: {
@@ -77,7 +89,9 @@ Sidenav component for application navigation sidebar.
 - Configurable **width** and **position** (left/right)
 - Optional **backdrop overlay**
 - **Theme** input (\`auto\` | \`light\` | \`dark\`) — dark mode uses teal accent for active items
-- Accessible with ARIA \`navigation\` role
+- Accessible with ARIA \`navigation\` role; the current item has \`aria-current="page"\` and the selected tint's own ink (\`--color-on-surface-selected\`, AA)
+- Items at least 44 px high in every density
+- \`variant="transparent"\` — the side navigation on the page ("Weite"): no rail, 48 px pill items
 
 **Inputs:**
 | Input | Type | Default | Description |
@@ -95,6 +109,7 @@ Sidenav component for application navigation sidebar.
 | \`hasOverlay\` | \`boolean\` | \`true\` | Show backdrop in drawer mode |
 | \`ariaLabel\` | \`string\` | \`'Side navigation'\` | ARIA label |
 | \`theme\` | \`'auto' \\| 'light' \\| 'dark'\` | \`'auto'\` | Theme variant |
+| \`variant\` | \`'default' \\| 'transparent'\` | \`'default'\` | Rail surface, or none with pill items (docked) |
 
 **Outputs:**
 | Output | Payload | Description |
@@ -540,7 +555,7 @@ export const SidebarFirstLayout: Story = {
         </lc-sidenav>
         <div style="display: flex; flex-direction: column; flex: 1; min-width: 0;">
           <lc-header
-            title="Life-Cockpit"
+            title="LifeCorner"
             subtitle="Specs & Epics"
             userName="Sarah Connor"
             userEmail="sarah@example.com"
@@ -592,7 +607,7 @@ export const SidebarFirstCollapsed: Story = {
         </lc-sidenav>
         <div style="display: flex; flex-direction: column; flex: 1; min-width: 0;">
           <lc-header
-            title="Life-Cockpit"
+            title="LifeCorner"
             userName="Sarah Connor"
             userEmail="sarah@example.com"
             contextName="Acme Corp"
@@ -651,7 +666,7 @@ export const ResponsiveMobile: Story = {
         </lc-sidenav>
         <div style="display: flex; flex-direction: column; flex: 1; min-width: 0;">
           <lc-header
-            title="Life-Cockpit"
+            title="LifeCorner"
             userName="Sarah Connor"
             userEmail="sarah@example.com"
             [showHamburger]="true"
@@ -709,7 +724,7 @@ export const SidebarFirstProminentBrand: Story = {
           <lc-header
             userName="Sarah Connor"
             userEmail="sarah@example.com"
-            contextName="Life-Cockpit"
+            contextName="LifeCorner"
             contextLabel="Organization"
             size="lg"
             [showHamburger]="true"
@@ -723,3 +738,31 @@ export const SidebarFirstProminentBrand: Story = {
       </div>`,
   }),
 };
+
+/** The side navigation on the page ("Weite", LK-8): no rail, 48 px pills, the current one on the selected tint. */
+export const TransparentOnThePage: Story = {
+  name: 'Transparent (on the page)',
+  args: {
+    isOpen: true,
+    mode: 'docked',
+    variant: 'transparent',
+    width: '248px',
+    mobileBreakpoint: 0,
+    ariaLabel: 'Hauptnavigation',
+    items: [
+      { id: 'today', icon: 'sun', label: 'Heute', route: '/', displayOrder: 1 },
+      { id: 'household', icon: 'home', label: 'Haushalt', route: '/household', displayOrder: 2 },
+    ],
+    activeRoute: '/',
+  },
+  render: (args) => ({
+    props: args,
+    template: `
+      <div style="display: flex; height: 320px; background: var(--color-background); border: 1px solid var(--color-border); border-radius: 12px; overflow: hidden;">
+        <lc-sidenav [isOpen]="isOpen" [mode]="mode" [variant]="variant" [width]="width" [mobileBreakpoint]="mobileBreakpoint"
+                    [ariaLabel]="ariaLabel" [items]="items" [activeRoute]="activeRoute" />
+        <div style="flex: 1; padding: 48px 24px; color: var(--color-text-secondary);">Page</div>
+      </div>`,
+  }),
+};
+

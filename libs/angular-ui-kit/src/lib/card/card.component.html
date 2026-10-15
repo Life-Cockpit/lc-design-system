@@ -3,7 +3,7 @@
   [class]="cardClasses()"
   [attr.role]="role()"
   [attr.aria-label]="ariaLabel()"
-  [attr.tabindex]="clickable() ? 0 : null"
+  [attr.tabindex]="isClickable() ? 0 : null"
   (click)="handleClick($event)"
 >
   @if (title()) {
@@ -18,7 +18,23 @@
       }
       <div class="card__header-left">
         <div class="card__title-row">
-          <h3 class="card__title">{{ title() }}</h3>
+          @switch (headingLevel()) {
+            @case (2) {
+              <h2 class="card__title">{{ title() }}</h2>
+            }
+            @case (4) {
+              <h4 class="card__title">{{ title() }}</h4>
+            }
+            @case (5) {
+              <h5 class="card__title">{{ title() }}</h5>
+            }
+            @case (6) {
+              <h6 class="card__title">{{ title() }}</h6>
+            }
+            @default {
+              <h3 class="card__title">{{ title() }}</h3>
+            }
+          }
           <!-- Rich status badge: project an lc-badge here (takes visual
                precedence over the `badge` string). Wrapper hides when empty. -->
           <span class="card__badge-slot"><ng-content select="[card-badge]"></ng-content></span>

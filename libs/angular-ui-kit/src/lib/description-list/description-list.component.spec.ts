@@ -1,5 +1,7 @@
 import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { compile } from 'sass';
+import { join } from 'path';
 import {
   DescriptionListComponent,
   DescriptionListItem,
@@ -139,4 +141,32 @@ describe('DescriptionListComponent', () => {
     fixture.detectChanges();
     expect(hostElement.querySelector('.lc-dl')?.classList).toContain('lc-dl--sep-none');
   });
+
+  describe('3.3: long values and machine-readable times (AC-10, HS-3)', () => {
+    it('renders a value with datetime inside <time datetime>', () => {
+      host.items.set([
+        { term: 'Beigetreten', value: 'heute 18:05', datetime: '2026-10-12T18:05:00+02:00' },
+      ]);
+      fixture.detectChanges();
+      const time = hostElement.querySelector('.lc-dl__value time') as HTMLElement;
+      expect(time).toBeTruthy();
+      expect(time.getAttribute('datetime')).toBe('2026-10-12T18:05:00+02:00');
+      expect(time.textContent?.trim()).toBe('heute 18:05');
+    });
+
+    it('renders no <time> without datetime', () => {
+      fixture.detectChanges();
+      expect(hostElement.querySelector('.lc-dl__value time')).toBeNull();
+    });
+
+    it('lets the value shrink and wrap anywhere in the stylesheet', () => {
+      const css = compile(join(__dirname, 'description-list.component.scss')).css;
+      const start = css.indexOf('.lc-dl__value {');
+      const value = css.slice(start, css.indexOf('}', start));
+      expect(value).toMatch(/flex:\s*0 1 auto/);
+      expect(value).toMatch(/min-width:\s*0/);
+      expect(value).toMatch(/overflow-wrap:\s*anywhere/);
+    });
+  });
 });
+

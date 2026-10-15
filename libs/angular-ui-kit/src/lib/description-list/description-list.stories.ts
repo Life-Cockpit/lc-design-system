@@ -16,11 +16,17 @@ Description list for key/value metadata (a styled \`<dl>\`).
 - \`stacked\` layout: term above value, for narrow columns
 - Per-row value emphasis (\`default\`, \`muted\`, \`strong\`, \`primary\`) and optional links
 - Semantic \`<dl>\`/\`<dt>\`/\`<dd>\` markup
+- 3.3: long unbroken values (an e-mail address, an IBAN) wrap instead of overflowing the row;
+  an item's \`datetime\` (ISO 8601) renders its value inside \`<time datetime>\`
 `,
       },
     },
   },
   argTypes: {
+    items: {
+      description:
+        '`DescriptionListItem[]`: `term`, `value`, `valueSuffix`, `href`, `emphasis`, `id`; 3.3: `datetime` (ISO 8601) renders the value inside `<time datetime>` (ignored with `href`).',
+    },
     layout: { control: 'inline-radio', options: ['rows', 'stacked'] },
     leaders: { control: 'boolean' },
     size: { control: 'inline-radio', options: ['sm', 'md'] },
@@ -102,3 +108,26 @@ export const DividerSeparator: Story = {
     template: `<div style="max-width: 420px;"><lc-description-list [items]="items" [layout]="layout" [size]="size" [separator]="separator" /></div>`,
   }),
 };
+
+/** 3.3 (AC-10, HS-3): a long address wraps at a phone width; times carry `datetime`. */
+export const LongValuesAndTimes: Story = {
+  name: 'Long values and times (3.3)',
+  args: {
+    items: [
+      { term: 'E-Mail', value: 'johanna-friederike.brandt-oberhausen@example.com' },
+      { term: 'Beigetreten', value: 'heute 18:05', datetime: '2026-10-12T18:05:00+02:00' },
+      { term: 'Gerät', value: 'Samsung Galaxy S24 Ultra (Android 16)' },
+    ],
+    layout: 'rows',
+    size: 'md',
+  },
+  render: (args) => ({
+    props: args,
+    template: `
+      <div style="max-width: 312px;">
+        <lc-description-list [items]="items" [layout]="layout" [size]="size" />
+      </div>
+    `,
+  }),
+};
+

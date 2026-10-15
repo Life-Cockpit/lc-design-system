@@ -7,6 +7,15 @@ const meta: Meta<CalloutComponent> = {
   argTypes: {
     variant: { control: 'select', options: ['info', 'success', 'warning', 'error', 'neutral'] },
     dismissible: { control: 'boolean' },
+    icon: {
+      control: 'text',
+      description: "3.3: icon name instead of the variant's default icon.",
+    },
+    iconAriaLabel: {
+      control: 'text',
+      description:
+        '3.3: accessible name of the icon (e.g. „Hinweis“). Unset = decorative icon (`aria-hidden`); the title and text carry the tone. The kit sets no default text.',
+    },
   },
 
   parameters: {
@@ -17,7 +26,8 @@ Callout component for contextual information banners.
 
 **Key Features:**
 - Semantic variants (info, success, warning, error, neutral)
-- Auto-mapped variant icons
+- Auto-mapped variant icons; 3.3: \`icon\` overrides it, and it is decorative unless
+  \`iconAriaLabel\` names it (no built-in English word)
 - Optional title text
 - Dismissible with close button (\`visible\` is two-way bindable to show it again)
 - role="alert" for error / warning, role="status" otherwise
@@ -78,3 +88,12 @@ export const NoTitle: Story = {
     template: `<lc-callout [variant]="variant">Ein einfacher Hinweis ohne Titel.</lc-callout>`,
   }),
 };
+
+/** 3.3 (G-24): an own icon with a translated name. */
+export const NamedIcon: Story = {
+  name: 'Named icon (3.3)',
+  render: () => ({
+    template: `<lc-callout variant="neutral" icon="light-bulb" iconAriaLabel="Tipp" title="Gut zu wissen">Verträge werden aus Lastschriften erkannt.</lc-callout>`,
+  }),
+};
+

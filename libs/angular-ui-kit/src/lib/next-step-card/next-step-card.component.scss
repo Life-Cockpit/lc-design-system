@@ -1,5 +1,12 @@
+// The host is a size container: the narrow layout (TD-1) follows the card's
+// own width, not the viewport, so the card works in a phone page, a side
+// column and a dialog alike. A size container contributes no intrinsic width,
+// so the host always takes the full inline size of its parent (a centred
+// flex column would otherwise shrink it to nothing).
 :host {
   display: block;
+  inline-size: 100%;
+  container: lc-next-step-card / inline-size;
 }
 
 .lc-next-step-card {
@@ -59,11 +66,16 @@
     min-width: 0;
   }
 
+  // The title may be a div, h2 or h3 (`titleTag`): the look never changes.
   &__title {
+    margin: 0;
+    font-family: inherit;
     font-size: var(--typography-font-size-base, 1rem);
     font-weight: var(--typography-font-weight-semibold, 600);
+    line-height: var(--line-height-tight, 1.25);
     color: var(--color-text-primary);
     letter-spacing: -0.01em;
+    overflow-wrap: break-word;
   }
 
   &__message {
@@ -84,6 +96,18 @@
 
     :host ::ng-deep & > p {
       margin: 0.2rem 0 0;
+    }
+  }
+
+  // [slot='body']: deliberately no text styles of its own — a projected form
+  // field, list or description list keeps the kit's look instead of picking
+  // up the message's small secondary ink.
+  &__content {
+    margin-top: var(--lc-density-gap-sm, 0.5rem);
+    min-width: 0;
+
+    &:empty {
+      display: none;
     }
   }
 
@@ -144,14 +168,15 @@
     flex-wrap: wrap;
     gap: var(--lc-density-gap-sm, 0.5rem);
     margin-left: auto;
+
+    // Nothing to act on: no box, so the narrow grid gets no empty row.
+    &--empty {
+      display: none;
+    }
   }
 
   &__actions-slot {
     display: contents;
-
-    &:empty {
-      display: none;
-    }
   }
 
   // The external link borrows the secondary button look (button styles are
@@ -161,5 +186,247 @@
     align-items: center;
     gap: 0.375rem;
     text-decoration: none;
+  }
+}
+
+// ── Full-row actions ────────────────────────────────────────────────────────
+// Direct actions (built-in, or projected straight into the slot) and a
+// projected wrapper grow to share the row; an lc-button's inner <button>
+// fills its host. Used under `:host ::ng-deep`, because the actions are
+// projected content.
+@mixin stretched-actions {
+  > *,
+  > .lc-next-step-card__actions-slot > * {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  > lc-button > .btn,
+  > .lc-next-step-card__actions-slot > lc-button > .btn {
+    width: 100%;
+  }
+}
+
+// A projected `fullWidth` action gets its own row at every card width.
+:host ::ng-deep .lc-next-step-card__actions:has(.btn-full-width) {
+  flex: 1 1 100%;
+  margin-left: 0;
+  @include stretched-actions;
+}
+
+// actionsLayout="stacked": always their own row, one per line, equal width.
+.lc-next-step-card--actions-stacked .lc-next-step-card__actions {
+  flex: 1 1 100%;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 0.5rem;
+  margin-left: 0;
+}
+
+:host ::ng-deep .lc-next-step-card--actions-stacked .lc-next-step-card__actions {
+  @include stretched-actions;
+}
+
+// ── Soft variant (LK-4, the "Weite" card) ──────────────────────────────────
+// Tinted fill per tone, no rail, border or shadow; a white bubble with a 1 px
+// ring. Fallbacks keep the card readable until the "Weite" tokens exist.
+.lc-next-step-card--soft {
+  --lc-nsc-bubble: var(--color-bubble, var(--color-surface));
+  --lc-nsc-ring: var(--color-bubble-ring, var(--color-border-strong));
+  --lc-nsc-ink: var(--color-bubble-icon, var(--color-link, var(--color-primary)));
+  --lc-nsc-fill: var(--color-next-step-soft-neutral, var(--color-surface-muted));
+
+  align-items: center;
+  gap: 1.25rem;
+  padding: 1.5rem 2rem;
+  background: var(--lc-nsc-fill);
+  border: 0;
+  border-radius: 1.5rem;
+  box-shadow: none;
+
+  &.lc-next-step-card--primary {
+    --lc-nsc-fill: var(--color-next-step-soft-primary, var(--color-primary-subtle));
+  }
+
+  // Semantic tones: the tone's subtle fill, its ink in the bubble and a ring
+  // mixed from the tone colour (warning: about #F1D3A7 on white).
+  &.lc-next-step-card--success {
+    --lc-nsc-fill: var(--color-next-step-soft-success, var(--color-success-subtle));
+    --lc-nsc-ink: var(--color-on-success-subtle);
+    --lc-nsc-ring: color-mix(in srgb, var(--color-success) 45%, var(--lc-nsc-bubble));
+  }
+
+  &.lc-next-step-card--warning {
+    --lc-nsc-fill: var(--color-next-step-soft-warning, var(--color-warning-subtle));
+    --lc-nsc-ink: var(--color-on-warning-subtle);
+    --lc-nsc-ring: color-mix(in srgb, var(--color-warning) 45%, var(--lc-nsc-bubble));
+  }
+
+  &.lc-next-step-card--info {
+    --lc-nsc-fill: var(--color-info-subtle);
+    --lc-nsc-ink: var(--color-on-info-subtle);
+    --lc-nsc-ring: color-mix(in srgb, var(--color-info) 45%, var(--lc-nsc-bubble));
+  }
+
+  .lc-next-step-card__icon {
+    width: 3rem;
+    height: 3rem;
+    background: var(--lc-nsc-bubble);
+    box-shadow: 0 0 0 1px var(--lc-nsc-ring);
+    color: var(--lc-nsc-ink);
+  }
+
+  .lc-next-step-card__title {
+    font-size: 1.25rem;
+    font-weight: var(--font-weight-bold, 700);
+    line-height: 1.2;
+    letter-spacing: -0.025em;
+  }
+
+  .lc-next-step-card__message,
+  .lc-next-step-card__custom-message {
+    margin: 0;
+    font-size: var(--font-size-base, 1rem);
+    line-height: 1.5;
+  }
+
+  .lc-next-step-card__content {
+    margin-top: 0;
+  }
+
+  // The meta line is a plain footer line: no divider in the soft card.
+  .lc-next-step-card__meta {
+    gap: 0.625rem;
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
+    font-size: var(--font-size-sm, 0.875rem);
+    line-height: 1.5;
+  }
+
+  .lc-next-step-card__actions {
+    gap: 0.75rem;
+  }
+
+  &.lc-next-step-card--actions-stacked .lc-next-step-card__actions {
+    gap: 0.5rem;
+  }
+}
+
+// ── Narrow layout (TD-1): below 480 px of card width ───────────────────────
+// (a) icon and title share the first row, everything else spans the full
+// inner width below; (b) the actions take their own row and stretch;
+// (c) the inline padding drops from padding-lg to padding-md.
+@container lc-next-step-card (width < 30rem) {
+  .lc-next-step-card {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    column-gap: var(--lc-nsc-narrow-icon-gap, var(--lc-density-gap-md, 1rem));
+    row-gap: var(--lc-nsc-narrow-row-gap, var(--lc-density-gap-sm, 0.5rem));
+    padding: var(--lc-density-padding-md, var(--spacing-4, 1rem));
+  }
+
+  // The body dissolves, so its children become grid items of the card.
+  .lc-next-step-card__body {
+    display: contents;
+  }
+
+  .lc-next-step-card__icon {
+    grid-column: 1;
+  }
+
+  .lc-next-step-card__title {
+    grid-column: 2;
+  }
+
+  .lc-next-step-card__message,
+  .lc-next-step-card__custom-message,
+  .lc-next-step-card__content,
+  .lc-next-step-card__blockers,
+  .lc-next-step-card__meta,
+  .lc-next-step-card__actions {
+    grid-column: 1 / -1;
+    margin-top: 0;
+  }
+
+  .lc-next-step-card__message {
+    margin: 0;
+  }
+
+  .lc-next-step-card__actions {
+    margin-left: 0;
+    padding-top: var(--lc-nsc-narrow-actions-offset, var(--lc-density-gap-sm, 0.5rem));
+  }
+
+  :host ::ng-deep .lc-next-step-card__actions {
+    @include stretched-actions;
+  }
+
+  .lc-next-step-card--soft {
+    --lc-nsc-narrow-icon-gap: 0.875rem;
+    --lc-nsc-narrow-row-gap: 0.875rem;
+    --lc-nsc-narrow-actions-offset: 0.25rem;
+
+    padding: 1.5rem;
+  }
+}
+
+// ── Soft variant, wide card ────────────────────────────────────────────────
+// Body as a column; on desktop viewports the "Weite" type and geometry:
+// 1024–1439 px radius 28, padding 32/36, bubble 56, title 24, message 17;
+// from 1440 px padding 36/40, bubble 60, title 28, message 18.
+@container lc-next-step-card (width >= 30rem) {
+  .lc-next-step-card--soft .lc-next-step-card__body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  @media (min-width: 64rem) {
+    .lc-next-step-card--soft {
+      gap: 1.75rem;
+      padding: 2rem 2.25rem;
+      border-radius: 1.75rem;
+
+      .lc-next-step-card__icon {
+        width: 3.5rem;
+        height: 3.5rem;
+      }
+
+      .lc-next-step-card__title {
+        font-size: 1.5rem;
+      }
+
+      .lc-next-step-card__message,
+      .lc-next-step-card__custom-message {
+        font-size: 1.0625rem;
+      }
+
+      .lc-next-step-card__meta {
+        font-size: var(--font-size-base, 1rem);
+      }
+    }
+  }
+
+  @media (min-width: 90rem) {
+    .lc-next-step-card--soft {
+      padding: 2.25rem 2.5rem;
+
+      .lc-next-step-card__icon {
+        width: 3.75rem;
+        height: 3.75rem;
+      }
+
+      .lc-next-step-card__title {
+        font-size: 1.75rem;
+      }
+
+      .lc-next-step-card__message,
+      .lc-next-step-card__custom-message {
+        font-size: var(--font-size-lg, 1.125rem);
+      }
+    }
   }
 }

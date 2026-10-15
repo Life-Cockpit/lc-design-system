@@ -21,8 +21,12 @@ import {
   type GanttTask, type KanbanColumn, type ListItem, type Notification, type PipelineStep,
   type SelectOption, type StageItem, type StepperStep, type TableColumn, type TimelineItem,
   type ToggleOption, type TreeNode,
-} from '@life-cockpit/angular-ui-kit';
-import { ButtonLinkComponent, type HeaderNavItem } from '@life-cockpit/angular-ui-kit';
+} from '@lifecorner/angular-ui-kit';
+import { ButtonLinkComponent, type HeaderNavItem } from '@lifecorner/angular-ui-kit';
+import {
+  AppPageComponent, AppShellComponent, BottomNavComponent, CopyFieldComponent, ProviderButtonComponent,
+  RadioComponent, RadioGroupComponent, type BottomNavItem,
+} from '@lifecorner/angular-ui-kit';
 
 @Component({
   selector: 'lc-compat-root',
@@ -45,12 +49,20 @@ import { ButtonLinkComponent, type HeaderNavItem } from '@life-cockpit/angular-u
     ToolbarComponent, TooltipDirective, TreeViewComponent, TypographyComponent,
     WaterfallChartComponent,
     ButtonLinkComponent,
+    // 3.3
+    AppPageComponent, AppShellComponent, BottomNavComponent, CopyFieldComponent, ProviderButtonComponent,
+    RadioComponent, RadioGroupComponent,
   ],
   templateUrl: './app.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class App {
   protected readonly checked = signal(true);
+  protected readonly role = signal('member');
+  protected readonly bottomNav: BottomNavItem[] = [
+    { id: 'today', label: 'Heute', icon: 'home', route: '/' },
+    { id: 'household', label: 'Haushalt', icon: 'users', route: '/household' },
+  ];
   protected readonly volume = signal(40);
   protected readonly selectOptions: SelectOption[] = [
     { value: 'a', label: 'Alpha' },

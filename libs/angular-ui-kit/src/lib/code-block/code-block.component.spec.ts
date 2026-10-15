@@ -164,6 +164,15 @@ describe('CodeBlockComponent', () => {
       expect(scss).toMatch(/\.code-block[\s\S]*__line-number[\s\S]*color:\s*var\(--lc-code-block-muted\)/);
     });
 
+    it('gives the copy button a 44 px target (AC-9) without a taller header', () => {
+      const copy = scss.match(/&__copy \{([^}]*)/)?.[1] ?? '';
+      expect(copy).toMatch(/min-height: 2\.75rem;/);
+      expect(copy).toMatch(/min-width: 2\.75rem;/);
+      const header = scss.match(/&__header \{([^}]*)/)?.[1] ?? '';
+      expect(header).toMatch(/min-height: 2\.75rem;/);
+      expect(header).toMatch(/padding: 0 0\.25rem 0 1rem;/);
+    });
+
     it('does not draw the light-theme page border around the dark box', () => {
       expect(scss).not.toMatch(/var\(--color-border\)/);
       expect(scss).toMatch(/border:\s*1px solid var\(--lc-code-block-border\)/);

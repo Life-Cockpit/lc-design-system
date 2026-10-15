@@ -24,7 +24,34 @@ const meta: Meta<HeaderComponent> = {
     logoutClick: { action: 'logoutClick', description: 'Emitted when logout is clicked' },
     profileClick: { action: 'profileClick', description: 'Emitted when the profile item is clicked' },
     title: { description: 'Application or page title' },
-    subtitle: { description: 'Secondary text below the title' },
+    subtitle: {
+      description:
+        'Secondary text below the title (e.g. a household name), shown as typed: one line, cut with "…" when it does not fit; the full text is its `title` attribute and stays readable for screen readers. `--lc-header-subtitle-max-width` caps it',
+    },
+    variant: {
+      control: 'select',
+      options: ['default', 'transparent'],
+      description:
+        '`default`: the bar on `--color-surface` with a bottom border. `transparent`: no background, no border — the header sits on the page; pair it with `[sticky]="false"`',
+      table: { defaultValue: { summary: 'default' } },
+    },
+    userMenuTrigger: {
+      control: 'select',
+      options: ['icon', 'avatar'],
+      description:
+        'What the account button shows: `icon` (user icon and chevron, at least 44 px high) or `avatar` (the initials of `userName` in a 48 px round button; the avatar is decorative, the button is named by `userMenuAriaLabel`)',
+      table: { defaultValue: { summary: 'icon' } },
+    },
+    userAvatarSrc: {
+      description: 'Photo for the account avatar (trigger and menu header); the initials show when empty or broken',
+      table: { defaultValue: { summary: "''" } },
+    },
+    userAvatarColor: {
+      control: 'select',
+      options: ['default', 'member-1', 'member-2', 'member-3', 'member-4', 'member-5', 'member-6'],
+      description: 'Colour of the account avatar: `default` or a member colour `member-1` … `member-6` (white initials)',
+      table: { defaultValue: { summary: 'default' } },
+    },
     logo: { description: 'URL to a logo image' },
     logoSize: {
       control: 'select',
@@ -40,8 +67,8 @@ const meta: Meta<HeaderComponent> = {
         'Overall header height — useful to align the header with a sidebar brand block (`sm` 56px, `md` 64px, `lg` 80px, `xl` 112px).',
       table: { defaultValue: { summary: 'md' } },
     },
-    userName: { description: 'Displayed user name (for the profile area)' },
-    userEmail: { description: 'User email shown in the profile dropdown' },
+    userName: { description: 'Displayed user name (menu header; initials of the avatar trigger). Wraps in the menu, never cut' },
+    userEmail: { description: 'User email shown in the profile dropdown. Wraps anywhere, never cut; the menu is at most `min(18rem, 100vw − 2rem)` wide' },
     showHamburger: { description: 'Shows a hamburger menu button (for mobile/sidebar toggle)' },
     sidenavOpen: {
       control: 'boolean',
@@ -111,7 +138,7 @@ const meta: Meta<HeaderComponent> = {
     docs: {
       description: {
         component: `
-AppHeaderComponent - Global application header for Life-Cockpit shell
+AppHeaderComponent - Global application header for the LifeCorner shell
 
 **Key Features:**
 - Clickable logo for home navigation
@@ -147,6 +174,14 @@ AppHeaderComponent - Global application header for Life-Cockpit shell
 - The \`ThemeService\` — which reads and writes the theme class and \`localStorage\` —
   is only created when \`showThemeButton\` is on.
 
+**App shell ("Weite", 3.3)** (see the *App Shell* stories):
+- \`variant="transparent"\` — no background and no border; use it with \`[sticky]="false"\`.
+- \`userMenuTrigger="avatar"\` — the account button is the person's initials avatar
+  (\`userAvatarColor\`, \`userAvatarSrc\`) in a 48 px round button; the icon trigger is
+  44 px high in every density.
+- The subtitle is one line with "…", its full text in \`title\`, shown as typed.
+- The account menu is at most \`min(18rem, 100vw − 2rem)\` wide; name and email wrap.
+
 **Labels** (English defaults, one input each): \`homeAriaLabel\`, \`hamburgerAriaLabel\`,
 \`userMenuAriaLabel\`, \`navAriaLabel\`, \`themeToDarkAriaLabel\`, \`themeToLightAriaLabel\`,
 \`contextAriaLabel\`, \`profileLabel\`, \`logoutLabel\`.
@@ -162,12 +197,12 @@ export default meta;
 type Story = StoryObj<HeaderComponent>;
 
 export const Default: Story = {
-  args: { title: 'Life-Cockpit', subtitle: 'Design System', userName: 'Sarah Connor', userEmail: 'sarah@example.com' },
+  args: { title: 'LifeCorner', subtitle: 'Design System', userName: 'Sarah Connor', userEmail: 'sarah@example.com' },
 };
 
 export const WithHamburger: Story = {
   name: 'With Hamburger Menu',
-  args: { title: 'Life-Cockpit', subtitle: 'Dashboard', userName: 'Sarah Connor', userEmail: 'sarah@example.com', showHamburger: true },
+  args: { title: 'LifeCorner', subtitle: 'Dashboard', userName: 'Sarah Connor', userEmail: 'sarah@example.com', showHamburger: true },
 };
 
 export const AboveSidenav: Story = {
@@ -194,7 +229,7 @@ export const AboveSidenav: Story = {
     template: `
       <div style="display: flex; flex-direction: column; height: 480px; border: 1px solid var(--color-border);">
         <lc-header
-          title="Life-Cockpit"
+          title="LifeCorner"
           [showHamburger]="true"
           [sidenavOpen]="!collapsed"
           sidenavId="story-sidenav"
@@ -220,12 +255,12 @@ export const AboveSidenav: Story = {
 
 export const WithThemeToggle: Story = {
   name: 'With Theme Toggle',
-  args: { title: 'Life-Cockpit', userName: 'Sarah Connor', userEmail: 'sarah@example.com', showThemeButton: true },
+  args: { title: 'LifeCorner', userName: 'Sarah Connor', userEmail: 'sarah@example.com', showThemeButton: true },
 };
 
 export const FullFeatured: Story = {
   name: 'All Options Enabled',
-  args: { title: 'Life-Cockpit', subtitle: 'Project Dashboard', userName: 'Sarah Connor', userEmail: 'sarah@example.com', showHamburger: true, showThemeButton: true, showProfileMenuItem: true, contextName: 'Acme Corp', contextLabel: 'Tenant' },
+  args: { title: 'LifeCorner', subtitle: 'Project Dashboard', userName: 'Sarah Connor', userEmail: 'sarah@example.com', showHamburger: true, showThemeButton: true, showProfileMenuItem: true, contextName: 'Acme Corp', contextLabel: 'Tenant' },
 };
 
 export const Minimal: Story = {
@@ -241,7 +276,7 @@ export const WithLongTitle: Story = {
 export const DarkTheme: Story = {
   name: 'Dark Theme',
   args: {
-    title: 'Life-Cockpit',
+    title: 'LifeCorner',
     subtitle: 'Design System',
     userName: 'Sarah Connor',
     userEmail: 'sarah@example.com',
@@ -253,7 +288,7 @@ export const DarkTheme: Story = {
 export const LightThemeExplicit: Story = {
   name: 'Light Theme (Explicit)',
   args: {
-    title: 'Life-Cockpit',
+    title: 'LifeCorner',
     subtitle: 'Dashboard',
     userName: 'Sarah Connor',
     userEmail: 'sarah@example.com',
@@ -264,7 +299,7 @@ export const LightThemeExplicit: Story = {
 export const WithOrgInfo: Story = {
   name: 'With Context Info (Organization)',
   args: {
-    title: 'Life-Cockpit',
+    title: 'LifeCorner',
     subtitle: 'Dashboard',
     userName: 'Sarah Connor',
     userEmail: 'sarah@example.com',
@@ -276,7 +311,7 @@ export const WithOrgInfo: Story = {
 export const WithTenantInfo: Story = {
   name: 'With Context Info (Tenant)',
   args: {
-    title: 'Life-Cockpit',
+    title: 'LifeCorner',
     userName: 'Sarah Connor',
     userEmail: 'sarah@example.com',
     contextName: 'Production',
@@ -288,7 +323,7 @@ export const WithTenantInfo: Story = {
 export const WithOrgNameOnly: Story = {
   name: 'Context Name Without Label',
   args: {
-    title: 'Life-Cockpit',
+    title: 'LifeCorner',
     userName: 'Sarah Connor',
     userEmail: 'sarah@example.com',
     contextName: 'Acme Corp',
@@ -312,7 +347,7 @@ export const LogoSizes: Story = {
           <div>
             <div style="font-size: 12px; color: var(--color-text-secondary); margin: 0 24px 4px;">logoSize="{{ size }}"</div>
             <lc-header
-              title="Life-Cockpit"
+              title="LifeCorner"
               subtitle="Design System"
               [logoSize]="size"
               userName="Sarah Connor"
@@ -401,7 +436,7 @@ export const TranslatedLabels: Story = {
     },
   },
   args: {
-    title: 'Life-Cockpit',
+    title: 'LifeCorner',
     titleTag: 'span',
     userName: 'Sarah Connor',
     userEmail: 'sarah@example.com',
@@ -416,3 +451,76 @@ export const TranslatedLabels: Story = {
     logoutLabel: 'Abmelden',
   },
 };
+
+/** Household frame on a phone ("Weite"): transparent header, long household name, the member's initials avatar. */
+export const AppShellPhone: Story = {
+  name: 'App Shell on a Phone (transparent, avatar)',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'The header on the page: no surface, no border, not sticky. The household name ends with "…" (hover shows it in full); the account button is the initials avatar in the member colour, named "Menü für …". Open the menu: the 49-character name and the 42-character email wrap in a menu that stays inside the 360 px screen.',
+      },
+    },
+  },
+  args: {
+    title: 'Produkt',
+    titleTag: 'span',
+    subtitle: 'Familie Apfelbaum-Kieselbacher-Morgentau',
+    size: 'sm',
+    logoSize: 'sm',
+    variant: 'transparent',
+    sticky: false,
+    userMenuTrigger: 'avatar',
+    userAvatarColor: 'member-1',
+    userName: 'Johanna-Friederike Apfelbaum-Kieselbacher-Morgentau',
+    userEmail: 'johanna.apfelbaum-kieselbacher@example.org',
+    userMenuAriaLabel: 'Menü für Johanna-Friederike Apfelbaum-Kieselbacher-Morgentau',
+    menuSize: 'md',
+    profileLabel: 'Einstellungen',
+    logoutLabel: 'Abmelden',
+    homeAriaLabel: 'Produkt – Startseite',
+  },
+  render: (args) => ({
+    props: args,
+    template: `
+      <div style="width: 360px; height: 420px; background: var(--color-background); border: 1px solid var(--color-border); border-radius: 12px;">
+        <lc-header
+          [title]="title" [titleTag]="titleTag" [subtitle]="subtitle" [size]="size" [logoSize]="logoSize"
+          [variant]="variant" [sticky]="sticky" [userMenuTrigger]="userMenuTrigger" [userAvatarColor]="userAvatarColor"
+          [userName]="userName" [userEmail]="userEmail" [userMenuAriaLabel]="userMenuAriaLabel" [menuSize]="menuSize"
+          [profileLabel]="profileLabel" [logoutLabel]="logoutLabel" [homeAriaLabel]="homeAriaLabel"
+          (profileClick)="profileClick()" (logoutClick)="logoutClick()" />
+      </div>`,
+  }),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const trigger = canvas.getByRole('button', { name: /^Menü für/ });
+    await userEvent.click(trigger);
+    await expect(canvas.getByRole('menu')).toBeTruthy();
+    const name = canvasElement.querySelector('.lc-header__menu-user-name') as HTMLElement;
+    await expect(name.textContent?.trim()).toBe('Johanna-Friederike Apfelbaum-Kieselbacher-Morgentau');
+  },
+};
+
+/** The same header from 1024 px: `size="md"`, the subtitle has room. */
+export const AppShellDesktop: Story = {
+  name: 'App Shell on Desktop (transparent, avatar)',
+  args: {
+    title: 'Produkt',
+    titleTag: 'span',
+    subtitle: 'Unser Haushalt',
+    size: 'md',
+    variant: 'transparent',
+    sticky: false,
+    userMenuTrigger: 'avatar',
+    userAvatarColor: 'member-2',
+    userName: 'Tom Ek',
+    userEmail: 'tom@example.org',
+    userMenuAriaLabel: 'Menü für Tom Ek',
+    menuSize: 'md',
+    profileLabel: 'Einstellungen',
+    logoutLabel: 'Abmelden',
+  },
+};
+

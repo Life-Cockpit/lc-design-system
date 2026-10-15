@@ -2,6 +2,351 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.3.0] - 2026-10-16
+
+The **LifeCorner Design System**: the kit's new name and brand (Edu and the
+LifeCorner lockup), and the F1 look **"Weite"** — a white sky, teal hairlines,
+soft next-step cards, member colours, a page-title scale and a pure-CSS
+horizon, with a theme that follows the OS without a script. Plus the gaps the
+first LifeCorner screens (sign-in, Today, household, account settings) found
+in the kit: an app shell with a bottom bar and a docked right column, a "Sign
+in with Google" button, a radio group, a copy field, and a round of
+accessibility fixes. Gap IDs refer to the life-os UX concepts. No API breaks:
+the selectors, `LC_*` symbols and existing inputs stay; new inputs are
+optional and keep the 3.2 behaviour. Where the look or an accessibility fix
+changes what you see, *Changed* or *Fixed* says so.
+
+### Compatibility
+
+- **Angular 21 and 22, unchanged** (`^21.0.0 || ^22.0.0`). The consumer check
+  (`tools/compat/check-angular-majors.mjs`) now also prerenders the new parts —
+  `lc-app-shell` with `lc-app-page` and the horizon, `lc-bottom-nav`,
+  `lc-provider-button`, `lc-radio-group`, `lc-copy-field`, a soft
+  `lc-next-step-card` and a display `lc-page-header` with its overline — and
+  passes on Angular 21.0.9, 21.2.25, 22.0.8 and 22.2.3.
+
+### Renamed
+
+- **The package is `@lifecorner/angular-ui-kit`** (ADR-0035 of life-os).
+  `@life-cockpit/angular-ui-kit` stops at 3.2.x and is deprecated with a
+  pointer to the new name. The `lc-` selectors, the `LC_*` symbols (such as
+  `LC_LOGO_BASE_PATH`), the component, service and token names stay; "LC"
+  stays the abbreviation, and the repository and the MCP server keep the name
+  `lc-design-system`. The docs site and the MCP endpoint stay on
+  `design.life-cockpit.de` until `lifecorner.de` is registered, then move to
+  `design.lifecorner.de`.
+
+  **Migration** — search and replace, nothing else:
+
+  | What | Up to 3.2.x | From 3.3.0 |
+  |---|---|---|
+  | install | `npm install @life-cockpit/angular-ui-kit` | `npm install @lifecorner/angular-ui-kit` |
+  | imports | `from '@life-cockpit/angular-ui-kit'` | `from '@lifecorner/angular-ui-kit'` |
+  | styles | `@use '@life-cockpit/angular-ui-kit/styles'` (and `/styles/_*.scss`) | `@use '@lifecorner/angular-ui-kit/styles'` (and `/styles/_*.scss`) |
+  | icon list | `@life-cockpit/angular-ui-kit/icon-names.json` | `@lifecorner/angular-ui-kit/icon-names.json` |
+  | assets to copy | `node_modules/@life-cockpit/angular-ui-kit/src/assets/` | `node_modules/@lifecorner/angular-ui-kit/src/assets/` |
+  | logo files | `life-cockpit-logo.svg`, `life-cockpit-emblem.svg` (removed) | `lifecorner-logo.svg`, `lifecorner-logo-on-dark.svg`, `lifecorner-emblem*.svg` |
+  | bundle files | `fesm2022/life-cockpit-angular-ui-kit.mjs`, `types/life-cockpit-angular-ui-kit.d.ts` | `fesm2022/lifecorner-angular-ui-kit.mjs`, `types/lifecorner-angular-ui-kit.d.ts` |
+
+  Apps that copy the assets with a glob keep working; an app that links the
+  old logo files directly switches to the new names. Package metadata:
+  description "LifeCorner Design System – Angular UI component library",
+  keyword `lifecorner`, repository `github.com/LifeCorner/lc-design-system`
+  (old URLs redirect). Renamed everywhere visible: READMEs, the docs pages,
+  Storybook (title and logo), the story sample texts, `tools/compat` and the
+  publish workflow.
+
+### Added
+
+- **`lc-app-shell` and `lc-app-page` — the app frame, phone first, with the
+  document scrolling** (AS-10, LK-6; `AppShellComponent`,
+  `AppPageComponent`). The shell lays out its slots on one CSS grid without
+  an overflow or a fixed height, so the window scrolls (iOS status-bar tap,
+  address-bar collapse and pull-to-refresh keep working): `[shell-header]`
+  (scrolls away; safe-area insets), `[shell-nav]` (the docked side navigation
+  from 1024 px in a 240 / 248 / 280 px column, sticky once the header is gone;
+  `--lc-app-shell-nav-width`), the page, `[shell-bottom-nav]` (below 1024 px;
+  its height is kept free, `--lc-app-shell-bottom-clearance`) and
+  `[shell-footer]`. `horizon` closes the page with the `.lc-horizon` block,
+  the footer and the floating bar resting on its land. The shell paints the
+  sky (`--lc-app-shell-bg`, `--lc-app-shell-bg-image`). `lc-app-page` is the
+  page: `<main [id]="mainId">` with the content as a centred column at most
+  `contentMaxWidth` wide (880 px; side padding 24 · 32 · 48 · 56 · 72 · 96 px
+  at 360 · 640 · 1024 · 1280 · 1440 · 1920 px), and `[page-aside]`, a right
+  column after `<main>` in the DOM, docked to the window's right edge from
+  1280 px (360 / 400 / 460 px, `--lc-app-page-aside-width`) with a tint and a
+  hairline that fade downwards and start behind a transparent header. The
+  aside renders only with an accessible name (`asideLabelledby` or
+  `asideAriaLabel`). Breakpoints are media queries, so the layout holds before
+  JavaScript (SSR, prerendering). Stories: *Layout / App Shell*.
+- **`lc-bottom-nav` — the bottom navigation bar for phones and tablets**
+  (AS-1, LK-5; `BottomNavComponent`, `BottomNavItem`, `BottomNavVariant`).
+  Links, not tabs: `<nav aria-label><ul><li><a routerLink>` with
+  `aria-current="page"`, the current item following `activeRoute` by its first
+  path segment. 64 px items with a 24 px icon over an always visible 12 px
+  label that wraps at 200 % text; the current item sits on a 56 × 32 px pill
+  with a heavier icon and a bold label (more than colour, WCAG 1.4.1). Inputs:
+  `items` (a `NavigationItem[]` fits), `activeRoute`, `ariaLabel`, `variant`
+  (`docked` | `floating` — the "Weite" pill, inset 16 px above the safe area,
+  radius 28 px), `fixed`, `maxItems` (5; a "More" entry from the sixth
+  destination), `moreLabel`, `moreIcon`, `moreRoute`, `badgeAriaLabel`;
+  outputs `reselect` and `moreClick`. Below `lc-modal` and `lc-menu`
+  (`z-index` 900); no transitions under reduced motion; hooks
+  `--lc-bottom-nav-*`. Stories: *Navigation / Bottom Nav*.
+- **`lc-provider-button` — "Sign in with Google" to Google's branding
+  guidelines** (SI-1, `ProviderButtonComponent`; guideline last updated
+  2026-07-07, checked 2026-10-15). The standard "G" from Google's asset
+  bundle, unchanged at 20 px and inlined as a PNG data URI — no Google script
+  and no request to Google before the tap (apps need `img-src data:`).
+  Google's colours for `appearance` `light`, `dark` and `neutral`; `auto`
+  (default) follows the app theme, `system` included. Google Sans Medium 14/20
+  (apps self-host it — it is SIL OFL 1.1 since 2025; the kit loads no fonts),
+  padding 12 · logo · 10 · title · 12. Inputs: `provider` (`google`; Apple
+  joins later without an API change), `text` (`sign-in` | `sign-up` |
+  `continue`), `label` (the localized title, e.g. „Weiter mit Google“), `size`
+  (`md` 40 px, `lg` 48.5 px), `shape`, `fullWidth`, `iconOnly`, `loading`,
+  `disabled`, `type` (`submit` for the form POST that starts the redirect);
+  output `clicked`. Stories: *Form / Provider Button*.
+- **`lc-radio-group`** (AC-6, `RadioGroupComponent`): a `<fieldset>` named by
+  its `<legend>` around `lc-radio`s, with one `helpText` and one `error` for
+  the group (`aria-describedby`; the error is `role="alert"` and marks every
+  radio `aria-invalid`). It gives its radios one `name`, `required`,
+  `disabled` and the invalid state, and holds the selection: `[(value)]` or a
+  form control. Inputs also `legendHidden`, `requiredIndicator` (one `*` after
+  the legend), `requiredAriaLabel`, `orientation`. Exports
+  `RadioGroupOrientation`, `RADIO_GROUP`, `RadioGroupContext`. `lc-radio`
+  alone works as before. Stories: *Form / Radio Group*.
+- **`lc-copy-field`** (AC-11, `CopyFieldComponent`): a value to copy
+  (invitation link, token, command), read-only and wrapping, with a 48.5 px
+  copy button that says "Copied" for two seconds and one polite announcement.
+  If the clipboard refuses, the value is selected for copying by hand and
+  `copyFailed` fires. Inputs `label`, `value`, `helperText`, `layout`
+  (`stacked` | `inline`, `CopyFieldLayout`), `showIcon`, `copyLabel`,
+  `copiedLabel`, `copiedAnnouncement`; outputs `copied`, `copyFailed`.
+  Stories: *Form / Copy Field*.
+- **Follow the OS without a script: `<html class="system">`** (G-6, was
+  AS-8). The light tokens apply by default and the dark set under
+  `prefers-color-scheme: dark`, from the first paint and with nothing stored;
+  it switches live and sets `color-scheme: light dark`. No root class and
+  `.dark` stay dark, `.light` stays light. `ThemeService` mirrors a `system`
+  root (`currentTheme`, `isDark`, meta theme-color) without adding a class;
+  `setTheme()` replaces it; new `ThemeService.SYSTEM_CLASS`. Apps that set the
+  theme from a head script before first paint can drop it.
+- **"Weite" tokens** (LK-1, LK-4, LK-5, LK-10, LK-11), light and dark:
+  `--color-background-low`, `--color-overline`, `--color-on-surface-selected`,
+  `--color-hairline`, `--color-next-step-soft-neutral` / `-primary` /
+  `-success` / `-warning`, `--color-bubble` / `-ring` / `-icon`,
+  `--color-muted-tile` / `-border` / `-icon`, `--color-floating-bar-surface` /
+  `-border`, `--shadow-floating-bar`, `--shadow-auth-card`,
+  `--color-skeleton` / `-highlight`. `theme-contrast.spec.ts` asserts the ink
+  over every "Weite" surface; worst cases light / dark: primary 15.25 / 12.63:1, secondary
+  6.50 / 8.89:1, tertiary 5.02 / 5.34:1, link 5.34 / 8.61:1, overline
+  7.85 / 7.27:1.
+- **Member colours** (LK-7): `--color-member-1` … `-6` — teal `#1A6A79`,
+  rust-600 `#B04A22` (a new step; accent rust gives white only 4.31:1), violet
+  `#4E3F84`, sage `#5F7150`, berry `#9E3846`, slate `#5A798C` — the same in
+  both themes, with white initials (`--color-on-member`, 4.62–8.87:1). On
+  avatars: `lc-avatar` `color` (`AvatarColor`) and `ring` (3 px, 2 px for
+  `xs`/`sm`; no layout shift), `AVATAR_MEMBER_COLORS` in join order;
+  `lc-avatar-group` `AvatarGroupItem.color`, `ring` and `overlap`
+  (`[ring]="true" overlap="4px"` is the "Weite" member row); `lc-list`
+  `ListItem.avatarColor`; `lc-avatar` `decorative` inside a control that names
+  itself. Colour is never the only cue. Stories: *Avatar / Member Colors*,
+  *Avatar Group / Member Row*, *List / Member Avatars*.
+- **The horizon `.lc-horizon`** (LK-1): the page ending of the "Weite" look —
+  sky fade, a horizon line fading at both ends, a half sun with ring and halo,
+  the land — in pure CSS, with a night horizon in dark (`--color-horizon-line`,
+  `--color-land-1…3`, `--color-sun-1…3`, `--color-sun-ring`,
+  `--color-sun-halo`). Fills the rest of a flex-column page; geometry hooks
+  `--lc-horizon-land`, `--lc-horizon-sun-radius`, `--lc-horizon-sun-x`;
+  `.lc-horizon__land` pins a compact footer to the land; no decoration in
+  forced colours. Docs: *Design Tokens / Horizon*.
+- **Page-title scale** (LK-2, LK-3): `--font-size-7xl` (72 px), responsive
+  `--font-size-display` (40 · 52 · 56 · 60 · 72 px at 360 · 1024 · 1280 · 1440 ·
+  1920), `--font-size-title` (32 · 40 · 40 · 44 · 48), `--font-size-auth-title`
+  (30 · 34), `--font-size-overline` (13 · 14 · 14 · 15 · 16) with line heights
+  and letter spacing, and the classes `.lc-display`, `.lc-title`,
+  `.lc-auth-title`, `.lc-overline`. `lc-page-header` uses them: `size`
+  `title` | `display` | `auth` (`PageHeaderSize`; `default` stays 24 px) and
+  `overline` — a label above the title, uppercase through CSS only, after the
+  `<h1>` in the DOM so the title is read first. Stories: *Display with
+  overline*, *Title scale*, *Auth title*.
+- **`--color-field-border`** (SI-8): a form field's boundary at ≥ 3:1 —
+  light `#6B7280` (4.83:1 on white), dark `#93A4AD` (6.71:1 on a card).
+  `--color-border` is decorative only.
+- **`lc-next-step-card`**: `variant="soft"` (LK-4, `NextStepCardVariant`) —
+  the "Weite" card: a tinted fill per tone, no rail, border or shadow, a white
+  icon bubble with a ring, geometry growing from phone (radius 24, padding 24,
+  bubble 48, title 20) to 1440 px (padding 36/40, bubble 60, title 28);
+  `actionsLayout` (`inline` | `stacked`, TD-1), `[slot='body']` for form fields
+  and lists (TD-1), `titleTag` (`div` | `h2` | `h3`, TD-2), `actionSize`
+  (`sm` | `md` | `lg`) and `linkTarget` (`_blank` | `_self`) (G-12). Stories:
+  *Soft*, *Soft Tones*, *Narrow On Phone*, *Stacked Actions*, *Form In Body*,
+  *Large Built In Actions*.
+- **`lc-card`**: `borderRadius="xl"` (24 px; with `outlined`, the "Weite"
+  content card, LK-9), `variant="raised"` (the sign-in card: hairline and
+  `--shadow-auth-card`), `variant="dashed"` (the never-interactive "coming
+  soon" tile, LK-10; `CardVariant` exported) and `headingLevel` (2–6,
+  `CardHeadingLevel`; G-9, AC-7) — the same on `lc-empty-state`
+  (`EmptyStateHeadingLevel`).
+- **`lc-header`**: `userMenuTrigger="avatar"` (`HeaderUserMenuTrigger`; AS-2) —
+  the member's initials or `userAvatarSrc` photo in a 48 px button, coloured by
+  `userAvatarColor`, named by `userMenuAriaLabel`; `variant="transparent"`
+  (`HeaderVariant`, LK-8) for a header on the page. **`lc-sidenav`**
+  `variant="transparent"` (`SidenavVariant`, LK-8): no rail, 48 px pill items,
+  the current one on `--color-surface-selected`. **`lc-menu`** `maxWidth`.
+- **`lc-alert`** `iconAriaLabel` (AS-5) and `actionsLayout` (`inline` |
+  `stacked`, `AlertActionsLayout`; AS-11 — actions in their own row, one per
+  line below 576 px of alert width); **`lc-callout`** `icon` and
+  `iconAriaLabel` (G-24).
+- **`lc-modal`** `placement` (`center` | `auto` | `sheet`, `ModalPlacement`;
+  AC-4): a bottom sheet below 640 px — full width, top corners rounded, clear
+  of the safe area, at most `90dvh`, header and footer fixed while the body
+  scrolls. **`lc-confirm-dialog`** (AC-5): `closeAriaLabel`, `confirmLoading`,
+  `buttonSize` (`ConfirmDialogButtonSize`), `placement` and
+  `[slot='preview']`; `ConfirmService.confirm()` takes the first three too.
+- **`lc-list`**: `actionVariant`, `actionSize` and `ListItem.actionAriaLabel`
+  for row actions (AC-1), `clampDescription`. **`lc-description-list`** item
+  `datetime` and **`lc-timeline`** `headingLevel` and `TimelineItem.datetime`
+  (HS-3, G-11, AC-8): `<time datetime>` for times like „heute 18:05“, item
+  titles as headings.
+- **Text fields** (SI-2, WCAG 1.3.5): `lc-input`, `lc-email-input` and
+  `lc-password-input` take `autocomplete` (e.g. `username webauthn` for
+  passkeys in the email field), `name`, `autocapitalize`, `spellcheck` and
+  `enterkeyhint` (`InputAutocapitalize`, `InputEnterKeyHint`), and
+  `requiredIndicator` (SI-9). `lc-input` `readonlyWrap`, `lc-email-input`
+  `readonlyWrap` and `showIcon` (SI-10): a read-only value wraps instead of
+  being clipped. `lc-input` `charCountRemainingLabel`,
+  `charCountAnnounceThreshold`. `lc-password-input` (SI-3): `helperText`,
+  `minLength` and `strengthMode="length"` (`PasswordStrengthMode`; scores the
+  length only, as NIST SP 800-63B asks). `lc-verification-code-input` (SI-4,
+  SI-9): `gap` (`VerificationCodeInputGap`), `requiredIndicator` and `clear()`.
+- **35 more icons render inline** (G-7, AS-6): the Tabler artwork the website,
+  the app shell, sign-in, settings and household use, plus the kit's status
+  icons, inlined at build time (`icon-inline-tabler.data.ts`, about 24 KB), so
+  they render offline, at once and in prerendered HTML. New
+  `isInlineIconName(name, variant?)`.
+- **`lc-skeleton`** hooks `--lc-skeleton-bg` and `--lc-skeleton-highlight`.
+- **Docs**: *Design Tokens / Colors* (ink table with the 3.3 values, status
+  tints, borders, themes with `system`, "Weite"), *Typography* (page-title
+  scale), new *Horizon* and *Member Colours* pages; *Installation* with the
+  rename note and the `system` class.
+
+### Changed
+
+- **The "Weite" values** (LK-1, LK-11; the brand look). Light: the page is a
+  white sky — `--color-background` `#FFFFFF` (was `#F3F4F6`) and
+  `--app-background-image` `linear-gradient(180deg, #FFFFFF 55%, #F6FAFB)` (was
+  `none`; apply both: `background-color: var(--color-background);
+  background-image: var(--app-background-image)`), meta theme-color `#ffffff`;
+  `--color-text-tertiary` `#5C6672` (was `#6B7280`, 4.16–4.44:1 on the tints;
+  now ≥ 5.02:1 everywhere); `--color-surface-selected` `#E0F1F4` (was
+  `#F0F8FA`). Dark: content cards `--color-surface` `#101C26`
+  (`ColorSurfaceDarkBase`; was `#14222E`, which stays as the floating bar's
+  surface, a step above the cards — `ColorSurfaceDarkFloating`),
+  `--color-surface-selected` at 0.24 (was 0.12), a calmer violet glow (0.14,
+  was 0.18). Both: teal hairline borders — `--color-border` `#D7EBEF` (was
+  `#D1D5DB`) and `rgba(132,199,212,.14)` (was `rgba(255,255,255,.08)`). Cards
+  no longer stand off a grey page; they carry the hairline.
+- **`lc-logo` is the LifeCorner logo** (G-5, G-28): Edu, the emblem, and the
+  lockup (petrol `#1A6A79`, text outlined to paths, Plus Jakarta Sans Bold,
+  SIL OFL 1.1), each file under 5 KB (the old ones were 206 and 344 KB). Real
+  dark drawings instead of `filter: invert(1)`: with `colorMode="auto"` the
+  root theme picks the drawing (`system` included); the internal classes
+  `lc-logo--auto` / `lc-logo--dark` are gone. `xs` and `sm` emblems use a small
+  drawing. `alt` defaults to "LifeCorner". No filter transition;
+  `object-fit: contain`. Custom logos behave as in 3.2.
+- **Form fields draw their boundary with `--color-field-border`** (SI-8,
+  WCAG 1.4.11; an accessibility fix, so the look changes): `lc-input`,
+  `lc-email-input`, `lc-password-input`, `lc-textarea`, `lc-number-input`,
+  `lc-search-input`, `lc-verification-code-input`, `lc-select` (outline),
+  `lc-combobox`, `lc-datepicker`, `lc-date-range-picker`, `lc-tag-input` and
+  the `lc-radio` circle drew the decorative `--color-border` (about 1.3–1.5:1).
+  Hover darkens to `--color-text-secondary`. Disabled fields and `lc-select`
+  `filled` are unchanged.
+- **`<button>` labels wrap** (`lc-button`, SI-7, WCAG 1.4.4 / 1.4.10): `.btn`
+  was `white-space: nowrap`, so long (German) labels overflowed at 320 px or
+  200 % text. They now wrap onto centred lines like `a[lcButton]`'s; a label
+  that fits stays on one line, and in a tight flex row a button may now
+  shrink and wrap.
+- **`lc-alert` and `lc-callout`: the variant icon is decorative by default**
+  (AS-5, G-24): it was named by a hard-coded English word ("Warning", "Note"),
+  which a German page read out in English (WCAG 3.1.2). The title, text and
+  role carry the tone; set `iconAriaLabel` to name it.
+- **`lc-next-step-card` takes the full width of its parent** (TD-1): the host
+  is a size container (`inline-size: 100%`), so a card in a centred column now
+  fills it. Below 480 px of card width every card uses the narrow layout — the
+  icon beside the title, full-width text, the actions on their own row,
+  stretched — so `fullWidth` actions work.
+- **`lc-list` shows the pointer and hover only on `clickable` rows** (AC-3):
+  lists that handle `itemClick` should set `clickable`.
+- **`lc-timeline` is an ordered list** (G-11): `<ol>` of `<li>`, announced
+  with a count; the look is unchanged.
+- **`lc-header` subtitle on one line, as typed** (AS-3): ends with "…" when
+  space runs out (full text in `title` and for screen readers), no longer
+  uppercase (13 / 14 px, weight 500); `--lc-header-subtitle-transform:
+  uppercase` restores it, `--lc-header-subtitle-max-width` caps it.
+- **`lc-sidenav`**: the item with `aria-current="page"` is styled as current
+  before `routerLinkActive` matches; `items` documents the `NavigationItem`
+  shape (AS-4 (c)).
+- **`lc-input` character count is announced only near the limit** (SI-2): the
+  visible `n / max` is no longer a live region; a polite one says
+  „Characters remaining: n“ from `charCountAnnounceThreshold` (the last 10 %).
+- **`lc-password-input` never capitalises, autocorrects or spell-checks**
+  (SI-2; privacy): `autocapitalize="off"`, `spellcheck="false"` and
+  `autocorrect="off"` by default — a shown password was open to spell checkers
+  that send text to a server.
+- **`lc-modal`** caps its height at `90dvh` where supported, so mobile browser
+  bars no longer push the footer off screen; `box-sizing: border-box`.
+- **`lc-skeleton`** uses `--color-skeleton` / `-highlight` instead of the
+  surface tokens, which were nearly invisible (1.04:1) on the white page.
+
+### Fixed
+
+- **Touch targets of at least 44 px** (WCAG 2.5.8, the kit's target):
+  `lc-sidenav` items in every density (AS-4 (b); 36 / 28 px in cosy /
+  compact), the `lc-header` icon trigger (AS-2; 38 px in cosy), the `lc-modal`
+  close button (AC-4; 40 px), the `lc-password-input` visibility toggle (SI-3;
+  about 32 px), the `lc-code-block` copy button (AC-9; about 30 px), `lc-radio
+  size="lg"` rows (AC-6; about 27 px) and the `lc-verification-code-input`
+  boxes below 480 px (SI-4; 44 × 48, six fit a 312 px column).
+- **Contrast** (WCAG 1.4.3): the current `lc-sidenav` item's ink is
+  `--color-on-surface-selected` (AS-4 (a); `--color-primary-500` was 4.06:1 on
+  the tint); the status inks on their tints (HS-5) — light
+  `--color-on-warning-subtle` `#855A22` (was `#9B6B2B`, 4.25:1; now 5.52:1),
+  dark `--color-on-success-subtle` `#A9BB93` (was `#8EA475`, about 4.4:1 on a
+  card; now ≥ 5.17:1); `badge-contrast.spec.ts` guards every badge variant in
+  both palettes, so apps can drop a `--lc-badge-fg` interim.
+- **`lc-header` account menu fits a phone and never cuts a name** (AS-2 (b)):
+  at most `min(18rem, 100vw − 2rem)` wide; the name and email wrap instead of
+  ending in "…".
+- **`lc-confirm-dialog` has an accessible name** (AC-5): its title; the header
+  icon is decorative.
+- **Long unbroken values wrap** (AC-10, HS-1; WCAG 1.4.10):
+  `lc-description-list` values and `lc-list` labels, subtitles and
+  descriptions — an email address, an IBAN or a device name no longer pushes
+  a row past a 320 px screen.
+- **`lc-skeleton` is static under `prefers-reduced-motion`** (AS-7, WCAG
+  2.3.3).
+- **`lc-icon` finds aliased inline icons** (G-7): `x-mark`, `check-circle`,
+  `information-circle`, `exclamation-triangle`, `bars-3`, `globe-alt` and
+  `document-duplicate` were always fetched — empty in prerendered HTML and "?"
+  offline in `lc-alert`, `lc-callout`, `lc-modal`, `lc-drawer` and
+  `lc-header`.
+- **`lc-input` `aria-describedby`** names only rendered texts (the error, else
+  the helper text).
+- **`lc-verification-code-input` keeps an autofilled code whole** (SI-4): no
+  `maxlength="1"`, which could cut a `one-time-code` put into box 1 to its first
+  digit. Checked in unit tests; a check with a real SMS or email code on iOS
+  Safari and Android Chrome is still open.
+- **MCP component docs were cut short**: the manifest generator behind
+  `/mcp` read each story description up to its first code span (an escaped
+  backtick), which cut 63 of the 112 component descriptions. It reads
+  the stories with the TypeScript compiler now, resolves escapes, expands the
+  stories' template helpers (413 snippets, was 394), adds story descriptions,
+  and lists subcomponents' props with the component (`lc-app-page` with
+  `lc-app-shell`, `lc-radio` with `lc-radio-group`).
+
 ## [3.2.1] - 2026-10-11
 
 ### Performance

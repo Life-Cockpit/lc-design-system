@@ -1,7 +1,10 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { Component, ChangeDetectionStrategy } from '@angular/core';
-import { AlertComponent } from './alert.component';
+import { AlertComponent, AlertVariant } from './alert.component';
+import { IconComponent } from '../icon/icon.component';
+import { compile } from 'sass';
+import { join } from 'path';
 import { HttpTestingController } from '@angular/common/http/testing';
 import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
@@ -246,12 +249,14 @@ describe('AlertComponent', () => {
       expect(fixture.nativeElement.querySelector('.lc-alert__container')).toBeTruthy();
     });
 
-    it('labels the variant icon and hides the close icon from AT', () => {
+    // 3.3 (AS-5): the variant icon is named only through iconAriaLabel.
+    it('labels the variant icon via iconAriaLabel and hides the close icon from AT', () => {
       fixture.componentRef.setInput('variant', 'error');
+      fixture.componentRef.setInput('iconAriaLabel', 'Fehler');
       fixture.componentRef.setInput('dismissible', true);
       fixture.detectChanges();
       const icons = fixture.debugElement.queryAll(By.css('lc-icon')).map(d => d.componentInstance);
-      expect(icons[0].ariaLabel()).toBe('Error');
+      expect(icons[0].ariaLabel()).toBe('Fehler');
       expect(icons[1].decorative()).toBe(true);
     });
 
@@ -293,4 +298,63 @@ describe('AlertComponent', () => {
       expect(dismissed).toBe(true);
     });
   });
+
+  describe('3.3: icon name and stacked actions (AS-5, AS-11)', () => {
+    const variantIcon = (): IconComponent =>
+      fixture.debugElement.query(By.css('.lc-alert__icon lc-icon')).componentInstance as IconComponent;
+
+    it.each<AlertVariant>(['info', 'success', 'warning', 'error'])(
+      'renders the %s icon as decorative by default, without an English name',
+      (variant) => {
+        fixture.componentRef.setInput('variant', variant);
+        fixture.detectChanges();
+        expect(variantIcon().decorative()).toBe(true);
+        expect(variantIcon().ariaLabel()).toBeUndefined();
+        expect(alertElement.innerHTML).not.toMatch(/aria-label="(Info|Success|Warning|Error)"/);
+      },
+    );
+
+    it('names the icon with iconAriaLabel', () => {
+      fixture.componentRef.setInput('variant', 'warning');
+      fixture.componentRef.setInput('iconAriaLabel', 'Warnung');
+      fixture.detectChanges();
+      expect(variantIcon().decorative()).toBe(false);
+      expect(variantIcon().ariaLabel()).toBe('Warnung');
+    });
+
+    it('keeps the 3.2 inline actions by default and marks the stacked layout', () => {
+      expect(alertElement.classList).not.toContain('lc-alert--actions-stacked');
+      fixture.componentRef.setInput('actionsLayout', 'stacked');
+      fixture.detectChanges();
+      expect(alertElement.classList).toContain('lc-alert--actions-stacked');
+    });
+
+    it('marks an alert with an icon, so stacked actions line up with the text', () => {
+      expect(alertElement.classList).toContain('lc-alert--with-icon');
+      fixture.componentRef.setInput('showIcon', false);
+      fixture.detectChanges();
+      expect(alertElement.classList).not.toContain('lc-alert--with-icon');
+    });
+
+    describe('stylesheet', () => {
+      const css = compile(join(__dirname, 'alert.component.scss'), {
+        loadPaths: [join(__dirname, '../../styles')],
+      }).css;
+
+      it('puts stacked actions in their own full-width row, one per line, 8 px apart', () => {
+        expect(css).toMatch(/\.lc-alert--actions-stacked\s*{[^}]*container:\s*lc-alert\s*\/\s*inline-size/);
+        expect(css).toMatch(
+          /\.lc-alert--actions-stacked \.lc-alert__action\s*{[^}]*order:\s*1;[^}]*flex:\s*1 1 100%;[^}]*flex-direction:\s*column/,
+        );
+        expect(css).toMatch(/\.lc-alert--actions-stacked \.lc-alert__action > lc-button > \.btn\s*{\s*width:\s*100%/);
+      });
+
+      it('sets the actions side by side at natural width from 576 px of alert width', () => {
+        const at = css.indexOf('@container lc-alert (width >= 36rem)');
+        expect(at).toBeGreaterThan(-1);
+        expect(css.slice(at)).toMatch(/flex-direction:\s*row/);
+      });
+    });
+  });
 });
+

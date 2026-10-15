@@ -54,8 +54,10 @@
   --lc-sidenav-hover-bg: var(--color-surface-hover);
   --lc-sidenav-section-fg: var(--color-text-tertiary);
   --lc-sidenav-active-bg: var(--color-surface-selected);
-  --lc-sidenav-active-fg: var(--color-primary-500);
-  --lc-sidenav-active-icon: var(--color-primary-500);
+  // AS-4 (a): the selected tint's own ink. `--color-primary-500` gave
+  // 4.06:1 on the light tint and failed WCAG 1.4.3.
+  --lc-sidenav-active-fg: var(--color-on-surface-selected, var(--color-link));
+  --lc-sidenav-active-icon: var(--color-on-surface-selected, var(--color-link));
   // Backdrop + ring behind the collapsed-rail count badge. Must stay opaque:
   // it is what the badge variant's translucent tint composites over, and what
   // separates the badge from the icon it sits on. Follows --lc-sidenav-bg, so
@@ -417,6 +419,9 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-3, 0.75rem);
+  // AS-4 (b): 44 px touch target in every density (36 px in cosy before).
+  min-height: var(--size-min-touch-height, 2.75rem);
+  box-sizing: border-box;
   padding: var(--lc-density-padding-xs, var(--spacing-2, 0.5rem)) var(--lc-sidenav-item-padding-x);
   text-decoration: none;
   color: var(--lc-sidenav-fg);
@@ -437,8 +442,11 @@
   }
 
   // Active state (direct match) — uses the scoped active tokens so it follows
-  // the dark-first default and the .lc-sidenav--light opt-in.
-  &--active {
+  // the dark-first default and the .lc-sidenav--light opt-in. The item that
+  // carries aria-current (from `activeRoute`) looks current too, so what is
+  // announced and what is shown agree even before the router has matched.
+  &--active,
+  &[aria-current='page'] {
     background-color: var(--lc-sidenav-active-bg);
     color: var(--lc-sidenav-active-fg);
     font-weight: 600;
@@ -706,6 +714,53 @@
   --lc-sidenav-active-bg: rgba(32, 132, 151, 0.12);
   --lc-sidenav-active-fg: #84c7d4; // $color-primary-400
   --lc-sidenav-active-icon: #84c7d4;
+}
+
+// ── Transparent variant (LK-8): the side navigation on the page ───────────
+// Docked only: a drawer overlays content and keeps its surface. Items become
+// 48 px pills (radius full, 16 px labels, 16 px inset), the current one on the
+// selected tint without the inset bar — the fill and the bolder label mark it.
+.lc-sidenav--transparent {
+  &.lc-sidenav--docked {
+    --lc-sidenav-bg: transparent;
+    --lc-sidenav-badge-ring: var(--color-background);
+    background-color: transparent;
+    border-right: 0;
+  }
+
+  .lc-sidenav__nav,
+  .lc-sidenav__nav--docked {
+    gap: var(--spacing-1, 0.25rem);
+    padding: var(--lc-sidenav-transparent-padding, 3rem 1.5rem 1.5rem);
+  }
+
+  .lc-sidenav__section-items,
+  .lc-sidenav__nav-children {
+    gap: var(--spacing-1, 0.25rem);
+  }
+
+  .lc-sidenav__nav-item {
+    gap: var(--spacing-3, 0.75rem);
+    min-height: 3rem;
+    padding: 0 var(--spacing-4, 1rem);
+    border-radius: var(--border-radius-full, 9999px);
+    font-size: var(--font-size-base, 1rem);
+    font-weight: var(--font-weight-medium, 500);
+  }
+
+  .lc-sidenav__nav-item--active,
+  .lc-sidenav__nav-item[aria-current='page'] {
+    box-shadow: none;
+    font-weight: var(--font-weight-semibold, 600);
+
+    .lc-sidenav__nav-icon ::ng-deep svg {
+      stroke-width: 2.2;
+    }
+  }
+
+  .lc-sidenav__section-title {
+    padding: 0 var(--spacing-4, 1rem);
+  }
 }
 
 // Print styles

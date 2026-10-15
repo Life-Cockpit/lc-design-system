@@ -1,6 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { By } from '@angular/platform-browser';
 import { ConfirmDialogComponent } from './confirm-dialog.component';
+import { IconComponent } from '../icon/icon.component';
 
 describe('ConfirmDialogComponent', () => {
   let component: ConfirmDialogComponent;
@@ -135,4 +137,58 @@ describe('ConfirmDialogComponent', () => {
       expect(confirmedSpy).toHaveBeenCalledTimes(1);
     });
   });
+
+  describe('3.3: real-use options (AC-5)', () => {
+    const dialog = (): HTMLElement => document.querySelector('[role="dialog"]') as HTMLElement;
+
+    beforeEach(() => {
+      fixture.componentRef.setInput('open', true);
+    });
+
+    it('is named by its title', () => {
+      fixture.detectChanges();
+      const labelledBy = dialog().getAttribute('aria-labelledby');
+      expect(labelledBy).toMatch(/^lc-confirm-title-\d+$/);
+      expect(document.getElementById(labelledBy as string)?.textContent).toContain('Test Title');
+    });
+
+    it('passes a translated close label to the modal', () => {
+      fixture.componentRef.setInput('closeAriaLabel', 'Schließen');
+      fixture.detectChanges();
+      expect(dialog().querySelector('.lc-modal__close')?.getAttribute('aria-label')).toBe('Schließen');
+    });
+
+    it('renders the buttons in the requested size', () => {
+      fixture.componentRef.setInput('buttonSize', 'lg');
+      fixture.detectChanges();
+      const buttons = dialog().querySelectorAll('.lc-confirm__footer .btn');
+      expect(buttons.length).toBe(2);
+      buttons.forEach((b) => expect(b.classList).toContain('btn-lg'));
+    });
+
+    it('shows a busy confirm button and ignores a second confirm while loading', () => {
+      const spy = jest.fn();
+      component.confirmed.subscribe(spy);
+      fixture.componentRef.setInput('confirmLoading', true);
+      fixture.detectChanges();
+      const confirm = dialog().querySelectorAll('.lc-confirm__footer .btn')[1] as HTMLButtonElement;
+      expect(confirm.getAttribute('aria-busy')).toBe('true');
+      confirm.click();
+      expect(spy).not.toHaveBeenCalled();
+    });
+
+    it('passes the placement to the modal', () => {
+      fixture.componentRef.setInput('placement', 'auto');
+      fixture.detectChanges();
+      expect(dialog().classList).toContain('lc-modal--placement-auto');
+    });
+
+    it('hides the header icon from assistive tech (the title says it)', () => {
+      fixture.detectChanges();
+      const icon = fixture.debugElement.query(By.css('.lc-confirm__header lc-icon'))
+        .componentInstance as IconComponent;
+      expect(icon.decorative()).toBe(true);
+    });
+  });
 });
+

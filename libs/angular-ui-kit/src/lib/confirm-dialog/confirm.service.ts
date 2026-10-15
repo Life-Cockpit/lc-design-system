@@ -5,7 +5,13 @@ import {
   EnvironmentInjector,
   inject,
 } from '@angular/core';
-import { ConfirmDialogComponent, ConfirmDialogVariant, RequireTextConfig } from './confirm-dialog.component';
+import {
+  ConfirmDialogButtonSize,
+  ConfirmDialogComponent,
+  ConfirmDialogVariant,
+  RequireTextConfig,
+} from './confirm-dialog.component';
+import type { ModalPlacement } from '../modal/modal.component';
 
 export interface ConfirmOptions {
   title: string;
@@ -15,6 +21,12 @@ export interface ConfirmOptions {
   variant?: ConfirmDialogVariant;
   icon?: string;
   requireText?: RequireTextConfig;
+  /** Accessible name of the close button (3.3). */
+  closeAriaLabel?: string;
+  /** Size of both buttons (3.3): `lg` for a 44 px touch target. */
+  buttonSize?: ConfirmDialogButtonSize;
+  /** `center`, `auto` (a bottom sheet below 640 px) or `sheet` (3.3). */
+  placement?: ModalPlacement;
 }
 
 /**
@@ -58,6 +70,9 @@ export class ConfirmService {
       if (opts.variant) componentRef.setInput('variant', opts.variant);
       if (opts.icon) componentRef.setInput('icon', opts.icon);
       if (opts.requireText) componentRef.setInput('requireText', opts.requireText);
+      if (opts.closeAriaLabel) componentRef.setInput('closeAriaLabel', opts.closeAriaLabel);
+      if (opts.buttonSize) componentRef.setInput('buttonSize', opts.buttonSize);
+      if (opts.placement) componentRef.setInput('placement', opts.placement);
 
       const cleanup = () => {
         this.appRef.detachView(componentRef.hostView);

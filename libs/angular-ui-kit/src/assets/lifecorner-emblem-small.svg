@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="32" height="32" role="img" aria-label="LifeCorner">
+  <g fill="none" stroke="#1a6a79" stroke-width="7" stroke-linecap="round">
+    <path d="M34 50 C27 57 22 64 17 68"/>
+    <path d="M44 56 C42 65 39 73 36 79"/>
+    <path d="M56 56 C58 65 61 73 64 79"/>
+    <path d="M66 50 C73 57 78 64 83 68"/>
+  </g>
+  <ellipse cx="50" cy="38" rx="23" ry="21" fill="#1a6a79"/>
+  <g fill="#1a6a79">
+    <circle cx="15" cy="70" r="7"/>
+    <circle cx="35" cy="82" r="7"/>
+    <circle cx="65" cy="82" r="7"/>
+    <circle cx="85" cy="70" r="7"/>
+  </g>
+  <circle cx="42" cy="38" r="4.4" fill="#ffffff"/>
+  <circle cx="58" cy="38" r="4.4" fill="#ffffff"/>
+</svg>

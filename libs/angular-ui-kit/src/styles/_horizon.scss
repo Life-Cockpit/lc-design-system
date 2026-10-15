@@ -1,0 +1,115 @@
+/**
+ * Horizon block (3.3, LK-1)
+ *
+ * The "Weite" page ending: a sky that fades towards the horizon, a 2 px
+ * horizon line fading out at both ends, a half sun with one ring and a soft
+ * halo, and the land below. Pure CSS gradients anchored to the BOTTOM of the
+ * block, so it fits any height; no image, no markup inside. In the dark theme
+ * the same geometry draws the night horizon (the colour tokens switch).
+ *
+ * Use it as the LAST block of a page that is a flex column: it takes the
+ * remaining height (flex: 1) and never shrinks below land + sun + 22 px. With
+ * more content above it moves below the fold by itself. Never put text on it,
+ * except a compact footer (or a floating bar) on the land:
+ *
+ *   <div class="page" style="display: flex; flex-direction: column; min-height: 100dvh">
+ *     <main>…</main>
+ *     <div class="lc-horizon" aria-hidden="true"></div>
+ *   </div>
+ *
+ *   <div class="lc-horizon" style="--lc-horizon-land: 136px">
+ *     <footer class="lc-horizon__land">…</footer>
+ *   </div>
+ *
+ * Mark an empty block `aria-hidden="true"`; with a footer inside, leave it
+ * out (the footer must stay reachable).
+ *
+ * Inputs (custom properties, set on the block or any ancestor):
+ *   --lc-horizon-land        height of the land below the line
+ *                            (default Today's: 112 px phone, 100 · 120 · 140 · 184 px
+ *                            from 1024 · 1280 · 1440 · 1920; with the compact footer
+ *                            on the land add its height, e.g. 136 px on the phone)
+ *   --lc-horizon-sun-radius  the sun's radius (58 px phone, 70 · 90 · 120 · 166 px)
+ *   --lc-horizon-sun-x       the sun's centre from the block's left edge (72%)
+ *
+ * Colours: --color-background-low, --color-horizon-line, --color-land-1…3,
+ * --color-sun-1…3, --color-sun-ring, --color-sun-halo (theme tokens).
+ */
+
+.lc-horizon {
+  --_lc-horizon-land: var(--lc-horizon-land, 112px);
+  --_lc-horizon-r: var(--lc-horizon-sun-radius, 58px);
+  --_lc-horizon-x: var(--lc-horizon-sun-x, 72%);
+
+  position: relative;
+  flex: 1 0 auto;
+  min-height: calc(var(--_lc-horizon-land) + var(--_lc-horizon-r) + 22px);
+
+  // Layers, top first: line · sun · ring · halo · land · sky fade. Everything
+  // above the land is drawn in the box above the line ("sky box": the full
+  // width, the block's height minus the land), centred on its bottom edge, so
+  // the sun rises exactly on the horizon line.
+  background:
+    linear-gradient(90deg, transparent, var(--color-horizon-line) 25%, var(--color-horizon-line) 75%, transparent)
+      0 calc(100% - var(--_lc-horizon-land) + 1px) / 100% 2px no-repeat,
+    radial-gradient(
+        circle var(--_lc-horizon-r) at var(--_lc-horizon-x) 100%,
+        var(--color-sun-1) 0,
+        var(--color-sun-2) calc(var(--_lc-horizon-r) * 0.62),
+        var(--color-sun-3) calc(var(--_lc-horizon-r) - 1px),
+        transparent var(--_lc-horizon-r)
+      )
+      0 0 / 100% calc(100% - var(--_lc-horizon-land)) no-repeat,
+    radial-gradient(
+        circle calc(var(--_lc-horizon-r) + 46px) at var(--_lc-horizon-x) 100%,
+        transparent calc(var(--_lc-horizon-r) + 42px),
+        var(--color-sun-ring) calc(var(--_lc-horizon-r) + 43px),
+        var(--color-sun-ring) calc(var(--_lc-horizon-r) + 45px),
+        transparent calc(var(--_lc-horizon-r) + 46px)
+      )
+      0 0 / 100% calc(100% - var(--_lc-horizon-land)) no-repeat,
+    radial-gradient(
+        calc(var(--_lc-horizon-r) * 2) calc(var(--_lc-horizon-r) * 1.6) at var(--_lc-horizon-x) 100%,
+        var(--color-sun-halo),
+        transparent 70%
+      )
+      0 0 / 100% calc(100% - var(--_lc-horizon-land)) no-repeat,
+    linear-gradient(180deg, var(--color-land-1), var(--color-land-2) 45%, var(--color-land-3))
+      0 100% / 100% var(--_lc-horizon-land) no-repeat,
+    linear-gradient(180deg, transparent, var(--color-background-low))
+      0 0 / 100% calc(100% - var(--_lc-horizon-land)) no-repeat;
+
+  // Desktop steps of Today's horizon (app-shell 12.2). A page sets its own
+  // geometry through --lc-horizon-land / --lc-horizon-sun-radius.
+  @media (min-width: 1024px) {
+    --_lc-horizon-land: var(--lc-horizon-land, 100px);
+    --_lc-horizon-r: var(--lc-horizon-sun-radius, 70px);
+  }
+
+  @media (min-width: 1280px) {
+    --_lc-horizon-land: var(--lc-horizon-land, 120px);
+    --_lc-horizon-r: var(--lc-horizon-sun-radius, 90px);
+  }
+
+  @media (min-width: 1440px) {
+    --_lc-horizon-land: var(--lc-horizon-land, 140px);
+    --_lc-horizon-r: var(--lc-horizon-sun-radius, 120px);
+  }
+
+  @media (min-width: 1920px) {
+    --_lc-horizon-land: var(--lc-horizon-land, 184px);
+    --_lc-horizon-r: var(--lc-horizon-sun-radius, 166px);
+  }
+
+  // Windows high contrast and other forced-colour modes: no decoration.
+  @media (forced-colors: active) {
+    background: none;
+  }
+}
+
+// Content that sits ON the land (the compact footer, a floating bar's
+// resting place): pinned to the block's bottom edge, full width.
+.lc-horizon__land {
+  position: absolute;
+  inset: auto 0 0;
+}

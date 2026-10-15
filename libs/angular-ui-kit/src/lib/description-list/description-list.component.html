@@ -13,6 +13,8 @@
       <dd [class]="valueClass(item)">
         @if (item.href) {
           <a class="lc-dl__link" [href]="item.href">{{ item.value }}</a>
+        } @else if (item.datetime) {
+          <time [attr.datetime]="item.datetime">{{ item.value }}</time>
         } @else {
           {{ item.value }}
         }

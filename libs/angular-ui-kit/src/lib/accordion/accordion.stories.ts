@@ -103,11 +103,11 @@ export default meta;
 type Story = StoryObj<AccordionComponent>;
 
 export const Default: Story = {
-  args: { title: 'What is Life-Cockpit?', variant: 'outlined', size: 'md', disabled: false, expanded: true },
+  args: { title: 'What is LifeCorner?', variant: 'outlined', size: 'md', disabled: false, expanded: true },
   render: (args) => ({
     props: args,
     template: `<lc-accordion [title]="title" [variant]="variant" [size]="size" [disabled]="disabled" [expanded]="expanded">
-      <p style="margin: 0; color: var(--lc-color-neutral-600);">Life-Cockpit is a personal productivity platform that helps you manage tasks, track habits, and organize your life in one unified dashboard.</p>
+      <p style="margin: 0; color: var(--lc-color-neutral-600);">LifeCorner is the cockpit for family life. It brings contracts, money and documents together in one place.</p>
     </lc-accordion>`,
   }),
 };

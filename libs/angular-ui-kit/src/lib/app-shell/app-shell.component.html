@@ -1,0 +1,10 @@
+<div [class]="shellClasses()">
+  <div class="lc-app-shell__header"><ng-content select="[shell-header]" /></div>
+  <div class="lc-app-shell__nav"><ng-content select="[shell-nav]" /></div>
+  <div class="lc-app-shell__body"><ng-content /></div>
+  @if (horizon()) {
+    <div class="lc-app-shell__horizon lc-horizon"></div>
+  }
+  <div class="lc-app-shell__footer"><ng-content select="[shell-footer]" /></div>
+  <div class="lc-app-shell__bottom-nav"><ng-content select="[shell-bottom-nav]" /></div>
+</div>

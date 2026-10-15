@@ -38,8 +38,8 @@ Footer component for application-wide bottom navigation.
 
 **Links** (\`FooterLink\`: \`{ label, href, external?, current?, rel? }\`)
 - Every link is at least 44 px high (\`--size-min-touch-height\`).
-- Ink is \`--color-text-secondary\`: 6.87:1 on the light page background and 7.56:1 on a
-  white surface (12.17:1 / 10.45:1 in dark). Hover and the current page add an underline,
+- Ink is \`--color-text-secondary\`: 7.56:1 on the white page and on a card (12.17:1 /
+  11.16:1 in dark). Hover and the current page add an underline,
   so no state is marked by color alone.
 - \`current: true\` → \`aria-current="page"\`, primary ink and an underline.
 - \`external: true\` opens a new tab; screen readers hear \`externalLinkHint\` after the
@@ -100,7 +100,7 @@ export const Default: Story = {
     props: {
       ...args,
       sections: sampleSections,
-      copyright: '© 2026 Life-Cockpit. Alle Rechte vorbehalten.',
+      copyright: '© 2026 LifeCorner. Alle Rechte vorbehalten.',
     },
     template: `<lc-footer [sections]="sections" [copyright]="copyright" [showBorder]="showBorder" [compact]="compact" [variant]="variant" />`,
   }),
@@ -114,7 +114,7 @@ export const Compact: Story = {
   render: (args) => ({
     props: {
       ...args,
-      copyright: '© 2026 Life-Cockpit. Alle Rechte vorbehalten.',
+      copyright: '© 2026 LifeCorner. Alle Rechte vorbehalten.',
     },
     template: `<lc-footer [copyright]="copyright" [compact]="compact" [variant]="variant" />`,
   }),
@@ -129,7 +129,7 @@ export const NoBorder: Story = {
     props: {
       ...args,
       sections: sampleSections.slice(0, 2),
-      copyright: '© 2026 Life-Cockpit',
+      copyright: '© 2026 LifeCorner',
     },
     template: `<lc-footer [sections]="sections" [copyright]="copyright" [showBorder]="showBorder" [variant]="variant" />`,
   }),
@@ -143,7 +143,7 @@ export const CopyrightOnly: Story = {
   render: (args) => ({
     props: {
       ...args,
-      copyright: '© 2026 Life-Cockpit GmbH',
+      copyright: '© 2026 LifeCorner',
     },
     template: `<lc-footer [copyright]="copyright" [compact]="compact" [variant]="variant" />`,
   }),
@@ -157,7 +157,7 @@ export const Primary: Story = {
     props: {
       ...args,
       sections: sampleSections,
-      copyright: '© 2026 Life-Cockpit. Alle Rechte vorbehalten.',
+      copyright: '© 2026 LifeCorner. Alle Rechte vorbehalten.',
     },
     template: `<lc-footer [sections]="sections" [copyright]="copyright" [variant]="variant" />`,
   }),
@@ -171,7 +171,7 @@ export const Dark: Story = {
     props: {
       ...args,
       sections: sampleSections,
-      copyright: '© 2026 Life-Cockpit. Alle Rechte vorbehalten.',
+      copyright: '© 2026 LifeCorner. Alle Rechte vorbehalten.',
     },
     template: `<lc-footer [sections]="sections" [copyright]="copyright" [variant]="variant" />`,
   }),
@@ -185,7 +185,7 @@ export const Neutral: Story = {
     props: {
       ...args,
       sections: sampleSections.slice(0, 3),
-      copyright: '© 2026 Life-Cockpit',
+      copyright: '© 2026 LifeCorner',
     },
     template: `<lc-footer [sections]="sections" [copyright]="copyright" [variant]="variant" />`,
   }),

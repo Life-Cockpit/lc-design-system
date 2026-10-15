@@ -1,7 +1,8 @@
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import { ICON_NAMES, ICON_ALIASES, isValidIconName } from './icon-catalog';
+import { ICON_NAMES, ICON_ALIASES, isInlineIconName, isValidIconName } from './icon-catalog';
 import { INLINE_ICON_SVGS } from './icon-inline-svgs';
+import { INLINE_TABLER_NAMES, INLINE_TABLER_SVGS } from './icon-inline-tabler.data';
 
 describe('icon catalog', () => {
   describe('ICON_NAMES', () => {
@@ -72,4 +73,68 @@ describe('icon catalog', () => {
       expect(json).toEqual([...ICON_NAMES]);
     });
   });
+
+  describe('isInlineIconName (3.3, G-7)', () => {
+    it('is true for hand-picked inline icons by their alias names', () => {
+      for (const name of ['x-mark', 'check-circle', 'information-circle', 'bars-3', 'globe-alt']) {
+        expect(isInlineIconName(name)).toBe(true);
+      }
+    });
+
+    it('is true for the inlined Tabler set and aliases that resolve to it', () => {
+      for (const name of ['mail', 'users', 'settings', 'logout', 'key', 'envelope', 'x-circle', 'document-text']) {
+        expect(isInlineIconName(name)).toBe(true);
+      }
+    });
+
+    it('is false for fetched icons and variants without inline markup', () => {
+      expect(isInlineIconName('anchor')).toBe(false);
+      expect(isInlineIconName('robot', 'solid')).toBe(false);
+      expect(isInlineIconName('definitely-not-an-icon')).toBe(false);
+    });
+
+    it('covers every icon the F1 concepts and the website name (website G-7, shell AS-6)', () => {
+      const needed = [
+        // website
+        'mail', 'file-text', 'arrow-right', 'globe-alt', 'bars-3', 'x-mark', 'check-circle', 'document-duplicate', 'information-circle',
+        // shell
+        'users', 'settings', 'logout', 'dots', 'wifi-off', 'sun', 'home', 'clock', 'arrow-path', 'light-bulb', 'chevron-right', 'chevron-left', 'user',
+        // sign-in, account settings, household
+        'key', 'login', 'password', 'shield-check', 'robot', 'plug-connected', 'device-mobile', 'device-desktop', 'device-laptop',
+        'copy', 'share', 'link', 'trash', 'plus', 'check', 'eye', 'user-plus', 'building-library',
+        // the kit's own defaults
+        'x-circle', 'exclamation-triangle', 'external-link',
+      ];
+      expect(needed.filter((name) => !isInlineIconName(name))).toEqual([]);
+    });
+  });
+
+  describe('inlined Tabler set', () => {
+    it('has outline markup for every listed name, all valid icon names', () => {
+      expect(Object.keys(INLINE_TABLER_SVGS)).toEqual([...INLINE_TABLER_NAMES]);
+      for (const name of INLINE_TABLER_NAMES) {
+        expect(isValidIconName(name)).toBe(true);
+        expect(INLINE_TABLER_SVGS[name].outline).toMatch(/^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg" viewBox="0 0 24 24"/);
+      }
+    });
+
+    it('ships compact, class- and size-free markup (CSS sizes it)', () => {
+      for (const variants of Object.values(INLINE_TABLER_SVGS)) {
+        for (const svg of Object.values(variants)) {
+          expect(svg).not.toMatch(/ class=| width=| height=|M0 0h24v24H0z|\n/);
+        }
+      }
+    });
+
+    it('matches the Tabler artwork it was generated from (regenerate if this fails)', () => {
+      const file = readFileSync(
+        resolve(__dirname, '../../../../../node_modules/@tabler/icons/icons/outline/mail.svg'),
+        'utf-8',
+      );
+      for (const path of file.match(/<path d="[^"]+"/g) ?? []) {
+        expect(INLINE_TABLER_SVGS['mail'].outline).toContain(path);
+      }
+    });
+  });
 });
+

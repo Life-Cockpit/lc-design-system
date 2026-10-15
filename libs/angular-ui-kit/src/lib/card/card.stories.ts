@@ -1,9 +1,13 @@
 import type { Meta, StoryObj } from '@storybook/angular';
+import { moduleMetadata } from '@storybook/angular';
 import { CardComponent } from './card.component';
+import { IconComponent } from '../icon/icon.component';
+import { BadgeComponent } from '../badge/badge.component';
 
 const meta: Meta<CardComponent> = {
   title: 'Components/Card',
   component: CardComponent,
+  decorators: [moduleMetadata({ imports: [IconComponent, BadgeComponent] })],
   parameters: {
     docs: {
       description: {
@@ -12,7 +16,10 @@ The Card component groups related content with visual hierarchy.
 Use it for content sections, dashboard widgets, and list items.
 
 **Key Features:**
-- 3 variants (elevated, outlined, flat)
+- 5 variants (elevated, outlined, flat; 3.3: raised — the sign-in card with the long
+  auth shadow — and dashed — the muted "coming soon" tile, never clickable)
+- 3.3: \`borderRadius="xl"\` (24 px) — with \`outlined\` the content card on the "Weite" sky
+- 3.3: \`headingLevel\` (2–6) for the built-in title
 - Configurable padding and border radius
 - Structured header: title + badge + right-side action slot
 - Subtitle/description below title
@@ -31,8 +38,9 @@ Use it for content sections, dashboard widgets, and list items.
   argTypes: {
     variant: {
       control: 'select',
-      options: ['elevated', 'outlined', 'flat'],
-      description: 'Visual style of the card',
+      options: ['elevated', 'outlined', 'flat', 'raised', 'dashed'],
+      description:
+        'Visual style of the card. 3.3: `raised` — plain surface, hairline, the long soft `--shadow-auth-card`, no accent line (the sign-in card); `dashed` — the muted "coming soon" tile (`--color-muted-tile`, dashed `--color-muted-tile-border`, secondary ink), never clickable: `clickable` and `selected` are ignored.',
       table: { defaultValue: { summary: 'elevated' } },
     },
     padding: {
@@ -43,11 +51,17 @@ Use it for content sections, dashboard widgets, and list items.
     },
     borderRadius: {
       control: 'select',
-      options: ['none', 'sm', 'md', 'lg', 'full'],
-      description: 'Corner rounding',
+      options: ['none', 'sm', 'md', 'lg', 'xl', 'full'],
+      description: 'Corner rounding. 3.3: `xl` = 24 px (the "Weite" content card, with `variant="outlined"`).',
       table: { defaultValue: { summary: 'md' } },
     },
-    clickable: { control: 'boolean', description: 'Adds hover effects and pointer cursor' },
+    headingLevel: {
+      control: 'select',
+      options: [2, 3, 4, 5, 6],
+      description: '3.3: heading level of the built-in `title` (`h2`–`h6`). Semantics only, the look stays the same.',
+      table: { defaultValue: { summary: '3' } },
+    },
+    clickable: { control: 'boolean', description: 'Adds hover effects and pointer cursor (ignored by `dashed`)' },
     selected: { control: 'boolean', description: 'Highlight as selected (when clickable)' },
     badge: { description: 'Badge text/count shown next to the title' },
     badgeVariant: {
@@ -379,3 +393,65 @@ export const SectionCards: Story = {
       </div>`,
   }),
 };
+
+// ── 3.3 ────────────────────────────────────────────────────────────────────
+
+/** The content card on the "Weite" sky: outlined, hairline, radius 24, no shadow. */
+export const WeiteContentCard: Story = {
+  name: 'Weite content card (3.3)',
+  args: { title: 'Mitglieder', headingLevel: 2, variant: 'outlined', borderRadius: 'xl', padding: 'lg' },
+  render: (args) => ({
+    props: args,
+    template: `
+      <div style="max-width: 420px;">
+        <lc-card [title]="title" [headingLevel]="headingLevel" [variant]="variant" [borderRadius]="borderRadius" [padding]="padding">
+          <p style="margin: 0;">Lena Brandt · Tom Ek</p>
+        </lc-card>
+      </div>
+    `,
+  }),
+};
+
+/** The sign-in card: plain surface, hairline and the long, soft auth shadow. */
+export const RaisedAuthCard: Story = {
+  name: 'Raised – sign-in card (3.3)',
+  render: () => ({
+    template: `
+      <div style="max-width: 440px; padding: 2rem 0 4rem;">
+        <lc-card variant="raised" borderRadius="xl" padding="lg">
+          <p style="margin: 0;">Formular</p>
+        </lc-card>
+      </div>
+    `,
+  }),
+};
+
+/** Muted "coming soon" tiles: never clickable, no focus, icons decorative. */
+export const DashedComingSoon: Story = {
+  name: 'Dashed – coming soon tiles (3.3)',
+  render: () => ({
+    template: `
+      <ul style="list-style: none; margin: 0; padding: 0; display: flex; gap: 0.5rem; max-width: 360px;">
+        <li style="flex: 1; min-width: 0;">
+          <lc-card variant="dashed" padding="sm" borderRadius="lg">
+            <span style="display: flex; align-items: center; justify-content: space-between; gap: 0.25rem;">
+              <lc-icon name="building-library" size="sm" [decorative]="true" />
+              <lc-badge size="sm" [rounded]="true">Bald</lc-badge>
+            </span>
+            <span style="font-size: 0.875rem; font-weight: 600;">Bankkonten</span>
+          </lc-card>
+        </li>
+        <li style="flex: 1; min-width: 0;">
+          <lc-card variant="dashed" padding="sm" borderRadius="lg" [clickable]="true">
+            <span style="display: flex; align-items: center; justify-content: space-between; gap: 0.25rem;">
+              <lc-icon name="document-text" size="sm" [decorative]="true" />
+              <lc-badge size="sm" [rounded]="true">Bald</lc-badge>
+            </span>
+            <span style="font-size: 0.875rem; font-weight: 600;">Verträge</span>
+          </lc-card>
+        </li>
+      </ul>
+    `,
+  }),
+};
+

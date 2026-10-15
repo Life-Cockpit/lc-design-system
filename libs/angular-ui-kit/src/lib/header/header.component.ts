@@ -17,7 +17,7 @@ import { RouterModule } from '@angular/router';
 import { ButtonComponent } from '../button/button.component';
 import { LogoComponent } from '../logo/logo.component';
 import { IconComponent } from '../icon/icon.component';
-import { AvatarComponent } from '../avatar/avatar.component';
+import { AvatarColor, AvatarComponent } from '../avatar/avatar.component';
 import { MenuComponent, MenuItem } from '../menu/menu.component';
 import { ThemeService } from '../theme/theme.service';
 
@@ -35,7 +35,21 @@ export interface HeaderNavItem {
 export type HeaderTitleTag = 'h1' | 'h2' | 'h3' | 'p' | 'span' | 'div';
 
 /**
- * AppHeaderComponent - Global application header for Life-Cockpit shell
+ * Surface of the header: `default` is the bar on `--color-surface` with a
+ * bottom border; `transparent` has no background and no border, for a header
+ * that sits on the page ("Weite").
+ */
+export type HeaderVariant = 'default' | 'transparent';
+
+/**
+ * What the account-menu button shows: `icon` (a user icon and a chevron) or
+ * `avatar` (the person's initials avatar, `userName`, `userAvatarSrc`,
+ * `userAvatarColor`, in a 48 px round button).
+ */
+export type HeaderUserMenuTrigger = 'icon' | 'avatar';
+
+/**
+ * AppHeaderComponent - Global application header for the LifeCorner shell
  *
  * Features:
  * - Clickable logo for home navigation
@@ -58,6 +72,19 @@ export type HeaderTitleTag = 'h1' | 'h2' | 'h3' | 'p' | 'span' | 'div';
  * - `[slot='end']` takes content at the end of the first row (e.g. a language
  *   link), `showUserMenu` hides the account menu, `titleTag` picks the title
  *   element (the page keeps its own `<h1>`), `sticky` can be switched off.
+ * App shell ("Weite", kit 3.3):
+ * - `variant="transparent"`: no background and no border, the header sits on
+ *   the page (pair it with `[sticky]="false"`, a header without a surface
+ *   cannot stay over scrolling text).
+ * - `userMenuTrigger="avatar"`: the account button is the person's initials
+ *   avatar (`userAvatarColor` for the member colour, `userAvatarSrc` for a
+ *   photo) in a 48 px round button; the icon trigger is 44 px high in every
+ *   density.
+ * - The subtitle (e.g. a household name) stays on one line and ends with "…";
+ *   the full text is its `title` and stays in the accessible text. It is shown
+ *   as typed (no uppercase).
+ * - The account menu is at most `min(18rem, 100vw − 2rem)` wide; the name and
+ *   email in its header wrap instead of being cut.
  * - Every built-in label is an input (`homeAriaLabel`, `hamburgerAriaLabel`,
  *   `userMenuAriaLabel`, `navAriaLabel`, `profileLabel`, `logoutLabel`,
  *   `themeToDarkAriaLabel`, `themeToLightAriaLabel`, `contextAriaLabel`);
@@ -69,7 +96,7 @@ export type HeaderTitleTag = 'h1' | 'h2' | 'h3' | 'p' | 'span' | 'div';
  * ```html
  * <lc-header
  *   [logo]="'/assets/logo.svg'"
- *   [title]="'Life-Cockpit'"
+ *   [title]="'LifeCorner'"
  *   [subtitle]="'User Profile'"
  *   [userName]="'John Doe'"
  *   [userEmail]="'user@example.com'"
@@ -158,13 +185,32 @@ export class HeaderComponent {
   readonly size = input<'sm' | 'md' | 'lg' | 'xl'>('md');
   readonly title = input('');
   /**
+   * Surface: `default` (the bar on `--color-surface` with a bottom border) or
+   * `transparent` (no background, no border — the header sits on the page).
+   */
+  readonly variant = input<HeaderVariant>('default');
+  /**
    * Element for the title. `h1` keeps the app-shell behaviour; on a site whose
    * pages carry their own `<h1>`, use `span` (or `p`/`div`).
    */
   readonly titleTag = input<HeaderTitleTag>('h1');
+  /**
+   * Second line under the title (e.g. the household name). One line, cut
+   * with "…" when it does not fit; the full text is its `title` attribute.
+   * Shown as typed.
+   */
   readonly subtitle = input('');
   readonly userEmail = input('');
   readonly userName = input('');
+  /**
+   * What the account-menu button shows: `icon` (user icon and chevron) or
+   * `avatar` (the initials of `userName` in a 48 px round button).
+   */
+  readonly userMenuTrigger = input<HeaderUserMenuTrigger>('icon');
+  /** Photo for the account avatar (trigger and menu header); initials when empty or broken. */
+  readonly userAvatarSrc = input('');
+  /** Colour of the account avatar's initials: `default` or a member colour `member-1` … `member-6`. */
+  readonly userAvatarColor = input<AvatarColor>('default');
   readonly showHamburger = input(false);
   /**
    * Open state of the sidenav the hamburger controls. When bound, the toggle

@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { IconComponent, resetIconCache, resetIconWarnings } from './icon.component';
+import { IconComponent, IconVariant, resetIconCache, resetIconWarnings } from './icon.component';
 import { HttpTestingController } from '@angular/common/http/testing';
 import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
@@ -281,9 +281,10 @@ describe('IconComponent', () => {
       await waitForAsync();
       const firstContent = component.svgContent();
 
-      fixture.componentRef.setInput('name', 'settings');
+      // A fetched (not inlined) name: `settings` is inline since 3.3.
+      fixture.componentRef.setInput('name', 'flask');
       fixture.detectChanges();
-      mockIconLoad('settings', 'outline', OTHER_SVG);
+      mockIconLoad('flask', 'outline', OTHER_SVG);
       await waitForAsync();
       const secondContent = component.svgContent();
 
@@ -371,9 +372,9 @@ describe('IconComponent', () => {
       fixture.detectChanges();
       const slowOld = httpMock.expectOne('/tabler-icons/outline/anchor.svg');
 
-      fixture.componentRef.setInput('name', 'settings');
+      fixture.componentRef.setInput('name', 'flask');
       fixture.detectChanges();
-      httpMock.expectOne('/tabler-icons/outline/settings.svg').flush(SECOND_SVG);
+      httpMock.expectOne('/tabler-icons/outline/flask.svg').flush(SECOND_SVG);
       await waitForAsync();
       expect(fixture.nativeElement.querySelector('svg[data-icon="second"]')).toBeTruthy();
 
@@ -757,4 +758,71 @@ describe('IconComponent', () => {
       expect(warnSpy).not.toHaveBeenCalled();
     });
   });
+
+  describe('3.3: inline lookup and the inlined Tabler set (G-7)', () => {
+    const render = async (name: string, variant: IconVariant = 'outline'): Promise<string> => {
+      fixture.componentRef.setInput('name', name);
+      fixture.componentRef.setInput('variant', variant);
+      fixture.detectChanges();
+      await fixture.whenStable();
+      return (fixture.nativeElement.querySelector('.icon-container') as HTMLElement).innerHTML;
+    };
+
+    it.each(['x-mark', 'check-circle', 'information-circle', 'exclamation-triangle', 'bars-3', 'globe-alt', 'document-duplicate'])(
+      'renders the hand-picked inline icon "%s" by its alias name, without a request',
+      async (name) => {
+        const html = await render(name);
+        httpMock.expectNone(() => true);
+        expect(html).toContain('<svg');
+        expect(html).not.toContain('stroke-dasharray');
+      },
+    );
+
+    it.each([
+      'mail', 'file-text', 'arrow-right', 'users', 'user-plus', 'settings', 'logout', 'dots', 'wifi-off',
+      'chevron-right', 'chevron-left', 'key', 'login', 'password', 'shield-check', 'robot', 'plug-connected',
+      'device-mobile', 'device-desktop', 'device-laptop', 'copy', 'share', 'link', 'trash', 'external-link', 'circle-x',
+    ])('renders the website, shell and sign-in icon "%s" inline, without a request', async (name) => {
+      const html = await render(name);
+      httpMock.expectNone(() => true);
+      expect(html).toContain('<svg');
+      expect(html).toContain('stroke="currentColor"');
+    });
+
+    it.each(['envelope', 'x-circle', 'document-text', 'cog-6-tooth', 'arrow-right-start-on-rectangle', 'user-group'])(
+      'renders the alias "%s" from the inlined Tabler target',
+      async (name) => {
+        const html = await render(name);
+        httpMock.expectNone(() => true);
+        expect(html).toContain('<svg');
+      },
+    );
+
+    it('inlines the filled variant where Tabler has one', async () => {
+      const html = await render('mail', 'solid');
+      httpMock.expectNone(() => true);
+      expect(html).toContain('fill="currentColor"');
+    });
+
+    it('still fetches a variant Tabler has no inline markup for', async () => {
+      await render('robot', 'solid');
+      httpMock.expectOne('/tabler-icons/filled/robot.svg').flush(MOCK_SVG);
+    });
+
+    it('still fetches every other name', async () => {
+      await render('anchor');
+      httpMock.expectOne('/tabler-icons/outline/anchor.svg').flush(MOCK_SVG);
+    });
+
+    it('decorates inlined Tabler icons like fetched ones (size, accessibility)', async () => {
+      fixture.componentRef.setInput('size', 'sm');
+      fixture.componentRef.setInput('ariaLabel', 'Abmelden');
+      await render('logout');
+      const svg = fixture.nativeElement.querySelector('svg') as SVGElement;
+      expect(svg.getAttribute('width')).toBe('20px');
+      expect(svg.getAttribute('role')).toBe('img');
+      expect(svg.getAttribute('aria-label')).toBe('Abmelden');
+    });
+  });
 });
+

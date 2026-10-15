@@ -6,12 +6,14 @@
  *
  * Extracts: story IDs, code snippets (templates), component props — signal
  * input()/input.required()/model()/output() and @Input/@Output, read with the
- * TypeScript compiler (see components-manifest/extract-props.mjs) — and
- * component descriptions from stories meta.
+ * TypeScript compiler (see components-manifest/extract-props.mjs) — and the
+ * component and story descriptions from the stories files, also read with the
+ * TypeScript compiler (components-manifest/extract-story-data.mjs).
  */
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
-import { join, resolve } from 'path';
+import { dirname, join, resolve } from 'path';
 import { extractComponentApi, formatApiSummary } from './components-manifest/extract-props.mjs';
+import { extractStoryData } from './components-manifest/extract-story-data.mjs';
 
 const ROOT = process.cwd();
 const STORYBOOK_OUTPUT = join(ROOT, 'dist/storybook/angular-ui-kit');
@@ -21,51 +23,36 @@ const OUTPUT_PATH = join(MANIFESTS_DIR, 'components.json');
 
 // --- Helpers ---
 
-/** Public API (inputs, models, outputs, exported types) of a component .ts file */
-function extractProps(componentPath) {
+/**
+ * Public API (inputs, models, outputs, exported types) of a component .ts file,
+ * plus the subcomponents its stories import from the same folder
+ * (`lc-app-page` next to `lc-app-shell`, `lc-radio` next to `lc-radio-group`).
+ */
+function extractProps(componentPath, subcomponentPaths = []) {
   const absPath = resolve(ROOT, componentPath.replace(/^\.\//, ''));
   if (!existsSync(absPath)) return null;
   const api = extractComponentApi(readFileSync(absPath, 'utf-8'), absPath);
+  for (const subPath of subcomponentPaths) {
+    if (subPath === absPath || !existsSync(subPath)) continue;
+    const sub = extractComponentApi(readFileSync(subPath, 'utf-8'), subPath);
+    for (const cls of sub.classes) {
+      if (!api.classes.some((c) => c.name === cls.name)) api.classes.push(cls);
+    }
+    for (const type of sub.types) {
+      if (!api.types.includes(type)) api.types.push(type);
+    }
+  }
   const hasMembers = api.classes.some((c) => c.inputs.length || c.outputs.length);
   return hasMembers ? api : null;
 }
 
-/** Extract story snippets and description from a .stories.ts file */
-function extractStoryData(storiesPath, exportNames) {
+/** Component description, story descriptions and template snippets of a .stories.ts file */
+function readStoryData(storiesPath, exportNames) {
   const absPath = resolve(ROOT, storiesPath.replace(/^\.\//, ''));
-  if (!existsSync(absPath)) return { snippets: {}, description: '' };
-  const src = readFileSync(absPath, 'utf-8');
-
-  // Extract component description from meta
-  let description = '';
-  const descMatch = src.match(/description:\s*\{\s*component:\s*`([^`]+)`/s) ||
-                    src.match(/description:\s*\{\s*component:\s*['"]([^'"]+)['"]/);
-  if (descMatch) {
-    description = descMatch[1].trim();
-  }
-
-  // Extract template snippets per export
-  const snippets = {};
-  for (const exportName of exportNames) {
-    // Find the story export and extract its template
-    const storyPattern = new RegExp(
-      `export\\s+const\\s+${exportName}[^=]*=\\s*\\{([\\s\\S]*?)(?:^\\};?|^export\\s)`,
-      'm'
-    );
-    const storyMatch = src.match(storyPattern);
-    if (storyMatch) {
-      const storyBlock = storyMatch[1];
-      // Extract template string
-      const templateMatch = storyBlock.match(/template:\s*`([^`]+)`/) ||
-                           storyBlock.match(/template:\s*'([^']+)'/) ||
-                           storyBlock.match(/template:\s*"([^"]+)"/);
-      if (templateMatch) {
-        snippets[exportName] = templateMatch[1].trim();
-      }
-    }
-  }
-
-  return { snippets, description };
+  if (!existsSync(absPath)) return { snippets: {}, description: '', storyDescriptions: {}, localImports: [] };
+  const data = extractStoryData(readFileSync(absPath, 'utf-8'), exportNames, absPath);
+  data.localImports = data.localImports.map((spec) => resolve(dirname(absPath), `${spec}.ts`));
+  return data;
 }
 
 // --- Main ---
@@ -99,8 +86,12 @@ for (const group of componentGroups.values()) {
   const name = titleParts[titleParts.length - 1];
   const id = group.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
 
-  // Extract props from component source
-  const props = group.componentPath ? extractProps(group.componentPath) : null;
+  // Extract story snippets and descriptions from the stories file
+  const exportNames = group.stories.map(s => s.exportName);
+  const { snippets, description, storyDescriptions, localImports } = readStoryData(group.importPath, exportNames);
+
+  // Extract props from component source (+ the subcomponents the stories import)
+  const props = group.componentPath ? extractProps(group.componentPath, localImports) : null;
   const propsSummary = props ? formatApiSummary(props) : '';
   if (props) {
     for (const cls of props.classes) {
@@ -112,10 +103,6 @@ for (const group of componentGroups.values()) {
     }
   }
 
-  // Extract story snippets and description from stories file
-  const exportNames = group.stories.map(s => s.exportName);
-  const { snippets, description } = extractStoryData(group.importPath, exportNames);
-
   components[id] = {
     id,
     path: group.componentPath || group.importPath,
@@ -125,6 +112,7 @@ for (const group of componentGroups.values()) {
     stories: group.stories.map(s => ({
       id: s.id,
       name: s.name,
+      description: storyDescriptions[s.exportName] || undefined,
       snippet: snippets[s.exportName] || undefined,
     })),
     jsDocTags: {},

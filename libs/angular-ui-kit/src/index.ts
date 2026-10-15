@@ -1,10 +1,10 @@
 /**
- * Life-Cockpit Design System (UI Kit)
+ * LifeCorner Design System (UI Kit)
  *
  * Public API for the design system library.
  *
  * To use global styles, import in your Angular application's styles.scss:
- * @import '@life-cockpit/angular-ui-kit/styles/index.scss';
+ * @import '@lifecorner/angular-ui-kit/styles/index.scss';
  */
 
 // ============================================================================
@@ -108,6 +108,15 @@ export * from './lib/file-upload/file-upload.component';
 // Popover Component
 export * from './lib/popover/popover.component';
 
+// 3.3: forms & sign-in
+// Provider Button Component (Sign in with Google)
+export * from './lib/provider-button/provider-button.component';
+// Radio Group Component (fieldset + legend around lc-radio)
+export * from './lib/radio/radio-group.component';
+export * from './lib/radio/radio-group.token';
+// Copy Field Component (read-only value + copy button)
+export * from './lib/copy-field/copy-field.component';
+
 // ============================================================================
 // Layout Components
 // ============================================================================
@@ -172,6 +181,13 @@ export * from './lib/sidenav/sidenav.component';
 
 // Tabs Component
 export * from './lib/tabs/tabs.component';
+
+// 3.3: navigation & layout
+// Bottom Nav Component (phone and tablet navigation bar)
+export * from './lib/bottom-nav/bottom-nav.component';
+// App Shell and App Page Components (the app frame; the page with its right column)
+export * from './lib/app-shell/app-shell.component';
+export * from './lib/app-shell/app-page.component';
 
 // ============================================================================
 // Data Display Components
@@ -371,4 +387,4 @@ export * from './lib/pipeline/pipeline.component';
 // Styles
 // ============================================================================
 // Styles are available at: libs/shared/src/styles/index.scss
-// Import path: '@life-cockpit/angular-ui-kit/styles/index.scss'
+// Import path: '@lifecorner/angular-ui-kit/styles/index.scss'

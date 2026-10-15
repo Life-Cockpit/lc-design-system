@@ -1,13 +1,20 @@
+// Overlap: `--lc-avatar-group-overlap` (the `overlap` input) wins over the
+// size's default in `--_overlap`. Later avatars paint on top (DOM order with
+// `position: relative`, isolated from the page's stacking).
 .avatar-group {
+  --_overlap: 0.5rem;
+  --_border: 2px;
+
   display: inline-flex;
   align-items: center;
+  isolation: isolate;
 
-  &__item {
-    margin-left: -0.5rem;
-    border: 2px solid var(--color-surface);
+  &__item,
+  &__overflow {
+    margin-left: calc(-1 * var(--lc-avatar-group-overlap, var(--_overlap)));
+    border: var(--_border) solid var(--color-surface);
     border-radius: 50%;
     position: relative;
-
 
     &:first-child {
       margin-left: 0;
@@ -18,15 +25,11 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: 50%;
     background-color: var(--color-surface-hover);
     color: var(--color-text-secondary);
     font-weight: var(--typography-font-weight-medium, 500);
-    margin-left: -0.5rem;
-    border: 2px solid var(--color-surface);
     flex-shrink: 0;
     user-select: none;
-
 
     &--xs {
       width: 1.5rem;
@@ -59,42 +62,39 @@
     }
   }
 
-  // Size-specific overlap adjustments
-  &--xs &__item,
-  &--xs &__overflow {
-    margin-left: -0.375rem;
-    border-width: 1px;
-
-    &:first-child {
-      margin-left: 0;
-    }
+  // Size-specific overlap and border
+  &--xs {
+    --_overlap: 0.375rem;
+    --_border: 1px;
   }
 
-  &--sm &__item,
-  &--sm &__overflow {
-    margin-left: -0.5rem;
-    border-width: 1.5px;
-
-    &:first-child {
-      margin-left: 0;
-    }
+  &--sm {
+    --_overlap: 0.5rem;
+    --_border: 1.5px;
   }
 
-  &--lg &__item,
-  &--lg &__overflow {
-    margin-left: -0.625rem;
-
-    &:first-child {
-      margin-left: 0;
-    }
+  &--lg {
+    --_overlap: 0.625rem;
   }
 
-  &--xl &__item,
-  &--xl &__overflow {
-    margin-left: -0.75rem;
+  &--xl {
+    --_overlap: 0.75rem;
+  }
 
-    &:first-child {
-      margin-left: 0;
+  // ── Ring (LK-7): the avatars carry a page-coloured ring, no border ──────
+  &--ring {
+    .avatar-group__item,
+    .avatar-group__overflow {
+      border: 0;
+    }
+
+    .avatar-group__overflow {
+      box-shadow: 0 0 0 var(--lc-avatar-ring-width, 3px) var(--lc-avatar-ring-color, var(--color-background));
+    }
+
+    &.avatar-group--xs .avatar-group__overflow,
+    &.avatar-group--sm .avatar-group__overflow {
+      box-shadow: 0 0 0 var(--lc-avatar-ring-width, 2px) var(--lc-avatar-ring-color, var(--color-background));
     }
   }
 }

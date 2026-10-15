@@ -21,6 +21,46 @@ const meta: Meta<PasswordInputComponent> = {
     disabled: { description: 'Prevents interaction' },
     required: { description: 'Marks the field as required' },
     error: { description: 'Custom error message to display' },
+    requiredIndicator: {
+      control: 'boolean',
+      description: 'Shows the `*` of a required field; `false` keeps `required` / `aria-required` without it',
+      table: { defaultValue: { summary: 'true' } },
+    },
+    helperText: { control: 'text', description: 'Help below the field (e.g. the password rule), linked by aria-describedby; the error replaces it' },
+    minLength: {
+      control: 'number',
+      description: 'Native `minlength` and the length rule of checklist and meter. Unset = no attribute, rule of 8',
+    },
+    strengthMode: {
+      control: 'select',
+      options: ['composition', 'length'],
+      description:
+        'Meter scoring: `composition` (length + four character classes, 3.2) or `length` (NIST SP 800-63B: below minLength Weak, from it Fair, 1.5× Good, 2× Strong)',
+      table: { defaultValue: { summary: 'composition' } },
+    },
+    autocomplete: {
+      control: 'text',
+      description: 'Native `autocomplete`: `current-password` (sign-in) or `new-password` (registration, change). Unset = no attribute',
+    },
+    name: { control: 'text', description: 'Native `name` of the inner input. Unset = no attribute' },
+    autocapitalize: {
+      control: 'select',
+      options: ['off', 'none', 'on', 'sentences', 'words', 'characters'],
+      description: 'Native `autocapitalize`; `off` so a shown password is never capitalised',
+      table: { defaultValue: { summary: 'off' } },
+    },
+    spellcheck: {
+      control: 'boolean',
+      description: 'Native `spellcheck`; `false` so a shown password never reaches a spell checker',
+      table: { defaultValue: { summary: 'false' } },
+    },
+    enterkeyhint: {
+      control: 'select',
+      options: [undefined, 'enter', 'done', 'go', 'next', 'previous', 'search', 'send'],
+      description: 'Native `enterkeyhint` (label of the on-screen Enter key). Unset = no attribute',
+    },
+    showPasswordAriaLabel: { control: 'text', description: 'Accessible name of the toggle while hidden', table: { defaultValue: { summary: 'Show password' } } },
+    hidePasswordAriaLabel: { control: 'text', description: 'Accessible name of the toggle while shown', table: { defaultValue: { summary: 'Hide password' } } },
   },
 
   parameters: {
@@ -34,7 +74,11 @@ Password Input Component with Show/Hide Toggle and Strength Meter
 - Real-time password strength indicator (Weak/Fair/Good/Strong)
 - Visual strength meter bar with color coding
 - Validation feedback (length, uppercase, lowercase, digit, symbol)
-- Accessible ARIA attributes
+- Accessible ARIA attributes; a 44 px visibility toggle
+- NIST-style rules: \`helperText\` for the rule, \`minLength\`, a length-only meter
+  (\`strengthMode="length"\`) or no meter at all
+- Password managers: \`autocomplete\` (\`current-password\` / \`new-password\`) and \`name\`;
+  a shown password is never capitalised, autocorrected or spell-checked
 - Reactive Forms ControlValueAccessor implementation
 `,
       },
@@ -108,4 +152,37 @@ export const SignupForm: Story = {
         </div>
       </div>`,
   }),
+};
+
+/** Registration by NIST SP 800-63B: a length rule as helper text, no composition rules, a password manager saves it. */
+export const NewPasswordNist: Story = {
+  name: 'New Password, NIST Rule (SI-3)',
+  args: {
+    label: 'Password',
+    placeholder: '',
+    autocomplete: 'new-password',
+    name: 'new-password',
+    minLength: 8,
+    helperText: 'At least 8 characters.',
+  },
+};
+
+/** The meter scores length only (no character classes): Weak below 8, Fair from 8, Good from 12, Strong from 16. */
+export const LengthOnlyMeter: Story = {
+  name: 'Length-only Meter (SI-3)',
+  args: {
+    label: 'New password',
+    placeholder: '',
+    autocomplete: 'new-password',
+    minLength: 8,
+    strengthMode: 'length',
+    showStrengthMeter: true,
+    helperText: 'At least 8 characters. Longer is stronger.',
+  },
+};
+
+/** Sign-in: the current password, filled by the password manager. */
+export const CurrentPassword: Story = {
+  name: 'Sign-in Password (SI-2)',
+  args: { label: 'Password', placeholder: '', autocomplete: 'current-password', name: 'password', enterkeyhint: 'go' },
 };

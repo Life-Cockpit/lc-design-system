@@ -4,14 +4,32 @@
   </div>
 
   <div class="lc-next-step-card__body">
-    <div class="lc-next-step-card__title" [attr.aria-live]="announce() ? 'polite' : null">
-      {{ cardTitle() }}
-    </div>
+    @switch (titleTag()) {
+      @case ('h2') {
+        <h2 class="lc-next-step-card__title" [attr.aria-live]="announce() ? 'polite' : null">
+          {{ cardTitle() }}
+        </h2>
+      }
+      @case ('h3') {
+        <h3 class="lc-next-step-card__title" [attr.aria-live]="announce() ? 'polite' : null">
+          {{ cardTitle() }}
+        </h3>
+      }
+      @default {
+        <div class="lc-next-step-card__title" [attr.aria-live]="announce() ? 'polite' : null">
+          {{ cardTitle() }}
+        </div>
+      }
+    }
     @if (message()) {
       <p class="lc-next-step-card__message">{{ message() }}</p>
     }
     <div class="lc-next-step-card__custom-message">
       <ng-content />
+    </div>
+    <!-- Form-safe body: no inherited message text styles. -->
+    <div class="lc-next-step-card__content">
+      <ng-content select="[slot='body']" />
     </div>
     <div class="lc-next-step-card__blockers">
       <ng-content select="[slot='blockers']" />
@@ -21,23 +39,23 @@
     </div>
   </div>
 
-  <div class="lc-next-step-card__actions">
+  <div class="lc-next-step-card__actions" [class.lc-next-step-card__actions--empty]="!hasActions()">
     <div #actionsSlot class="lc-next-step-card__actions-slot">
       <ng-content select="[slot='actions']" />
     </div>
     @if (!hasProjectedActions()) {
       @if (secondaryLabel()) {
-        <lc-button variant="ghost" size="sm" (clicked)="secondaryClick.emit()">
+        <lc-button variant="ghost" [size]="actionSize()" (clicked)="secondaryClick.emit()">
           {{ secondaryLabel() }}
           <lc-icon slot="icon-after" name="chevron-right" size="xs" [decorative]="true" />
         </lc-button>
       }
       @if (showLink()) {
         <a
-          class="btn btn-secondary btn-sm lc-next-step-card__link"
+          class="btn btn-secondary btn-{{ actionSize() }} lc-next-step-card__link"
           [href]="linkHref()"
-          target="_blank"
-          rel="noopener noreferrer"
+          [attr.target]="linkTarget()"
+          [attr.rel]="linkRel()"
         >
           <lc-icon name="external-link" size="sm" [decorative]="true" />
           {{ linkLabel() }}
@@ -45,7 +63,7 @@
       } @else if (primaryLabel()) {
         <lc-button
           variant="primary"
-          size="sm"
+          [size]="actionSize()"
           [loading]="primaryLoading()"
           [disabled]="primaryDisabled()"
           [disabledReason]="primaryDisabledReason()"

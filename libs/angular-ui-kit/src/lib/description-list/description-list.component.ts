@@ -30,6 +30,13 @@ export interface DescriptionListItem {
   valueSuffix?: string;
   /** Optional link — renders the value as an anchor. */
   href?: string;
+  /**
+   * Machine-readable date or time of the value (ISO 8601, e.g.
+   * `2026-10-12T18:05:00+02:00`): renders the value inside
+   * `<time datetime>`, so assistive tech and parsers get the exact moment
+   * behind „heute 18:05“. Ignored together with `href`.
+   */
+  datetime?: string;
   /** Optional visual emphasis for the value. @default 'default' */
   emphasis?: DescriptionListEmphasis;
   /** Optional opaque payload echoed back in `itemClick`. */

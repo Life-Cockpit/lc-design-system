@@ -20,7 +20,7 @@
           <ng-template #titleSuffix><ng-content select="[slot='title-suffix']" /></ng-template>
           @switch (level()) {
             @case (1) {
-              <h1 class="lc-page-header__title">
+              <h1 [class]="titleClasses()">
                 {{ title() }}
                 @if (badge()) {
                   <span class="lc-page-header__badge">{{ badge() }}</span>
@@ -31,7 +31,7 @@
               </h1>
             }
             @case (2) {
-              <h2 class="lc-page-header__title">
+              <h2 [class]="titleClasses()">
                 {{ title() }}
                 @if (badge()) {
                   <span class="lc-page-header__badge">{{ badge() }}</span>
@@ -42,7 +42,7 @@
               </h2>
             }
             @case (3) {
-              <h3 class="lc-page-header__title">
+              <h3 [class]="titleClasses()">
                 {{ title() }}
                 @if (badge()) {
                   <span class="lc-page-header__badge">{{ badge() }}</span>
@@ -52,6 +52,11 @@
                 </span>
               </h3>
             }
+          }
+          <!-- The overline follows the heading in the DOM (read after it) and
+               is shown above it (order: -1 and a full line in the wrapping row). -->
+          @if (overline()) {
+            <p class="lc-page-header__overline lc-overline">{{ overline() }}</p>
           }
         }
 

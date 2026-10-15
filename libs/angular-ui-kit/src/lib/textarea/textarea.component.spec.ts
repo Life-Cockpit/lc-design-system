@@ -1,3 +1,5 @@
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
 import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
@@ -336,5 +338,19 @@ describe('TextareaComponent', () => {
       fixture.componentRef.setInput('disabled', false);
       expect(component.isDisabled()).toBe(false);
     });
+  });
+});
+
+describe('textarea.component 3.3: SI-8 field border', () => {
+  it('draws the field boundary with --color-field-border (≥ 3:1, WCAG 1.4.11)', () => {
+    const scss = readFileSync(resolve(__dirname, 'textarea.component.scss'), 'utf-8');
+    const rule = scss.match(/\.lc-textarea \{([^}]*)/)?.[1] ?? '';
+    expect(rule).toMatch(/border: 1px solid var\(--color-field-border/);
+  });
+
+  it('never draws a field boundary with the decorative --color-border', () => {
+    const scss = readFileSync(resolve(__dirname, 'textarea.component.scss'), 'utf-8');
+    const rule = scss.match(/\.lc-textarea \{([^}]*)/)?.[1] ?? '';
+    expect(rule).not.toMatch(/border(-color)?: (\dpx solid )?var\(--color-border\)/);
   });
 });

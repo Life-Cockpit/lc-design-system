@@ -1,6 +1,8 @@
-# Life Cockpit Design System
+# LifeCorner Design System
 
-A standalone Angular component library (`@life-cockpit/angular-ui-kit`) with 47+ accessible, themeable components built with Angular 22 (apps on Angular 21 and 22 are supported), TailwindCSS, and design tokens.
+A standalone Angular component library (`@lifecorner/angular-ui-kit`, formerly `@life-cockpit/angular-ui-kit`) with 110 accessible, themeable components built with Angular 22 (apps on Angular 21 and 22 are supported), TailwindCSS, and design tokens.
+
+Docs and Storybook: https://design.life-cockpit.de (MCP endpoint `/mcp`). The site moves to `design.lifecorner.de` once the owner registers `lifecorner.de`; until then the domain and the CDK stack keep the old name.
 
 ## Structure
 
@@ -22,7 +24,9 @@ npx nx build angular-ui-kit
 
 ## Components
 
-accordion, alert, avatar, badge, breadcrumbs, button, card, checkbox, chip, container, datepicker, drawer, email-input, empty-state, error-display, field-group, filter-bar, header, icon, input, list, logo, menu, metric-card, modal, pagination, password-input, radio, section, select, sidenav, skeleton, spacer, spinner, stack, stepper, switch, table, tabs, textarea, theme, toast, toggle-group, tokens, tooltip, typography, verification-code-input
+accordion, accordion-group, alert, app-page, app-shell, area-chart, avatar, avatar-group, badge, bar-chart, bottom-nav, breadcrumbs, button, button-link (`a[lcButton]`), calendar, callout, card, chat, checkbox, chip, choice-prompt, code-block, color-picker, combobox, confirm-dialog, container, copy-field, date-range-picker, datepicker, dependency-viewer, description-list, diff-viewer, divider, document-viewer, donut-chart, drawer, email-input, empty-state, error-display, field-group, file-upload, filter-bar, footer, funnel-chart, gallery, gantt-chart, gauge, header, heatmap, hero, icon, input, kanban-board, line-chart, list, log-viewer, logo, markdown, menu, modal, next-step-card, notification-center, number-input, page-header, page-layout, pagination, password-input, pie-chart, pipeline, popover, progress-bar, progress-ring, provider-button, radar-chart, radio, radio-group, rating, rich-text-editor, scatter-plot, search-input, section, select, sidenav, skeleton, slider, spacer, sparkline, spinner, split-pane, stack, stacked-bar-chart, stage-list, stat-trend, status-dot, stepper, switch, tab, table, tabs, tag-input, textarea, timeline, toast, toast-outlet, toggle-group, toolbar, tooltip, tree-view, typography, verification-code-input, waterfall-chart
+
+New in 3.3: app-shell, app-page, bottom-nav, provider-button, radio-group, copy-field. Plus theme (`ThemeService`), design tokens and global classes (`.lc-horizon`, `.lc-display`, `.lc-title`, `.lc-overline`).
 
 ## Design Tokens
 
@@ -34,10 +38,11 @@ cd libs/angular-ui-kit && npx style-dictionary build
 
 ## Publishing
 
+Releases go through `.github/workflows/publish-npm.yml`: pushing a tag `v<version>` (the version in `libs/angular-ui-kit/package.json`) tests, builds and **stages** the package with npm trusted publishing (OIDC, no npm token, with provenance). It becomes public only after a maintainer approves it with 2FA:
+
 ```sh
-npx nx build angular-ui-kit
-cd dist/libs/angular-ui-kit
-npm publish --access public
+npm stage list @lifecorner/angular-ui-kit
+npm stage approve <stage-id>   # asks for 2FA
 ```
 
 ## Tech Stack

@@ -19,7 +19,10 @@
 // 5. Utilities
 @use './utilities';
 
-// 6. CDK overlay positioning + backdrop reset (provides .cdk-overlay-container,
+// 6. Page blocks: the horizon (.lc-horizon, the "Weite" page ending)
+@use './horizon';
+
+// 7. CDK overlay positioning + backdrop reset (provides .cdk-overlay-container,
 //    .cdk-overlay-pane, .cdk-overlay-backdrop with proper fade transitions, and
 //    the critical .cdk-overlay-transparent-backdrop { opacity: 0 } rule that
 //    keeps overlays like lc-select / lc-datepicker / lc-tooltip from showing

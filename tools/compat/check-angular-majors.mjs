@@ -57,6 +57,14 @@ const EXPECT_IN_HTML = [
   ['plain home link', /<a(?=[^>]*href="\/de\/")(?=[^>]*class="lc-header__logo")[^>]*>/],
   ['footer heading level', /<h2[^>]*class="footer__section-title"/],
   ['footer nav', /<nav[^>]*aria-label="Fußzeile"/],
+  // 3.3 features, rendered on the server
+  ['provider button', /<button(?=[^>]*type="submit")(?=[^>]*class="[^"]*\blc-provider-button--google\b)[^>]*>/],
+  ['radio group legend', /<fieldset[^>]*class="lc-radio-group"[^]*?<legend[^>]*>\s*Rolle/],
+  ['copy field', /class="lc-copy-field\b/],
+  ['bottom nav current item', /<nav(?=[^>]*aria-label="Hauptnavigation unten")(?=[^>]*class="[^"]*lc-bottom-nav--floating)[^>]*>[^]*?aria-current="page"/],
+  ['app page aside', /<main[^>]*id="shell-main"[^]*?<\/main>\s*<aside(?=[^>]*aria-label="Mitglieder")[^>]*>/],
+  ['shell horizon', /class="lc-app-shell__horizon lc-horizon"/],
+  ['page header overline', /class="[^"]*lc-overline[^"]*"[^>]*>\s*Montag, 12\. Oktober/],
 ];
 
 function run(cmd, cmdArgs, cwd) {
@@ -99,7 +107,7 @@ for (const entry of MATRIX.filter((m) => !only || only.includes(m.name))) {
           '@angular/platform-server': a,
           '@angular/router': a,
           '@angular/ssr': a,
-          '@life-cockpit/angular-ui-kit': `file:${tarball}`,
+          '@lifecorner/angular-ui-kit': `file:${tarball}`,
           mermaid: '^11.0.0',
           rxjs: '~7.8.0',
           tslib: '^2.3.0',

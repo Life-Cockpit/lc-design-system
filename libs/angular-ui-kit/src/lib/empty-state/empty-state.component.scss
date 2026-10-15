@@ -8,6 +8,7 @@
 
   &__heading {
     margin: 0;
+    line-height: var(--line-height-tight, 1.25);
     font-size: 1.125rem;
     font-weight: 600;
     color: var(--color-text-primary);

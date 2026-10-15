@@ -11,12 +11,13 @@
   gap: 0.5rem;
   width: 100%;
   background-color: var(--color-surface-2);
-  border: 1px solid var(--color-border);
+  // 3.3 (SI-8): the field boundary needs 3:1 against the page (WCAG 1.4.11).
+  border: 1px solid var(--color-field-border);
   border-radius: var(--border-radius-md);
   transition: border-color 150ms ease, box-shadow 150ms ease;
 
   &:hover:not(.search-input--disabled) {
-    border-color: var(--color-border-strong);
+    border-color: var(--color-text-secondary);
   }
 
   &:focus-within {

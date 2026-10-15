@@ -16,7 +16,7 @@
     "baseUrl": ".",
     "ignoreDeprecations": "6.0",
     "paths": {
-      "@life-cockpit/angular-ui-kit": ["libs/angular-ui-kit/src/index.ts"]
+      "@lifecorner/angular-ui-kit": ["libs/angular-ui-kit/src/index.ts"]
     },
     "strict": false,
     "noUncheckedSideEffectImports": false,

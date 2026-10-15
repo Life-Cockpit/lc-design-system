@@ -18,10 +18,22 @@ import { OverlayStackService } from '../shared/overlay-stack.service';
 export type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | 'full';
 
 /**
+ * Where the dialog sits.
+ * - `center`: centred on every screen (3.2)
+ * - `auto`: a bottom sheet below 640 px viewport width (full width, top
+ *   corners rounded, above the safe-area inset, in thumb reach), centred above
+ * - `sheet`: a bottom sheet on every screen
+ */
+export type ModalPlacement = 'center' | 'auto' | 'sheet';
+
+/**
  * Modal dialog component for focused user interactions.
  *
  * Features:
  * - Size presets (sm, md, lg, xl, full)
+ * - Placement: centred, or a bottom sheet on phones (`placement="auto"`)
+ * - Header and footer stay visible while the body scrolls; the close button
+ *   is a 44 px target
  * - Focus trap for keyboard accessibility
  * - Backdrop click and Escape key to close
  * - Two-way open binding
@@ -61,6 +73,17 @@ export class ModalComponent implements OnDestroy {
    * @default 'md'
    */
   size = input<ModalSize>('md');
+
+  /**
+   * Where the dialog sits: `center` (3.2), `auto` — a bottom sheet below
+   * 640 px viewport width and centred above — or `sheet` (always a bottom
+   * sheet). The sheet spans the width, rounds its top corners, keeps clear of
+   * `env(safe-area-inset-bottom)` and is at most 90 % of the dynamic viewport
+   * high; header and footer stay visible while the body scrolls. `full`
+   * size ignores it.
+   * @default 'center'
+   */
+  placement = input<ModalPlacement>('center');
 
   /**
    * Whether clicking backdrop closes modal
@@ -128,7 +151,7 @@ export class ModalComponent implements OnDestroy {
    * Computed modal classes
    */
   protected modalClasses = computed(() => {
-    return `lc-modal lc-modal--${this.size()}`;
+    return `lc-modal lc-modal--${this.size()} lc-modal--placement-${this.placement()}`;
   });
 
   private readonly overlayStack = inject(OverlayStackService);

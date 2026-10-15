@@ -23,6 +23,14 @@ export type SidenavPosition = 'left' | 'right';
 export type SidenavMode = 'drawer' | 'docked';
 
 /**
+ * Surface of the docked sidenav: `default` is the rail on `--color-sidebar`
+ * with a border; `transparent` has no background and no border and draws the
+ * items as 48 px pills (the side navigation on the page, "Weite"). A drawer
+ * keeps its surface in both.
+ */
+export type SidenavVariant = 'default' | 'transparent';
+
+/**
  * Sidenav component for application navigation sidebar.
  *
  * Features:
@@ -39,6 +47,10 @@ export type SidenavMode = 'drawer' | 'docked';
  * - Configurable width and position (left/right)
  * - Optional backdrop overlay
  * - Theme variants: auto, light, dark (with teal accent for dark mode)
+ * - `variant="transparent"`: no rail background or border, items as 48 px
+ *   pills with 16 px labels, the current one on `--color-surface-selected`
+ * - Items are at least 44 px high in every density; the current item's ink is
+ *   `--color-on-surface-selected` (AA on the selected tint)
  * - Accessible: the inner `<nav>` is the navigation landmark; in drawer mode
  *   the panel is a modal dialog (`role="dialog"`, focus moved to the close
  *   button on open, trapped while open, restored on close)
@@ -132,7 +144,17 @@ export class SidenavComponent implements OnDestroy {
   /** Whether to show the overlay backdrop */
   readonly hasOverlay = input(true);
 
-  /** Navigation items to display */
+  /**
+   * Navigation items (`NavigationItem[]`): `id`, `icon`, `label`, `route`,
+   * `displayOrder` (sort order, 1 = first); optional `children`
+   * (`NavigationItem[]`, a collapsible group, up to 3 levels), `isSection`
+   * (renders `label` as a section headline over its `children`), `badge`
+   * (`{ value: string | number; variant?: 'default' | 'primary' | 'success' |
+   * 'warning' | 'error' | 'info' }`), `action` (`{ icon: string; ariaLabel?:
+   * string }`, a button that emits `itemAction`), `requiredRole` (for the
+   * app's own filtering; not evaluated here). Items link with `routerLink`;
+   * the one whose `route` equals `activeRoute` gets `aria-current="page"`.
+   */
   readonly items = input<NavigationItem[]>([]);
 
   /** Current active route for highlighting */
@@ -140,6 +162,14 @@ export class SidenavComponent implements OnDestroy {
 
   /** Theme variant for the sidenav */
   readonly theme = input<'light' | 'dark' | 'auto'>('auto');
+
+  /**
+   * Surface of the docked sidenav: `default` (the rail with background and
+   * border) or `transparent` (no background, no border, items as 48 px pills
+   * with radius full and 16 px labels; the current one on
+   * `--color-surface-selected`). A drawer keeps its surface.
+   */
+  readonly variant = input<SidenavVariant>('default');
 
   /** Accessible name of the logo button that collapses/expands the sidebar. */
   readonly toggleAriaLabel = input('Toggle sidebar');
@@ -251,6 +281,9 @@ export class SidenavComponent implements OnDestroy {
     }
     if (this.theme() !== 'auto') {
       classes.push(`lc-sidenav--${this.theme()}`);
+    }
+    if (this.variant() === 'transparent') {
+      classes.push('lc-sidenav--transparent');
     }
     return classes.join(' ');
   });

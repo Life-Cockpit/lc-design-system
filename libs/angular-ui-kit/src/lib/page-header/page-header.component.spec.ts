@@ -1,6 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
-import { PageHeaderComponent } from './page-header.component';
+import { compile } from 'sass';
+import { join } from 'path';
+import { PageHeaderComponent, PageHeaderSize } from './page-header.component';
 
 @Component({
   standalone: true,
@@ -170,4 +172,100 @@ describe('PageHeaderComponent', () => {
       expect(subtitle?.parentElement?.classList).toContain('lc-page-header__titles');
     });
   });
+
+  describe('3.3: overline and the page-title scale (LK-2, LK-3)', () => {
+    let fixture: ComponentFixture<PageHeaderComponent>;
+    let rootEl: HTMLElement;
+
+    beforeEach(async () => {
+      await TestBed.configureTestingModule({ imports: [PageHeaderComponent] }).compileComponents();
+      fixture = TestBed.createComponent(PageHeaderComponent);
+      fixture.componentRef.setInput('title', 'Guten Abend, Lena');
+      rootEl = fixture.nativeElement as HTMLElement;
+    });
+
+    it('renders no overline by default', () => {
+      fixture.detectChanges();
+      expect(rootEl.querySelector('.lc-page-header__overline')).toBeNull();
+      expect(rootEl.classList).not.toContain('lc-page-header--has-overline');
+    });
+
+    it.each<1 | 2 | 3>([1, 2, 3])(
+      'renders the overline right after the h%s in the DOM, so the heading is read first',
+      (level) => {
+        fixture.componentRef.setInput('level', level);
+        fixture.componentRef.setInput('overline', 'Montag, 12. Oktober');
+        fixture.detectChanges();
+        const heading = rootEl.querySelector(`h${level}.lc-page-header__title`);
+        const overline = heading?.nextElementSibling as HTMLElement | null;
+        expect(overline?.tagName).toBe('P');
+        expect(overline?.classList).toContain('lc-page-header__overline');
+        // Sentence case in the DOM; uppercase is CSS only.
+        expect(overline?.textContent?.trim()).toBe('Montag, 12. Oktober');
+        expect(rootEl.classList).toContain('lc-page-header--has-overline');
+      },
+    );
+
+    it('keeps the overline out of the heading, so it is not part of its name', () => {
+      fixture.componentRef.setInput('overline', 'Montag, 12. Oktober');
+      fixture.detectChanges();
+      expect(rootEl.querySelector('h1')?.textContent).not.toContain('Montag');
+    });
+
+    it.each<[PageHeaderSize, string]>([
+      ['title', 'lc-title'],
+      ['display', 'lc-display'],
+      ['auth', 'lc-auth-title'],
+    ])('applies size %s as a modifier and the global %s class on the heading', (size, cls) => {
+      fixture.componentRef.setInput('size', size);
+      fixture.detectChanges();
+      expect(rootEl.classList).toContain(`lc-page-header--size-${size}`);
+      const heading = rootEl.querySelector('h1') as HTMLElement;
+      expect(heading.classList).toContain('lc-page-header__title');
+      expect(heading.classList).toContain(cls);
+    });
+
+    it('adds no type-scale class to the 3.2 sizes', () => {
+      fixture.detectChanges();
+      expect(rootEl.querySelector('h1')?.className).toBe('lc-page-header__title');
+    });
+
+    it('marks the overline with the global lc-overline class', () => {
+      fixture.componentRef.setInput('overline', 'Montag, 12. Oktober');
+      fixture.detectChanges();
+      expect(rootEl.querySelector('.lc-page-header__overline')?.classList).toContain('lc-overline');
+    });
+
+    describe('stylesheet', () => {
+      // jsdom applies no stylesheets: read the contract from the compiled CSS.
+      const css = compile(join(__dirname, 'page-header.component.scss')).css;
+      const rule = (selector: string): string => {
+        const start = css.indexOf(`${selector} {`);
+        expect(start).toBeGreaterThan(-1);
+        return css.slice(start, css.indexOf('}', start));
+      };
+
+      it('shows the overline above the title, uppercase, bold, in the overline ink', () => {
+        const o = rule('.lc-page-header__overline');
+        expect(o).toMatch(/order:\s*-1/);
+        expect(o).toMatch(/flex:\s*1 0 100%/);
+        expect(o).toMatch(/text-transform:\s*uppercase/);
+        expect(o).toMatch(/font-weight:\s*var\(--font-weight-bold, 700\)/);
+        expect(o).toMatch(/letter-spacing:\s*var\(--letter-spacing-overline, 0\.12em\)/);
+        expect(o).toMatch(/font-size:\s*var\(--font-size-overline, 0\.8125rem\)/);
+        expect(o).toMatch(/color:\s*var\(--color-overline/);
+      });
+
+      it.each([
+        ['title', '--font-size-title, 2rem'],
+        ['display', '--font-size-display, 2.5rem'],
+        ['auth', '--font-size-auth-title, 1.875rem'],
+      ])('puts size %s on the responsive scale token', (size, token) => {
+        expect(rule(`.lc-page-header--size-${size} .lc-page-header__title`)).toContain(
+          `font-size: var(${token})`,
+        );
+      });
+    });
+  });
 });
+

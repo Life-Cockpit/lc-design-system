@@ -1,7 +1,9 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { By } from '@angular/platform-browser';
 import { Component, ChangeDetectionStrategy, signal } from '@angular/core';
-import { ModalComponent } from './modal.component';
+import { ModalComponent, ModalPlacement } from './modal.component';
+import { compile } from 'sass';
+import { join } from 'path';
 import { OverlayStackService } from '../shared/overlay-stack.service';
 import { OverlayModule } from '@angular/cdk/overlay';
 import { InteractivityChecker } from '@angular/cdk/a11y';
@@ -527,4 +529,63 @@ describe('ModalComponent', () => {
       expect(document.body.style.overflow).toBe('');
     });
   });
+
+  describe('3.3: bottom sheet and close target (AC-4)', () => {
+    const modalEl = (): HTMLElement => fixture.debugElement.query(By.css('.lc-modal')).nativeElement;
+
+    it('stays centred by default', () => {
+      fixture.componentRef.setInput('open', true);
+      fixture.detectChanges();
+      expect(modalEl().classList).toContain('lc-modal--placement-center');
+    });
+
+    it.each<ModalPlacement>(['auto', 'sheet'])('applies placement %s as a modifier', (placement) => {
+      fixture.componentRef.setInput('open', true);
+      fixture.componentRef.setInput('placement', placement);
+      fixture.detectChanges();
+      expect(modalEl().classList).toContain(`lc-modal--placement-${placement}`);
+    });
+
+    describe('stylesheet', () => {
+      // jsdom applies no stylesheets: read the contract from the compiled CSS.
+      const css = compile(join(__dirname, 'modal.component.scss'), {
+        loadPaths: [join(__dirname, '../../styles')],
+      }).css;
+      const sheetRule = (prefix: string): string => {
+        const start = css.indexOf(`${prefix}.lc-modal--placement-`);
+        expect(start).toBeGreaterThan(-1);
+        return css.slice(start, css.indexOf('}', start));
+      };
+
+      it('makes the close button a 44 px target', () => {
+        const start = css.indexOf('.lc-modal__close {');
+        const close = css.slice(start, css.indexOf('}', start));
+        expect(close).toMatch(/min-width:\s*2\.75rem/);
+        expect(close).toMatch(/min-height:\s*2\.75rem/);
+      });
+
+      it('draws the sheet full width at the bottom, clear of the safe area, at most 90dvh', () => {
+        const sheet = sheetRule('');
+        expect(sheet).toMatch(/bottom:\s*0/);
+        expect(sheet).toMatch(/width:\s*100%/);
+        expect(sheet).toMatch(/transform:\s*none/);
+        expect(sheet).toMatch(/max-height:\s*90dvh/);
+        expect(sheet).toMatch(/padding-bottom:\s*env\(safe-area-inset-bottom/);
+      });
+
+      it('uses the sheet only below 640 px for placement="auto"', () => {
+        const at = css.indexOf('@media (max-width: 639.98px)');
+        expect(at).toBeGreaterThan(-1);
+        expect(css.slice(at, css.indexOf('}', at))).toContain('.lc-modal--placement-auto:not(.lc-modal--full)');
+      });
+
+      it('keeps header and footer fixed while the body scrolls', () => {
+        const body = css.slice(css.indexOf('.lc-modal__body {'));
+        expect(body.slice(0, body.indexOf('}'))).toMatch(/overflow-y:\s*auto/);
+        const footer = css.slice(css.indexOf('.lc-modal__footer {'));
+        expect(footer.slice(0, footer.indexOf('}'))).toMatch(/flex-shrink:\s*0/);
+      });
+    });
+  });
 });
+

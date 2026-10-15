@@ -24,6 +24,12 @@ const meta: Meta<MenuComponent> = {
       description: 'Anchor position relative to the trigger element',
     },
     minWidth: { description: 'Minimum width of the menu panel (CSS value)' },
+    maxWidth: {
+      control: 'text',
+      description:
+        'Maximum width of the menu panel (CSS value, e.g. `min(18rem, calc(100vw - 2rem))`); empty leaves it unbounded. Long labels and header lines wrap within it',
+      table: { defaultValue: { summary: "''" } },
+    },
     size: {
       control: 'select',
       options: ['sm', 'md', 'lg'],

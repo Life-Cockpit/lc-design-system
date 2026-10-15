@@ -15,6 +15,8 @@
       [class.lc-menu__dropdown--sm]="size() === 'sm'"
       [class.lc-menu__dropdown--lg]="size() === 'lg'"
       [style.min-width]="minWidth()"
+      [style.max-width]="maxWidth() || null"
+      [class.lc-menu__dropdown--capped]="!!maxWidth()"
     >
       <!-- Optional header slot (outside the menu role: it is not an item) -->
       <ng-content select="[header]" />

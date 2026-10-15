@@ -22,14 +22,15 @@
   line-height: var(--line-height-normal);
   color: var(--color-text-primary);
   background-color: var(--color-surface-2);
-  border: 1px solid var(--color-border);
+  // 3.3 (SI-8): the field boundary needs 3:1 against the page (WCAG 1.4.11).
+  border: 1px solid var(--color-field-border);
   border-radius: var(--border-radius-md);
   transition: all var(--animation-duration-base) var(--animation-timing-ease);
   cursor: pointer;
   user-select: none;
 
   &:hover:not(.lc-select--disabled) {
-    border-color: var(--color-border-strong);
+    border-color: var(--color-text-secondary);
   }
 
   &:focus,

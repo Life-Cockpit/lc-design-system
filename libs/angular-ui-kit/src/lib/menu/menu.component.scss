@@ -45,6 +45,13 @@
   }
 }
 
+// With `maxWidth` the panel sizes to its content up to the cap (otherwise an
+// absolutely positioned panel shrinks to its min-width next to a small
+// trigger and wraps long lines early).
+.lc-menu__dropdown--capped {
+  width: max-content;
+}
+
 .lc-menu__item {
   display: flex;
   align-items: center;

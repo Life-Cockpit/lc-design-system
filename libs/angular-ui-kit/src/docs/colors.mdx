@@ -4,7 +4,7 @@ import { Meta } from '@storybook/addon-docs/blocks';
 
 # Colors
 
-The Life-Cockpit Design System color palette is built on a semantic structure with Primary, Secondary, Neutral, and Status colors.
+The LifeCorner Design System color palette is built on a semantic structure with Primary, Secondary, Neutral, and Status colors.
 
 ## Primary Scale
 
@@ -209,19 +209,144 @@ Additional colors for data visualization and categorization.
 
 Use these for text instead of the raw scales: the `--color-primary-*` and
 `--color-neutral-*` custom properties **invert** in the dark palette, the
-semantic tokens are tuned per palette. Ratios are WCAG contrast on the light /
-dark page background (`--color-background`) and on a card (`--color-surface`).
+semantic tokens are tuned per palette. Ratios are WCAG contrast on the page
+background (`--color-background`) / on a card (`--color-surface`); in light both
+are white since 3.3. "Worst case" is the lowest ratio over every "Weite"
+surface (sky, soft fills, muted tile, land, selected pill; see below).
 
 | Token | Light | Dark | Use |
 |---|---|---|---|
-| `--color-text-primary` | `#111827` — 16.12:1 | `#f1f6f8` — 17.29:1 | body text, headings |
-| `--color-text-secondary` | `#4b5563` — 6.87:1 / 7.56:1 | `#c4d2d9` — 12.17:1 / 10.45:1 | secondary text **and small links** (footer, nav) |
-| `--color-text-tertiary` | `#6b7280` — **4.39:1** / 4.83:1 | `#93a4ad` — 7.31:1 / 6.28:1 | meta text on cards only — below 4.5:1 on the light page background |
-| `--color-link` | `#1a6a79` — 5.64:1 / 6.21:1 | `#a3d5df` — 11.78:1 / 10.12:1 | links in running text — **always underlined** (color alone fails WCAG 1.4.1) |
-| `--color-link-hover` | `#144f5b` — 8.30:1 / 9.13:1 | `#c1e3e9` — 13.84:1 / 11.89:1 | hovered links |
+| `--color-text-primary` | `#111827` — 17.74:1 (worst case 15.25:1) | `#f1f6f8` — 17.29:1 / 15.85:1 (12.63:1) | body text, headings |
+| `--color-text-secondary` | `#4b5563` — 7.56:1 (6.50:1) | `#c4d2d9` — 12.17:1 / 11.16:1 (8.89:1) | secondary text **and small links** (footer, nav) |
+| `--color-text-tertiary` | `#5c6672` — 5.84:1 (5.02:1) | `#93a4ad` — 7.31:1 / 6.71:1 (5.34:1) | meta text, on every surface. Since 3.3; it was `#6b7280`, which failed on the light page and the tints (4.16–4.44:1) |
+| `--color-link` | `#1a6a79` — 6.21:1 (5.34:1) | `#a3d5df` — 11.78:1 / 10.81:1 (8.61:1) | links in running text — **always underlined** (color alone fails WCAG 1.4.1) |
+| `--color-link-hover` | `#144f5b` — 9.13:1 | `#c1e3e9` — 13.84:1 / 12.69:1 | hovered links |
+| `--color-overline` | `#144f5b` — 7.85:1 worst case | `#84c7d4` — 7.27:1 worst case | the line above a title (a date, a section name); see `.lc-overline` |
+| `--color-on-surface-selected` on `--color-surface-selected` | `#144f5b` on `#e0f1f4` — 7.85:1 | `#a3d5df` on `rgba(32,132,151,.24)` — 9.00:1 (8.14:1 over a card) | the current navigation item and its pill |
 | `--color-on-primary` on `--color-primary-fill` | `#ffffff` on `#1a6a79` — 6.21:1 | same — 6.21:1 | primary buttons, the focused skip link |
 
 The ratios are checked by `src/styles/theme-contrast.spec.ts` against the compiled themes.
+
+### Ink on the status tints
+
+`--color-on-{primary,success,warning,error,info}-subtle` on the matching
+`--color-*-subtle` tint reach 4.5:1 over every surface (badges, alerts). Since
+3.3 the light warning ink is `#855a22` (5.52:1; `#9b6b2b` was 4.25:1) and the
+dark success ink is `#a9bb93` (at least 5.17:1; `#8ea475` was about 4.4:1 on a
+card).
+
+### Borders
+
+| Token | Light | Dark | Use |
+|---|---|---|---|
+| `--color-border` | `#d7ebef` | `rgba(132,199,212,.14)` | the outer edge of cards and panels — decorative. Since 3.3 a teal hairline (was `#d1d5db` / `rgba(255,255,255,.08)`) |
+| `--color-hairline` | `#d7ebef` | `rgba(132,199,212,.14)` | lines between list rows, a docked panel's edge |
+| `--color-field-border` | `#6b7280` — 4.83:1 on white | `#93a4ad` — 6.71:1 on a card | **form field boundaries** (WCAG 1.4.11 asks 3:1): inputs, selects, text areas |
+| `--color-divider` | `#e5e7eb` | `rgba(255,255,255,.06)` | dividers inside a surface |
+
+## Themes: light, dark and following the OS
+
+The palette is chosen by a class on `<html>`:
+
+| Root class | Palette |
+|---|---|
+| none | dark (Design System 2.0 is dark-first) |
+| `dark` | dark |
+| `light` | light |
+| `system` (since 3.3) | follows the OS through `prefers-color-scheme` — light or dark from the first paint, **no script, nothing stored**; switches live when the OS setting changes. Adds `color-scheme: light dark`, so the browser's own controls follow too |
+
+`ThemeService` mirrors a `system` root (`currentTheme`, `isDark`, the meta
+theme-color) without adding a class; `setTheme()` replaces `system` with the
+chosen class. For the browser bar without JavaScript, give the page two meta
+tags: `<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">`
+and `content="#0a121b"` for `dark`.
+
+## "Weite": the app look (3.3)
+
+A white sky, cards on it with a teal hairline, soft tinted cards for the next
+step, and one decorative horizon closing a page. Teal is the only action
+colour; member colours appear only on avatars.
+
+### Page sky
+
+Apply the sky on the app shell or `<body>` with **two** properties (the dark
+value is a list of layers):
+
+```css
+body {
+  background-color: var(--color-background);
+  background-image: var(--app-background-image);
+}
+```
+
+| Token | Light | Dark |
+|---|---|---|
+| `--color-background` | `#ffffff` (was `#f3f4f6`) | `#0a121b` |
+| `--color-background-low` | `#f6fafb` — the sky at the horizon | `#0f1c26` |
+| `--app-background-image` | `linear-gradient(180deg, #ffffff 55%, #f6fafb)` (was `none`) | teal glow top left (0.20), violet glow bottom right (0.14, was 0.18) |
+
+<div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginBottom: '32px' }}>
+  <div style={{ height: '96px', borderRadius: '8px', border: '1px solid #D7EBEF', background: 'linear-gradient(180deg, #FFFFFF 55%, #F6FAFB)', padding: '12px', fontSize: '12px', color: '#111827' }}>Light sky</div>
+  <div style={{ height: '96px', borderRadius: '8px', backgroundColor: '#0A121B', backgroundImage: 'radial-gradient(400px 260px at 12% -10%, rgba(32,132,151,.20), transparent 60%), radial-gradient(300px 240px at 110% 120%, rgba(78,63,132,.14), transparent 55%)', padding: '12px', fontSize: '12px', color: '#F1F6F8' }}>Night sky</div>
+</div>
+
+### Surfaces and fills
+
+| Token | Light | Dark | Use |
+|---|---|---|---|
+| `--color-surface` | `#ffffff` | `#101c26` (was `#14222e`) | content cards, panels, fields — on the sky with the hairline border |
+| `--color-next-step-soft-neutral` | `#f2f6f7` | `#13202a` | soft next-step card, neutral tone |
+| `--color-next-step-soft-primary` | `#e6f3f6` | `#11313b` | soft next-step card, primary tone |
+| `--color-next-step-soft-success` | `#eef4ea` | `#13241f` | soft next-step card, success tone |
+| `--color-next-step-soft-warning` | `#fdf4e4` | `rgba(225,160,64,.12)` | soft next-step card, warning tone |
+| `--color-bubble` · `--color-bubble-ring` · `--color-bubble-icon` | `#ffffff` · `#c1e3e9` · `#1a6a79` (6.21:1) | `#0a121b` · `rgba(132,199,212,.35)` · `#84c7d4` (9.95:1) | the icon bubble on a soft card |
+| `--color-surface-selected` | `#e0f1f4` (was `#f0f8fa`) | `rgba(32,132,151,.24)` (was `.12`) | the current navigation item, a selected row |
+| `--color-muted-tile` · `--color-muted-tile-border` · `--color-muted-tile-icon` | `#f6f9fa` · `#e3eef1` · `#6b7280` | `#0f1a23` · `rgba(132,199,212,.10)` · `#93a4ad` | a dashed "coming soon" tile; its text in secondary ink (7.14:1 / 11.38:1) |
+| `--color-floating-bar-surface` · `--color-floating-bar-border` | `#ffffff` · `#e5e7eb` | `#14222e` (a step above the cards) · `rgba(255,255,255,.08)` | the floating bottom bar |
+| `--shadow-floating-bar` | `0 10px 30px -10px rgba(13,53,61,.28)` | `0 14px 36px -12px rgba(0,0,0,.6)` | the floating bottom bar |
+| `--shadow-auth-card` | `0 1px 2px rgba(16,24,40,.04), 0 30px 60px -30px rgba(13,53,61,.25)` | `0 30px 60px -30px rgba(0,0,0,.7)` | the sign-in card on desktop |
+| `--color-skeleton` · `--color-skeleton-highlight` | `#e6eff1` · `#f2f7f8` | `rgba(132,199,212,.07)` · `rgba(132,199,212,.13)` | `lc-skeleton`'s fill and shimmer |
+
+<div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginBottom: '32px' }}>
+  <div style={{ background: '#F2F6F7', padding: '16px 12px', borderRadius: '16px', fontSize: '12px', color: '#111827' }}><div style={{ fontWeight: 600 }}>soft-neutral</div><div>#F2F6F7</div></div>
+  <div style={{ background: '#E6F3F6', padding: '16px 12px', borderRadius: '16px', fontSize: '12px', color: '#111827' }}><div style={{ fontWeight: 600 }}>soft-primary</div><div>#E6F3F6</div></div>
+  <div style={{ background: '#E0F1F4', padding: '16px 12px', borderRadius: '9999px', fontSize: '12px', color: '#144F5B', textAlign: 'center' }}><div style={{ fontWeight: 600 }}>surface-selected</div><div>#E0F1F4</div></div>
+  <div style={{ background: '#F6F9FA', border: '1px dashed #E3EEF1', padding: '16px 12px', borderRadius: '16px', fontSize: '12px', color: '#4B5563' }}><div style={{ fontWeight: 600 }}>muted-tile</div><div>#F6F9FA</div></div>
+</div>
+
+### Horizon
+
+The `.lc-horizon` page block (see **Design Tokens / Horizon**) draws from these
+tokens; dark values give the night horizon with the same geometry. All are
+decorative: no text sits on the sun, only a compact footer on the land
+(`--color-link` 5.50:1 light, 10.42:1 dark).
+
+| Token | Light | Dark |
+|---|---|---|
+| `--color-horizon-line` | `#84c7d4` | `rgba(132,199,212,.55)` |
+| `--color-land-1` · `-2` · `-3` (top to bottom) | `#e9f3f5` · `#f4f8f9` · `#fafcfc` | `#102029` · `#0c1821` · `#0a131c` |
+| `--color-sun-1` · `-2` · `-3` (centre to rim) | `#d3ecf0` · `#c6e5eb` · `#b3dbe2` | `#173842` · `#1a3e49` · `#1f4955` |
+| `--color-sun-ring` | `#e0f1f4` | `rgba(132,199,212,.16)` |
+| `--color-sun-halo` | `rgba(163,213,223,.30)` | `rgba(32,132,151,.22)` |
+
+## Member colours
+
+One colour per household member, assigned in join order and stable while the
+person is a member: `--color-member-1` … `--color-member-6`, the same in both
+themes, with **white initials** (`--color-on-member`). Colour is never the only
+cue: the initials and the name always sit beside it. Use them only on avatars.
+
+<div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '8px', marginBottom: '16px' }}>
+  <div style={{ textAlign: 'center', fontSize: '12px' }}><div style={{ width: '56px', height: '56px', margin: '0 auto 8px', borderRadius: '9999px', background: '#1A6A79', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '18px' }}>JA</div><div style={{ fontWeight: 600 }}>member-1</div><div>teal #1A6A79</div><div>6.21:1</div></div>
+  <div style={{ textAlign: 'center', fontSize: '12px' }}><div style={{ width: '56px', height: '56px', margin: '0 auto 8px', borderRadius: '9999px', background: '#B04A22', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '18px' }}>TE</div><div style={{ fontWeight: 600 }}>member-2</div><div>rust-600 #B04A22</div><div>5.46:1</div></div>
+  <div style={{ textAlign: 'center', fontSize: '12px' }}><div style={{ width: '56px', height: '56px', margin: '0 auto 8px', borderRadius: '9999px', background: '#4E3F84', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '18px' }}>LB</div><div style={{ fontWeight: 600 }}>member-3</div><div>violet #4E3F84</div><div>8.87:1</div></div>
+  <div style={{ textAlign: 'center', fontSize: '12px' }}><div style={{ width: '56px', height: '56px', margin: '0 auto 8px', borderRadius: '9999px', background: '#5F7150', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '18px' }}>RE</div><div style={{ fontWeight: 600 }}>member-4</div><div>sage #5F7150</div><div>5.30:1</div></div>
+  <div style={{ textAlign: 'center', fontSize: '12px' }}><div style={{ width: '56px', height: '56px', margin: '0 auto 8px', borderRadius: '9999px', background: '#9E3846', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '18px' }}>KW</div><div style={{ fontWeight: 600 }}>member-5</div><div>berry #9E3846</div><div>6.76:1</div></div>
+  <div style={{ textAlign: 'center', fontSize: '12px' }}><div style={{ width: '56px', height: '56px', margin: '0 auto 8px', borderRadius: '9999px', background: '#5A798C', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '18px' }}>NU</div><div style={{ fontWeight: 600 }}>member-6</div><div>slate #5A798C</div><div>4.62:1</div></div>
+</div>
+
+Member 2 is a darker rust step: the kit's `accent-rust` `#C6592E` gives white
+initials only 4.31:1. In TypeScript: `ColorMember1` … `ColorMember6`.
 
 ## Usage in CSS
 
@@ -235,5 +360,5 @@ border-color: var(--color-neutral-200);
 ## Usage in TypeScript
 
 ```typescript
-import { ColorPrimary500, ColorNeutral50 } from '@life-cockpit/angular-ui-kit';
+import { ColorPrimary500, ColorNeutral50 } from '@lifecorner/angular-ui-kit';
 ```

@@ -18,6 +18,14 @@
   line-height: 1.6;
 }
 
+.lc-confirm__preview {
+  margin-top: 1rem;
+
+  &:empty {
+    display: none;
+  }
+}
+
 .lc-confirm__require-text {
   margin-top: 1rem;
 }

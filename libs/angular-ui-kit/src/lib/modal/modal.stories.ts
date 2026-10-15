@@ -17,6 +17,9 @@ Use it for confirmations, forms, and important user interactions that require at
 - Backdrop click to close
 - Keyboard escape support
 - Focus trapping for accessibility
+- 3.3: \`placement="auto"\` — a bottom sheet below 640 px (full width, top corners rounded,
+  clear of the safe area, at most 90 dvh), centred above; \`placement="sheet"\` always a sheet.
+  Header and footer stay visible while the body scrolls; the close button is a 44 px target.
 
 Click the **Open Modal** button in each story to see the modal in action.
         `,
@@ -32,6 +35,13 @@ Click the **Open Modal** button in each story to see the modal in action.
       table: { defaultValue: { summary: 'md' } },
     },
     open: { control: 'boolean', description: 'Controls visibility' },
+    placement: {
+      control: 'inline-radio',
+      options: ['center', 'auto', 'sheet'],
+      description:
+        '3.3: `center` (3.2); `auto` — a bottom sheet below 640 px viewport width, centred above; `sheet` — always a bottom sheet. The sheet spans the width, rounds its top corners, keeps clear of `env(safe-area-inset-bottom)` and is at most 90 dvh high; `full` size ignores it.',
+      table: { defaultValue: { summary: 'center' } },
+    },
   },
 };
 
@@ -143,3 +153,33 @@ export const DestructiveConfirmation: Story = {
       </lc-modal>`,
   }),
 };
+
+/**
+ * 3.3 (AC-4): a bottom sheet on phones, centred from 640 px. With a long body
+ * the header and the footer stay in place while the body scrolls.
+ */
+export const BottomSheetOnPhones: Story = {
+  name: 'Bottom sheet on phones (3.3)',
+  args: { open: false, size: 'sm', placement: 'auto' },
+  render: (args) => ({
+    props: { ...args, isOpen: false },
+    template: `
+      <lc-button variant="primary" (click)="isOpen = true">Open Modal</lc-button>
+      <lc-modal [open]="isOpen" (openChange)="isOpen = $event" [size]="size" [placement]="placement"
+        ariaLabelledBy="sheet-title" closeAriaLabel="Schließen">
+        <div slot="header"><h2 id="sheet-title">Passkey entfernen?</h2></div>
+        <div slot="body">
+          @for (line of [1, 2, 3, 4, 5, 6, 7, 8]; track line) {
+            <p style="margin: 0; color: var(--color-text-secondary); line-height: 1.5;">
+              Zeile {{ line }}: Danach meldest du dich auf diesem Gerät mit einem anderen Passkey an.
+            </p>
+          }
+        </div>
+        <div slot="footer" style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+          <lc-button variant="danger" size="lg" [fullWidth]="true" (click)="isOpen = false">Entfernen</lc-button>
+          <lc-button variant="outline" size="lg" [fullWidth]="true" (click)="isOpen = false">Abbrechen</lc-button>
+        </div>
+      </lc-modal>`,
+  }),
+};
+

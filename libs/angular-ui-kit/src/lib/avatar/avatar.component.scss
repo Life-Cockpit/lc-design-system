@@ -125,3 +125,47 @@
     }
   }
 }
+
+// ── Member colours (LK-7) ─────────────────────────────────────────────────
+// White initials on six fixed hues, the same in light and dark (4.62–8.87:1).
+// The fallbacks are the token values, so the colours hold before the app
+// loads the kit's theme files.
+$lc-avatar-member-colors: (
+  1: #1a6a79, // teal
+  2: #b04a22, // rust-600
+  3: #4e3f84, // violet
+  4: #5f7150, // sage
+  5: #9e3846, // berry
+  6: #5a798c, // slate
+);
+
+.lc-avatar--member {
+  color: var(--color-on-member, #ffffff);
+  font-weight: var(--typography-font-weight-bold, 700);
+  letter-spacing: 0.02em;
+
+  // Bold initials read larger: one step below the neutral avatar's size.
+  &.lc-avatar--xs { font-size: 0.625rem; }
+  &.lc-avatar--sm { font-size: 0.75rem; }
+  &.lc-avatar--md { font-size: 0.875rem; }
+  &.lc-avatar--lg { font-size: 1rem; }
+  &.lc-avatar--xl { font-size: 1.25rem; }
+}
+
+@each $index, $hex in $lc-avatar-member-colors {
+  .lc-avatar--member-#{$index} {
+    background-color: var(--color-member-#{$index}, #{$hex});
+  }
+}
+
+// ── Ring (LK-7): a gap to whatever the avatar overlaps ────────────────────
+// A box-shadow, so it adds no layout size and is not clipped by the avatar's
+// own `overflow: hidden`.
+.lc-avatar--ring {
+  box-shadow: 0 0 0 var(--lc-avatar-ring-width, 3px) var(--lc-avatar-ring-color, var(--color-background));
+
+  &.lc-avatar--xs,
+  &.lc-avatar--sm {
+    box-shadow: 0 0 0 var(--lc-avatar-ring-width, 2px) var(--lc-avatar-ring-color, var(--color-background));
+  }
+}

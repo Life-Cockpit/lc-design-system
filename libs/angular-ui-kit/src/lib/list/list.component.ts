@@ -8,8 +8,9 @@ import {
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { IconComponent } from '../icon/icon.component';
-import { ButtonComponent } from '../button/button.component';
+import { ButtonComponent, ButtonSize, ButtonVariant } from '../button/button.component';
 import { ListItemTemplateDirective } from './list-item-template.directive';
+import type { AvatarColor } from '../avatar/avatar.component';
 
 /**
  * List orientation type
@@ -37,6 +38,11 @@ export interface ListItem {
   icon?: string;
   /** Avatar URL or initials (renders a circular avatar instead of icon) */
   avatar?: string;
+  /**
+   * Background of avatar initials: `default` or a member colour `member-1` …
+   * `member-6` with white initials (as `lc-avatar`'s `color`).
+   */
+  avatarColor?: AvatarColor;
   /** Badge text (e.g. count, status label) shown on the trailing side */
   badge?: string;
   /** Badge color variant */
@@ -45,6 +51,12 @@ export interface ListItem {
   metadata?: string;
   /** Optional action label */
   action?: string;
+  /**
+   * Accessible name of this row's action when the visible label repeats on
+   * every row (e.g. „Entfernen“ → „iPhone · Safari entfernen“). The visible
+   * label must be part of it (WCAG 2.5.3).
+   */
+  actionAriaLabel?: string;
   /** Item identifier */
   id?: string;
   /** Whether the item is disabled */
@@ -116,6 +128,26 @@ export class ListComponent {
    */
   clickable = input<boolean>(false);
 
+  /**
+   * Clamp each item's `description` to two lines (3.2). Set `false` for
+   * reading text that must show in full (3.3, G-11).
+   * @default true
+   */
+  clampDescription = input<boolean>(true);
+
+  /**
+   * Variant of the built-in row action (`ListItem.action`).
+   * @default 'ghost'
+   */
+  actionVariant = input<ButtonVariant>('ghost');
+
+  /**
+   * Size of the built-in row action: `xs` (3.2, about 25 px) … `lg` (48.5 px,
+   * the 44 px touch target).
+   * @default 'xs'
+   */
+  actionSize = input<ButtonSize>('xs');
+
   /** Event emitted when an item is clicked */
   readonly itemClick = output<ListItem>();
 
@@ -136,6 +168,14 @@ export class ListComponent {
       classes.push('lc-list--with-dividers');
     }
 
+    if (this.clickable()) {
+      classes.push('lc-list--clickable');
+    }
+
+    if (!this.clampDescription()) {
+      classes.push('lc-list--no-clamp');
+    }
+
     return classes.join(' ');
   });
 
@@ -154,6 +194,14 @@ export class ListComponent {
     }
 
     return classes.join(' ');
+  }
+
+  /** CSS classes of an item's avatar (member colour, LK-7). */
+  protected avatarClasses(item: ListItem): string {
+    const color = item.avatarColor;
+    return color && color !== 'default'
+      ? `lc-list__avatar lc-list__avatar--member lc-list__avatar--${color}`
+      : 'lc-list__avatar';
   }
 
   /**

@@ -13,7 +13,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
-import { InputComponent } from '../input/input.component';
+import { InputAutocapitalize, InputComponent, InputEnterKeyHint } from '../input/input.component';
 
 /**
  * Email input component with built-in RFC 5322 validation.
@@ -24,7 +24,9 @@ import { InputComponent } from '../input/input.component';
  * - Valid/invalid visual indicators
  * - Size presets (xs, sm, md, lg)
  * - Helper text and error message display
- * - Disabled and readonly states
+ * - Disabled and readonly states (read-only addresses can wrap: `readonlyWrap`)
+ * - Optional leading mail icon (`showIcon`)
+ * - Autofill and keyboard hints: `autocomplete`, `name`, `autocapitalize`, `spellcheck`, `enterkeyhint`
  * - ControlValueAccessor integration for reactive forms
  *
  * @example
@@ -104,6 +106,46 @@ export class EmailInputComponent implements ControlValueAccessor {
    * ARIA label for accessibility
    */
   readonly ariaLabel = input<string>();
+
+  /**
+   * Native `autocomplete` (input purpose, WCAG 1.3.5): `email` (registration),
+   * `username` (the address as the sign-in name), `username webauthn` (sign-in:
+   * the browser offers passkeys in this field). Unset = no attribute.
+   */
+  readonly autocomplete = input<string>();
+
+  /** Native `name` of the inner input. Unset = no attribute. */
+  readonly name = input<string>();
+
+  /** Native `autocapitalize` (`off` keeps keyboards from capitalising the address). Unset = no attribute. */
+  readonly autocapitalize = input<InputAutocapitalize>();
+
+  /** Native `spellcheck`. Unset = no attribute. */
+  readonly spellcheck = input<boolean>();
+
+  /** Native `enterkeyhint`: the label of the on-screen keyboard's Enter key. Unset = no attribute. */
+  readonly enterkeyhint = input<InputEnterKeyHint>();
+
+  /**
+   * Show the leading mail icon. `false` gives the address the icon's width
+   * (about 36 px) — long addresses fit on a phone.
+   * @default true
+   */
+  readonly showIcon = input<boolean>(true);
+
+  /**
+   * While `readonly`: the address wraps onto more lines instead of being
+   * clipped. A hidden native input keeps value, `name` and `autocomplete`
+   * (e.g. `username` for password managers on a password page).
+   * @default false
+   */
+  readonly readonlyWrap = input<boolean>(false);
+
+  /**
+   * Show the `*` of a `required` field; `false` keeps the required semantics without it.
+   * @default true
+   */
+  readonly requiredIndicator = input<boolean>(true);
 
   /** Error shown for an empty `required` field. */
   readonly requiredMessage = input('Email address is required');

@@ -11,9 +11,12 @@ import { FormsModule } from '@angular/forms';
 import { IconComponent } from '../icon/icon.component';
 import { ButtonComponent } from '../button/button.component';
 import { InputComponent } from '../input/input.component';
-import { ModalComponent } from '../modal/modal.component';
+import { ModalComponent, ModalPlacement } from '../modal/modal.component';
 
 export type ConfirmDialogVariant = 'default' | 'destructive' | 'warning';
+
+/** Size of the confirm and cancel buttons (`lg` = 48.5 px, a 44 px target). */
+export type ConfirmDialogButtonSize = 'sm' | 'md' | 'lg';
 
 export interface RequireTextConfig {
   prompt: string;
@@ -25,6 +28,10 @@ export interface RequireTextConfig {
  *
  * Builds on `<lc-modal>` to provide a standardized confirmation pattern
  * with optional destructive variant and text-matching confirmation.
+ *
+ * The dialog is named by its title (`aria-labelledby`); `[slot='preview']`
+ * shows what the action affects below the message; `confirmLoading` keeps the
+ * dialog open with a busy confirm button while the action runs.
  *
  * @example
  * ```html
@@ -47,6 +54,8 @@ export interface RequireTextConfig {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ConfirmDialogComponent {
+  private static nextId = 0;
+
   /** Whether the dialog is open */
   readonly open = input<boolean>(false);
 
@@ -70,6 +79,33 @@ export class ConfirmDialogComponent {
 
   /** Require text match to enable confirm */
   readonly requireText = input<RequireTextConfig>();
+
+  /** Accessible name of the close button in the header. */
+  readonly closeAriaLabel = input('Close modal');
+
+  /**
+   * Shows a spinner on the confirm button and blocks a second confirm while
+   * the action runs; the app closes the dialog when it is done.
+   * @default false
+   */
+  readonly confirmLoading = input<boolean>(false);
+
+  /**
+   * Size of the confirm and cancel buttons: `md` (3.2) or `lg` (48.5 px, the
+   * 44 px touch target), or `sm`.
+   * @default 'md'
+   */
+  readonly buttonSize = input<ConfirmDialogButtonSize>('md');
+
+  /**
+   * Where the dialog sits (passed to `lc-modal`): `center` (3.2), `auto` (a
+   * bottom sheet below 640 px) or `sheet`.
+   * @default 'center'
+   */
+  readonly placement = input<ModalPlacement>('center');
+
+  /** Id of the title, which names the dialog. */
+  protected readonly titleId = `lc-confirm-title-${++ConfirmDialogComponent.nextId}`;
 
   /** Emitted when user confirms */
   readonly confirmed = output<void>();
@@ -142,7 +178,7 @@ export class ConfirmDialogComponent {
    * *that* button, never the (possibly destructive) confirm action.
    */
   protected onConfirm(): void {
-    if (!this.confirmAllowed()) return;
+    if (!this.confirmAllowed() || this.confirmLoading()) return;
     this.confirmed.emit();
   }
 

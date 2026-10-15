@@ -17,8 +17,13 @@
 // Design System 2.0: dark is the DEFAULT look. `:root:not(.light)` makes dark
 // apply before any theme class is set (no first-paint white flash); `.light` is
 // the explicit opt-in escape hatch defined in _theme-light.scss.
-:root.dark,
-:root:not(.light) {
+//
+// 3.3 (G-6): `:root.system` follows the OS without a script. A root with the
+// `system` class gets the light tokens from _theme-light.scss (`:root`) and
+// these dark tokens only under `prefers-color-scheme: dark`, so the page
+// switches with the OS setting, also before (or without) any JavaScript.
+// The declarations live in one mixin and are emitted twice (identical values).
+@mixin dark-theme-tokens {
   // ============================================================================
   // Colors - Primary (Inverted for dark mode)
   // ============================================================================
@@ -131,6 +136,7 @@
   --typography-font-size-4xl: #{$typography-font-size-4xl};
   --typography-font-size-5xl: #{$typography-font-size-5xl};
   --typography-font-size-6xl: #{$typography-font-size-6xl};
+  --typography-font-size-7xl: #{$typography-font-size-7xl};
 
   // ============================================================================
   // Typography - Font Weights (Same as light theme)
@@ -209,11 +215,14 @@
   // ============================================================================
   // Surfaces
   --color-background: #{$color-background-dark};
+  // The night sky at the horizon (3.3, LK-1).
+  --color-background-low: #0f1c26;
   // Two teal+violet radial glows over the base background. Apply on the app
   // shell via `background-image: var(--app-background-image)`.
+  // 3.3 ("Weite"): the violet glow is calmer, 0.14 (was 0.18).
   --app-background-image:
     radial-gradient(1200px 800px at 12% -10%, rgba(32, 132, 151, 0.20), transparent 60%),
-    radial-gradient(900px 700px at 110% 120%, rgba(78, 63, 132, 0.18), transparent 55%);
+    radial-gradient(900px 700px at 110% 120%, rgba(78, 63, 132, 0.14), transparent 55%);
   --color-surface: #{$color-surface-dark-base};
   --color-surface-raised: #{$color-surface-dark-raised};
   --color-surface-2: #{$color-surface-dark-raised};
@@ -223,13 +232,16 @@
   // giving the two-tone shell (dark sidebar, slightly lighter content area).
   --color-sidebar: #{$color-sidebar-dark};
   --color-surface-hover: rgba(132, 199, 212, 0.06);
-  --color-surface-selected: rgba(32, 132, 151, 0.12);
+  // Selected item (nav pill, active row) and its ink (3.3, LK-11: was 0.12;
+  // #a3d5df on it measures 9.03:1 on the page).
+  --color-surface-selected: rgba(32, 132, 151, 0.24);
+  --color-on-surface-selected: #{$color-primary-300};
   --color-surface-muted: rgba(255, 255, 255, 0.02);
   // Gradient surface for cards/panels (use as `background-image`)
   --gradient-surface: linear-gradient(180deg, var(--color-surface-2), var(--color-surface));
 
   // Text — tuned brighter than the raw pitch values for AA contrast on the
-  // teal-tinted surfaces (#14222e / #1a2c3a).
+  // teal-tinted surfaces (#101c26 / #1a2c3a).
   --color-text-primary: #f1f6f8;
   --color-text-secondary: #c4d2d9;
   --color-text-tertiary: #93a4ad;
@@ -237,15 +249,20 @@
   --color-neutral-white: #ffffff;
 
   // Links in running text (see the light theme). #a3d5df measures 11.78:1 on
-  // the page background and 8.97:1 on a raised surface; hover 13.84:1 / 11.89:1.
+  // the page background and 8.97:1 on a raised surface; hover 13.84:1 / 12.69:1.
   --color-link: #{$color-primary-300};
   --color-link-hover: #{$color-primary-200};
 
   // Borders
-  --color-border: rgba(255, 255, 255, 0.08);
+  // 3.3 (LK-11): a teal-tinted hairline, was rgba(255, 255, 255, 0.08).
+  --color-border: rgba(132, 199, 212, 0.14);
   --color-border-strong: rgba(132, 199, 212, 0.28);
   --color-divider: rgba(255, 255, 255, 0.06);
   --color-border-subtle: rgba(255, 255, 255, 0.035);
+  // Hairlines between list rows and along a docked panel's edge.
+  --color-hairline: rgba(132, 199, 212, 0.14);
+  // Form field boundary (SI-8, WCAG 1.4.11): #93a4ad is 6.71:1 on a card.
+  --color-field-border: #93a4ad;
 
   // Brand alias (some components reference bare --color-primary)
   --color-primary: var(--color-primary-500);
@@ -295,7 +312,10 @@
   // text on a dark surface measure ~1.9:1 and ~2.4:1. These use the light end
   // of each ramp instead and clear 4.5:1 comfortably.
   --color-on-primary-subtle: var(--color-primary-500);
-  --color-on-success-subtle: #{$color-success-default};
+  // 3.3 (HS-5): #a9bb93, was success-default #8ea475, which measured about
+  // 4.4:1 on --color-success-subtle over a card (a success badge failed
+  // 1.4.3); now at least 5.17:1 over every dark surface.
+  --color-on-success-subtle: #a9bb93;
   --color-on-warning-subtle: #{$color-warning-default};
   --color-on-error-subtle: #{$color-error-light};
   --color-on-info-subtle: #{$color-info-light};
@@ -324,6 +344,55 @@
   --gradient-text: linear-gradient(100deg, #{$color-primary-300}, #{$color-primary-500} 55%, #{$color-accent-purple});
   // Gradient teal tile for logos / icon squares
   --gradient-brand-tile: linear-gradient(135deg, #{$color-primary-400}, #{$color-primary-600});
+
+  // ============================================================================
+  // "Weite" look, night values (3.3: LK-1, LK-4, LK-5, LK-7, LK-10, LK-11)
+  // ============================================================================
+  // Literal raw-scale values: the --color-primary-* custom properties invert.
+  --color-overline: #{$color-primary-400};
+
+  --color-next-step-soft-neutral: #13202a;
+  --color-next-step-soft-primary: #11313b;
+  --color-next-step-soft-success: #13241f;
+  --color-next-step-soft-warning: rgba(225, 160, 64, 0.12);
+  --color-bubble: #{$color-background-dark};
+  --color-bubble-ring: rgba(132, 199, 212, 0.35);
+  --color-bubble-icon: #{$color-primary-400};
+
+  --color-muted-tile: #0f1a23;
+  --color-muted-tile-border: rgba(132, 199, 212, 0.1);
+  --color-muted-tile-icon: #93a4ad;
+
+  // The night horizon: same geometry, the sun a dim teal disc, the land
+  // darker than the sky.
+  --color-horizon-line: rgba(132, 199, 212, 0.55);
+  --color-land-1: #102029;
+  --color-land-2: #0c1821;
+  --color-land-3: #0a131c;
+  --color-sun-1: #173842;
+  --color-sun-2: #1a3e49;
+  --color-sun-3: #1f4955;
+  --color-sun-ring: rgba(132, 199, 212, 0.16);
+  --color-sun-halo: rgba(32, 132, 151, 0.22);
+
+  --color-member-1: #{$color-member-1};
+  --color-member-2: #{$color-member-2};
+  --color-member-3: #{$color-member-3};
+  --color-member-4: #{$color-member-4};
+  --color-member-5: #{$color-member-5};
+  --color-member-6: #{$color-member-6};
+  --color-on-member: #ffffff;
+
+  // A step above the cards (#101c26), so the bar stands off the page (3.3).
+  --color-floating-bar-surface: #{$color-surface-dark-floating};
+  --color-floating-bar-border: rgba(255, 255, 255, 0.08);
+  --shadow-floating-bar: 0 14px 36px -12px rgba(0, 0, 0, 0.6);
+
+  --shadow-auth-card: 0 30px 60px -30px rgba(0, 0, 0, 0.7);
+
+  --color-skeleton: rgba(132, 199, 212, 0.07);
+  --color-skeleton-highlight: rgba(132, 199, 212, 0.13);
+
   // ============================================================================
   // Short Aliases for Common Usage (Component Convenience)
   // ============================================================================
@@ -366,4 +435,21 @@
   --color-info-500: var(--color-info-default);
   --color-info-600: var(--color-info-default);
   --color-info-700: var(--color-info-dark);
+}
+
+:root.dark,
+:root:not(.light):not(.system) {
+  @include dark-theme-tokens;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root.system:not(.light) {
+    @include dark-theme-tokens;
+  }
+}
+
+// The page supports both schemes, so the browser draws its own canvas,
+// scrollbars and form controls in the OS scheme too.
+:root.system {
+  color-scheme: light dark;
 }

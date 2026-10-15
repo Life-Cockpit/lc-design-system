@@ -40,6 +40,12 @@ Chronological event display for activity feeds, changelogs, and process tracking
   argTypes: {
     orientation: { control: 'select', options: ['vertical', 'horizontal'] },
     compact: { control: 'boolean' },
+    headingLevel: {
+      control: 'select',
+      options: [undefined, 2, 3, 4, 5, 6],
+      description:
+        '3.3: heading level of the item titles (`h2`–`h6`) for heading navigation; unset = paragraph (3.2). The timeline is an `<ol>`; an item’s `datetime` (ISO 8601) goes on its `<time datetime>`.',
+    },
   },
 };
 
@@ -159,3 +165,16 @@ export const Transcript: Story = {
     `,
   }),
 };
+
+/** 3.3 (G-11): an ordered list with headed events and machine-readable times. */
+export const HeadingsAndTimes: Story = {
+  name: 'Headings and times (3.3)',
+  args: {
+    headingLevel: 3,
+    items: [
+      { title: 'Lena Brandt ist beigetreten', timestamp: 'heute 18:05', datetime: '2026-10-12T18:05:00+02:00', color: 'success' as const },
+      { title: 'Einladung verschickt', timestamp: 'gestern, 20:30', datetime: '2026-10-11T20:30:00+02:00', color: 'primary' as const },
+    ],
+  },
+};
+

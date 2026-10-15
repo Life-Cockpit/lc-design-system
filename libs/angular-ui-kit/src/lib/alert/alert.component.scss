@@ -44,6 +44,56 @@
   line-height: var(--line-height-normal);
 }
 
+// Stacked actions (3.3, AS-11): the actions take their own row below the
+// title and message (aligned with the text when the icon shows). Below 576 px
+// of alert width — about a 640 px phone or tablet screen minus the page
+// gutters — one per line at full width, 8 px apart; from there side by side
+// at their natural width. The host is a size container only in this layout
+// (it is a full-width block, so containment does not change its size).
+.lc-alert--actions-stacked {
+  container: lc-alert / inline-size;
+
+  .lc-alert__container {
+    flex-wrap: wrap;
+  }
+
+  .lc-alert__body {
+    flex: 1 1 0;
+  }
+
+  .lc-alert__action {
+    order: 1;
+    flex: 1 1 100%;
+    align-self: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--spacing-2, 0.5rem);
+    margin-top: var(--spacing-1, 0.25rem);
+
+    > lc-button > .btn {
+      width: 100%;
+    }
+  }
+
+  &.lc-alert--with-icon .lc-alert__action {
+    // icon (24 px, `md`) + the container gap
+    padding-inline-start: calc(1.5rem + var(--spacing-3, 0.75rem));
+  }
+}
+
+@container lc-alert (width >= 36rem) {
+  .lc-alert--actions-stacked .lc-alert__action {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+
+    > lc-button > .btn {
+      width: auto;
+    }
+  }
+}
+
 // Action slot (e.g. a retry button) — rendered right of the body, vertically
 // centered against the alert. The wrapper is always in the template; hiding it
 // when nothing is projected keeps the container's gap from leaving a hole.

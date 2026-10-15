@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
 import { By } from '@angular/platform-browser';
 import { provideHttpClient, withXhr } from '@angular/common/http';
-import { TimelineComponent, TimelineItem } from './timeline.component';
+import { TimelineComponent, TimelineHeadingLevel, TimelineItem } from './timeline.component';
 import {
   TimelineContentDirective,
   TimelineMetaDirective,
@@ -240,3 +240,50 @@ describe('TimelineComponent transcript extensions', () => {
     expect(meta.nativeElement.textContent.trim()).toBe('12 s');
   });
 });
+
+describe('TimelineComponent 3.3: list and time semantics (G-11)', () => {
+  let fixture: ComponentFixture<TimelineComponent>;
+  let el: HTMLElement;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [TimelineComponent],
+      providers: [provideHttpClient(withXhr())],
+    }).compileComponents();
+    fixture = TestBed.createComponent(TimelineComponent);
+    fixture.componentRef.setInput('items', [
+      { title: 'Beigetreten', timestamp: 'heute 18:05', datetime: '2026-10-12T18:05:00+02:00' },
+      { title: 'Eingeladen', timestamp: 'gestern' },
+    ] satisfies TimelineItem[]);
+    el = fixture.nativeElement;
+  });
+
+  it('renders an ordered list of list items', () => {
+    fixture.detectChanges();
+    const ol = el.querySelector('ol.timeline') as HTMLOListElement;
+    expect(ol).toBeTruthy();
+    expect(Array.from(ol.children).map((c) => c.tagName)).toEqual(['LI', 'LI']);
+  });
+
+  it('puts the machine-readable moment on <time datetime>', () => {
+    fixture.detectChanges();
+    const times = el.querySelectorAll('time.timeline__timestamp');
+    expect(times[0].getAttribute('datetime')).toBe('2026-10-12T18:05:00+02:00');
+    expect(times[0].textContent?.trim()).toBe('heute 18:05');
+    expect(times[1].hasAttribute('datetime')).toBe(false);
+  });
+
+  it('keeps paragraph titles by default', () => {
+    fixture.detectChanges();
+    expect(el.querySelector('.timeline__title')?.tagName).toBe('P');
+  });
+
+  it.each<TimelineHeadingLevel>([2, 3, 4, 5, 6])('renders titles as h%s on request', (level) => {
+    fixture.componentRef.setInput('headingLevel', level);
+    fixture.detectChanges();
+    const title = el.querySelector('.timeline__title') as HTMLElement;
+    expect(title.tagName).toBe(`H${level}`);
+    expect(title.textContent?.trim()).toBe('Beigetreten');
+  });
+});
+

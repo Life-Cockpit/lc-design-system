@@ -9,7 +9,9 @@ const lcTheme = create({
   base: 'dark',
 
   // Brand
-  brandTitle: `<div style="display:flex;flex-direction:column;align-items:flex-start;width:100%"><img src="/assets/life-cockpit-logo.svg" alt="Life-Cockpit" style="height:60px;max-width:none;margin-bottom:6px" /><span style="font-size:11px;font-weight:700;color:#A0B3BD;font-family:Inter,sans-serif">v${version}</span></div>`,
+  // The manager is dark-first, so it shows the lockup's dark drawing. The logo is
+  // flat and fixed: proportional height only, never squeezed (see manager-head.html).
+  brandTitle: `<div style="display:flex;flex-direction:column;align-items:flex-start;width:100%"><img src="/assets/lifecorner-logo-on-dark.svg" alt="LifeCorner" style="height:40px;width:auto;max-width:none;margin-bottom:6px" /><span style="font-size:11px;font-weight:700;color:#A0B3BD;font-family:Inter,sans-serif">Design System · v${version}</span></div>`,
   brandUrl: '/',
   brandTarget: '_self',
 

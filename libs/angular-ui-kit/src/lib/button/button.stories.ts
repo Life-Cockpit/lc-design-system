@@ -20,6 +20,7 @@ It supports multiple variants, sizes, states, and slots for icons.
 - Icon slots (before/after)
 - Full-width option
 - Accessible with ARIA attributes
+- Labels wrap onto centred lines when there is no room (since 3.3; WCAG 1.4.4 and 1.4.10), as on \`a[lcButton]\`
 
 **Navigation?** Use a link, not a button: \`<a lcButton href="…">\` gives an anchor the
 same variants and sizes and works without JavaScript (see **Components / Button Link**).
@@ -315,6 +316,26 @@ export const FullWidth: Story = {
 };
 
 // --- Showcase ---
+
+export const WrappingLabel: Story = {
+  name: 'Wrapping Label',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'A label that does not fit wraps onto centred lines instead of overflowing (since 3.3, gap SI-7): long German labels at 320 px or with 200 % text stay inside the button. A label that fits stays on one line.',
+      },
+    },
+  },
+  render: (args) => ({
+    props: args,
+    template: `
+      <div style="width: 200px; display: flex; flex-direction: column; gap: 8px;">
+        <lc-button variant="primary" size="lg" [fullWidth]="true" (clicked)="clicked($event)">Haushalt einrichten und Mitglieder einladen</lc-button>
+        <lc-button variant="outline" size="lg" [fullWidth]="true" (clicked)="clicked($event)">Mit Passkey anmelden</lc-button>
+      </div>`,
+  }),
+};
 
 export const AllVariants: Story = {
   parameters: {

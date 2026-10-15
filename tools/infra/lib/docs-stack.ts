@@ -13,6 +13,9 @@ export class DocsStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
+    // Docs and MCP server of the LifeCorner Design System. The domain stays on
+    // life-cockpit.de until the owner registers lifecorner.de, then moves to
+    // design.lifecorner.de (ADR-0035). Construct and stack IDs keep their names.
     const domainName = 'design.life-cockpit.de';
 
     const certificate = acm.Certificate.fromCertificateArn(

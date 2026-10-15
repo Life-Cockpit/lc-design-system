@@ -1,0 +1,14 @@
+<div [class]="pageClasses()" [style.--lc-app-page-content-max]="contentMaxWidth()">
+  <main class="lc-app-page__main" [id]="mainId()">
+    <div class="lc-app-page__content"><ng-content /></div>
+  </main>
+  @if (hasAside()) {
+    <aside
+      class="lc-app-page__aside"
+      [attr.aria-labelledby]="asideLabelledby() || null"
+      [attr.aria-label]="asideLabelledby() ? null : asideAriaLabel()"
+    >
+      <ng-content select="[page-aside]" />
+    </aside>
+  }
+</div>

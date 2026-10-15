@@ -211,11 +211,13 @@ $hamburger-glyph: 24px;
   }
 }
 
-// Logo link
+// Logo link. `min-width: 0` lets the brand shrink, so a long subtitle ends
+// with "…" instead of pushing the account button off the row (AS-3).
 .lc-header__brand {
   display: flex;
   align-items: center;
   gap: var(--spacing-3);
+  min-width: 0;
 }
 
 .lc-header__logo {
@@ -241,6 +243,7 @@ $hamburger-glyph: 24px;
   display: flex;
   flex-direction: column;
   gap: 0.125rem;
+  min-width: 0;
 }
 
 .lc-header__title {
@@ -256,13 +259,27 @@ $hamburger-glyph: 24px;
   }
 }
 
+// The subtitle is data (a household or workspace name): shown as typed, on
+// one line, cut with "…" (AS-3). The full text is the `title` attribute and
+// stays in the DOM, so screen readers read all of it. Uppercase is gone —
+// it changed how names read and made some screen readers spell them out.
+// `--lc-header-subtitle-max-width` caps it below the available space.
 .lc-header__subtitle {
-  font-size: 0.75rem;
+  display: block;
+  max-width: var(--lc-header-subtitle-max-width, 100%);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 0.8125rem;
+  line-height: 1.3;
   font-weight: 500;
   color: var(--lc-header-fg-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  text-transform: var(--lc-header-subtitle-transform, none);
   transition: color 0.2s ease;
+
+  @media (min-width: 1024px) {
+    font-size: var(--font-size-sm, 0.875rem);
+  }
 }
 
 // Spacer to push profile to the right
@@ -351,11 +368,14 @@ html.dark .lc-header:not(.lc-header--light),
   }
 }
 
-// Profile menu container
+// Profile menu container. At least 44 px high in every density (AS-2; it was
+// 38 px in cosy).
 .lc-header__profile-trigger {
   display: flex;
   align-items: center;
   gap: var(--lc-density-gap-sm, var(--spacing-2));
+  min-height: var(--size-min-touch-height, 2.75rem);
+  box-sizing: border-box;
   padding: var(--lc-density-padding-xs, var(--spacing-2)) var(--spacing-3);
   background: transparent;
   border: 1px solid var(--lc-header-trigger-border);
@@ -375,6 +395,30 @@ html.dark .lc-header:not(.lc-header--light),
   }
 }
 
+// Avatar trigger (AS-2): the initials avatar (40 px) in a 48 px round
+// button, no border; the button carries the accessible name.
+.lc-header__profile-trigger--avatar {
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  min-height: 3rem;
+  padding: 0;
+  border: 0;
+  flex-shrink: 0;
+
+  &:hover {
+    border-color: transparent;
+  }
+}
+
+// ── Transparent variant (LK-8): no surface, no border ─────────────────────
+// After the theme variants so it wins over their literal backgrounds.
+.lc-header.lc-header--transparent {
+  --lc-header-bg: transparent;
+  --lc-header-border: transparent;
+  border-bottom-width: 0;
+}
+
 // Menu header (email display)
 .lc-menu__header {
   padding: var(--spacing-3) var(--spacing-4);
@@ -392,7 +436,7 @@ html.dark .lc-header:not(.lc-header--light),
 // white-background dropdown and make text invisible.
 .lc-header__menu-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--spacing-3);
   padding: var(--lc-density-padding-md, var(--spacing-4));
   border-bottom: 1px solid var(--color-divider, #e5e7eb);
@@ -404,21 +448,19 @@ html.dark .lc-header:not(.lc-header--light),
   min-width: 0;
 }
 
+// Name and email wrap instead of ending in "…" (AS-2): names at spaces and
+// hyphens, emails anywhere — the menu is at most min(18rem, 100vw − 2rem).
 .lc-header__menu-user-name {
   font-size: var(--font-size-sm);
   font-weight: 600;
   color: var(--color-text-primary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: break-word;
   line-height: 1.4;
 }
 
 .lc-header__menu-user-email {
   font-size: var(--font-size-xs);
   color: var(--color-text-secondary, #6b7280);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
   line-height: 1.4;
 }

@@ -17,6 +17,28 @@ import { IconComponent } from '../icon/icon.component';
 export type NextStepCardTone = 'neutral' | 'primary' | 'success' | 'warning' | 'info';
 
 /**
+ * Appearance of the card.
+ * - `default`: white surface, hairline border, 4 px tonal rail, 36 px tinted bubble
+ * - `soft`: tinted fill per tone, radius 24 px (28 px from 1024 px), no rail,
+ *   border or shadow, a larger white bubble with a 1 px ring (the "Weite" look)
+ */
+export type NextStepCardVariant = 'default' | 'soft';
+
+/**
+ * How several actions are laid out.
+ * - `inline`: side by side at the end of the card; below 480 px card width in
+ *   their own row, stretched
+ * - `stacked`: always in their own row, one per line at equal width, 8 px apart
+ */
+export type NextStepCardActionsLayout = 'inline' | 'stacked';
+
+/** Element that renders the title (semantics only, the look stays the same). */
+export type NextStepCardTitleTag = 'div' | 'h2' | 'h3';
+
+/** Size of the built-in action buttons (`sm` 32 px, `md` 42 px, `lg` 48.5 px). */
+export type NextStepCardActionSize = 'sm' | 'md' | 'lg';
+
+/**
  * Next-step card — the single status-and-action surface of a page: "where does
  * this stand, and what is the one next step?".
  *
@@ -30,8 +52,20 @@ export type NextStepCardTone = 'neutral' | 'primary' | 'success' | 'warning' | '
  *   blockers are rows IN the card, never additional banners
  * - `[slot='meta']`: one footer line (icon + text)
  * - `[slot='actions']`: fully replaces the built-in action buttons
+ * - `[slot='body']`: content below the message without the message's text
+ *   styles, so form fields, lists or a description list keep their own look
  * - `role="region"` labelled by the title; optional polite live announcement
  *   of title changes via `announce`
+ * - Narrow layout: below 480 px of card width (a CSS container query on the
+ *   host) the icon sits beside the title, message, body, blockers and meta
+ *   take the full inner width, the inline padding drops to `padding-md`, and
+ *   the actions take their own row with every action stretched. A projected
+ *   `fullWidth` button gets its own row at every width.
+ * - `variant="soft"`: the tinted card of the "Weite" look; `actionsLayout`
+ *   `stacked` for several equal-width actions; `titleTag` for a heading
+ *
+ * The host is a size container (`container-type: inline-size`) and takes the
+ * full inline size of its parent.
  *
  * Usage rule: exactly ONE next-step card per page.
  *
@@ -65,11 +99,46 @@ export class NextStepCardComponent implements AfterViewChecked {
    */
   tone = input<NextStepCardTone>('neutral');
 
-  /** Icon name for the round 36px bubble. */
+  /**
+   * Appearance: `default` (surface, border, 4 px rail) or `soft` (tinted fill
+   * per tone, radius 24 px / 28 px from 1024 px, no rail, border or shadow,
+   * a 48 px white bubble with a 1 px ring; 56 px from 1024 px, 60 px from
+   * 1440 px). Soft fills come from `--color-next-step-soft-neutral` /
+   * `--color-next-step-soft-primary` and the tone's `-subtle` token; the bubble
+   * from `--color-bubble`, `--color-bubble-ring`, `--color-bubble-icon`.
+   * @default 'default'
+   */
+  variant = input<NextStepCardVariant>('default');
+
+  /** Icon name for the round bubble (36 px; 48–60 px in the soft variant). */
   icon = input<string>('information-circle');
 
-  /** Title (1rem semibold). Also the card's accessible name. */
+  /** Title (1rem semibold; 20–28 px bold in the soft variant). Also the card's accessible name. */
   cardTitle = input.required<string>();
+
+  /**
+   * Element that renders the title: `div` (default), `h2` or `h3`. Use a
+   * heading when the page has sections, so heading navigation reaches the
+   * most important item. Semantics only, the look stays the same.
+   * @default 'div'
+   */
+  titleTag = input<NextStepCardTitleTag>('div');
+
+  /**
+   * Layout of several actions. `inline`: side by side at the end of the card
+   * (below 480 px card width in their own row, stretched). `stacked`: always
+   * in their own row, one per line at equal width, 8 px apart (e.g. a list of
+   * sign-in methods).
+   * @default 'inline'
+   */
+  actionsLayout = input<NextStepCardActionsLayout>('inline');
+
+  /**
+   * Size of the built-in action buttons and link: `sm` (32 px, the 3.2
+   * default), `md` (42 px) or `lg` (48.5 px, meets the 44 px touch target).
+   * @default 'sm'
+   */
+  actionSize = input<NextStepCardActionSize>('sm');
 
   /** Message below the title. For markup, use the default slot instead. */
   message = input<string>();
@@ -105,6 +174,13 @@ export class NextStepCardComponent implements AfterViewChecked {
   linkHref = input<string>();
 
   /**
+   * Where the link opens: `_blank` (a new tab, with `rel="noopener noreferrer"`,
+   * the 3.2 behaviour) or `_self` (the same tab, no `rel`).
+   * @default '_blank'
+   */
+  linkTarget = input<'_blank' | '_self'>('_blank');
+
+  /**
    * Announce title changes to screen readers via `aria-live="polite"` —
    * for cards whose state advances in place.
    * @default false
@@ -126,10 +202,32 @@ export class NextStepCardComponent implements AfterViewChecked {
   protected hasProjectedActions = signal(false);
 
   protected cardClasses = computed(() =>
-    ['lc-next-step-card', `lc-next-step-card--${this.tone()}`].join(' '),
+    [
+      'lc-next-step-card',
+      `lc-next-step-card--${this.tone()}`,
+      this.variant() === 'soft' ? 'lc-next-step-card--soft' : null,
+      this.actionsLayout() === 'stacked' ? 'lc-next-step-card--actions-stacked' : null,
+    ]
+      .filter(Boolean)
+      .join(' '),
   );
 
+  /** `rel` of the external link: only a new tab needs `noopener noreferrer`. */
+  protected linkRel = computed(() => (this.linkTarget() === '_blank' ? 'noopener noreferrer' : null));
+
   protected showLink = computed(() => !!(this.linkLabel() && this.linkHref()));
+
+  /**
+   * Whether the card renders any action: hides the empty actions box, so the
+   * narrow layout gets no empty row.
+   */
+  protected hasActions = computed(
+    () =>
+      this.hasProjectedActions() ||
+      !!this.secondaryLabel() ||
+      this.showLink() ||
+      !!this.primaryLabel(),
+  );
 
   constructor() {
     effect(() => {

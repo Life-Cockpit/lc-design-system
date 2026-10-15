@@ -1,13 +1,13 @@
 {
-  "name": "@life-cockpit/angular-ui-kit",
-  "version": "3.2.1",
-  "description": "Life Cockpit Design System - Angular UI component library",
+  "name": "@lifecorner/angular-ui-kit",
+  "version": "3.3.0",
+  "description": "LifeCorner Design System – Angular UI component library",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Life-Cockpit/lc-design-system.git"
+    "url": "https://github.com/LifeCorner/lc-design-system.git"
   },
-  "keywords": ["angular", "design-system", "angular-ui-kit", "components", "life-cockpit"],
+  "keywords": ["angular", "design-system", "angular-ui-kit", "components", "lifecorner"],
   "peerDependencies": {
     "@angular/cdk": "^21.0.0 || ^22.0.0",
     "@angular/common": "^21.0.0 || ^22.0.0",
@@ -26,8 +26,8 @@
   "sideEffects": ["**/*.css", "**/*.scss"],
   "exports": {
     ".": {
-      "types": "./types/life-cockpit-angular-ui-kit.d.ts",
-      "default": "./fesm2022/life-cockpit-angular-ui-kit.mjs"
+      "types": "./types/lifecorner-angular-ui-kit.d.ts",
+      "default": "./fesm2022/lifecorner-angular-ui-kit.mjs"
     },
     "./styles": {
       "sass": "./src/styles/index.scss",

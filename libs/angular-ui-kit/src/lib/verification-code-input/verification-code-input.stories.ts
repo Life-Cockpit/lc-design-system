@@ -23,6 +23,22 @@ const meta: Meta<VerificationCodeInputComponent> = {
     error: { description: 'Error message displayed below the fields' },
     disabled: { description: 'Prevents all interaction' },
     required: { description: 'Marks the field group as required' },
+    requiredIndicator: {
+      control: 'boolean',
+      description: 'Shows the `*` of a required code; `false` keeps the required semantics without it',
+      table: { defaultValue: { summary: 'true' } },
+    },
+    gap: {
+      control: 'select',
+      options: ['default', 'compact'],
+      description: 'Space between the boxes: `default` 12 px (8 px below 480 px), `compact` 8 px (4 px below 480 px)',
+      table: { defaultValue: { summary: 'default' } },
+    },
+    digitAriaLabel: {
+      control: 'text',
+      description: 'Accessible name of each box; `{n}` and `{total}` are replaced',
+      table: { defaultValue: { summary: 'Digit {n} of {total}' } },
+    },
   },
 
   parameters: {
@@ -35,7 +51,13 @@ Verification Code Input Component with one input per digit
 - Configurable number of digit fields (\`length\`)
 - Automatic focus advancement after entering a digit
 - Backspace moves to the previous input, arrow keys navigate
-- Paste / autofill support (splits the code across the inputs)
+- Paste / autofill support (splits the code across the inputs). Box 1 carries
+  \`autocomplete="one-time-code"\` and \`inputmode="numeric"\`; no box has a \`maxlength\`,
+  which would cut an autofilled code to its first digit
+- After a wrong code: call \`clear()\` (empties the boxes, reports \`''\`, focuses box 1), or
+  write \`''\` through the form control (focus stays)
+- Phones (below 480 px): 44 × 48 px boxes 8 px apart — six boxes are 304 px; \`gap="compact"\`
+  for narrower columns
 - Accessible ARIA attributes (labelled group, linked hint and error)
 - Reactive Forms ControlValueAccessor implementation
 - \`complete\` emits exactly once when all digits are entered
@@ -122,6 +144,21 @@ export const EmailVerification: Story = {
           <lc-button variant="primary" [fullWidth]="true">Verify Email</lc-button>
         </div>
         <p style="margin: 12px 0 0; font-size: 12px; color: #666;">Code expires in 10 minutes</p>
+      </div>`,
+  }),
+};
+
+/** The sign-in code page on a 360 px phone: six 44 × 48 px boxes fit the 312 px column. */
+export const OnAPhone: Story = {
+  name: 'On a Phone (SI-4)',
+  args: { label: 'Code', length: 6, hint: 'The code is valid for 10 minutes.', requiredIndicator: false },
+  parameters: { viewport: { defaultViewport: 'mobile1' } },
+  render: (args) => ({
+    props: args,
+    template: `
+      <div style="max-width: 312px">
+        <lc-verification-code-input [label]="label" [length]="length" [hint]="hint" [gap]="gap"
+                                    [requiredIndicator]="requiredIndicator" />
       </div>`,
   }),
 };

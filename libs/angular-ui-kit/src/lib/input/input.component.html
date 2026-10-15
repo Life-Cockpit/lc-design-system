@@ -1,9 +1,9 @@
 <div class="input-wrapper">
   <!-- Label -->
   @if (label()) {
-    <label [for]="inputId" class="input-label">
+    <label [id]="inputId + '-label'" [attr.for]="wrapsReadonlyValue() ? null : inputId" class="input-label">
       {{ label() }}
-      @if (required()) {
+      @if (required() && requiredIndicator()) {
         <span class="required-indicator" [attr.aria-label]="requiredAriaLabel()">*</span>
       }
     </label>
@@ -19,6 +19,7 @@
     [class.input-error]="hasError"
     [class.input-disabled]="isDisabled"
     [class.input-readonly]="readonly()"
+    [class.input-readonly-wrap]="wrapsReadonlyValue()"
   >
     <!-- Icon Before -->
     @if (iconBefore()) {
@@ -27,7 +28,23 @@
       </span>
     }
 
-    <!-- Input Element -->
+    <!-- Read-only value that wraps (SI-10): a read-only textbox named by the label -->
+    @if (wrapsReadonlyValue()) {
+      <div
+        #readonlyValueRef
+        class="input-field input-readonly-value"
+        role="textbox"
+        aria-readonly="true"
+        tabindex="0"
+        [attr.aria-labelledby]="label() ? inputId + '-label' : null"
+        [attr.aria-label]="ariaLabel() || null"
+        [attr.aria-describedby]="describedBy()"
+        (focus)="onFocus()"
+        (blur)="onBlur()"
+      >{{ value() }}</div>
+    }
+
+    <!-- Input Element (hidden while the read-only value wraps; it keeps value, name and autocomplete) -->
     <input
       #inputRef
       [id]="inputId"
@@ -37,13 +54,17 @@
       [disabled]="isDisabled"
       [readonly]="readonly()"
       [required]="required()"
+      [hidden]="wrapsReadonlyValue()"
       [attr.maxlength]="maxLength() || null"
+      [attr.autocomplete]="autocomplete() ?? null"
+      [attr.name]="name() ?? null"
+      [attr.autocapitalize]="autocapitalize() ?? null"
+      [attr.spellcheck]="spellcheck() === undefined ? null : spellcheck() ? 'true' : 'false'"
+      [attr.enterkeyhint]="enterkeyhint() ?? null"
       [attr.aria-label]="ariaLabel()"
       [attr.aria-required]="required() || undefined"
       [attr.aria-invalid]="hasError || undefined"
-      [attr.aria-describedby]="
-        (error() ? inputId + '-error' : '') + (helperText() ? ' ' + inputId + '-helper' : '')
-      "
+      [attr.aria-describedby]="describedBy()"
       class="input-field"
       (input)="onInput($event)"
       (focus)="onFocus()"
@@ -76,12 +97,16 @@
         </p>
       }
 
-      <!-- Character Count -->
+      <!-- Character Count: always visible; spoken only near the limit (live region below) -->
       @if (showCharCount() && maxLength()) {
-        <p class="char-count" aria-live="polite">
+        <p class="char-count">
           {{ charCount }} / {{ maxLength() }}
         </p>
       }
     </div>
+  }
+
+  @if (showCharCount() && maxLength()) {
+    <span class="input-char-count-live" aria-live="polite">{{ charCountAnnouncement() }}</span>
   }
 </div>

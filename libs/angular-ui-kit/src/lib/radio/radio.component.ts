@@ -19,6 +19,7 @@ import {
 } from '@angular/core';
 import { ControlValueAccessor, NgControl } from '@angular/forms';
 import { Subscription } from 'rxjs';
+import { RADIO_GROUP } from './radio-group.token';
 
 export type RadioSize = 'xs' | 'sm' | 'md' | 'lg';
 
@@ -44,11 +45,11 @@ export class RadioGroupRegistry {
 
   /** Marks `source` as the checked radio of its group; siblings are unchecked. */
   select(source: RadioComponent): void {
-    const name = source.name();
+    const name = source.effectiveName();
     if (!name) return;
     const form = source.formOwner();
     for (const radio of this.radios) {
-      if (radio !== source && radio.name() === name && radio.formOwner() === form) {
+      if (radio !== source && radio.effectiveName() === name && radio.formOwner() === form) {
         radio.checked.set(false);
       }
     }
@@ -73,6 +74,9 @@ export class RadioGroupRegistry {
  * - Help text support
  * - Full accessibility with ARIA attributes
  * - ControlValueAccessor integration for reactive forms
+ * - Inside an `lc-radio-group`: name, selection, required, disabled and the
+ *   invalid state come from the group (3.3)
+ * - Size `lg` rows are 44 px high (touch target)
  *
  * @example
  * ```html
@@ -109,8 +113,20 @@ export class RadioComponent implements ControlValueAccessor, OnInit, OnDestroy {
   /** Disabled state pushed by a form control (`setDisabledState`). */
   private readonly formDisabled = signal(false);
 
-  /** Effective disabled state: `disabled` input OR form control disabled. */
-  readonly isDisabled = computed(() => this.disabled() || this.formDisabled());
+  /** The `lc-radio-group` around this radio, if any. */
+  private readonly group = inject(RADIO_GROUP, { optional: true });
+
+  /** Effective disabled state: `disabled` input OR form control OR group disabled. */
+  readonly isDisabled = computed(() => this.disabled() || this.formDisabled() || !!this.group?.groupDisabled());
+
+  /** The rendered `name`: the group's inside an `lc-radio-group`, else `name`. */
+  readonly effectiveName = computed(() => this.group?.groupName() || this.name());
+
+  /** `required` here or on the group. */
+  readonly isRequired = computed(() => this.required() || !!this.group?.groupRequired());
+
+  /** Error state here or on the group. */
+  readonly isInvalid = computed(() => this.error() || !!this.group?.groupInvalid());
 
   readonly labelClasses = computed(() => {
     const classes = ['radio-label', `radio-${this.size()}`];
@@ -123,11 +139,12 @@ export class RadioComponent implements ControlValueAccessor, OnInit, OnDestroy {
       classes.push('radio-disabled');
     }
 
-    if (this.error()) {
+    if (this.isInvalid()) {
       classes.push('radio-error');
     }
 
-    if (this.required()) {
+    // Inside a group the asterisk belongs to the legend, not to every option.
+    if (this.required() && !this.group) {
       classes.push('radio-required');
     }
 
@@ -174,6 +191,16 @@ export class RadioComponent implements ControlValueAccessor, OnInit, OnDestroy {
 
     this.registry.add(this);
     inject(DestroyRef).onDestroy(() => this.registry.remove(this));
+
+    // Inside a group: checked exactly when the group's value equals this radio's value.
+    const group = this.group;
+    if (group) {
+      effect(() => {
+        const selected = group.selectedValue();
+        const v = this.value();
+        untracked(() => this.checked.set(selected !== '' && v !== '' && selected === v));
+      });
+    }
 
     // A form-bound radio is checked exactly when the form value equals its own value.
     effect(() => {
@@ -238,6 +265,7 @@ export class RadioComponent implements ControlValueAccessor, OnInit, OnDestroy {
     // unchecked natively are updated through the registry.
     this.checked.set(true);
     this.registry.select(this);
+    this.group?.select(this.value());
 
     // Notify the form control - it will call writeValue on all radios
     this.onChange(this.value());
@@ -246,5 +274,6 @@ export class RadioComponent implements ControlValueAccessor, OnInit, OnDestroy {
 
   public handleBlur(): void {
     this.onTouched();
+    this.group?.touch();
   }
 }

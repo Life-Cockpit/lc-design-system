@@ -68,7 +68,9 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  border: 2px solid var(--color-neutral-400);
+  // 3.3 (SI-8): the circle is the control's boundary, 3:1 against the page
+  // (WCAG 1.4.11); neutral-400 was 2.5:1 on white.
+  border: 2px solid var(--color-field-border);
   border-radius: 50%;
   background-color: var(--color-surface);
   transition: all 150ms ease-in-out;
@@ -161,6 +163,8 @@
 .radio-lg {
   --radio-size: 1.5rem; // 24px
   font-size: 1.125rem; // 18px
+  // 3.3 (AC-6): the whole label row is a 44 px touch target (was about 27 px).
+  min-height: 2.75rem;
 
   .radio-circle {
     width: var(--radio-size);

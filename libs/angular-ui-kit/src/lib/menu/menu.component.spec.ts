@@ -220,4 +220,26 @@ describe('MenuComponent', () => {
       expect(document.activeElement).toBe(trigger());
     });
   });
+
+  describe('maxWidth (3.3, AS-2)', () => {
+    it('leaves the panel unbounded by default', () => {
+      open();
+      const dropdown = el.querySelector<HTMLElement>('.lc-menu__dropdown');
+      expect(dropdown?.style.maxWidth).toBe('');
+      expect(dropdown?.style.minWidth).toBe('220px');
+      expect(dropdown?.classList).not.toContain('lc-menu__dropdown--capped');
+    });
+
+    it('caps the panel at the given width', () => {
+      const standalone = TestBed.createComponent(MenuComponent);
+      standalone.componentRef.setInput('isOpen', true);
+      standalone.componentRef.setInput('maxWidth', 'min(18rem, calc(100vw - 2rem))');
+      standalone.detectChanges();
+      const dropdown = standalone.nativeElement.querySelector('.lc-menu__dropdown') as HTMLElement;
+      expect(dropdown.getAttribute('style')).toContain('max-width: min(18rem, calc(100vw - 2rem))');
+      // Sized to its content up to the cap, not shrunk to the trigger.
+      expect(dropdown.classList).toContain('lc-menu__dropdown--capped');
+    });
+  });
 });
+

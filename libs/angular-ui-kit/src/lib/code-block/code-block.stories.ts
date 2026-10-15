@@ -58,7 +58,7 @@ export class ExampleComponent {
 export const JSON: Story = {
   args: {
     code: `{
-  "name": "@life-cockpit/angular-ui-kit",
+  "name": "@lifecorner/angular-ui-kit",
   "version": "1.0.0",
   "dependencies": {
     "@angular/core": "^19.0.0"
@@ -71,7 +71,7 @@ export const JSON: Story = {
 
 export const Bash: Story = {
   args: {
-    code: `npm install @life-cockpit/angular-ui-kit
+    code: `npm install @lifecorner/angular-ui-kit
 npx nx build angular-ui-kit
 npx nx test angular-ui-kit`,
     language: 'bash',

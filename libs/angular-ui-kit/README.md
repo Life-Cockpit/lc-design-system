@@ -1,20 +1,22 @@
-# @life-cockpit/angular-ui-kit
+# @lifecorner/angular-ui-kit
 
-Angular UI component library for the **Life Cockpit Design System** — 60+ accessible, themeable Angular standalone components (for apps on Angular 21 and 22) with signal-based inputs, OnPush change detection, light/dark themes, and a full density token system (`compact` / `cosy` / `comfortable`).
+Angular UI component library for the **LifeCorner Design System** — 110 accessible, themeable Angular standalone components (for apps on Angular 21 and 22) with signal-based inputs, OnPush change detection, light/dark themes, and a full density token system (`compact` / `cosy` / `comfortable`).
 
 ## Resources
 
 | | |
 |---|---|
-| 📖 **Live documentation & Storybook** | https://design.life-cockpit.de |
+| 📖 **Live documentation & Storybook** | https://design.life-cockpit.de (moves to `design.lifecorner.de` once that domain is registered) |
 | 🤖 **MCP server for AI agents** | https://design.life-cockpit.de/mcp |
-| 📦 **npm package** | https://www.npmjs.com/package/@life-cockpit/angular-ui-kit |
-| 🐙 **Source code** | https://github.com/Life-Cockpit/lc-design-system |
+| 📦 **npm package** | https://www.npmjs.com/package/@lifecorner/angular-ui-kit |
+| 🐙 **Source code** | https://github.com/LifeCorner/lc-design-system |
+
+> **Renamed in 3.3.0.** Up to 3.2.x this package was `@life-cockpit/angular-ui-kit` (now deprecated). Replace the import and `@use` paths with `@lifecorner/angular-ui-kit`; the `lc-` selectors, `LC_*` tokens and the API stay the same. The docs site and the MCP endpoint stay on `design.life-cockpit.de` until `lifecorner.de` is registered, then move to `design.lifecorner.de`.
 
 ## Installation
 
 ```bash
-npm install @life-cockpit/angular-ui-kit
+npm install @lifecorner/angular-ui-kit
 ```
 
 ### Peer Dependencies
@@ -30,7 +32,7 @@ npm install @angular/cdk @angular/common @angular/core @angular/forms @angular/p
 Import the global styles in your `styles.scss`:
 
 ```scss
-@use '@life-cockpit/angular-ui-kit/styles';
+@use '@lifecorner/angular-ui-kit/styles';
 ```
 
 Every built-in text is an input (English or German defaults), and components that
@@ -41,7 +43,7 @@ format dates take a `locale` — see **Internationalization** in the docs.
 Import components directly in your Angular standalone components or modules:
 
 ```typescript
-import { ButtonComponent, CardComponent } from '@life-cockpit/angular-ui-kit';
+import { ButtonComponent, CardComponent } from '@lifecorner/angular-ui-kit';
 
 @Component({
   standalone: true,
@@ -67,7 +69,7 @@ export class MyComponent {}
 | Card | `lc-card` | Content container with elevation; optional leading brand-tile header icon (`[icon]` / `[iconVariant]`) |
 | Chat | `lc-chat` | Conversational UI with streaming, custom message templates |
 | Icon | `lc-icon` | Tabler SVG icons; fail-loud on unknown names (dev warning + visible placeholder, optional `[strict]` throw); exports `ICON_NAMES` / `isValidIconName` / `ICON_ALIASES` (+ `icon-names.json`) for static checking |
-| Logo | `lc-logo` | Life Cockpit logo |
+| Logo | `lc-logo` | LifeCorner logo: Edu, the emblem, and the LifeCorner lockup, with dark and small drawings |
 | Markdown | `lc-markdown` | GFM renderer (tables with alignment, task lists, autolinks, code/mermaid) with in-place change highlighting |
 | Menu | `lc-menu` | Dropdown menu |
 | Typography | `lc-typography` | Text with preset styles |
@@ -78,11 +80,14 @@ export class MyComponent {}
 |-----------|----------|-------------|
 | Checkbox | `lc-checkbox` | Checkbox input |
 | Combobox | `lc-combobox` | Async autocomplete with single/multiple selection |
+| Copy Field | `lc-copy-field` | A value to copy (link, token, command): wraps, 48.5 px copy button, one polite announcement |
 | Datepicker | `lc-datepicker` | Date selection |
 | Email Input | `lc-email-input` | Email-specific input |
 | Input | `lc-input` | Text input field |
 | Password Input | `lc-password-input` | Password input with toggle |
-| Radio | `lc-radio` | Radio button group |
+| Provider Button | `lc-provider-button` | "Sign in with Google" drawn to Google's branding guidelines (light, dark, neutral; no Google script) |
+| Radio | `lc-radio` | Radio button |
+| Radio Group | `lc-radio-group` | `<fieldset>` with a legend, one help text and one error around `lc-radio`s; `[(value)]` or a form control |
 | Select | `lc-select` | Dropdown select |
 | Switch | `lc-switch` | Toggle switch |
 | Textarea | `lc-textarea` | Multi-line text input |
@@ -92,8 +97,11 @@ export class MyComponent {}
 
 | Component | Selector | Description |
 |-----------|----------|-------------|
+| App Shell | `lc-app-shell` | The app frame, phone first, with the document scrolling: header, docked side navigation from 1024 px, bottom bar below, footer, optional horizon |
+| App Page | `lc-app-page` | A page in the shell: `<main>` at a reading width and an optional right column docked to the window's edge from 1280 px |
 | Container | `lc-container` | Page container with max-width |
 | Drawer | `lc-drawer` | Slide-in side panel |
+| Page Header | `lc-page-header` | Page title with overline, subtitle and actions; `title`, `display` and `auth` sizes |
 | Section | `lc-section` | Content section |
 | Spacer | `lc-spacer` | Spacing utility |
 | Stack | `lc-stack` | Flex layout utility |
@@ -102,17 +110,20 @@ export class MyComponent {}
 
 | Component | Selector | Description |
 |-----------|----------|-------------|
+| Bottom Nav | `lc-bottom-nav` | Bottom navigation bar for phones and tablets (links, `aria-current`), docked or floating |
 | Breadcrumbs | `lc-breadcrumbs` | Breadcrumb navigation |
+| Footer | `lc-footer` | Site or app footer with labelled link sections |
 | Header | `lc-header` | App shell or public-site header: plain `homeHref`, labelled `navItems`, `[slot='end']`, translatable labels |
 | Pagination | `lc-pagination` | Page navigation |
-| Sidenav | `lc-sidenav` | Side navigation |
+| Sidenav | `lc-sidenav` | Side navigation; docked, drawer, or transparent with pill items |
 | Tabs | `lc-tabs` | Tab navigation |
 
 ### Data Display
 
 | Component | Selector | Description |
 |-----------|----------|-------------|
-| Avatar | `lc-avatar` | User avatar |
+| Avatar | `lc-avatar` | User avatar; six member colours and a ring |
+| Avatar Group | `lc-avatar-group` | Stacked avatars, e.g. a household's member row |
 | Badge | `lc-badge` | Status badge |
 | Chip | `lc-chip` | Tag/label chip |
 | Description List | `lc-description-list` | Key/value metadata (`<dl>`) with rows/stacked layout, optional dotted leaders and per-row emphasis/links |
@@ -127,6 +138,7 @@ export class MyComponent {}
 | Spinner | `lc-spinner` | Loading indicator |
 | Stepper | `lc-stepper` | Step-by-step progress |
 | Table | `lc-table` | Data table with sorting, filtering, pagination, formatter callbacks, cell styling hooks and custom cell templates |
+| Timeline | `lc-timeline` | Ordered list of events with times (`<time datetime>`) |
 | Toggle Group | `lc-toggle-group` | Segmented toggle |
 
 ### Feedback
@@ -134,9 +146,11 @@ export class MyComponent {}
 | Component | Selector | Description |
 |-----------|----------|-------------|
 | Alert | `lc-alert` | Inline alert message |
+| Callout | `lc-callout` | Highlighted note in running content |
 | Confirm Dialog | `lc-confirm-dialog` | Confirmation dialog with text-match support |
 | Error Display | `lc-error-display` | Error state display |
-| Modal | `lc-modal` | Dialog/modal window |
+| Modal | `lc-modal` | Dialog/modal window; bottom sheet on phones (`placement`) |
+| Next-Step Card | `lc-next-step-card` | The one next step with its actions; `soft` variant for the "Weite" look |
 | Toast | `lc-toast` | Notification toast |
 | Toast Outlet | `lc-toast-outlet` | Renders the `ToastService` queue per position inside persistent live regions — place it once in the app shell |
 | Tooltip | `lcTooltip` | Tooltip directive |
@@ -146,7 +160,7 @@ export class MyComponent {}
 | Service | Description |
 |---------|-------------|
 | `ConfirmService` | Imperative confirm/destructive/warning dialogs returning `Promise<boolean>` |
-| `ThemeService` | Toggle light/dark theme; persists the choice (`localStorage` key `lc-theme`) and adopts a `dark`/`light` class already on `<html>` at startup |
+| `ThemeService` | Toggle light/dark theme; persists the choice (`localStorage` key `lc-theme`) and adopts a `dark`/`light`/`system` class already on `<html>` at startup (`system` follows the OS without a script) |
 | `ToastService` | `show({ message, variant, … })` — rendered by `<lc-toast-outlet />` |
 
 ## Theming
@@ -154,7 +168,7 @@ export class MyComponent {}
 The library supports light and dark themes:
 
 ```typescript
-import { ThemeService } from '@life-cockpit/angular-ui-kit';
+import { ThemeService } from '@lifecorner/angular-ui-kit';
 
 @Component({ ... })
 export class AppComponent {
@@ -194,10 +208,10 @@ inject(ToastService).show({ message: 'Saved', variant: 'success' });
 />
 ```
 
-The built-in Life-Cockpit logos are loaded from `/assets/` by default. If your app serves static files from a different prefix, override the path via the `LC_LOGO_BASE_PATH` token:
+The built-in LifeCorner logos (`lifecorner-logo.svg`, `lifecorner-logo-on-dark.svg`, `lifecorner-emblem*.svg`) are loaded from `/assets/` by default. If your app serves static files from a different prefix, override the path via the `LC_LOGO_BASE_PATH` token:
 
 ```typescript
-import { LC_LOGO_BASE_PATH } from '@life-cockpit/angular-ui-kit';
+import { LC_LOGO_BASE_PATH } from '@lifecorner/angular-ui-kit';
 
 bootstrapApplication(AppComponent, {
   providers: [
@@ -206,14 +220,14 @@ bootstrapApplication(AppComponent, {
 });
 ```
 
-Or copy the assets from `node_modules/@life-cockpit/angular-ui-kit/assets/` to your app's public `/assets/` folder (e.g. via the `assets` array in `angular.json`).
+Or copy the assets from `node_modules/@lifecorner/angular-ui-kit/src/assets/` to your app's public `/assets/` folder (e.g. via the `assets` array in `angular.json`).
 
 ## Chat with Rich Content
 
 The Chat component supports custom message templates for embedding any component inside chat bubbles:
 
 ```typescript
-import { ChatComponent, ChatMessage, DiffViewerComponent } from '@life-cockpit/angular-ui-kit';
+import { ChatComponent, ChatMessage, DiffViewerComponent } from '@lifecorner/angular-ui-kit';
 
 @Component({
   imports: [ChatComponent, DiffViewerComponent],
@@ -245,7 +259,7 @@ export class SpecAuthorComponent {
 Design tokens for colors, spacing, typography, elevation, and more are available as TypeScript constants:
 
 ```typescript
-import { ColorTokens, SpacingTokens } from '@life-cockpit/angular-ui-kit';
+import { ColorTokens, SpacingTokens } from '@lifecorner/angular-ui-kit';
 ```
 
 ### Density

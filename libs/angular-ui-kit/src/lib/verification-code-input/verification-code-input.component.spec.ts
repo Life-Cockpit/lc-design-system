@@ -1,3 +1,5 @@
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
 import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
@@ -342,5 +344,122 @@ describe('VerificationCodeInputComponent', () => {
       fixture.componentRef.setInput('disabled', true);
       expect(component.isDisabled()).toBe(true);
     });
+  });
+});
+
+describe('verification-code-input.component 3.3: SI-8 field border', () => {
+  it('draws the field boundary with --color-field-border (≥ 3:1, WCAG 1.4.11)', () => {
+    const scss = readFileSync(resolve(__dirname, 'verification-code-input.component.scss'), 'utf-8');
+    const rule = scss.match(/\.lc-digit-input \{([^}]*)/)?.[1] ?? '';
+    expect(rule).toMatch(/border: 2px solid var\(--color-field-border/);
+  });
+
+  it('never draws a field boundary with the decorative --color-border', () => {
+    const scss = readFileSync(resolve(__dirname, 'verification-code-input.component.scss'), 'utf-8');
+    const rule = scss.match(/\.lc-digit-input \{([^}]*)/)?.[1] ?? '';
+    expect(rule).not.toMatch(/border(-color)?: (\dpx solid )?var\(--color-border\)/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 3.3: SI-4 (phones: 44 × 48 px boxes, one-time-code autofill not cut by
+// maxlength, a gap option, clear() after a wrong code), SI-9.
+// ---------------------------------------------------------------------------
+describe('VerificationCodeInputComponent 3.3 (SI-4, SI-9)', () => {
+  let fixture: ComponentFixture<VerificationCodeInputComponent>;
+  let component: VerificationCodeInputComponent;
+  let changes: string[];
+  let completions: string[];
+  const el = () => fixture.nativeElement as HTMLElement;
+  const boxes = (): HTMLInputElement[] => Array.from(el().querySelectorAll('input.lc-digit-input'));
+  const enter = (index: number, value: string) => {
+    boxes()[index].value = value;
+    boxes()[index].dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+  };
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({ imports: [VerificationCodeInputComponent] }).compileComponents();
+    fixture = TestBed.createComponent(VerificationCodeInputComponent);
+    component = fixture.componentInstance;
+    changes = [];
+    completions = [];
+    component.registerOnChange((value) => changes.push(value));
+    component.complete.subscribe((code) => completions.push(code));
+    fixture.detectChanges();
+  });
+
+  it('sets no maxlength, so iOS and Android can autofill the whole code into box 1', () => {
+    for (const box of boxes()) {
+      expect(box.hasAttribute('maxlength')).toBe(false);
+    }
+    expect(boxes()[0].getAttribute('autocomplete')).toBe('one-time-code');
+    expect(boxes()[0].getAttribute('inputmode')).toBe('numeric');
+  });
+
+  it('distributes an autofilled code from box 1 and completes once', () => {
+    enter(0, '482913');
+    expect(component.code()).toBe('482913');
+    expect(boxes().map((b) => b.value)).toEqual(['4', '8', '2', '9', '1', '3']);
+    expect(completions).toEqual(['482913']);
+  });
+
+  it('typing over a filled box replaces its digit', () => {
+    enter(0, '5');
+    enter(0, '53');
+    expect(component.digits()[0]).toBe('3');
+    expect(boxes()[0].value).toBe('3');
+    enter(0, '73');
+    expect(component.digits()[0]).toBe('7');
+  });
+
+  it('a non-digit typed into a filled box changes nothing and keeps the box at one digit', () => {
+    enter(0, '5');
+    enter(0, '5a');
+    expect(component.digits()[0]).toBe('5');
+    expect(boxes()[0].value).toBe('5');
+  });
+
+  it('an emptied box clears its digit (keyboards that send no Backspace key)', () => {
+    enter(0, '5');
+    enter(0, '');
+    expect(component.digits()[0]).toBe('');
+    expect(changes[changes.length - 1]).toBe('');
+  });
+
+  it('clear() empties every box after a wrong code, reports "" and focuses box 1', () => {
+    enter(0, '123456');
+    component.clear();
+    fixture.detectChanges();
+    expect(component.code()).toBe('');
+    expect(boxes().every((b) => b.value === '')).toBe(true);
+    expect(changes[changes.length - 1]).toBe('');
+    expect(document.activeElement).toBe(boxes()[0]);
+    // A new code completes again.
+    enter(0, '654321');
+    expect(completions).toEqual(['123456', '654321']);
+  });
+
+  it('gap="compact" tightens the gaps', () => {
+    const group = () => el().querySelector('.lc-digit-inputs') as HTMLElement;
+    expect(group().classList).not.toContain('lc-digit-inputs--compact');
+    fixture.componentRef.setInput('gap', 'compact');
+    fixture.detectChanges();
+    expect(group().classList).toContain('lc-digit-inputs--compact');
+  });
+
+  it('keeps required semantics without the asterisk (SI-9)', () => {
+    fixture.componentRef.setInput('required', true);
+    fixture.componentRef.setInput('requiredIndicator', false);
+    fixture.detectChanges();
+    expect(el().querySelector('.lc-required')).toBeNull();
+    expect(boxes()[0].required).toBe(true);
+  });
+
+  it('draws 44 × 48 px boxes 8 px apart below 480 px (6 boxes = 304 px)', () => {
+    const scss = readFileSync(resolve(__dirname, 'verification-code-input.component.scss'), 'utf-8');
+    const phone = scss.slice(scss.indexOf('@media (max-width: 480px)'));
+    expect(phone).toMatch(/\.lc-digit-inputs \{[^}]*gap: 0\.5rem;/);
+    expect(phone).toMatch(/\.lc-digit-input \{[^}]*width: 2\.75rem;[^}]*height: 3rem;/);
   });
 });

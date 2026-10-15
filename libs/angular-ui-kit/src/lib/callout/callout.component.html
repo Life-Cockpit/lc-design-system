@@ -1,6 +1,12 @@
 @if (visible()) {
   <div [class]="calloutClasses()" [attr.role]="role()">
-    <lc-icon class="callout__icon" [name]="iconName()" size="md" [ariaLabel]="iconLabel()" />
+    <lc-icon
+      class="callout__icon"
+      [name]="iconName()"
+      size="md"
+      [decorative]="!iconAriaLabel()"
+      [ariaLabel]="iconAriaLabel()"
+    />
     <div class="callout__content">
       @if (title()) {
         <strong class="callout__title">{{ title() }}</strong>

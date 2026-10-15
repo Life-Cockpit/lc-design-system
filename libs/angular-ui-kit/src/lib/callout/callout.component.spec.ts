@@ -14,6 +14,8 @@ import { provideHttpClient, withXhr } from '@angular/common/http';
       [variant]="variant"
       [title]="title"
       [dismissible]="dismissible"
+      [icon]="icon"
+      [iconAriaLabel]="iconAriaLabel"
       [(visible)]="visible"
       (dismissed)="onDismissed()"
     >
@@ -25,6 +27,8 @@ class TestHostComponent {
   variant: CalloutVariant = 'info';
   title = '';
   dismissible = false;
+  icon: string | undefined = undefined;
+  iconAriaLabel: string | undefined = undefined;
   body = 'Test content';
   visible = signal(true);
   wasDismissed = false;
@@ -148,15 +152,28 @@ describe('CalloutComponent', () => {
     expect(fixture.nativeElement.querySelector('.callout')).toBeTruthy();
   });
 
-  it('labels the variant icon and hides the dismiss icon from AT', () => {
+  // 3.3 (G-24): no built-in English name; decorative unless iconAriaLabel is set.
+  it('renders the variant icon as decorative by default and hides the dismiss icon from AT', () => {
     host.dismissible = true;
     host.variant = 'error';
     fixture.detectChanges();
     const icons = fixture.debugElement.queryAll(By.directive(IconComponent)).map(d => d.componentInstance as IconComponent);
     const variantIcon = icons.find(i => i.name() === 'x-circle');
     const dismissIcon = icons.find(i => i.name() === 'x-mark');
-    expect(variantIcon?.ariaLabel()).toBe('Error');
-    expect(variantIcon?.decorative()).toBe(false);
+    expect(variantIcon?.ariaLabel()).toBeUndefined();
+    expect(variantIcon?.decorative()).toBe(true);
     expect(dismissIcon?.decorative()).toBe(true);
+    expect(fixture.nativeElement.innerHTML).not.toMatch(/aria-label="(Info|Success|Warning|Error|Note)"/);
+  });
+
+  it('names the icon with iconAriaLabel and swaps it with icon (G-24)', () => {
+    host.variant = 'neutral';
+    host.iconAriaLabel = 'Hinweis';
+    host.icon = 'light-bulb';
+    fixture.detectChanges();
+    const variantIcon = fixture.debugElement.query(By.directive(IconComponent)).componentInstance as IconComponent;
+    expect(variantIcon.name()).toBe('light-bulb');
+    expect(variantIcon.ariaLabel()).toBe('Hinweis');
+    expect(variantIcon.decorative()).toBe(false);
   });
 });

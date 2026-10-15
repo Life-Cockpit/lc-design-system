@@ -91,6 +91,23 @@
     <lc-drawer title="Drawer">Drawer</lc-drawer>
     <lc-menu [items]="[{ id: 'a', label: 'A' }]" />
     <a lcButton variant="primary" size="lg" href="/de/neuigkeiten">Schau uns beim Bauen zu</a>
+    <!-- 3.3 features, rendered on the server -->
+    <lc-page-header size="display" overline="Montag, 12. Oktober" title="Guten Abend" />
+    <lc-next-step-card variant="soft" tone="primary" cardTitle="Lena möchte beitreten" message="per E-Mail" />
+    <lc-card variant="dashed" title="Demnächst">Verträge</lc-card>
+    <lc-provider-button text="continue" label="Weiter mit Google" size="lg" [fullWidth]="true" type="submit" />
+    <lc-radio-group legend="Rolle" name="role" [(value)]="role">
+      <lc-radio value="member" label="Mitglied" />
+      <lc-radio value="admin" label="Verwalten" />
+    </lc-radio-group>
+    <lc-copy-field label="Einladungslink" value="https://example.org/join/abc" copyLabel="Kopieren" />
+    <lc-bottom-nav [items]="bottomNav" activeRoute="/" ariaLabel="Hauptnavigation unten" variant="floating" [fixed]="false" />
+    <lc-app-shell [horizon]="true">
+      <lc-app-page mainId="shell-main" asideAriaLabel="Mitglieder">
+        <p>Seite im Rahmen</p>
+        <section page-aside>Mitglieder</section>
+      </lc-app-page>
+    </lc-app-shell>
   </lc-stack>
 </lc-container>
 </main>

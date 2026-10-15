@@ -1,7 +1,10 @@
 <lc-modal
   [open]="open()"
   size="sm"
+  [placement]="placement()"
   [showCloseButton]="true"
+  [closeAriaLabel]="closeAriaLabel()"
+  [ariaLabelledBy]="titleId"
   (openChange)="$event ? null : onModalClose()"
 >
   <div slot="header">
@@ -10,13 +13,18 @@
         [name]="resolvedIcon()"
         size="md"
         [color]="iconColor()"
+        [decorative]="true"
       />
-      <h2>{{ title() }}</h2>
+      <h2 [id]="titleId">{{ title() }}</h2>
     </div>
   </div>
 
   <div slot="body">
     <p class="lc-confirm__message">{{ message() }}</p>
+
+    <div class="lc-confirm__preview">
+      <ng-content select="[slot='preview']" />
+    </div>
 
     @if (requireText(); as req) {
       <div class="lc-confirm__require-text">
@@ -34,13 +42,16 @@
   <div slot="footer" class="lc-confirm__footer">
     <lc-button
       variant="ghost"
+      [size]="buttonSize()"
       (clicked)="onCancel()"
     >
       {{ cancelLabel() }}
     </lc-button>
     <lc-button
       [variant]="confirmButtonVariant()"
+      [size]="buttonSize()"
       [disabled]="!confirmAllowed()"
+      [loading]="confirmLoading()"
       (clicked)="onConfirm()"
     >
       {{ confirmLabel() }}

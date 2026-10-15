@@ -161,6 +161,29 @@
     display: none;
   }
 
+  // Overline (3.3, LK-3): after the heading in the DOM, above it on screen —
+  // `order: -1` moves it to the front of the wrapping title row and the full
+  // basis gives it a line of its own. Uppercase through CSS only.
+  &__overline {
+    order: -1;
+    flex: 1 0 100%;
+    margin: 0;
+    min-width: 0;
+    font-family: var(--font-family-sans, inherit);
+    font-size: var(--font-size-overline, 0.8125rem);
+    font-weight: var(--font-weight-bold, 700);
+    line-height: var(--line-height-overline, 1.3);
+    letter-spacing: var(--letter-spacing-overline, 0.12em);
+    text-transform: uppercase;
+    color: var(--color-overline, var(--color-primary-700));
+    overflow-wrap: break-word;
+  }
+
+  // 12 px between the overline and the title (the row keeps its column gap).
+  &--has-overline .lc-page-header__title-row {
+    row-gap: 0.75rem;
+  }
+
   &__badge {
     display: inline-flex;
     align-items: center;
@@ -221,6 +244,41 @@
     }
     .lc-page-header__subtitle {
       font-size: var(--lc-page-header-subtitle-font-size, var(--font-size-lg, 1.125rem));
+    }
+  }
+
+  // ── Page-title scale (3.3, LK-2) ─────────────────────────────────────────
+  // The tokens grow with the viewport; the fallbacks are the phone steps.
+  &--size-title {
+    .lc-page-header__title {
+      font-size: var(--font-size-title, 2rem);
+      line-height: var(--line-height-title, 1.08);
+      letter-spacing: var(--letter-spacing-title, -0.03em);
+    }
+    .lc-page-header__subtitle {
+      font-size: var(--lc-page-header-subtitle-font-size, var(--font-size-lg, 1.125rem));
+    }
+  }
+
+  &--size-display {
+    .lc-page-header__title {
+      font-size: var(--font-size-display, 2.5rem);
+      line-height: var(--line-height-display, 1.05);
+      letter-spacing: var(--letter-spacing-display, -0.035em);
+    }
+    .lc-page-header__subtitle {
+      font-size: var(--lc-page-header-subtitle-font-size, var(--font-size-lg, 1.125rem));
+    }
+  }
+
+  &--size-auth {
+    .lc-page-header__title {
+      font-size: var(--font-size-auth-title, 1.875rem);
+      line-height: var(--line-height-auth-title, 1.12);
+      letter-spacing: var(--letter-spacing-auth-title, -0.03em);
+    }
+    .lc-page-header__subtitle {
+      font-size: var(--lc-page-header-subtitle-font-size, var(--font-size-base, 1rem));
     }
   }
 

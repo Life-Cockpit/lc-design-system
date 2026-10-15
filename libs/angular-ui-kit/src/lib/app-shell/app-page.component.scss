@@ -1,0 +1,112 @@
+/**
+ * lc-app-page (LK-6): <main> centred at a reading width, and the optional
+ * right column docked to the window's right edge from 1280 px.
+ *
+ * Hooks: --lc-app-page-padding-x, --lc-app-page-padding-top,
+ * --lc-app-page-gap, --lc-app-page-aside-width; the content cap comes from the
+ * `contentMaxWidth` input (--lc-app-page-content-max).
+ */
+
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.lc-app-page {
+  --_pad-x: var(--lc-app-page-padding-x, 24px);
+  --_pad-top: var(--lc-app-page-padding-top, 24px);
+  --_gap: var(--lc-app-page-gap, 24px);
+  --_aside-width: var(--lc-app-page-aside-width, 360px);
+
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 100%;
+}
+
+.lc-app-page__main {
+  display: block;
+  min-width: 0;
+  padding: var(--_pad-top) var(--_pad-x) 16px;
+}
+
+// The page content: a column, centred, at most --lc-app-page-content-max wide
+// (880 px by default — the page gains air on wide screens, not line length).
+.lc-app-page__content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--_gap);
+  max-width: var(--lc-app-page-content-max, 880px);
+  margin-inline: auto;
+}
+
+// The right column is the page's; below 1280 px the page shows its own
+// narrow equivalent inside main.
+.lc-app-page__aside {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .lc-app-page {
+    --_pad-x: var(--lc-app-page-padding-x, 32px);
+    --_pad-top: var(--lc-app-page-padding-top, 32px);
+  }
+}
+
+@media (min-width: 1024px) {
+  .lc-app-page {
+    --_pad-x: var(--lc-app-page-padding-x, 48px);
+    --_pad-top: var(--lc-app-page-padding-top, 48px);
+    --_gap: var(--lc-app-page-gap, 40px);
+  }
+
+  .lc-app-page__main {
+    padding-bottom: 32px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .lc-app-page {
+    --_pad-x: var(--lc-app-page-padding-x, 56px);
+    --_pad-top: var(--lc-app-page-padding-top, 56px);
+  }
+
+  .lc-app-page--aside {
+    grid-template-columns: minmax(0, 1fr) var(--_aside-width);
+  }
+
+  // Docked to the window's right edge: a tint and a 1 px hairline, both
+  // fading towards the bottom. Its content starts 32 px above the page's.
+  .lc-app-page__aside {
+    display: block;
+    min-width: 0;
+    box-sizing: border-box;
+    padding: max(16px, calc(var(--_pad-top) - 32px)) 40px 40px;
+    background: linear-gradient(180deg, var(--color-background-low), transparent);
+    border-left: 1px solid var(--color-hairline, var(--color-border));
+    border-image: linear-gradient(180deg, var(--color-hairline, var(--color-border)) 60%, transparent) 1;
+  }
+}
+
+@media (min-width: 1440px) {
+  .lc-app-page {
+    --_pad-x: var(--lc-app-page-padding-x, 72px);
+    --_pad-top: var(--lc-app-page-padding-top, 72px);
+    --_aside-width: var(--lc-app-page-aside-width, 400px);
+  }
+}
+
+@media (min-width: 1920px) {
+  .lc-app-page {
+    --_pad-x: var(--lc-app-page-padding-x, 96px);
+    --_pad-top: var(--lc-app-page-padding-top, 112px);
+    --_aside-width: var(--lc-app-page-aside-width, 460px);
+  }
+}
+
+@media (forced-colors: active) {
+  .lc-app-page__aside {
+    background: none;
+    border-image: none;
+    border-left-color: CanvasText;
+  }
+}

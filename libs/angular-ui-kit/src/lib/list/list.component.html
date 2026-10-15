@@ -8,7 +8,7 @@
   } @else {
     <!-- Leading: Avatar or Icon -->
     @if (item.avatar) {
-      <div class="lc-list__avatar">
+      <div [class]="avatarClasses(item)">
         @if (item.avatar.startsWith('http') || item.avatar.startsWith('/') || item.avatar.startsWith('data:')) {
           <img [src]="item.avatar" [alt]="item.label" class="lc-list__avatar-img" />
         } @else {
@@ -43,8 +43,9 @@
         <!-- eslint-disable-next-line @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -- only stops the action click from also activating the row; the action is a real button -->
         <span class="lc-list__action-area" (click)="$event.stopPropagation()">
           <lc-button
-            variant="ghost"
-            size="xs"
+            [variant]="actionVariant()"
+            [size]="actionSize()"
+            [ariaLabel]="item.actionAriaLabel ?? ''"
             class="lc-list__action"
             (clicked)="onActionClick(item)"
           >

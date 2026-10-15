@@ -61,6 +61,60 @@ The type system defines consistent font sizes, weights, and line heights.
     <span style={{ width: '60px', fontSize: '12px', color: '#6B7280' }}>48px</span>
     <span style={{ fontSize: '3rem' }}>The quick brown</span>
   </div>
+  <div style={{ display: 'flex', alignItems: 'baseline', gap: '24px' }}>
+    <code style={{ width: '60px', fontSize: '12px' }}>6xl</code>
+    <span style={{ width: '60px', fontSize: '12px', color: '#6B7280' }}>60px</span>
+    <span style={{ fontSize: '3.75rem', lineHeight: 1.05 }}>The quick</span>
+  </div>
+  <div style={{ display: 'flex', alignItems: 'baseline', gap: '24px' }}>
+    <code style={{ width: '60px', fontSize: '12px' }}>7xl</code>
+    <span style={{ width: '60px', fontSize: '12px', color: '#6B7280' }}>72px</span>
+    <span style={{ fontSize: '4.5rem', lineHeight: 1.02 }}>The quick</span>
+  </div>
+</div>
+
+`--font-size-7xl` (72 px, since 3.3) is the display size from 1920 px.
+
+## Page titles (3.3)
+
+A scale for a page's own heading that **grows with the viewport**: one token,
+the right size on a phone and on a wide screen. Weight 700 (the kit maximum)
+for display, title and auth title.
+
+| Token | Phone (360) | 1024 | 1280 | 1440 | 1920 | Use |
+|---|---|---|---|---|---|---|
+| `--font-size-display` | 40 | 52 | 56 | 60 (`6xl`) | 72 (`7xl`) | the one big greeting (Today); line height 1.05 → 1.02 and letter spacing −0.035 → −0.04 em from 1024 |
+| `--font-size-title` | 32 | 40 | 40 | 44 | 48 | every other page title; line height 1.08, letter spacing −0.03 em |
+| `--font-size-auth-title` | 30 | 34 | 34 | 34 | 34 | the `<h1>` of sign-in, registration and invitation pages; line height 1.12 |
+| `--font-size-overline` | 13 | 14 | 14 | 15 | 16 | the line above a title (a date, a section name); 700, uppercase, letter spacing 0.12 em, `--color-overline` |
+
+Companion tokens: `--line-height-display`, `--line-height-title`,
+`--line-height-auth-title`, `--line-height-overline`, `--letter-spacing-display`,
+`--letter-spacing-title`, `--letter-spacing-auth-title`, `--letter-spacing-overline`.
+
+### Classes
+
+Put a class on the real heading element. The classes set size, line height,
+letter spacing, weight and ink, no margins.
+
+| Class | Sets |
+|---|---|
+| `.lc-display` | display step, bold, `--color-text-primary` |
+| `.lc-title` | title step, bold, `--color-text-primary` |
+| `.lc-auth-title` | auth-title step, bold, `--color-text-primary` |
+| `.lc-overline` | overline step, bold, uppercase (through CSS: the text stays in sentence case for screen readers and translations), `--color-overline` |
+
+```html
+<!-- The date above the greeting, the greeting first in the DOM (one h1 per page) -->
+<div style="display: flex; flex-direction: column-reverse; gap: 12px">
+  <h1 class="lc-display">Good morning, Johanna</h1>
+  <p class="lc-overline">Wednesday, 15 October</p>
+</div>
+```
+
+<div style={{ display: 'flex', flexDirection: 'column-reverse', gap: '12px', padding: '24px', marginBottom: '32px', borderRadius: '24px', background: '#FFFFFF', border: '1px solid #D7EBEF' }}>
+  <div style={{ fontSize: '40px', lineHeight: 1.05, letterSpacing: '-0.035em', fontWeight: 700, color: '#111827' }}>Good morning, Johanna</div>
+  <div style={{ fontSize: '13px', lineHeight: 1.3, letterSpacing: '0.12em', fontWeight: 700, textTransform: 'uppercase', color: '#144F5B' }}>Wednesday, 15 October</div>
 </div>
 
 ## Font Weights
@@ -68,19 +122,19 @@ The type system defines consistent font sizes, weights, and line heights.
 <div style={{ display: 'grid', gap: '12px', marginBottom: '32px' }}>
   <div style={{ display: 'flex', alignItems: 'baseline', gap: '24px' }}>
     <code style={{ width: '100px', fontSize: '12px' }}>normal (400)</code>
-    <span style={{ fontWeight: 400, fontSize: '18px' }}>Life-Cockpit Design System</span>
+    <span style={{ fontWeight: 400, fontSize: '18px' }}>LifeCorner Design System</span>
   </div>
   <div style={{ display: 'flex', alignItems: 'baseline', gap: '24px' }}>
     <code style={{ width: '100px', fontSize: '12px' }}>medium (500)</code>
-    <span style={{ fontWeight: 500, fontSize: '18px' }}>Life-Cockpit Design System</span>
+    <span style={{ fontWeight: 500, fontSize: '18px' }}>LifeCorner Design System</span>
   </div>
   <div style={{ display: 'flex', alignItems: 'baseline', gap: '24px' }}>
     <code style={{ width: '100px', fontSize: '12px' }}>semibold (600)</code>
-    <span style={{ fontWeight: 600, fontSize: '18px' }}>Life-Cockpit Design System</span>
+    <span style={{ fontWeight: 600, fontSize: '18px' }}>LifeCorner Design System</span>
   </div>
   <div style={{ display: 'flex', alignItems: 'baseline', gap: '24px' }}>
     <code style={{ width: '100px', fontSize: '12px' }}>bold (700)</code>
-    <span style={{ fontWeight: 700, fontSize: '18px' }}>Life-Cockpit Design System</span>
+    <span style={{ fontWeight: 700, fontSize: '18px' }}>LifeCorner Design System</span>
   </div>
 </div>
 
@@ -95,9 +149,12 @@ The type system defines consistent font sizes, weights, and line heights.
 ## Usage
 
 ```css
-font-size: var(--typography-fontSize-base);
-font-weight: var(--typography-fontWeight-semibold);
-line-height: var(--typography-lineHeight-normal);
+font-size: var(--font-size-base);
+font-weight: var(--font-weight-semibold);
+line-height: var(--line-height-normal);
+
+/* a page title outside lc-page-header */
+font-size: var(--font-size-title);
 ```
 
 ```html

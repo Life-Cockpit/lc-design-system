@@ -71,16 +71,7 @@
   align-items: center;
   gap: var(--spacing-3);
   padding: var(--lc-density-padding-sm, var(--spacing-3)) var(--lc-density-padding-md, var(--spacing-4));
-  cursor: pointer;
   transition: background-color 0.2s ease;
-
-  &:hover:not(&--disabled) {
-    background-color: var(--color-surface-hover);
-  }
-
-  &:active:not(&--disabled) {
-    background-color: var(--color-surface-sunken);
-  }
 
   &:focus-visible {
     outline: none;
@@ -102,8 +93,12 @@
 }
 
 // Label
+// Texts wrap long unbroken values (an e-mail address, a device name) instead
+// of overflowing the row (3.3, AC-10).
 .lc-list__label {
   flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
   color: var(--color-text-primary, #111827);
   font-size: var(--font-size-base);
   line-height: var(--line-height-base);
@@ -137,6 +132,28 @@
   user-select: none;
 }
 
+// Member colours (LK-7): white initials on the member hue, as lc-avatar.
+$lc-list-member-colors: (
+  1: #1a6a79,
+  2: #b04a22,
+  3: #4e3f84,
+  4: #5f7150,
+  5: #9e3846,
+  6: #5a798c,
+);
+
+@each $index, $hex in $lc-list-member-colors {
+  .lc-list__avatar--member-#{$index} {
+    background-color: var(--color-member-#{$index}, #{$hex});
+  }
+}
+
+.lc-list__avatar--member .lc-list__avatar-initials {
+  color: var(--color-on-member, #ffffff);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
 // ── Content section ─────────────────────────────
 .lc-list__content {
   flex: 1;
@@ -150,9 +167,11 @@
   font-size: var(--font-size-sm, 0.875rem);
   color: var(--color-text-tertiary);
   line-height: var(--line-height-sm, 1.25rem);
+  overflow-wrap: anywhere;
 }
 
 .lc-list__description {
+  overflow-wrap: anywhere;
   font-size: var(--font-size-xs, 0.75rem);
   color: var(--color-text-tertiary);
   line-height: var(--line-height-xs, 1rem);
@@ -160,6 +179,13 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+// Full descriptions for reading text (3.3, G-11: clampDescription=false).
+.lc-list--no-clamp .lc-list__description {
+  display: block;
+  -webkit-line-clamp: unset;
+  overflow: visible;
 }
 
 // ── Trailing section ────────────────────────────
@@ -174,6 +200,20 @@
 // Action button
 .lc-list__action {
   flex-shrink: 0;
+}
+
+// Pointer and hover only on rows that act (3.3, AC-3): a plain list is not
+// an affordance.
+.lc-list--clickable .lc-list__item {
+  cursor: pointer;
+
+  &:hover:not(.lc-list__item--disabled) {
+    background-color: var(--color-surface-hover);
+  }
+
+  &:active:not(.lc-list__item--disabled) {
+    background-color: var(--color-surface-sunken);
+  }
 }
 
 // ── Badge ───────────────────────────────────────
@@ -223,10 +263,10 @@
 // ── Selected state ──────────────────────────────
 .lc-list__item--selected {
   background-color: var(--color-primary-50, #eff6ff);
+}
 
-  &:hover:not(.lc-list__item--disabled) {
-    background-color: var(--color-primary-100, #dbeafe);
-  }
+.lc-list--clickable .lc-list__item--selected:hover:not(.lc-list__item--disabled) {
+  background-color: var(--color-primary-100, #dbeafe);
 }
 
 // ── Size variants ───────────────────────────────
@@ -294,7 +334,9 @@
     background: var(--color-surface-2);
     border: 1px solid var(--color-border);
     transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  }
 
+  &.lc-list--clickable .lc-list__item {
     &:hover:not(.lc-list__item--disabled) {
       background: var(--color-surface-hover);
       border-color: var(--color-border-strong);

@@ -48,7 +48,14 @@ $color-accent-purple: #866aa0;
 $color-accent-red: #9e3846;
 $color-accent-rust: #c6592e;
 $color-accent-violet: #4e3f84;
-$color-surface-dark-base: #14222e; // DS2.0 dark card surface
+$color-member-1: #1a6a79; // Member colour 1 (teal): white initials 6.21:1
+$color-member-2: #b04a22; // Member colour 2 (rust-600; accent-rust #C6592E gives white only 4.31:1): white initials 5.46:1
+$color-member-3: #4e3f84; // Member colour 3 (violet): white initials 8.87:1
+$color-member-4: #5f7150; // Member colour 4 (sage): white initials 5.30:1
+$color-member-5: #9e3846; // Member colour 5 (berry): white initials 6.76:1
+$color-member-6: #5a798c; // Member colour 6 (slate): white initials 4.62:1
+$color-surface-dark-base: #101c26; // Dark card surface (3.3, Weite: was #14222E)
+$color-surface-dark-floating: #14222e; // Dark floating bar surface (3.3, Weite; the 3.2 card surface)
 $color-surface-dark-raised: #1a2c3a; // DS2.0 raised dark surface
 $color-surface-dark-sunken: #0c1722; // DS2.0 sunken dark surface
 $color-background-dark: #0a121b; // DS2.0 dark app background — deep teal-black, sits below the raised card surfaces

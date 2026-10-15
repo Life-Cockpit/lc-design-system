@@ -11,6 +11,13 @@ import {
   BorderRadiusMd,
   AnimationDurationFast,
   SizeInteractiveXsHeight,
+  ColorMember1,
+  ColorMember2,
+  ColorMember3,
+  ColorMember4,
+  ColorMember5,
+  ColorMember6,
+  TypographyFontSize7xl,
 } from './index';
 
 describe('Design Tokens', () => {
@@ -33,6 +40,18 @@ describe('Design Tokens', () => {
     it('should have valid hex color format', () => {
       expect(ColorPrimary500).toMatch(/^#[0-9a-f]{6}$/i);
     });
+
+    // LK-7: member colours in join order (teal, rust-600, violet, sage, berry, slate).
+    it('should export the six member colours', () => {
+      expect([ColorMember1, ColorMember2, ColorMember3, ColorMember4, ColorMember5, ColorMember6]).toEqual([
+        '#1a6a79',
+        '#b04a22',
+        '#4e3f84',
+        '#5f7150',
+        '#9e3846',
+        '#5a798c',
+      ]);
+    });
   });
 
   describe('Spacing Tokens', () => {
@@ -50,6 +69,11 @@ describe('Design Tokens', () => {
   describe('Typography Tokens', () => {
     it('should export font size base', () => {
       expect(TypographyFontSizeBase).toBe('1rem');
+    });
+
+    // LK-2: the display step at 1920 px.
+    it('should export the 72 px step', () => {
+      expect(TypographyFontSize7xl).toBe('4.5rem');
     });
 
     it('should export font family', () => {

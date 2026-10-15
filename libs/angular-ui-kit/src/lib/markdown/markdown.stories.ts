@@ -34,8 +34,8 @@ sanitized by default (\`sanitize\`); links honor \`linkTarget\` / \`baseUrl\` an
 **Readable prose** (see *Readable Prose*):
 - Links are **underlined by default** — told apart from the text by color alone they fail
   WCAG 1.4.1 — in the theme-aware \`--color-link\` / \`--color-link-hover\` tokens (light
-  \`#1a6a79\`: 5.64:1 on the page background, 6.21:1 on a card; dark \`#a3d5df\`: 11.78:1 /
-  10.12:1).
+  \`#1a6a79\`: 6.21:1 on the page and on a card; dark \`#a3d5df\`: 11.78:1 /
+  10.81:1).
 - \`hyphens: auto\` hyphenates long words in the page language — set \`lang\` on \`<html>\`
   (or on \`lc-markdown\`) — and \`overflow-wrap: anywhere\` breaks URLs and IDs that cannot
   be hyphenated, so prose never scrolls sideways on a phone. Code is never hyphenated;
@@ -79,7 +79,7 @@ This is a **design system** built with *Angular* and ~~jQuery~~ modern tooling.
 ### Code Example
 
 \`\`\`typescript
-import { ButtonComponent } from '@life-cockpit/angular-ui-kit';
+import { ButtonComponent } from '@lifecorner/angular-ui-kit';
 
 @Component({
   imports: [ButtonComponent],

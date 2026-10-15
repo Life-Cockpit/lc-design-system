@@ -1,6 +1,7 @@
-<div [class]="timelineClasses()">
+<!-- An ordered list (3.3, G-11): the events have an order and a count. -->
+<ol [class]="timelineClasses()">
   @for (item of items(); track item.id ?? $index; let last = $last) {
-    <div class="timeline__item" [class.timeline__item--last]="last">
+    <li class="timeline__item" [class.timeline__item--last]="last">
       <div [class]="markerClasses(item)">
         @if (item.icon) {
           <lc-icon [name]="item.icon" class="timeline__icon" [decorative]="true"></lc-icon>
@@ -13,12 +14,32 @@
       }
       <div class="timeline__content">
         <div class="timeline__header">
-          <p class="timeline__title">
+          <ng-template #titleContent>
             {{ item.title }}
             @if (item.titleMono) {
               <code class="timeline__title-mono">{{ item.titleMono }}</code>
             }
-          </p>
+          </ng-template>
+          @switch (headingLevel()) {
+            @case (2) {
+              <h2 class="timeline__title"><ng-container [ngTemplateOutlet]="titleContent" /></h2>
+            }
+            @case (3) {
+              <h3 class="timeline__title"><ng-container [ngTemplateOutlet]="titleContent" /></h3>
+            }
+            @case (4) {
+              <h4 class="timeline__title"><ng-container [ngTemplateOutlet]="titleContent" /></h4>
+            }
+            @case (5) {
+              <h5 class="timeline__title"><ng-container [ngTemplateOutlet]="titleContent" /></h5>
+            }
+            @case (6) {
+              <h6 class="timeline__title"><ng-container [ngTemplateOutlet]="titleContent" /></h6>
+            }
+            @default {
+              <p class="timeline__title"><ng-container [ngTemplateOutlet]="titleContent" /></p>
+            }
+          }
           @if (item.badge) {
             <lc-badge size="xs" [variant]="item.badgeVariant ?? 'default'">{{
               item.badge
@@ -39,7 +60,7 @@
           <p class="timeline__description">{{ item.description }}</p>
         }
         @if (item.timestamp) {
-          <time class="timeline__timestamp">{{ item.timestamp }}</time>
+          <time class="timeline__timestamp" [attr.datetime]="item.datetime ?? null">{{ item.timestamp }}</time>
         }
         @if (contentTemplate(); as contentTpl) {
           <div class="timeline__body">
@@ -50,6 +71,6 @@
           </div>
         }
       </div>
-    </div>
+    </li>
   }
-</div>
+</ol>

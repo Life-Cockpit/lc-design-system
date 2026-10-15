@@ -8,6 +8,7 @@
   [class.lc-header--size-xl]="size() === 'xl'"
   [class.lc-header--has-nav]="navItems().length > 0"
   [class.lc-header--static]="!sticky()"
+  [class.lc-header--transparent]="variant() === 'transparent'"
 >
   <!-- Hamburger menu icon (mobile only) -->
   @if (showHamburger()) {
@@ -62,7 +63,7 @@
           }
         }
         @if (subtitle()) {
-          <span class="lc-header__subtitle">{{ subtitle() }}</span>
+          <span class="lc-header__subtitle" [attr.title]="subtitle()">{{ subtitle() }}</span>
         }
       </div>
     }
@@ -126,7 +127,8 @@
       [items]="menuItems()"
       [isOpen]="isDropdownOpen()"
       position="bottom-right"
-      minWidth="220px"
+      minWidth="min(220px, calc(100vw - 2rem))"
+      maxWidth="min(18rem, calc(100vw - 2rem))"
       [size]="menuSize()"
       (itemClick)="onMenuItemClick($event)"
       (closed)="closeDropdown()"
@@ -134,7 +136,12 @@
       <!-- Menu header with avatar, name and email -->
       @if (userName() || userEmail()) {
         <div header class="lc-header__menu-header">
-          <lc-avatar [name]="userName()" size="md" />
+          <lc-avatar
+            [name]="userName()"
+            [src]="userAvatarSrc() || undefined"
+            [color]="userAvatarColor()"
+            size="md"
+          />
           <div class="lc-header__menu-user-info">
             @if (userName()) {
               <div class="lc-header__menu-user-name">{{ userName() }}</div>
@@ -146,17 +153,36 @@
         </div>
       }
 
-      <button
-        trigger
-        class="lc-header__profile-trigger"
-        type="button"
-        [attr.aria-label]="userMenuAriaLabel()"
-        [attr.aria-expanded]="isDropdownOpen()"
-        (click)="toggleDropdown()"
-      >
-        <lc-icon name="user" size="sm" />
-        <lc-icon name="chevron-down" size="xs" />
-      </button>
+      @if (userMenuTrigger() === 'avatar') {
+        <button
+          trigger
+          class="lc-header__profile-trigger lc-header__profile-trigger--avatar"
+          type="button"
+          [attr.aria-label]="userMenuAriaLabel()"
+          [attr.aria-expanded]="isDropdownOpen()"
+          (click)="toggleDropdown()"
+        >
+          <lc-avatar
+            [name]="userName()"
+            [src]="userAvatarSrc() || undefined"
+            [color]="userAvatarColor()"
+            [decorative]="true"
+            size="md"
+          />
+        </button>
+      } @else {
+        <button
+          trigger
+          class="lc-header__profile-trigger"
+          type="button"
+          [attr.aria-label]="userMenuAriaLabel()"
+          [attr.aria-expanded]="isDropdownOpen()"
+          (click)="toggleDropdown()"
+        >
+          <lc-icon name="user" size="sm" />
+          <lc-icon name="chevron-down" size="xs" />
+        </button>
+      }
     </lc-menu>
   }
 </header>

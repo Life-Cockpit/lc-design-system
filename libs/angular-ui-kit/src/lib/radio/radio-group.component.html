@@ -1,0 +1,24 @@
+<fieldset class="lc-radio-group" [attr.aria-describedby]="describedBy()" [disabled]="groupDisabled()">
+  <legend class="lc-radio-group__legend" [class.lc-radio-group__legend--hidden]="legendHidden()">
+    {{ legend() }}
+    @if (required() && requiredIndicator()) {
+      <span class="lc-radio-group__required" [attr.aria-label]="requiredAriaLabel()">*</span>
+    }
+  </legend>
+
+  @if (helpText()) {
+    <p [id]="helpId" class="lc-radio-group__help">{{ helpText() }}</p>
+  }
+
+  @if (error()) {
+    <p [id]="errorId" class="lc-radio-group__error" role="alert">{{ error() }}</p>
+  }
+
+  <div
+    class="lc-radio-group__options"
+    [class.lc-radio-group__options--vertical]="orientation() === 'vertical'"
+    [class.lc-radio-group__options--horizontal]="orientation() === 'horizontal'"
+  >
+    <ng-content />
+  </div>
+</fieldset>

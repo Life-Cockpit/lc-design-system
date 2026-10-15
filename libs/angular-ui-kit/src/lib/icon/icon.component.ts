@@ -14,7 +14,7 @@ import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, map, retry, shareReplay, tap, throwError, timer } from 'rxjs';
 import { ICON_ALIASES } from './icon-aliases';
-import { INLINE_ICON_SVGS } from './icon-inline-svgs';
+import { resolveInlineIconSvg } from './icon-inline-lookup';
 import { isValidIconName } from './icon-catalog';
 
 export type IconVariant = 'outline' | 'solid';
@@ -147,7 +147,11 @@ export function resetIconCache(): void {
  * - Multiple size options (xs, sm, md, lg, xl)
  * - Custom color support (CSS colors, variables)
  * - Accessibility attributes (ARIA labels, decorative icons)
- * - Dynamic SVG loading from Tabler Icons
+ * - Inline SVGs for the common icons (a hand-picked set plus Tabler icons
+ *   inlined at build time, see {@link isInlineIconName}): no request, they
+ *   render offline and in prerendered HTML; looked up by the name as written,
+ *   then by its alias target
+ * - Dynamic SVG loading from Tabler Icons for everything else
  * - Fail-loud on unknown names: a console warning (once per name, in dev AND
  *   prod) + a visible placeholder (never a silent empty space) — and **no
  *   network request**, because in SPA deployments the server answers missing
@@ -367,11 +371,9 @@ export class IconComponent {
         return;
       }
 
-      // Resolve aliases (Heroicon/Material -> Tabler)
-      const iconName = ICON_ALIASES[rawName] ?? rawName;
-
-      // Try to use inline SVG first (avoids HTTP request)
-      const inlineSvg = INLINE_ICON_SVGS[iconName]?.[iconVariant];
+      // Inline markup first (no request; renders offline and in prerendered
+      // HTML): by the name as written, then by its alias target (G-7).
+      const inlineSvg = resolveInlineIconSvg(rawName, iconVariant);
       if (inlineSvg) {
         this.rawSvg.set(inlineSvg);
         return;

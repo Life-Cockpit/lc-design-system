@@ -1,3 +1,5 @@
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
@@ -324,5 +326,19 @@ describe('DateRangePickerComponent with FormControl', () => {
     fixture.detectChanges();
     expect(control.value?.start?.getDate()).toBe(1);
     expect(control.value?.end?.getDate()).toBe(5);
+  });
+});
+
+describe('date-range-picker.component 3.3: SI-8 field border', () => {
+  it('draws the field boundary with --color-field-border (≥ 3:1, WCAG 1.4.11)', () => {
+    const scss = readFileSync(resolve(__dirname, 'date-range-picker.component.scss'), 'utf-8');
+    const rule = scss.match(/&__field \{([^}]*)/m)?.[1] ?? '';
+    expect(rule).toMatch(/border: 1px solid var\(--color-field-border/);
+  });
+
+  it('never draws a field boundary with the decorative --color-border', () => {
+    const scss = readFileSync(resolve(__dirname, 'date-range-picker.component.scss'), 'utf-8');
+    const rule = scss.match(/&__field \{([^}]*)/m)?.[1] ?? '';
+    expect(rule).not.toMatch(/border(-color)?: (\dpx solid )?var\(--color-border\)/);
   });
 });

@@ -14,6 +14,13 @@ $timeline-colors: (
   display: block;
 }
 
+// The root is an <ol> of <li>s (3.3, G-11): no list markers or indents.
+.timeline {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
 // ---------------------------------------------------------------------------
 // Vertical
 // ---------------------------------------------------------------------------
@@ -183,6 +190,8 @@ $timeline-colors: (
 
 .timeline__title {
   margin: 0;
+  font-family: inherit;
+  line-height: inherit;
   font-size: 0.875rem;
   font-weight: 600;
   color: var(--color-text-primary);

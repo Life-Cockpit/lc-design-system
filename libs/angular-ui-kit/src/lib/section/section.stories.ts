@@ -109,7 +109,7 @@ export const PageLayout: Story = {
     template: `
       <div>
         <lc-section spacing="lg" background="none">
-          <h2 style="margin: 0 0 8px; font-size: 22px; font-weight: 700;">Welcome to Life-Cockpit</h2>
+          <h2 style="margin: 0 0 8px; font-size: 22px; font-weight: 700;">Welcome to LifeCorner</h2>
           <p style="margin: 0; color: #666; max-width: 600px;">Your personal productivity platform for managing tasks, tracking habits, and organizing your life.</p>
         </lc-section>
         <lc-section spacing="lg" background="gray">

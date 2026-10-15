@@ -1,0 +1,44 @@
+<nav [class]="navClasses()" [attr.aria-label]="ariaLabel()">
+  <ul class="lc-bottom-nav__list">
+    @for (entry of entries(); track entry.item.id) {
+      <li class="lc-bottom-nav__entry">
+        @if (entry.more && !entry.item.route) {
+          <button
+            type="button"
+            class="lc-bottom-nav__item"
+            [class.lc-bottom-nav__item--current]="entry.current"
+            (click)="onMoreButtonClick()"
+          >
+            <ng-container [ngTemplateOutlet]="itemContent" [ngTemplateOutletContext]="{ $implicit: entry }" />
+          </button>
+        } @else {
+          <a
+            class="lc-bottom-nav__item"
+            [class.lc-bottom-nav__item--current]="entry.current"
+            [routerLink]="entry.item.route"
+            [attr.aria-current]="entry.current ? 'page' : null"
+            (click)="onItemClick(entry)"
+          >
+            <ng-container [ngTemplateOutlet]="itemContent" [ngTemplateOutletContext]="{ $implicit: entry }" />
+          </a>
+        }
+      </li>
+    }
+  </ul>
+</nav>
+
+<ng-template #itemContent let-entry>
+  <!-- Icon and badge are decoration: the label and the hidden badge text name the link. -->
+  <span class="lc-bottom-nav__pill" aria-hidden="true">
+    <lc-icon [name]="entry.item.icon" size="md" [decorative]="true" class="lc-bottom-nav__icon" />
+    @if (entry.item.badge; as badge) {
+      <span class="lc-bottom-nav__badge">
+        <lc-badge [variant]="badge.variant || 'default'" size="xs" [rounded]="true">{{ badge.value }}</lc-badge>
+      </span>
+    }
+  </span>
+  <span class="lc-bottom-nav__label">{{ entry.item.label }}</span>
+  @if (entry.item.badge) {
+    <span class="lc-bottom-nav__sr-only">{{ badgeText(entry.item) }}</span>
+  }
+</ng-template>

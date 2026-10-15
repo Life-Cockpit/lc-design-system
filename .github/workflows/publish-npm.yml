@@ -55,12 +55,12 @@ jobs:
           set -o pipefail
           if npm stage publish --access public --provenance 2>&1 | tee /tmp/npm-stage.log; then
             {
-              echo "### @life-cockpit/angular-ui-kit@${version} is staged"
+              echo "### @lifecorner/angular-ui-kit@${version} is staged"
               echo ""
               echo "It is not public until approved. On a machine logged in to npm:"
               echo ""
               echo '```sh'
-              echo "npm stage list @life-cockpit/angular-ui-kit"
+              echo "npm stage list @lifecorner/angular-ui-kit"
               echo "npm stage approve <stage-id>   # asks for 2FA"
               echo '```'
             } >> "$GITHUB_STEP_SUMMARY"

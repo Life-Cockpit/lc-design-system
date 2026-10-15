@@ -2,6 +2,8 @@ import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient, withXhr } from '@angular/common/http';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
 import { PasswordInputComponent, PasswordStrength } from './password-input.component';
 
 @Component({
@@ -283,6 +285,146 @@ describe('PasswordInputComponent', () => {
       component.setDisabledState(false);
       fixture.componentRef.setInput('disabled', true);
       expect(component.isDisabled()).toBe(true);
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 3.3: SI-2 (input purpose, no keyboard help on a shown password), SI-3 (NIST
+// rules: helper text, minLength, length-only meter, 44 px toggle), SI-8
+// (field border), SI-9 (requiredIndicator).
+// ---------------------------------------------------------------------------
+describe('PasswordInputComponent 3.3 (sign-in gaps)', () => {
+  let fixture: ComponentFixture<PasswordInputComponent>;
+  let component: PasswordInputComponent;
+  const el = () => fixture.nativeElement as HTMLElement;
+  const field = () => el().querySelector('input') as HTMLInputElement;
+  const type = (value: string) => {
+    field().value = value;
+    field().dispatchEvent(new Event('input'));
+    fixture.detectChanges();
+  };
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({ imports: [PasswordInputComponent] }).compileComponents();
+    fixture = TestBed.createComponent(PasswordInputComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+  });
+
+  describe('SI-2', () => {
+    it('renders no autocomplete, name or enterkeyhint by default', () => {
+      for (const attr of ['autocomplete', 'name', 'enterkeyhint']) {
+        expect(field().hasAttribute(attr)).toBe(false);
+      }
+    });
+
+    it('passes autocomplete, name and enterkeyhint to the native input', () => {
+      fixture.componentRef.setInput('autocomplete', 'new-password');
+      fixture.componentRef.setInput('name', 'password');
+      fixture.componentRef.setInput('enterkeyhint', 'go');
+      fixture.detectChanges();
+      expect(field().getAttribute('autocomplete')).toBe('new-password');
+      expect(field().getAttribute('name')).toBe('password');
+      expect(field().getAttribute('enterkeyhint')).toBe('go');
+    });
+
+    it('never capitalises, corrects or spell-checks a password, also while it is shown', () => {
+      expect(field().getAttribute('autocapitalize')).toBe('off');
+      expect(field().getAttribute('spellcheck')).toBe('false');
+      expect(field().getAttribute('autocorrect')).toBe('off');
+      (el().querySelector('.lc-toggle-btn') as HTMLButtonElement).click();
+      fixture.detectChanges();
+      expect(field().getAttribute('type')).toBe('text');
+      expect(field().getAttribute('spellcheck')).toBe('false');
+      expect(field().getAttribute('autocapitalize')).toBe('off');
+    });
+
+    it('lets an app override autocapitalize and spellcheck', () => {
+      fixture.componentRef.setInput('autocapitalize', 'none');
+      fixture.componentRef.setInput('spellcheck', true);
+      fixture.detectChanges();
+      expect(field().getAttribute('autocapitalize')).toBe('none');
+      expect(field().getAttribute('spellcheck')).toBe('true');
+    });
+  });
+
+  describe('SI-3', () => {
+    it('shows helper text and links it to the input', () => {
+      fixture.componentRef.setInput('helperText', 'At least 8 characters.');
+      fixture.detectChanges();
+      const id = field().getAttribute('aria-describedby') as string;
+      expect(el().querySelector(`#${id}`)?.textContent?.trim()).toBe('At least 8 characters.');
+    });
+
+    it('the error replaces the helper text', () => {
+      fixture.componentRef.setInput('helperText', 'At least 8 characters.');
+      fixture.componentRef.setInput('error', 'Too short.');
+      fixture.detectChanges();
+      expect(el().querySelector('.lc-helper')).toBeNull();
+      const ids = (field().getAttribute('aria-describedby') as string).split(' ');
+      expect(ids).toEqual([component.errorId]);
+    });
+
+    it('sets the native minlength and checks the length requirement against it', () => {
+      fixture.componentRef.setInput('minLength', 12);
+      fixture.detectChanges();
+      expect(field().getAttribute('minlength')).toBe('12');
+      type('abcdefghij');
+      expect(component.requirements()[0].met).toBe(false);
+      type('abcdefghijkl');
+      expect(component.requirements()[0].met).toBe(true);
+    });
+
+    it('keeps the 3.2 rule of 8 characters without minLength', () => {
+      expect(field().hasAttribute('minlength')).toBe(false);
+      type('abcdefgh');
+      expect(component.requirements()[0].met).toBe(true);
+    });
+
+    it('strengthMode "length" scores the length only (NIST), never the character classes', () => {
+      fixture.componentRef.setInput('strengthMode', 'length');
+      fixture.componentRef.setInput('showStrengthMeter', true);
+      fixture.detectChanges();
+      type('Ab1!');
+      expect(component.strength().level).toBe('Weak');
+      type('aaaaaaaa');
+      expect(component.strength().level).toBe('Fair');
+      type('aaaaaaaaaaaa');
+      expect(component.strength().level).toBe('Good');
+      type('a'.repeat(16));
+      expect(component.strength().level).toBe('Strong');
+      expect(component.strength().percentage).toBe(100);
+    });
+
+    it('strengthMode "length" lists only the length requirement', () => {
+      fixture.componentRef.setInput('strengthMode', 'length');
+      fixture.componentRef.setInput('showRequirements', true);
+      fixture.detectChanges();
+      expect(el().querySelectorAll('.lc-requirement')).toHaveLength(1);
+    });
+
+    it('the visibility toggle is a 44 px target', () => {
+      const scss = readFileSync(resolve(__dirname, 'password-input.component.scss'), 'utf-8');
+      const toggle = scss.match(/\.lc-toggle-btn \{([^}]*)/)?.[1] ?? '';
+      expect(toggle).toMatch(/width: 2\.75rem;/);
+      expect(toggle).toMatch(/height: 2\.75rem;/);
+    });
+  });
+
+  describe('SI-8 and SI-9', () => {
+    it('draws the field boundary with --color-field-border', () => {
+      const scss = readFileSync(resolve(__dirname, 'password-input.component.scss'), 'utf-8');
+      const inputRule = scss.match(/\.lc-input \{([^}]*)/)?.[1] ?? '';
+      expect(inputRule).toMatch(/border: 1px solid var\(--color-field-border/);
+    });
+
+    it('keeps required semantics without the asterisk', () => {
+      fixture.componentRef.setInput('required', true);
+      fixture.componentRef.setInput('requiredIndicator', false);
+      fixture.detectChanges();
+      expect(el().querySelector('.lc-required')).toBeNull();
+      expect(field().required).toBe(true);
     });
   });
 });

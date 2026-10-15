@@ -1,6 +1,8 @@
 import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ReactiveFormsModule, FormControl } from '@angular/forms';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
 import { InputComponent } from './input.component';
 
 @Component({
@@ -404,5 +406,193 @@ describe('InputComponent value binding in a host', () => {
     inputs[2].value = 'typed';
     inputs[2].dispatchEvent(new Event('input'));
     expect(host.control.value).toBe('typed');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 3.3: SI-2 (input purpose and keyboard hints), the character count announced
+// only near the limit, SI-8 (field border), SI-9 (requiredIndicator),
+// SI-10 (read-only values that wrap).
+// ---------------------------------------------------------------------------
+describe('InputComponent 3.3 (sign-in gaps)', () => {
+  let fixture: ComponentFixture<InputComponent>;
+  let component: InputComponent;
+  const el = () => fixture.nativeElement as HTMLElement;
+  const field = () => el().querySelector('input') as HTMLInputElement;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({ imports: [InputComponent] }).compileComponents();
+    fixture = TestBed.createComponent(InputComponent);
+    component = fixture.componentInstance;
+    fixture.componentRef.setInput('label', 'Name');
+    fixture.detectChanges();
+  });
+
+  describe('SI-2: autocomplete, name, autocapitalize, spellcheck, enterkeyhint', () => {
+    it('renders none of them by default (3.2 behaviour)', () => {
+      for (const attr of ['autocomplete', 'name', 'autocapitalize', 'spellcheck', 'enterkeyhint']) {
+        expect(field().hasAttribute(attr)).toBe(false);
+      }
+    });
+
+    it('passes each one to the native input', () => {
+      fixture.componentRef.setInput('autocomplete', 'username webauthn');
+      fixture.componentRef.setInput('name', 'email');
+      fixture.componentRef.setInput('autocapitalize', 'off');
+      fixture.componentRef.setInput('spellcheck', false);
+      fixture.componentRef.setInput('enterkeyhint', 'next');
+      fixture.detectChanges();
+      expect(field().getAttribute('autocomplete')).toBe('username webauthn');
+      expect(field().getAttribute('name')).toBe('email');
+      expect(field().getAttribute('autocapitalize')).toBe('off');
+      expect(field().getAttribute('spellcheck')).toBe('false');
+      expect(field().getAttribute('enterkeyhint')).toBe('next');
+    });
+
+    it('renders spellcheck="true" when switched on', () => {
+      fixture.componentRef.setInput('spellcheck', true);
+      fixture.detectChanges();
+      expect(field().getAttribute('spellcheck')).toBe('true');
+    });
+  });
+
+  describe('character count', () => {
+    const live = () => el().querySelector('.input-char-count-live') as HTMLElement;
+
+    beforeEach(() => {
+      fixture.componentRef.setInput('maxLength', 80);
+      fixture.componentRef.setInput('showCharCount', true);
+      fixture.detectChanges();
+    });
+
+    it('the visible count is no live region (it no longer speaks on every keystroke)', () => {
+      const visible = el().querySelector('.char-count') as HTMLElement;
+      expect(visible.textContent).toContain('0 / 80');
+      expect(visible.hasAttribute('aria-live')).toBe(false);
+    });
+
+    it('a polite live region stays silent while the limit is far', () => {
+      expect(live().getAttribute('aria-live')).toBe('polite');
+      component.writeValue('x'.repeat(71));
+      fixture.detectChanges();
+      expect(live().textContent?.trim()).toBe('');
+    });
+
+    it('announces the remaining characters near the limit (default: the last 10 %)', () => {
+      component.writeValue('x'.repeat(72));
+      fixture.detectChanges();
+      expect(live().textContent?.trim()).toBe('Characters remaining: 8');
+      component.writeValue('x'.repeat(80));
+      fixture.detectChanges();
+      expect(live().textContent?.trim()).toBe('Characters remaining: 0');
+    });
+
+    it('takes a translated label and its own threshold', () => {
+      fixture.componentRef.setInput('charCountRemainingLabel', 'Noch {remaining} Zeichen');
+      fixture.componentRef.setInput('charCountAnnounceThreshold', 20);
+      component.writeValue('x'.repeat(60));
+      fixture.detectChanges();
+      expect(live().textContent?.trim()).toBe('Noch 20 Zeichen');
+    });
+  });
+
+  describe('aria-describedby', () => {
+    it('is absent without error or helper text', () => {
+      expect(field().hasAttribute('aria-describedby')).toBe(false);
+    });
+
+    it('points at the helper text', () => {
+      fixture.componentRef.setInput('helperText', 'As it appears to others');
+      fixture.detectChanges();
+      const id = field().getAttribute('aria-describedby') as string;
+      expect(el().querySelector(`#${id}`)?.textContent?.trim()).toBe('As it appears to others');
+    });
+
+    it('points only at the error while the error replaces the helper text', () => {
+      fixture.componentRef.setInput('helperText', 'Help');
+      fixture.componentRef.setInput('error', 'Enter your name.');
+      fixture.detectChanges();
+      const ids = (field().getAttribute('aria-describedby') as string).split(' ');
+      expect(ids).toHaveLength(1);
+      expect(el().querySelector(`#${ids[0]}`)?.textContent?.trim()).toBe('Enter your name.');
+    });
+  });
+
+  describe('SI-9: requiredIndicator', () => {
+    it('shows the asterisk for required fields by default', () => {
+      fixture.componentRef.setInput('required', true);
+      fixture.detectChanges();
+      expect(el().querySelector('.required-indicator')).toBeTruthy();
+    });
+
+    it('keeps the required semantics without the asterisk', () => {
+      fixture.componentRef.setInput('required', true);
+      fixture.componentRef.setInput('requiredIndicator', false);
+      fixture.detectChanges();
+      expect(el().querySelector('.required-indicator')).toBeNull();
+      expect(field().required).toBe(true);
+      expect(field().getAttribute('aria-required')).toBe('true');
+    });
+  });
+
+  describe('SI-10: readonlyWrap', () => {
+    beforeEach(() => {
+      fixture.componentRef.setInput('readonly', true);
+      fixture.componentRef.setInput('autocomplete', 'username');
+      fixture.componentRef.setInput('name', 'username');
+      component.writeValue('johanna-friederike.brandt-oberhausen@example.com');
+    });
+
+    it('keeps the native read-only input by default', () => {
+      fixture.detectChanges();
+      expect(field().readOnly).toBe(true);
+      expect(field().hidden).toBe(false);
+      expect(el().querySelector('.input-readonly-value')).toBeNull();
+    });
+
+    it('shows the value as wrapping text, named by the label', () => {
+      fixture.componentRef.setInput('readonlyWrap', true);
+      fixture.detectChanges();
+      const value = el().querySelector('.input-readonly-value') as HTMLElement;
+      const label = el().querySelector('label') as HTMLElement;
+      expect(value.textContent?.trim()).toBe('johanna-friederike.brandt-oberhausen@example.com');
+      expect(value.getAttribute('role')).toBe('textbox');
+      expect(value.getAttribute('aria-readonly')).toBe('true');
+      expect(value.getAttribute('tabindex')).toBe('0');
+      expect(value.getAttribute('aria-labelledby')).toBe(label.id);
+      expect(el().querySelector('.input-container')?.classList).toContain('input-readonly-wrap');
+    });
+
+    it('keeps a hidden native input with the value for forms and password managers', () => {
+      fixture.componentRef.setInput('readonlyWrap', true);
+      fixture.detectChanges();
+      expect(field().hidden).toBe(true);
+      expect(field().value).toBe('johanna-friederike.brandt-oberhausen@example.com');
+      expect(field().getAttribute('autocomplete')).toBe('username');
+      expect(field().getAttribute('name')).toBe('username');
+    });
+
+    it('focus() moves to the visible value', () => {
+      fixture.componentRef.setInput('readonlyWrap', true);
+      fixture.detectChanges();
+      component.focus();
+      expect(document.activeElement?.classList).toContain('input-readonly-value');
+    });
+
+    it('has no effect on an editable field', () => {
+      fixture.componentRef.setInput('readonly', false);
+      fixture.componentRef.setInput('readonlyWrap', true);
+      fixture.detectChanges();
+      expect(field().hidden).toBe(false);
+      expect(el().querySelector('.input-readonly-value')).toBeNull();
+    });
+  });
+
+  describe('SI-8: field border', () => {
+    it('draws the field boundary with --color-field-border (≥ 3:1)', () => {
+      const scss = readFileSync(resolve(__dirname, 'input.component.scss'), 'utf-8');
+      const container = scss.match(/\.input-container \{([^}]*)/)?.[1] ?? '';
+      expect(container).toMatch(/border: 1px solid var\(--color-field-border/);
+    });
   });
 });

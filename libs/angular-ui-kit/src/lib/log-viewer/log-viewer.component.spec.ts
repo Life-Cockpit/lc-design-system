@@ -479,6 +479,12 @@ describe('LogViewerComponent', () => {
       expect(scss).not.toMatch(/^\.lc-log-viewer--log\s*\{\s*\n\s*\.ansi-black/m);
     });
 
+    it('applies the light ANSI palette to a `system` root while the OS is light (G-6)', () => {
+      expect(scss).toMatch(
+        /@media \(prefers-color-scheme: light\)\s*\{\s*:root\.system:not\(\.dark\) \.lc-log-viewer--log\s*\{\s*@include ansi-latte;/,
+      );
+    });
+
     it('uses status tokens for level ink and the search highlight', () => {
       expect(scss).not.toMatch(/#3b82f6|#f59e0b|#ef4444|#9ca3af|#fbbf2480/);
       expect(scss).toMatch(/--color-info-default/);

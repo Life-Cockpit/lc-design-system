@@ -28,10 +28,14 @@ Skeleton loader component for placeholder loading states.
 
 **Key Features:**
 - Variant shapes (text, rect, circle)
-- Shimmer animation effect
+- Shimmer animation effect; a static fill under \`prefers-reduced-motion: reduce\` (since 3.3)
 - Custom width, height, and border radius
 - Composable for building complex loading layouts
 - Dark mode compatible
+
+**Colours:** the fill is \`--color-skeleton\` with the shimmer band \`--color-skeleton-highlight\`
+(both visible on the white light page and on cards). Override per use with the hooks
+\`--lc-skeleton-bg\` and \`--lc-skeleton-highlight\` on the element or an ancestor.
 `,
       },
     },

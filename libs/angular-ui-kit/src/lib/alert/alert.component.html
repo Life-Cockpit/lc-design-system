@@ -2,7 +2,12 @@
   <div [class]="containerClasses()">
     @if (showIcon()) {
       <div class="lc-alert__icon">
-        <lc-icon [name]="defaultIcon()" size="md" [ariaLabel]="iconLabel()" />
+        <lc-icon
+          [name]="defaultIcon()"
+          size="md"
+          [decorative]="!iconAriaLabel()"
+          [ariaLabel]="iconAriaLabel()"
+        />
       </div>
     }
     

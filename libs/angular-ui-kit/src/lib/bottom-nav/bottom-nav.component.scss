@@ -1,0 +1,195 @@
+/**
+ * Bottom navigation bar (AS-1) with the floating variant (LK-5).
+ *
+ * Theming hooks (set them on `lc-bottom-nav` or any ancestor):
+ * --lc-bottom-nav-bg, --lc-bottom-nav-border, --lc-bottom-nav-shadow,
+ * --lc-bottom-nav-fg, --lc-bottom-nav-current-bg, --lc-bottom-nav-current-fg,
+ * --lc-bottom-nav-hover-bg, --lc-bottom-nav-z
+ */
+
+:host {
+  display: block;
+}
+
+// The hooks are read with their defaults as fallbacks (never declared here),
+// so a plain `lc-bottom-nav { --lc-bottom-nav-bg: … }` in the app wins.
+.lc-bottom-nav {
+  --_fg: var(--lc-bottom-nav-fg, var(--color-text-secondary));
+  --_current-bg: var(--lc-bottom-nav-current-bg, var(--color-surface-selected));
+  --_current-fg: var(--lc-bottom-nav-current-fg, var(--color-on-surface-selected, var(--color-link)));
+  --_hover-bg: var(--lc-bottom-nav-hover-bg, var(--color-surface-hover));
+
+  box-sizing: border-box;
+  background-color: var(--lc-bottom-nav-bg, var(--_bg));
+  color: var(--_fg);
+
+  // ── docked (AS-1): spans the bottom edge, pads the safe-area inset ──
+  &--docked {
+    --_bg: var(--color-surface);
+    border-top: 1px solid var(--lc-bottom-nav-border, var(--color-border));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+  }
+
+  // ── floating (LK-5): inset pill, 16 px from the sides and above the inset ──
+  &--floating {
+    --_bg: var(--color-floating-bar-surface, var(--color-surface));
+    border: 1px solid var(--lc-bottom-nav-border, var(--color-floating-bar-border, var(--color-border)));
+    border-radius: 28px;
+    box-shadow: var(--lc-bottom-nav-shadow, var(--shadow-floating-bar, 0 10px 30px -10px rgba(13, 53, 61, 0.28)));
+  }
+
+  &--fixed {
+    position: fixed;
+    z-index: var(--lc-bottom-nav-z, 900); // below lc-modal (999/1000) and lc-menu (9999)
+
+    &.lc-bottom-nav--docked {
+      left: 0;
+      right: 0;
+      bottom: 0;
+    }
+
+    &.lc-bottom-nav--floating {
+      left: calc(16px + env(safe-area-inset-left, 0px));
+      right: calc(16px + env(safe-area-inset-right, 0px));
+      bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    }
+  }
+}
+
+.lc-bottom-nav__list {
+  display: flex;
+  margin: 0;
+  padding: 4px 8px;
+  list-style: none;
+}
+
+.lc-bottom-nav__entry {
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+// The whole column is the link: 64 px high and 64 px wide where the bar has
+// room (AS-1 asks 48 × 64; five items in a floating bar at 360 px get about
+// 62 px each), far above 2.5.8's 24 px. No side padding: the label may use the
+// whole column.
+.lc-bottom-nav__item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: min(64px, 100%);
+  min-height: 64px;
+  padding: 4px 0;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 20px;
+  background: transparent;
+  color: var(--_fg);
+  font-family: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary-500);
+    outline-offset: -2px;
+  }
+
+  @media (hover: hover) {
+    &:hover:not(.lc-bottom-nav__item--current) .lc-bottom-nav__pill {
+      background-color: var(--_hover-bg);
+    }
+  }
+}
+
+// 56 × 32 px pill behind the icon; filled only on the current item.
+.lc-bottom-nav__pill {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 56px;
+  height: 32px;
+  border-radius: 9999px;
+  background-color: transparent;
+  transition: background-color 0.2s ease;
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}
+
+.lc-bottom-nav__icon {
+  display: flex;
+  width: 24px;
+  height: 24px;
+  color: currentColor;
+}
+
+// The label may reach 4 px into the neighbouring columns (labels are centred,
+// so short neighbours leave that room): "Dokumente" (≈ 66 px at 12 px) stays on
+// one line in a five-item floating bar at 360 px, whose columns are ≈ 62 px.
+.lc-bottom-nav__label {
+  max-width: calc(100% + 8px);
+  margin-inline: -4px;
+  font-size: var(--font-size-xs, 0.75rem);
+  line-height: 1rem;
+  font-weight: var(--font-weight-medium, 500);
+  text-align: center;
+  // Always visible; a label that does not fit wraps at word boundaries (and
+  // hyphenates by the page language), at 200 % text too — never clipped.
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+// Current item: pill, heavier icon and bold ink — more than colour (1.4.1).
+.lc-bottom-nav__item--current {
+  color: var(--_current-fg);
+
+  .lc-bottom-nav__pill {
+    background-color: var(--_current-bg);
+  }
+
+  .lc-bottom-nav__label {
+    font-weight: var(--font-weight-bold, 700);
+  }
+
+  // The outline icon drawn heavier (2.4 instead of 2): Tabler's filled set
+  // does not cover every icon, so the stroke carries the "solid" emphasis.
+  .lc-bottom-nav__icon ::ng-deep svg {
+    stroke-width: 2.4;
+  }
+}
+
+// Count bubble on the icon's top-right corner, above the pill.
+.lc-bottom-nav__badge {
+  position: absolute;
+  top: -4px;
+  left: calc(50% + 6px);
+  display: flex;
+  pointer-events: none;
+}
+
+.lc-bottom-nav__sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media print {
+  .lc-bottom-nav {
+    display: none;
+  }
+}

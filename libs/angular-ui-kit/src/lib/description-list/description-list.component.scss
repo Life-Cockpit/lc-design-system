@@ -40,8 +40,13 @@
     min-width: var(--spacing-4);
   }
 
+  // The value may shrink and wraps long unbroken values (an e-mail address,
+  // an IBAN) instead of overflowing the row (3.3, AC-10); the term keeps its
+  // width.
   &__value {
-    flex-shrink: 0;
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow-wrap: anywhere;
     text-align: right;
     color: var(--color-text-primary);
     font-weight: var(--font-weight-medium);

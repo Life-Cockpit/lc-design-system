@@ -21,6 +21,10 @@
   display: flex;
   justify-content: center;
   gap: 0.75rem;
+
+  &--compact {
+    gap: 0.5rem;
+  }
 }
 
 .lc-digit-input {
@@ -29,7 +33,8 @@
   font-size: 1.5rem;
   font-weight: 600;
   text-align: center;
-  border: 2px solid var(--color-border);
+  // 3.3 (SI-8): the field boundary needs 3:1 against the page (WCAG 1.4.11).
+  border: 2px solid var(--color-field-border);
   border-radius: var(--border-radius-md);
   background-color: var(--color-surface);
   color: var(--color-text-primary);
@@ -73,14 +78,18 @@
   text-align: center;
 }
 
-/* Responsive: tighter inputs on small screens */
+/* Phones: 44 × 48 px boxes (touch target), 8 px apart — 6 boxes are 304 px (3.3, SI-4; were 40 px) */
 @media (max-width: 480px) {
   .lc-digit-inputs {
     gap: 0.5rem;
   }
 
+  .lc-digit-inputs--compact {
+    gap: 0.25rem;
+  }
+
   .lc-digit-input {
-    width: 2.5rem;
+    width: 2.75rem;
     height: 3rem;
     font-size: 1.25rem;
   }

@@ -1,4 +1,4 @@
-<div [class]="groupClasses()">
+<div [class]="groupClasses()" [style.--lc-avatar-group-overlap]="overlap() || null">
   @for (avatar of visibleAvatars(); track avatar.name ?? $index) {
     <lc-avatar
       class="avatar-group__item"
@@ -6,6 +6,8 @@
       [alt]="avatar.alt"
       [name]="avatar.name"
       [size]="size()"
+      [color]="avatar.color ?? 'default'"
+      [ring]="ring()"
     />
   }
   @if (overflowCount() > 0) {

@@ -1,0 +1,186 @@
+/**
+ * lc-app-shell (AS-10, LK-6): header, side navigation, page, horizon, footer
+ * and bottom bar on one CSS grid. The document scrolls; nothing here sets an
+ * overflow or a fixed height.
+ *
+ * Hooks: --lc-app-shell-nav-width (240 / 248 / 280 px from 1024 / 1440 /
+ * 1920), --lc-app-shell-bottom-clearance (space kept free for the bottom bar
+ * below 1024 px), --lc-app-shell-bg / --lc-app-shell-bg-image (the sky:
+ * --color-background and --app-background-image).
+ *
+ * Empty slots take no space: `:empty` ignores Angular's comment anchors, and
+ * `:has()` switches the grid when there is no side navigation.
+ */
+
+:host {
+  display: block;
+}
+
+.lc-app-shell {
+  --_nav-width: var(--lc-app-shell-nav-width, 240px);
+  --_clearance: var(--lc-app-shell-bottom-clearance, calc(112px + env(safe-area-inset-bottom, 0px)));
+
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto 1fr;
+  grid-template-areas:
+    'header'
+    'body'
+    'end';
+  min-height: 100vh;
+  min-height: 100dvh;
+  box-sizing: border-box;
+  // The sky: the page colour with the theme's backdrop (white fading to the
+  // horizon tint in light, the teal and violet glow in dark).
+  background-color: var(--lc-app-shell-bg, var(--color-background));
+  background-image: var(--lc-app-shell-bg-image, var(--app-background-image, none));
+}
+
+.lc-app-shell__header {
+  grid-area: header;
+  min-width: 0;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+.lc-app-shell__body {
+  grid-area: body;
+  min-width: 0;
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+// Below 1024 px the side navigation is not shown (the bottom bar is).
+.lc-app-shell__nav {
+  display: none;
+}
+
+// The horizon fills the rest of the screen, full-bleed (no insets); the
+// footer shares its row and rests on the land.
+.lc-app-shell__horizon {
+  grid-area: end;
+  min-width: 0;
+}
+
+.lc-app-shell__footer {
+  grid-area: end;
+  align-self: end;
+  min-width: 0;
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+
+.lc-app-shell--horizon .lc-app-shell__footer {
+  position: relative;
+  z-index: 1;
+}
+
+.lc-app-shell__footer:empty,
+.lc-app-shell__header:empty {
+  display: none;
+}
+
+// The bar is position: fixed; the wrapper only switches it off from 1024 px.
+.lc-app-shell__bottom-nav {
+  display: contents;
+}
+
+// Keep the bar's height free at the end of the page, so it never covers
+// content. With the horizon the bar rests on the land, which is taller.
+@media (max-width: 1023.98px) {
+  .lc-app-shell:not(.lc-app-shell--horizon):has(> .lc-app-shell__bottom-nav:not(:empty)) {
+    padding-bottom: var(--_clearance);
+  }
+}
+
+// ── From 1024 px: the docked side navigation ─────────────────────────────
+@media (min-width: 1024px) {
+  .lc-app-shell {
+    grid-template-columns: var(--_nav-width) minmax(0, 1fr);
+    grid-template-areas:
+      'header header'
+      'nav body'
+      'end end';
+  }
+
+  // No side navigation: the page takes the full width.
+  .lc-app-shell:has(> .lc-app-shell__nav:empty) {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'header'
+      'body'
+      'end';
+  }
+
+  .lc-app-shell__nav {
+    grid-area: nav;
+    display: block;
+    min-width: 0;
+    // Sticky from the top of the viewport once the header has scrolled away.
+    position: sticky;
+    top: 0;
+    align-self: start;
+    max-height: 100vh;
+    max-height: 100dvh;
+    overflow-y: auto;
+    padding-left: env(safe-area-inset-left, 0px);
+
+    &:empty {
+      display: none;
+    }
+  }
+
+  // The side navigation's left inset is taken by the nav column.
+  .lc-app-shell:not(:has(> .lc-app-shell__nav:empty)) .lc-app-shell__body {
+    padding-left: 0;
+  }
+
+  .lc-app-shell__bottom-nav {
+    display: none;
+  }
+}
+
+// ── From 1280 px: the page's right column reaches behind the header ──────
+// The "Weite" design draws the right column (lc-app-page's aside) from the
+// top of the window: its tint and hairline continue behind a transparent
+// header. The shell paints the header row's part of them when the page has a
+// right column; lc-app-page paints the rest. The width follows
+// --lc-app-page-aside-width (360 / 400 / 460 px) — when you change it, set it
+// on the shell or higher up, so both parts line up.
+@media (min-width: 1280px) {
+  .lc-app-shell:has(.lc-app-page__aside) > .lc-app-shell__header {
+    --_aside-width: var(--lc-app-page-aside-width, 360px);
+    --_hairline: var(--color-hairline, var(--color-border));
+
+    background:
+      linear-gradient(var(--_hairline), var(--_hairline)) right calc(var(--_aside-width) - 1px) top / 1px 100% no-repeat,
+      linear-gradient(var(--color-background-low), var(--color-background-low)) right top / var(--_aside-width) 100% no-repeat;
+  }
+}
+
+@media (min-width: 1440px) {
+  .lc-app-shell {
+    --_nav-width: var(--lc-app-shell-nav-width, 248px);
+  }
+
+  .lc-app-shell:has(.lc-app-page__aside) > .lc-app-shell__header {
+    --_aside-width: var(--lc-app-page-aside-width, 400px);
+  }
+}
+
+@media (min-width: 1920px) {
+  .lc-app-shell {
+    --_nav-width: var(--lc-app-shell-nav-width, 280px);
+  }
+
+  .lc-app-shell:has(.lc-app-page__aside) > .lc-app-shell__header {
+    --_aside-width: var(--lc-app-page-aside-width, 460px);
+  }
+}
+
+@media (forced-colors: active) {
+  .lc-app-shell__header {
+    background: none;
+  }
+}

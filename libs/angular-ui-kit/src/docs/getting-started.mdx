@@ -7,27 +7,29 @@ import { Meta } from '@storybook/addon-docs/blocks';
 ## 1. Install the package
 
 ```bash
-npm install @life-cockpit/angular-ui-kit
+npm install @lifecorner/angular-ui-kit
 ```
+
+> **Renamed in 3.3.0.** Up to 3.2.x the package was `@life-cockpit/angular-ui-kit`. Replace that path in imports and `@use` rules; selectors, tokens and the API stay the same.
 
 ## 2. Include styles
 
 In your `styles.scss` (or via `angular.json` under `styles`):
 
 ```scss
-@use '@life-cockpit/angular-ui-kit/styles';
+@use '@lifecorner/angular-ui-kit/styles';
 ```
 
 Or individually — name the partial file with its underscore and extension (the
 package's `exports` map points straight at the files):
 
 ```scss
-@use '@life-cockpit/angular-ui-kit/styles/_theme-light.scss';
-@use '@life-cockpit/angular-ui-kit/styles/_theme-dark.scss';
-@use '@life-cockpit/angular-ui-kit/styles/_reset.scss';
-@use '@life-cockpit/angular-ui-kit/styles/_typography.scss';
-@use '@life-cockpit/angular-ui-kit/styles/_density.scss';
-@use '@life-cockpit/angular-ui-kit/styles/_utilities.scss';
+@use '@lifecorner/angular-ui-kit/styles/_theme-light.scss';
+@use '@lifecorner/angular-ui-kit/styles/_theme-dark.scss';
+@use '@lifecorner/angular-ui-kit/styles/_reset.scss';
+@use '@lifecorner/angular-ui-kit/styles/_typography.scss';
+@use '@lifecorner/angular-ui-kit/styles/_density.scss';
+@use '@lifecorner/angular-ui-kit/styles/_utilities.scss';
 @import '@angular/cdk/overlay-prebuilt.css'; // overlays: select, datepicker, menu, tooltip …
 ```
 
@@ -41,7 +43,7 @@ import {
   ButtonComponent,
   InputComponent,
   CardComponent,
-} from '@life-cockpit/angular-ui-kit';
+} from '@lifecorner/angular-ui-kit';
 
 @Component({
   selector: 'app-my-page',
@@ -81,11 +83,14 @@ export const appConfig = {
 Components use CSS Custom Properties. Choose a theme by setting a CSS class on `:root` or `<body>`:
 
 ```html
-<!-- Light Theme (default) -->
+<!-- Light theme -->
 <html class="light">
 
-<!-- Dark Theme -->
+<!-- Dark theme (also what a root without a theme class gets) -->
 <html class="dark">
+
+<!-- Follow the OS setting, no script needed -->
+<html class="system">
 ```
 
 ## 6. Component Theming (Header, Sidenav, Logo)
@@ -137,15 +142,20 @@ Internal tokens:
 
 ### Logo
 
+`lc-logo` shows the LifeCorner logo: Edu, the emblem, and the LifeCorner lockup. It ships its own drawings for light and dark and a small emblem for 32 px and below, so nothing is inverted or recoloured.
+
 ```html
-<!-- Inverts for dark backgrounds -->
+<!-- Follows the app theme: light, dark, or the OS under <html class="system"> (default) -->
+<lc-logo variant="full" size="md"></lc-logo>
+
+<!-- Always the dark drawing, e.g. on a dark hero -->
 <lc-logo [colorMode]="'dark'" variant="full" size="md"></lc-logo>
 
-<!-- Follows global dark/light automatically -->
-<lc-logo [colorMode]="'auto'" variant="full" size="md"></lc-logo>
+<!-- Emblem only; xs and sm use the small drawing -->
+<lc-logo variant="emblem" size="sm"></lc-logo>
 ```
 
-The `colorMode="dark"` applies `filter: invert(1) hue-rotate(180deg)` to maintain detail while adapting to dark backgrounds.
+Copy the package's `src/assets/` folder to your app's public `/assets/` (or set `LC_LOGO_BASE_PATH`). The logo is flat and fixed: never animate, rotate, recolour or distort it.
 
 ## Prerequisites
 

@@ -2,6 +2,8 @@ import type { Meta, StoryObj } from '@storybook/angular';
 import { Component, signal, computed, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { IconComponent } from './icon.component';
+import { INLINE_TABLER_NAMES } from './icon-inline-tabler.data';
+import { INLINE_ICON_SVGS } from './icon-inline-svgs';
 // The package's exports map only exposes ./icons/*, so the catalogue JSON has to be
 // reached by path.
 // eslint-disable-next-line @nx/enforce-module-boundaries
@@ -136,9 +138,9 @@ warning per name, and the placeholder is shown instead.
 The canonical set of valid names is exported for static checking:
 
 \`\`\`ts
-import { ICON_NAMES, isValidIconName, ICON_ALIASES } from '@life-cockpit/angular-ui-kit';
+import { ICON_NAMES, isValidIconName, ICON_ALIASES } from '@lifecorner/angular-ui-kit';
 // or, for build tooling:
-import iconNames from '@life-cockpit/angular-ui-kit/icon-names.json';
+import iconNames from '@lifecorner/angular-ui-kit/icon-names.json';
 
 isValidIconName('flask');  // true
 isValidIconName('beaker'); // false — did you mean 'flask'?
@@ -261,3 +263,26 @@ export const UnknownNameFallback: Story = {
       </div>`,
   }),
 };
+
+/**
+ * 3.3 (G-7): icons that render without a request — offline, at once and in
+ * prerendered HTML. The hand-picked set (looked up by the name as written, so
+ * `x-mark` and `check-circle` work) plus the Tabler icons inlined at build
+ * time for websites, app shells and sign-in. `isInlineIconName(name)` tells an
+ * app or a static site whether a name is in it.
+ */
+export const InlineSet: Story = {
+  name: 'Inline set (3.3)',
+  render: () => ({
+    props: { names: [...Object.keys(INLINE_ICON_SVGS), ...INLINE_TABLER_NAMES] },
+    template: `
+      <ul style="list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px;">
+        @for (name of names; track name) {
+          <li style="display: flex; align-items: center; gap: 8px; font: 12px monospace; color: var(--color-text-secondary);">
+            <lc-icon [name]="name" size="md" [decorative]="true" />{{ name }}
+          </li>
+        }
+      </ul>`,
+  }),
+};
+

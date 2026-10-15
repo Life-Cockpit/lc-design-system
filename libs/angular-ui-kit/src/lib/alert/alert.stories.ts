@@ -17,7 +17,9 @@ Use it to inform users about important state changes, errors, warnings, or confi
 - 4 semantic variants (success, error, warning, info)
 - Optional title and icon
 - Dismissible option with close button
-- Action slot (\`slot="action"\`) for a button right of the body, e.g. retry
+- Action slot (\`slot="action"\`) for a button right of the body, e.g. retry;
+  3.3: \`actionsLayout="stacked"\` puts several actions in their own row below the text
+- 3.3: the variant icon is decorative unless \`iconAriaLabel\` names it — no built-in English word
 - Accessible: role="alert" for error / warning, role="status" otherwise; \`visible\` is two-way bindable
         `,
       },
@@ -34,6 +36,18 @@ Use it to inform users about important state changes, errors, warnings, or confi
     message: { control: 'text', description: 'Alert message (alternative to ng-content)' },
     dismissible: { control: 'boolean', description: 'Shows a close button' },
     showIcon: { control: 'boolean', description: 'Show/hide the status icon', table: { defaultValue: { summary: 'true' } } },
+    iconAriaLabel: {
+      control: 'text',
+      description:
+        '3.3: accessible name of the variant icon (e.g. „Warnung“). Unset = decorative icon (`aria-hidden`); the title and colour carry the tone. The kit sets no default text.',
+    },
+    actionsLayout: {
+      control: 'inline-radio',
+      options: ['inline', 'stacked'],
+      description:
+        '3.3: `inline` — one action right of the body (3.2). `stacked` — the actions in their own row below the text; below 576 px of alert width one per line at full width, 8 px apart, from 576 px side by side at natural width.',
+      table: { defaultValue: { summary: 'inline' } },
+    },
   },
 };
 
@@ -125,3 +139,26 @@ export const FormValidation: Story = {
       </div>`,
   }),
 };
+
+/** 3.3 (AS-11): two answers below the text — full width on a phone, side by side from 576 px. */
+export const StackedActions: Story = {
+  name: 'Stacked actions (3.3)',
+  decorators: [moduleMetadata({ imports: [ButtonComponent] })],
+  render: () => ({
+    template: `
+      <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+        <div style="max-width: 312px;">
+          <lc-alert variant="warning" title="Du hast nur einen Passkey" message="Ohne einen zweiten kommst du nicht mehr in dein Konto, wenn dieses Gerät fehlt." [showIcon]="false" actionsLayout="stacked">
+            <lc-button slot="action" variant="outline" size="lg">Zweiten Passkey einrichten</lc-button>
+            <lc-button slot="action" variant="ghost" size="lg">Später</lc-button>
+          </lc-alert>
+        </div>
+        <lc-alert variant="warning" title="Du hast nur einen Passkey" message="Ohne einen zweiten kommst du nicht mehr in dein Konto, wenn dieses Gerät fehlt." iconAriaLabel="Warnung" actionsLayout="stacked">
+          <lc-button slot="action" variant="outline" size="lg">Zweiten Passkey einrichten</lc-button>
+          <lc-button slot="action" variant="ghost" size="lg">Später</lc-button>
+        </lc-alert>
+      </div>
+    `,
+  }),
+};
+

@@ -245,3 +245,67 @@ describe('EmailInputComponent bound to a FormControl', () => {
     expect(host.control.value).toBe('typed@example.com');
   });
 });
+
+// ---------------------------------------------------------------------------
+// 3.3: SI-2 (input purpose), SI-9 (requiredIndicator), SI-10 (icon opt-out,
+// read-only values that wrap).
+// ---------------------------------------------------------------------------
+describe('EmailInputComponent 3.3 (sign-in gaps)', () => {
+  let fixture: ComponentFixture<EmailInputComponent>;
+  const el = () => fixture.nativeElement as HTMLElement;
+  const field = () => el().querySelector('input') as HTMLInputElement;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({ imports: [EmailInputComponent] }).compileComponents();
+    fixture = TestBed.createComponent(EmailInputComponent);
+    fixture.detectChanges();
+  });
+
+  it('SI-2: renders no autocomplete, name, autocapitalize, spellcheck or enterkeyhint by default', () => {
+    for (const attr of ['autocomplete', 'name', 'autocapitalize', 'spellcheck', 'enterkeyhint']) {
+      expect(field().hasAttribute(attr)).toBe(false);
+    }
+  });
+
+  it('SI-2: passes them to the native input (passkey autofill in the email field)', () => {
+    fixture.componentRef.setInput('autocomplete', 'username webauthn');
+    fixture.componentRef.setInput('name', 'email');
+    fixture.componentRef.setInput('autocapitalize', 'off');
+    fixture.componentRef.setInput('spellcheck', false);
+    fixture.componentRef.setInput('enterkeyhint', 'next');
+    fixture.detectChanges();
+    expect(field().getAttribute('autocomplete')).toBe('username webauthn');
+    expect(field().getAttribute('name')).toBe('email');
+    expect(field().getAttribute('autocapitalize')).toBe('off');
+    expect(field().getAttribute('spellcheck')).toBe('false');
+    expect(field().getAttribute('enterkeyhint')).toBe('next');
+    expect(field().getAttribute('type')).toBe('email');
+  });
+
+  it('SI-10: shows the mail icon by default and drops it with showIcon=false', () => {
+    expect(el().querySelector('.input-icon-before')).toBeTruthy();
+    fixture.componentRef.setInput('showIcon', false);
+    fixture.detectChanges();
+    expect(el().querySelector('.input-icon-before')).toBeNull();
+  });
+
+  it('SI-10: a read-only address wraps instead of being clipped (readonlyWrap)', () => {
+    fixture.componentRef.setInput('readonly', true);
+    fixture.componentRef.setInput('readonlyWrap', true);
+    fixture.componentRef.setInput('autocomplete', 'username');
+    fixture.componentInstance.writeValue('johanna-friederike.brandt-oberhausen@example.com');
+    fixture.detectChanges();
+    const value = el().querySelector('.input-readonly-value') as HTMLElement;
+    expect(value.textContent?.trim()).toBe('johanna-friederike.brandt-oberhausen@example.com');
+    expect(field().hidden).toBe(true);
+    expect(field().getAttribute('autocomplete')).toBe('username');
+  });
+
+  it('SI-9: keeps required semantics without the asterisk', () => {
+    fixture.componentRef.setInput('required', true);
+    fixture.componentRef.setInput('requiredIndicator', false);
+    fixture.detectChanges();
+    expect(el().querySelector('.required-indicator')).toBeNull();
+    expect(field().required).toBe(true);
+  });
+});

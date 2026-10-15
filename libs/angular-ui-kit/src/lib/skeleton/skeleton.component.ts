@@ -7,7 +7,9 @@ export type SkeletonVariant = 'line' | 'circle' | 'rect';
  *
  * Features:
  * - Variant shapes (text, rect, circle)
- * - Shimmer animation effect
+ * - Shimmer animation effect; a static fill under `prefers-reduced-motion`
+ * - Colours from `--color-skeleton` / `--color-skeleton-highlight`, overridable
+ *   with the `--lc-skeleton-bg` / `--lc-skeleton-highlight` hooks
  * - Custom width, height, and border radius
  * - Composable for building complex loading layouts
  * - Dark mode compatible

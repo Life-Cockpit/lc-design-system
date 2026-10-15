@@ -29,7 +29,25 @@ const meta: Meta<ListComponent> = {
     showDividers: { description: 'Show separator lines between items' },
     clickable: {
       control: 'boolean',
-      description: 'Render rows as focusable buttons (Enter / Space emit itemClick). Set this whenever itemClick is handled.',
+      description:
+        'Render rows as focusable buttons (Enter / Space emit itemClick). Set this whenever itemClick is handled. 3.3: only clickable rows get the pointer cursor and the hover background.',
+    },
+    clampDescription: {
+      control: 'boolean',
+      description: '3.3: clamp each description to two lines (3.2). `false` shows reading text in full.',
+      table: { defaultValue: { summary: 'true' } },
+    },
+    actionVariant: {
+      control: 'select',
+      options: ['primary', 'secondary', 'outline', 'ghost', 'link', 'danger', 'warning', 'info'],
+      description: '3.3: variant of the built-in row action (`ListItem.action`).',
+      table: { defaultValue: { summary: 'ghost' } },
+    },
+    actionSize: {
+      control: 'select',
+      options: ['xs', 'sm', 'md', 'lg'],
+      description: '3.3: size of the built-in row action — `xs` (3.2, about 25 px) … `lg` (48.5 px, the 44 px touch target).',
+      table: { defaultValue: { summary: 'xs' } },
     },
   },
 
@@ -48,7 +66,9 @@ List component for displaying structured item collections.
 - Subtitle and description lines
 - Trailing badges with color variants
 - Metadata text (dates, sizes, counts)
-- Action buttons with click events
+- Action buttons with click events; 3.3: \`actionVariant\`, \`actionSize\` and a per-row
+  \`ListItem.actionAriaLabel\` when the visible label repeats on every row
+- Long unbroken texts wrap (3.3); pointer and hover only on \`clickable\` rows (3.3)
 - Selected/highlighted state
 - Accessible with ARIA list role; \`clickable\` rows are keyboard-operable
 `,
@@ -320,3 +340,42 @@ export const LargeSize: Story = {
     showDividers: true,
   },
 };
+
+/**
+ * Members with their member colour (LK-7): `avatarColor` (`member-1` … `member-6`)
+ * gives the initials avatar the person's colour with white initials, as `lc-avatar`'s `color`.
+ */
+export const MemberAvatars: Story = {
+  name: 'Member Avatars (avatarColor)',
+  args: {
+    items: [
+      {
+        label: 'Johanna-Friederike Apfelbaum-Kieselbacher-Morgentau',
+        subtitle: 'Mitglied seit 12. Okt. 2026',
+        avatar: 'JA',
+        avatarColor: 'member-1' as const,
+        badge: 'Du',
+        badgeVariant: 'primary' as const,
+      },
+      { label: 'Tom Ek', subtitle: 'Mitglied seit 12. Okt. 2026', avatar: 'TE', avatarColor: 'member-2' as const },
+      { label: 'Lena Morgen', subtitle: 'Wartet auf Bestätigung', avatar: 'LM', avatarColor: 'member-3' as const },
+    ],
+    size: 'lg',
+    showDividers: true,
+  },
+};
+
+/** 3.3 (AC-1): 48.5 px outline actions with a name per row („iPhone · Safari entfernen“). */
+export const RowActionsWithNames: Story = {
+  name: 'Row actions with names (3.3)',
+  args: {
+    items: [
+      { id: 'a', label: 'iPhone · Safari', subtitle: 'Zuletzt heute, 20:05', icon: 'device-mobile', action: 'Entfernen', actionAriaLabel: 'iPhone · Safari entfernen' },
+      { id: 'b', label: 'Windows · Edge', subtitle: 'Zuletzt gestern', icon: 'device-desktop', action: 'Entfernen', actionAriaLabel: 'Windows · Edge entfernen' },
+    ],
+    actionVariant: 'outline',
+    actionSize: 'lg',
+    showDividers: true,
+  },
+};
+

@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/angular';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { EmailInputComponent } from './email-input.component';
 
 /**
@@ -23,6 +24,49 @@ const meta: Meta<EmailInputComponent> = {
     disabled: { description: 'Prevents interaction' },
     readonly: { description: 'Allows copying but not editing' },
     required: { description: 'Marks the field as required' },
+    requiredIndicator: {
+      control: 'boolean',
+      description: 'Shows the `*` of a required field; `false` keeps the required semantics without it',
+      table: { defaultValue: { summary: 'true' } },
+    },
+    showIcon: {
+      control: 'boolean',
+      description: 'Shows the leading mail icon; `false` gives long addresses about 36 px more room',
+      table: { defaultValue: { summary: 'true' } },
+    },
+    readonlyWrap: {
+      control: 'boolean',
+      description: 'While `readonly`: the address wraps instead of being clipped (a hidden native input keeps value, name and autocomplete)',
+      table: { defaultValue: { summary: 'false' } },
+    },
+    autocomplete: {
+      control: 'text',
+      description:
+        'Native `autocomplete`: `email` (registration), `username` (sign-in name), `username webauthn` (sign-in, passkeys offered in the field). Unset = no attribute',
+    },
+    name: { control: 'text', description: 'Native `name` of the inner input. Unset = no attribute' },
+    autocapitalize: {
+      control: 'select',
+      options: [undefined, 'off', 'none', 'on', 'sentences', 'words', 'characters'],
+      description: 'Native `autocapitalize`. Unset = no attribute',
+    },
+    spellcheck: { control: 'select', options: [undefined, true, false], description: 'Native `spellcheck`. Unset = no attribute' },
+    enterkeyhint: {
+      control: 'select',
+      options: [undefined, 'enter', 'done', 'go', 'next', 'previous', 'search', 'send'],
+      description: 'Native `enterkeyhint` (label of the on-screen Enter key). Unset = no attribute',
+    },
+    ariaLabel: { control: 'text', description: 'Accessible name if different from the label' },
+    requiredMessage: {
+      control: 'text',
+      description: 'Error for an empty required field',
+      table: { defaultValue: { summary: 'Email address is required' } },
+    },
+    invalidMessage: {
+      control: 'text',
+      description: 'Error for a malformed address',
+      table: { defaultValue: { summary: 'Please enter a valid email address' } },
+    },
   },
 
   parameters: {
@@ -37,7 +81,10 @@ Email input component with built-in RFC 5322 validation.
 - Valid/invalid visual indicators
 - Size presets (xs, sm, md, lg)
 - Helper text and error message display
-- Disabled and readonly states
+- Disabled and readonly states; read-only addresses can wrap (\`readonlyWrap\`)
+- Optional leading mail icon (\`showIcon\`)
+- Autofill: \`autocomplete\` — \`username webauthn\` on a sign-in form lets the browser offer
+  passkeys right in this field; \`email\` for registration; \`username\` on a password page
 - ControlValueAccessor integration for reactive forms
 `,
       },
@@ -107,6 +154,36 @@ export const InviteForm: Story = {
         <div style="margin-top: 16px;">
           <lc-button variant="primary">Send Invitations</lc-button>
         </div>
+      </div>`,
+  }),
+};
+
+/** Sign-in: password managers fill the address, the browser offers passkeys in the field (conditional UI). */
+export const SignInWithPasskeyAutofill: Story = {
+  name: 'Sign-in with Passkey Autofill (SI-2)',
+  args: {
+    label: 'Email address',
+    placeholder: '',
+    size: 'lg',
+    showIcon: false,
+    autocomplete: 'username webauthn',
+    name: 'email',
+    autocapitalize: 'off',
+    spellcheck: false,
+    enterkeyhint: 'next',
+  },
+};
+
+/** Password page: the address typed earlier, read-only, wrapping, and named `username` for password managers. */
+export const ReadonlyAddressThatWraps: Story = {
+  name: 'Read-only Address that Wraps (SI-10)',
+  render: () => ({
+    moduleMetadata: { imports: [EmailInputComponent, ReactiveFormsModule] },
+    props: { address: new FormControl('johanna-friederike.brandt-oberhausen@example.com') },
+    template: `
+      <div style="max-width: 312px">
+        <lc-email-input label="Email address" size="lg" [readonly]="true" [readonlyWrap]="true" [showIcon]="false"
+                        autocomplete="username" name="username" [formControl]="address"></lc-email-input>
       </div>`,
   }),
 };

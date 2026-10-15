@@ -17,12 +17,13 @@
     display: flex;
     align-items: stretch;
     min-height: 40px;
-    border: 1px solid var(--color-border);
+    // 3.3 (SI-8): the field boundary needs 3:1 against the page (WCAG 1.4.11).
+    border: 1px solid var(--color-field-border);
     border-radius: var(--border-radius-md);
     background: var(--color-surface-2);
     transition: border-color 0.15s, box-shadow 0.15s;
 
-    &:hover:not(&--disabled) { border-color: var(--color-border-strong); }
+    &:hover:not(&--disabled) { border-color: var(--color-text-secondary); }
 
     &:focus-within {
       border-color: var(--color-primary-500);

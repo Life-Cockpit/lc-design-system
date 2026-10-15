@@ -190,8 +190,8 @@ describe('HeaderComponent — public site (G-2)', () => {
     });
 
     it('still renders an <h1> title by default', () => {
-      const { el } = create({ title: 'Life-Cockpit' });
-      expect(el.querySelector('h1.lc-header__title')?.textContent?.trim()).toBe('Life-Cockpit');
+      const { el } = create({ title: 'LifeCorner' });
+      expect(el.querySelector('h1.lc-header__title')?.textContent?.trim()).toBe('LifeCorner');
     });
 
     it('keeps the router home link when no homeHref is given', () => {

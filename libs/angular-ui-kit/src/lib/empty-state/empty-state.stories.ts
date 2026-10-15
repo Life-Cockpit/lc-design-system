@@ -11,6 +11,12 @@ const meta: Meta<EmptyStateComponent> = {
   component: EmptyStateComponent,
   argTypes: {
     heading: { description: 'Primary message (e.g. "No projects yet")' },
+    headingLevel: {
+      control: 'select',
+      options: [2, 3, 4, 5, 6],
+      description: '3.3: heading level of `heading` (`h2`–`h6`). Semantics only, the look stays the same.',
+      table: { defaultValue: { summary: '3' } },
+    },
     message: { description: 'Supporting text explaining what the user can do' },
     icon: { description: 'Icon name displayed above the heading' },
     size: {

@@ -1,7 +1,8 @@
 <div 
   [class]="avatarClasses()"
-  role="img"
-  [attr.aria-label]="ariaLabel()"
+  [attr.role]="decorative() ? null : 'img'"
+  [attr.aria-label]="decorative() ? null : ariaLabel()"
+  [attr.aria-hidden]="decorative() ? 'true' : null"
 >
   @if (showImage()) {
     <img 

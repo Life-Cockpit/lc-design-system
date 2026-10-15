@@ -341,7 +341,7 @@
 // the variant: the log variant sits on the theme surface, so on a dark
 // surface (dark theme) the Mocha palette above must stay. The terminal
 // variant is always a dark surface and never takes these.
-:root.light .lc-log-viewer--log {
+@mixin ansi-latte {
   .ansi-black { color: #4c4f69; }
   .ansi-red { color: #d20f39; }
   .ansi-green { color: #40a02b; }
@@ -358,6 +358,18 @@
   .ansi-bright-magenta { color: #ea76cb; }
   .ansi-bright-cyan { color: #179299; }
   .ansi-bright-white { color: #5c5f77; }
+}
+
+:root.light .lc-log-viewer--log {
+  @include ansi-latte;
+}
+
+// 3.3 (G-6): a `system` root follows the OS, so the light palette applies
+// whenever the OS is light (and no explicit dark class is set).
+@media (prefers-color-scheme: light) {
+  :root.system:not(.dark) .lc-log-viewer--log {
+    @include ansi-latte;
+  }
 }
 
 // Custom scrollbar for terminal

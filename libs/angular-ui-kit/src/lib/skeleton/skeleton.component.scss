@@ -2,16 +2,29 @@
   display: block;
 }
 
+// Theming hooks: --lc-skeleton-bg (the fill) and --lc-skeleton-highlight (the
+// shimmer band). The defaults are the skeleton tokens (3.3), which stay
+// visible on the white light page and on cards in both themes; the surface
+// tokens used before measured about 1.04:1 on white.
 .lc-skeleton {
-  // DS2.0: surface tokens shimmer correctly in both themes from one definition.
   background: linear-gradient(
     90deg,
-    var(--color-surface-2) 25%,
-    var(--color-surface-hover) 50%,
-    var(--color-surface-2) 75%
+    var(--lc-skeleton-bg, var(--color-skeleton, var(--color-surface-2))) 25%,
+    var(--lc-skeleton-highlight, var(--color-skeleton-highlight, var(--color-surface-hover))) 50%,
+    var(--lc-skeleton-bg, var(--color-skeleton, var(--color-surface-2))) 75%
   );
   background-size: 200% 100%;
   animation: lc-skeleton-shimmer 1.5s infinite ease-in-out;
+}
+
+// AS-7: the shimmer never ends, so under reduced motion the placeholder is a
+// static fill (WCAG 2.3.3). Not left to the global reduced-motion utility,
+// which only shortens animations and only where the kit's styles are loaded.
+@media (prefers-reduced-motion: reduce) {
+  .lc-skeleton {
+    animation: none;
+    background: var(--lc-skeleton-bg, var(--color-skeleton, var(--color-surface-2)));
+  }
 }
 
 @keyframes lc-skeleton-shimmer {

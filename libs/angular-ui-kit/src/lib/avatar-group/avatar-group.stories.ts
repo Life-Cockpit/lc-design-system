@@ -5,8 +5,23 @@ const meta: Meta<AvatarGroupComponent> = {
   title: 'Data Display/Avatar Group',
   component: AvatarGroupComponent,
   argTypes: {
-    size: { control: 'select', options: ['xs', 'sm', 'md', 'lg', 'xl'] },
-    max: { control: 'number' },
+    avatars: {
+      description:
+        'Avatars to show (`AvatarGroupItem[]`: `name`, `src`, `alt`, `color` — `default` or a member colour `member-1` … `member-6`)',
+    },
+    size: { control: 'select', options: ['xs', 'sm', 'md', 'lg', 'xl'], description: 'Size of every avatar' },
+    max: { control: 'number', description: 'Maximum visible avatars before the "+N" count' },
+    ring: {
+      control: 'boolean',
+      description:
+        'Separate the avatars with a ring in the page colour (`--lc-avatar-ring-color`, default `--color-background`) instead of the 2 px surface border; later avatars sit on top',
+      table: { defaultValue: { summary: 'false' } },
+    },
+    overlap: {
+      control: 'text',
+      description: 'How far each avatar overlaps the previous one (CSS length, e.g. `4px`); empty keeps the size default (6–12 px)',
+      table: { defaultValue: { summary: "''" } },
+    },
   },
 
   parameters: {
@@ -20,6 +35,8 @@ Avatar group component for displaying multiple user avatars.
 - Overflow indicator showing remaining count
 - Shared size variant across all avatars (xs, sm, md, lg)
 - Automatic truncation based on max property
+- Member colours per item (\`color\`), later avatars on top
+- \`ring\` + \`overlap="4px"\`: the member row of the "Weite" look (LK-7)
 `,
       },
     },
@@ -68,3 +85,18 @@ export const WithImages: Story = {
     max: 4,
   },
 };
+
+/** The "Weite" member row (LK-7): member colours, a page-coloured ring and a 4 px overlap. */
+export const MemberRow: Story = {
+  args: {
+    avatars: [
+      { name: 'Johanna-Friederike Apfelbaum-Kieselbacher-Morgentau', color: 'member-1' },
+      { name: 'Tom Ek', color: 'member-2' },
+      { name: 'Lena Morgen', color: 'member-3' },
+    ],
+    size: 'sm',
+    ring: true,
+    overlap: '4px',
+  },
+};
+

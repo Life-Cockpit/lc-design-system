@@ -17,8 +17,16 @@ validation, accessibility, and customization features.
 - Validation with error messages
 - Helper text for guidance
 - Leading/trailing icons
-- Character count display
+- Character count display (spoken by screen readers only near the limit)
+- Input purpose and keyboard hints for autofill and on-screen keyboards:
+  \`autocomplete\`, \`name\`, \`autocapitalize\`, \`spellcheck\`, \`enterkeyhint\`
+- Read-only values that wrap instead of being clipped (\`readonlyWrap\`)
+- \`required\` without the asterisk (\`requiredIndicator\`)
 - ControlValueAccessor for Angular forms integration
+
+**Autofill (WCAG 1.3.5 Identify Input Purpose):** set \`autocomplete\` on every field that
+collects data about the person — \`name\`, \`email\`, \`username\`, \`tel\` … On a sign-in
+form \`username webauthn\` lets the browser offer passkeys in the email field.
         `,
       },
     },
@@ -44,6 +52,54 @@ validation, accessibility, and customization features.
     disabled: { control: 'boolean', description: 'Disables the input' },
     readonly: { control: 'boolean', description: 'Makes the input read-only' },
     required: { control: 'boolean', description: 'Marks as required' },
+    requiredIndicator: {
+      control: 'boolean',
+      description: 'Shows the `*` after the label of a required field; `false` keeps `required` / `aria-required` without it',
+      table: { defaultValue: { summary: 'true' } },
+    },
+    readonlyWrap: {
+      control: 'boolean',
+      description:
+        'While `readonly`: the value wraps onto more lines instead of being clipped (a read-only textbox named by the label; a hidden native input keeps value, name and autocomplete)',
+      table: { defaultValue: { summary: 'false' } },
+    },
+    autocomplete: {
+      control: 'text',
+      description:
+        'Native `autocomplete` (input purpose, WCAG 1.3.5): `name`, `email`, `username`, `username webauthn`, `current-password`, `new-password`, `one-time-code`, `tel`, `off` … Unset = no attribute',
+    },
+    name: { control: 'text', description: 'Native `name` of the inner input. Unset = no attribute' },
+    autocapitalize: {
+      control: 'select',
+      options: [undefined, 'off', 'none', 'on', 'sentences', 'words', 'characters'],
+      description: 'Native `autocapitalize` for on-screen keyboards (`off` for addresses and codes, `words` for names). Unset = no attribute',
+    },
+    spellcheck: {
+      control: 'select',
+      options: [undefined, true, false],
+      description: 'Native `spellcheck` (`false` for names, addresses and codes). Unset = no attribute',
+    },
+    enterkeyhint: {
+      control: 'select',
+      options: [undefined, 'enter', 'done', 'go', 'next', 'previous', 'search', 'send'],
+      description: 'Native `enterkeyhint`: the label of the on-screen keyboard’s Enter key. Unset = no attribute',
+    },
+    maxLength: { control: 'number', description: 'Maximum number of characters (native `maxlength`)' },
+    showCharCount: { control: 'boolean', description: 'Shows the visible count `n / max` (needs `maxLength`)' },
+    charCountRemainingLabel: {
+      control: 'text',
+      description: 'Screen-reader announcement near the limit; `{remaining}` is replaced',
+      table: { defaultValue: { summary: 'Characters remaining: {remaining}' } },
+    },
+    charCountAnnounceThreshold: {
+      control: 'number',
+      description: 'Remaining characters from which the count is announced. Unset = the last 10 % of `maxLength` (at least 1)',
+    },
+    requiredAriaLabel: {
+      control: 'text',
+      description: 'Accessible name of the `*` marker',
+      table: { defaultValue: { summary: 'required' } },
+    },
   },
 };
 
@@ -77,7 +133,12 @@ export const WithIcon: Story = {
 
 export const WithCharCount: Story = {
   parameters: {
-    docs: { description: { story: 'Character count helps users stay within limits. Shows current/max.' } },
+    docs: {
+      description: {
+        story:
+          'Character count helps users stay within limits. Shows current/max. Screen readers hear the remaining characters only near the limit (by default the last 10 %), not on every keystroke.',
+      },
+    },
   },
   args: { label: 'Bio', placeholder: 'Tell us about yourself...', maxLength: 150, showCharCount: true, helperText: 'A short description for your profile.' },
 };
@@ -143,4 +204,39 @@ export const ContactForm: Story = {
         <lc-input label="Phone" type="tel" placeholder="+1 (555) 000-0000" iconBefore="phone" helperText="Optional. For urgent inquiries only."></lc-input>
       </div>`,
   }),
+};
+
+/** A person's name: autofill, capital letters for words, no spell check, the keyboard's Enter says "next". */
+export const NameWithAutofill: Story = {
+  name: 'Name with Autofill (SI-2)',
+  args: {
+    label: 'Name',
+    size: 'lg',
+    maxLength: 80,
+    autocomplete: 'name',
+    name: 'name',
+    autocapitalize: 'words',
+    spellcheck: false,
+    enterkeyhint: 'next',
+    value: 'Lena Brandt',
+  },
+};
+
+/** Read-only values wrap instead of being clipped; the hidden native input still tells password managers the user name. */
+export const ReadonlyWrap: Story = {
+  name: 'Read-only Value that Wraps (SI-10)',
+  render: () => ({
+    template: `
+      <div style="max-width: 312px">
+        <lc-input label="Email address" size="lg" type="email" [readonly]="true" [readonlyWrap]="true"
+                  autocomplete="username" name="username"
+                  value="johanna-friederike.brandt-oberhausen@example.com"></lc-input>
+      </div>`,
+  }),
+};
+
+/** Every field is required, so none shows the asterisk; an empty submit shows the field's error. */
+export const RequiredWithoutIndicator: Story = {
+  name: 'Required without Asterisk (SI-9)',
+  args: { label: 'Name', required: true, requiredIndicator: false },
 };

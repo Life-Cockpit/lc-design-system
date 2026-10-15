@@ -20,6 +20,9 @@ import {
  */
 export type TimelineItemState = 'success' | 'running' | 'failed' | 'pending';
 
+/** Heading level of the item titles (3.3, G-11). */
+export type TimelineHeadingLevel = 2 | 3 | 4 | 5 | 6;
+
 export interface TimelineItem {
   /** Optional stable identity for rendering (falls back to the list index). */
   id?: string;
@@ -37,6 +40,12 @@ export interface TimelineItem {
   description?: string;
   /** Optional timestamp string */
   timestamp?: string;
+  /**
+   * Machine-readable moment of the timestamp (ISO 8601, e.g.
+   * `2026-10-12T18:05:00+02:00`), set as the `<time datetime>` attribute so
+   * „heute 18:05“ carries its exact date (3.3, G-11).
+   */
+  datetime?: string;
   /** Optional icon name (heroicon) */
   icon?: string;
   /** Optional color for the dot/icon */
@@ -104,6 +113,13 @@ export class TimelineComponent {
    * @default false
    */
   compact = input<boolean>(false);
+
+  /**
+   * Heading level of the item titles (`h2`–`h6`), so each event is reachable
+   * by heading navigation. Unset: a plain paragraph (3.2). Semantics only,
+   * the look stays the same.
+   */
+  headingLevel = input<TimelineHeadingLevel | undefined>(undefined);
 
   /** Optional per-item content template (below the header line). */
   protected contentTemplate = contentChild(TimelineContentDirective);

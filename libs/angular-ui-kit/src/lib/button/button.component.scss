@@ -16,7 +16,14 @@
   border-radius: var(--border-radius-full);
   cursor: pointer;
   transition: all var(--animation-duration-base) var(--animation-timing-ease);
-  white-space: nowrap;
+  // Labels wrap instead of overflowing (3.3, SI-7; WCAG 1.4.4 and 1.4.10): a
+  // nowrap label wider than the viewport broke reflow at 320 px or 200 % text,
+  // e.g. long German labels. Centred lines; a single word wider than the
+  // button breaks rather than spilling out. A label that fits stays on one
+  // line, so nothing changes where there is room.
+  white-space: normal;
+  text-align: center;
+  overflow-wrap: break-word;
   user-select: none;
 
   @include mix.focus-ring;
@@ -34,13 +41,10 @@
 // a[lcButton] — the host is the link itself.
 // - No underline, also in apps that do not load the kit reset; the link
 //   variant keeps its hover underline (its selector is more specific).
-// - Labels wrap instead of overflowing: link labels run longer than button
-//   labels, and a nowrap label wider than the viewport breaks reflow at 320 px
-//   / 400 % zoom (WCAG 1.4.10). A row of links still wraps item by item first.
+// - Labels wrap like every button label (see .btn). A row of links still
+//   wraps item by item first.
 a.btn {
   text-decoration: none;
-  white-space: normal;
-  text-align: center;
 }
 
 // Variants

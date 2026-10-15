@@ -12,6 +12,15 @@ import { IconComponent } from '../icon/icon.component';
 export type AlertVariant = 'success' | 'error' | 'warning' | 'info';
 
 /**
+ * Layout of the projected actions (`slot="action"`).
+ * - `inline`: one action right of the body, vertically centred (3.2)
+ * - `stacked`: the actions in their own row below the title and message;
+ *   below 576 px of alert width one per line at full width, 8 px apart,
+ *   from 576 px side by side at their natural width
+ */
+export type AlertActionsLayout = 'inline' | 'stacked';
+
+/**
  * Alert component for inline notifications.
  *
  * Features:
@@ -21,7 +30,10 @@ export type AlertVariant = 'success' | 'error' | 'warning' | 'info';
  * - Dismissible with close button; `visible` is two-way bindable so a
  *   dismissed alert can be shown again
  * - Content projection for custom body
- * - Action slot for a button rendered right of the body (e.g. retry)
+ * - Action slot for a button rendered right of the body (e.g. retry), or
+ *   several actions stacked below it (`actionsLayout="stacked"`)
+ * - The variant icon is decorative unless `iconAriaLabel` names it (the
+ *   title and the colour carry the tone; no built-in English word)
  * - Accessible: `role="alert"` for error / warning, `role="status"` otherwise
  *
  * @example
@@ -80,6 +92,23 @@ export class AlertComponent {
   showIcon = input<boolean>(true);
 
   /**
+   * Accessible name of the variant icon, e.g. „Warnung“. Leave it unset when
+   * the title already says what kind of message this is: the icon is then
+   * decorative (`aria-hidden`). The kit sets no default text, so no English
+   * word is read on a page in another language.
+   */
+  iconAriaLabel = input<string | undefined>(undefined);
+
+  /**
+   * Layout of the projected actions (`slot="action"`): `inline` — one action
+   * right of the body (3.2); `stacked` — the actions in their own row below
+   * the title and message, one per line at full width and 8 px apart below
+   * 576 px of alert width, side by side at their natural width from there.
+   * @default 'inline'
+   */
+  actionsLayout = input<AlertActionsLayout>('inline');
+
+  /**
    * Whether the alert can be dismissed
    * @default false
    */
@@ -109,6 +138,12 @@ export class AlertComponent {
    */
   protected hostClasses = computed(() => {
     const classes = ['lc-alert', `lc-alert--${this.variant()}`];
+    if (this.actionsLayout() === 'stacked') {
+      classes.push('lc-alert--actions-stacked');
+    }
+    if (this.showIcon()) {
+      classes.push('lc-alert--with-icon');
+    }
     if (!this.visible()) {
       classes.push('lc-alert--hidden');
     }
@@ -138,17 +173,6 @@ export class AlertComponent {
    * Computed ARIA live region priority
    */
   protected ariaLive = computed(() => (this.isUrgent() ? 'assertive' : 'polite'));
-
-  /** Accessible name of the variant icon (it conveys the alert's tone). */
-  protected iconLabel = computed(() => {
-    const labels: Record<AlertVariant, string> = {
-      success: 'Success',
-      error: 'Error',
-      warning: 'Warning',
-      info: 'Info',
-    };
-    return labels[this.variant()];
-  });
 
   /**
    * Computed default icon based on variant

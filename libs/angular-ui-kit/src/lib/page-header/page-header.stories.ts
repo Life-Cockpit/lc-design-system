@@ -58,8 +58,9 @@ Empty slots collapse automatically — they do not produce phantom gaps.
 |-------|------|---------|-------------|
 | \`title\` | \`string\` | — | Main heading text |
 | \`subtitle\` | \`string\` | — | Short supporting line below the title |
+| \`overline\` | \`string\` | — | 3.3: short uppercase label **above** the title, **after** it in the DOM (a date, a section) |
 | \`level\` | \`1 \\| 2 \\| 3\` | \`1\` | Semantic heading level (\`h1\`/\`h2\`/\`h3\`) |
-| \`size\` | \`'compact' \\| 'default' \\| 'comfortable'\` | \`'default'\` | Visual scale of the whole block |
+| \`size\` | \`'compact' \\| 'default' \\| 'comfortable' \\| 'title' \\| 'display' \\| 'auth'\` | \`'default'\` | Visual scale of the whole block |
 | \`badge\` | \`string\` | — | Pill rendered next to the title (e.g. \`Beta\`, \`New\`) |
 | \`showDivider\` | \`boolean\` | \`false\` | Render a border-bottom divider below the header |
 
@@ -72,6 +73,9 @@ Empty slots collapse automatically — they do not produce phantom gaps.
 | \`compact\` | Side panels, data-dense tools, modals | \`--font-size-lg\` |
 | \`default\` | Standard application pages | \`--font-size-2xl\` |
 | \`comfortable\` | Landing / welcome / onboarding pages | \`--font-size-3xl\` |
+| \`title\` (3.3) | Page titles in the "Weite" look | \`--font-size-title\`: 32 px, 40 / 44 / 48 px from 1024 / 1440 / 1920 px |
+| \`display\` (3.3) | The one display greeting (a daily view) | \`--font-size-display\`: 40 px, 52 / 56 / 60 / 72 px from 1024 / 1280 / 1440 / 1920 px |
+| \`auth\` (3.3) | The sign-in and registration \`<h1>\` | \`--font-size-auth-title\`: 30 px, 34 px from 1024 px |
 
 The size also influences gap and padding locally, so a compact header is tighter and a
 comfortable header breathes more — without changing your template.
@@ -123,6 +127,11 @@ input for a header-specific override.
   argTypes: {
     title: { control: 'text', description: 'Main heading text.' },
     subtitle: { control: 'text', description: 'Short supporting line below the title.' },
+    overline: {
+      control: 'text',
+      description:
+        '3.3: short label shown above the title (a date, a section) — uppercase through CSS (write it in sentence case), bold, letter spacing 0.12 em, `--color-overline`, 13–16 px. Rendered right after the heading in the DOM, so the heading is read first.',
+    },
     level: {
       control: 'inline-radio',
       options: [1, 2, 3],
@@ -131,8 +140,9 @@ input for a header-specific override.
     },
     size: {
       control: 'inline-radio',
-      options: ['compact', 'default', 'comfortable'],
-      description: 'Visual scale of the whole header block.',
+      options: ['compact', 'default', 'comfortable', 'title', 'display', 'auth'],
+      description:
+        'Visual scale of the whole header block. 3.3: `title` (32–48 px page title), `display` (40–72 px greeting, weight 700), `auth` (30 / 34 px sign-in heading) — responsive, from the type-scale tokens.',
       table: { defaultValue: { summary: 'default' } },
     },
     showDivider: {
@@ -458,3 +468,44 @@ export const FullExample: Story = {
     `,
   }),
 };
+
+// ─── 3.3 ───────────────────────────────────────────────────────────────────
+
+/** A daily view's greeting: the date as an overline above the display-size h1. */
+export const DisplayWithOverline: Story = {
+  name: 'Display with overline (3.3)',
+  args: {
+    title: 'Guten Abend, Lena',
+    overline: 'Montag, 12. Oktober',
+    level: 1,
+    size: 'display',
+    noPaddingX: true,
+  },
+  render: (args) => ({
+    props: args,
+    template: `
+      <lc-page-header [title]="title" [overline]="overline" [level]="level" [size]="size" [noPaddingX]="noPaddingX" />
+    `,
+  }),
+};
+
+/** Every other page title, on the responsive title scale, with an action. */
+export const TitleScale: Story = {
+  name: 'Title scale (3.3)',
+  render: () => ({
+    template: `
+      <lc-page-header title="Haushalt" overline="Familie Brandt" size="title" [noPaddingX]="true">
+        <lc-button slot="actions" variant="outline">Umbenennen</lc-button>
+      </lc-page-header>
+    `,
+  }),
+};
+
+/** The sign-in heading: 30 px, 34 px from 1024 px. */
+export const AuthTitle: Story = {
+  name: 'Auth title (3.3)',
+  render: () => ({
+    template: `<lc-page-header title="Anmelden" size="auth" [noPaddingX]="true" />`,
+  }),
+};
+

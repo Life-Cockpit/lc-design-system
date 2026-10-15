@@ -42,6 +42,24 @@
     background-image: none;
   }
 
+  // The sign-in card (3.3, LK-9): plain surface, hairline, the long soft
+  // auth shadow; no gradient and no accent line.
+  &-raised {
+    background-image: none;
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-auth-card, var(--elevation-3));
+  }
+
+  // The muted "coming soon" tile (3.3, LK-10): never interactive, so no
+  // hover, focus or press state is defined for it (`clickable` is ignored).
+  &-dashed {
+    background-color: var(--color-muted-tile, var(--color-surface-muted));
+    background-image: none;
+    border: 1px dashed var(--color-muted-tile-border, var(--color-border));
+    box-shadow: none;
+    color: var(--color-text-secondary);
+  }
+
   // Padding sizes — driven by density tokens so an ancestor `data-density`
   // automatically rescales every card on the page. Falls back to spacing
   // tokens so the visual default is identical to before.
@@ -83,6 +101,11 @@
 
     &-lg {
       border-radius: var(--border-radius-lg);
+    }
+
+    // 24 px — the "Weite" content card (3.3, LK-9).
+    &-xl {
+      border-radius: var(--border-radius-xl, 1.5rem);
     }
 
     &-full {
@@ -282,4 +305,9 @@
   padding-top: var(--lc-density-padding-sm, var(--spacing-3));
   border-top: 1px solid var(--color-divider, #e5e7eb);
   color: var(--color-text-secondary);
+}
+
+// Icons in the dashed tile are decorative and quieter than its text.
+:host ::ng-deep .card-dashed lc-icon {
+  color: var(--color-muted-tile-icon, var(--color-text-tertiary));
 }

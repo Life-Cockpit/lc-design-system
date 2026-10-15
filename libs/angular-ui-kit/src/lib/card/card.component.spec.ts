@@ -1,6 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { CardComponent } from './card.component';
+import { CardComponent, CardHeadingLevel, CardVariant } from './card.component';
 import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { compile } from 'sass';
+import { join } from 'path';
 
 @Component({
   selector: 'lc-test-wrapper',
@@ -22,9 +24,9 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
   `,
 })
 class TestWrapperComponent {
-  variant: 'elevated' | 'outlined' | 'flat' = 'elevated';
+  variant: CardVariant = 'elevated';
   padding: 'none' | 'xs' | 'sm' | 'md' | 'lg' = 'md';
-  borderRadius: 'none' | 'sm' | 'md' | 'lg' | 'full' = 'md';
+  borderRadius: 'none' | 'sm' | 'md' | 'lg' | 'xl' | 'full' = 'md';
   clickable = false;
   selected = false;
   ariaLabel?: string;
@@ -457,4 +459,94 @@ describe('CardComponent', () => {
       expect(cards[1].querySelector('.card__badge-slot')?.textContent?.trim()).toBe('');
     });
   });
+
+  describe('3.3: Weite cards (LK-9, LK-10) and heading level (G-9)', () => {
+    it('applies the xl radius (24 px)', () => {
+      component.borderRadius = 'xl';
+      fixture.detectChanges();
+      expect(getCardElement().classList).toContain('card-radius-xl');
+    });
+
+    it.each<CardVariant>(['raised', 'dashed'])('applies the %s variant', (variant) => {
+      component.variant = variant;
+      fixture.detectChanges();
+      expect(getCardElement().classList).toContain(`card-${variant}`);
+    });
+
+    it('never makes the dashed tile interactive, even when clickable is set', () => {
+      component.variant = 'dashed';
+      component.clickable = true;
+      component.selected = true;
+      fixture.detectChanges();
+      const el = getCardElement();
+      expect(el.getAttribute('role')).toBe('article');
+      expect(el.getAttribute('tabindex')).toBeNull();
+      expect(el.classList).not.toContain('card-clickable');
+      expect(el.classList).not.toContain('card-selected');
+
+      el.click();
+      el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      expect(component.clickCount).toBe(0);
+    });
+
+    it.each<[CardHeadingLevel, string]>([
+      [2, 'H2'],
+      [3, 'H3'],
+      [4, 'H4'],
+      [5, 'H5'],
+      [6, 'H6'],
+    ])('renders the title as heading level %s', (level, tag) => {
+      const f = TestBed.createComponent(CardComponent);
+      f.componentRef.setInput('title', 'Abschnitt');
+      f.componentRef.setInput('headingLevel', level);
+      f.detectChanges();
+      const title = f.nativeElement.querySelector('.card__title') as HTMLElement;
+      expect(title.tagName).toBe(tag);
+      expect(title.textContent?.trim()).toBe('Abschnitt');
+    });
+
+    it('keeps h3 as the default heading level', () => {
+      const f = TestBed.createComponent(CardComponent);
+      f.componentRef.setInput('title', 'Abschnitt');
+      f.detectChanges();
+      expect(f.nativeElement.querySelector('.card__title').tagName).toBe('H3');
+    });
+
+    describe('stylesheet', () => {
+      // jsdom applies no stylesheets: read the contract from the compiled CSS.
+      const css = compile(join(__dirname, 'card.component.scss'), {
+        loadPaths: [join(__dirname, '../../styles')],
+      }).css;
+      const rule = (selector: string): string => {
+        const start = css.indexOf(`${selector} {`);
+        expect(start).toBeGreaterThan(-1);
+        return css.slice(start, css.indexOf('}', start));
+      };
+
+      it('gives xl a 24 px radius', () => {
+        expect(rule('.card-radius-xl')).toMatch(/border-radius:\s*var\(--border-radius-xl, 1\.5rem\)/);
+      });
+
+      it('draws the outlined card with the hairline border and no shadow', () => {
+        const outlined = rule('.card-outlined');
+        expect(outlined).toMatch(/border:\s*1px solid var\(--color-border\)/);
+        expect(outlined).not.toMatch(/box-shadow/);
+      });
+
+      it('draws the raised card with the auth shadow and no gradient', () => {
+        const raised = rule('.card-raised');
+        expect(raised).toMatch(/box-shadow:\s*var\(--shadow-auth-card/);
+        expect(raised).toMatch(/background-image:\s*none/);
+      });
+
+      it('draws the dashed tile on the muted-tile tokens in secondary ink', () => {
+        const dashed = rule('.card-dashed');
+        expect(dashed).toMatch(/background-color:\s*var\(--color-muted-tile,/);
+        expect(dashed).toMatch(/border:\s*1px dashed var\(--color-muted-tile-border,/);
+        expect(dashed).toMatch(/color:\s*var\(--color-text-secondary\)/);
+        expect(css).toMatch(/\.card-dashed lc-icon\s*{[^}]*--color-muted-tile-icon/);
+      });
+    });
+  });
 });
+

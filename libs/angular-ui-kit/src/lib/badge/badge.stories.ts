@@ -16,6 +16,12 @@ Use it for statuses, categories, notifications, and metadata.
 - 4 sizes (xs, sm, md, lg)
 - Rounded pill mode
 - Content projection for custom content
+
+**Contrast:** the ink of every variant reaches 4.5:1 on its own fill in both palettes, on the
+page and on a card (\`badge-contrast.spec.ts\`). The tinted variants take their ink from
+\`--color-on-*-subtle\`; since 3.3 the light warning and the dark success inks are darker /
+lighter so they pass (HS-5). Apps can still restyle a badge through \`--lc-badge-bg\`,
+\`--lc-badge-fg\` and \`--lc-badge-border\`.
         `,
       },
     },

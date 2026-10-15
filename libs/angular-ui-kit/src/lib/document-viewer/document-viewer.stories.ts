@@ -3,14 +3,14 @@ import { DocumentViewerComponent } from './document-viewer.component';
 
 const SAMPLE_MARKDOWN = `# Getting Started
 
-Welcome to the **Life-Cockpit** documentation. This guide covers the basics.
+Welcome to the **LifeCorner** documentation. This guide covers the basics.
 
 ## Installation
 
 Install the package via npm:
 
 \`\`\`bash
-npm install @life-cockpit/angular-ui-kit
+npm install @lifecorner/angular-ui-kit
 \`\`\`
 
 ## Usage
@@ -18,7 +18,7 @@ npm install @life-cockpit/angular-ui-kit
 Import the component in your module:
 
 \`\`\`typescript
-import { DocumentViewerComponent } from '@life-cockpit/angular-ui-kit';
+import { DocumentViewerComponent } from '@lifecorner/angular-ui-kit';
 
 @Component({
   imports: [DocumentViewerComponent],

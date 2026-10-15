@@ -15,6 +15,9 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 
 let nextUniqueId = 0;
 
+/** Space between the boxes: `default` 12 px (8 px below 480 px), `compact` 8 px (4 px below 480 px). */
+export type VerificationCodeInputGap = 'default' | 'compact';
+
 /**
  * Verification Code Input Component with one input per digit
  *
@@ -22,7 +25,10 @@ let nextUniqueId = 0;
  * - Configurable number of digit fields (`length`, default 6)
  * - Automatic focus advancement after entering a digit
  * - Backspace moves to the previous input, arrow keys navigate
- * - Paste / autofill support (splits the code across the inputs)
+ * - Paste / autofill support (splits the code across the inputs); no
+ *   `maxlength`, so iOS and Android can put the whole `one-time-code` into box 1
+ * - `clear()` empties the boxes after a wrong code and focuses box 1
+ * - Phones (below 480 px): 44 × 48 px boxes, 8 px apart (6 boxes = 304 px)
  * - Accessible ARIA attributes (labelled group, linked hint and error)
  * - Reactive Forms ControlValueAccessor implementation
  * - `complete` emits exactly once when all digits are entered
@@ -64,6 +70,16 @@ export class VerificationCodeInputComponent implements ControlValueAccessor {
 
   /** Whether the code is required */
   readonly required = input<boolean>(false);
+
+  /**
+   * Show the `*` of a `required` code; `false` keeps `required` and
+   * `aria-required` without the asterisk.
+   * @default true
+   */
+  readonly requiredIndicator = input<boolean>(true);
+
+  /** Space between the boxes: `default` (12 px, 8 px below 480 px) or `compact` (8 px, 4 px below 480 px). */
+  readonly gap = input<VerificationCodeInputGap>('default');
 
   /** Error message displayed below the inputs (also sets aria-invalid) */
   readonly error = input<string | undefined>(undefined);
@@ -171,20 +187,52 @@ export class VerificationCodeInputComponent implements ControlValueAccessor {
   }
 
   /**
+   * Empty every box (e.g. after a wrong code), report `''` to the form and
+   * focus box 1. Writing `''` through the form control empties the boxes too,
+   * without moving the focus.
+   */
+  clear(): void {
+    this.digits.set(Array<string>(this.length()).fill(''));
+    for (const box of this.digitInputs()) {
+      box.nativeElement.value = '';
+    }
+    this.onChange('');
+    this.focusInput(0);
+  }
+
+  /**
    * Handle digit input
    */
   onDigitInput(event: Event, index: number): void {
     const input = event.target as HTMLInputElement;
-    const typed = input.value.replace(/\D/g, '');
+    const previous = this.digits()[index];
 
-    if (!typed) {
-      // Non-digit: the signal still holds '' so the binding won't reset the DOM — clear it here
-      input.value = '';
+    if (input.value === '') {
+      // Emptied without a Backspace keydown (some Android keyboards send none)
+      if (previous) this.setDigit(index, '');
       return;
     }
 
-    // Several digits at once (autofill / IME): distribute from this position
+    let typed = input.value.replace(/\D/g, '');
+    // The boxes have no maxlength (it would cut an autofilled code to one
+    // digit), so typing into a filled box briefly holds two characters: keep
+    // the new digit.
+    if (previous && typed.length === 2 && typed.includes(previous)) {
+      typed = typed.replace(previous, '');
+    } else if (typed === previous) {
+      typed = '';
+    }
+
+    if (!typed) {
+      // Only non-digits were added: the signal is unchanged, so restore the DOM here
+      input.value = previous;
+      return;
+    }
+
+    // One digit, or several at once (autofill / IME): distribute from this position
     this.applyDigits(typed.split(''), index);
+    // Keep this box at one digit even when the signal did not change
+    input.value = this.digits()[index];
   }
 
   /**

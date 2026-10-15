@@ -1,0 +1,70 @@
+:host {
+  display: block;
+}
+
+.lc-radio-group {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.lc-radio-group__legend {
+  // A floated-free legend that lays out like a label (no fieldset notch).
+  display: block;
+  padding: 0;
+  margin-bottom: var(--spacing-2, 0.5rem);
+  font-size: var(--font-size-sm, 0.875rem);
+  font-weight: var(--font-weight-medium, 500);
+  color: var(--color-text-primary);
+
+  &--hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+}
+
+.lc-radio-group__required {
+  color: var(--color-text-error);
+  margin-left: var(--spacing-0-5, 0.125rem);
+}
+
+.lc-radio-group__help,
+.lc-radio-group__error {
+  margin: 0 0 var(--spacing-2, 0.5rem);
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.lc-radio-group__help {
+  color: var(--color-text-secondary);
+}
+
+.lc-radio-group__error {
+  color: var(--color-text-error);
+}
+
+.lc-radio-group__options {
+  display: flex;
+
+  // 8 px between rows: 44 px rows (size lg) stay apart, smaller rows still
+  // meet the 24 px target spacing of WCAG 2.5.8.
+  &--vertical {
+    flex-direction: column;
+    gap: var(--lc-density-gap-sm, 0.5rem);
+  }
+
+  &--horizontal {
+    flex-direction: row;
+    flex-wrap: wrap;
+    column-gap: var(--lc-density-gap-lg, 1.5rem);
+    row-gap: var(--lc-density-gap-sm, 0.5rem);
+  }
+}

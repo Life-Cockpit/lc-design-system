@@ -1,0 +1,217 @@
+@use '../../styles/mixins' as mix;
+
+// Sign in with Google — values from Google's branding guidelines
+// (https://developers.google.com/identity/branding-guidelines, 2026-07-07):
+//   light   fill #FFFFFF, 1 px stroke #747775 (inside), text #1F1F1F
+//   dark    fill #131314, 1 px stroke #8E918F (inside), text #E3E3E3
+//   neutral fill #F2F2F2, no stroke,                   text #1F1F1F
+//   Google Sans Medium 14/20; padding 12 px · logo · 10 px · text · 12 px.
+// The colours are Google's, not theme tokens: they must not follow the kit palette.
+
+:host {
+  display: inline-block;
+  max-width: 100%;
+  vertical-align: middle;
+}
+
+:host(.lc-provider-button-host--full-width) {
+  display: block;
+  width: 100%;
+}
+
+.lc-provider-button {
+  // Theme hooks, set per provider and appearance below.
+  --lc-provider-button-bg: #ffffff;
+  --lc-provider-button-fg: #1f1f1f;
+  --lc-provider-button-border: #747775;
+
+  position: relative;
+  isolation: isolate;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  max-width: 100%;
+  margin: 0;
+  padding: var(--lc-provider-button-padding-block) 12px;
+  min-height: var(--lc-provider-button-height);
+  border: 1px solid var(--lc-provider-button-border);
+  background-color: var(--lc-provider-button-bg);
+  color: var(--lc-provider-button-fg);
+  // Google Sans Medium 14/20 (rem, so the title follows the reader's text size).
+  // Required by Google's guideline (no alternative named). Apps self-host it:
+  // Google Sans is SIL OFL 1.1 since 2025 (google/fonts ofl/googlesans, no
+  // Reserved Font Name); ship OFL.txt with the files. The fallbacks only
+  // bridge the moment before the font loads.
+  font-family: 'Google Sans', Roboto, Arial, sans-serif;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 500;
+  text-align: center;
+  // Long or enlarged titles wrap instead of overflowing (WCAG 1.4.4, 1.4.10).
+  white-space: normal;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+
+  @include mix.focus-ring;
+
+  // State layer (Material, as Google's own button): hover 8 %, pressed 12 % of
+  // the title colour over the whole button, so the fill itself never changes.
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background-color: currentColor;
+    opacity: 0;
+    transition: opacity var(--animation-duration-fast, 150ms) var(--animation-timing-ease, ease);
+    pointer-events: none;
+  }
+
+  &:hover:not(:disabled)::before {
+    opacity: 0.08;
+  }
+
+  &:active:not(:disabled)::before {
+    opacity: 0.12;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  &.lc-provider-button--loading:disabled {
+    cursor: progress;
+    opacity: 1;
+  }
+}
+
+// ---------------------------------------------------------------- sizes
+.lc-provider-button--md {
+  // 40 px: 2 × 9 px + 20 px line + 2 × 1 px border.
+  --lc-provider-button-height: 2.5rem;
+  --lc-provider-button-padding-block: 9px;
+}
+
+.lc-provider-button--lg {
+  // 48.5 px, the height of lc-button size="lg" (44 px touch target).
+  --lc-provider-button-height: 3.03125rem;
+  --lc-provider-button-padding-block: 13.25px;
+}
+
+// ---------------------------------------------------------------- shapes
+.lc-provider-button--pill {
+  border-radius: var(--border-radius-full, 9999px);
+}
+
+.lc-provider-button--rectangular {
+  border-radius: 4px;
+}
+
+.lc-provider-button--full-width {
+  width: 100%;
+}
+
+.lc-provider-button--icon-only {
+  padding: 0;
+  width: var(--lc-provider-button-height);
+  height: var(--lc-provider-button-height);
+}
+
+// ---------------------------------------------------------------- parts
+.lc-provider-button__logo {
+  // Google: size and colours of the "G" never change.
+  flex: none;
+  display: block;
+  width: 20px;
+  height: 20px;
+  pointer-events: none;
+}
+
+.lc-provider-button__label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.lc-provider-button__spinner {
+  flex: none;
+  box-sizing: border-box;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: lc-provider-button-spin 1s linear infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation-duration: 2.5s;
+  }
+}
+
+@keyframes lc-provider-button-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// ---------------------------------------------------------------- Google themes
+@mixin google-light {
+  --lc-provider-button-bg: #ffffff;
+  --lc-provider-button-fg: #1f1f1f;
+  --lc-provider-button-border: #747775;
+}
+
+@mixin google-dark {
+  --lc-provider-button-bg: #131314;
+  --lc-provider-button-fg: #e3e3e3;
+  --lc-provider-button-border: #8e918f;
+}
+
+@mixin google-neutral {
+  --lc-provider-button-bg: #f2f2f2;
+  --lc-provider-button-fg: #1f1f1f;
+  // "No stroke": the border keeps the box size and takes the fill colour.
+  --lc-provider-button-border: #f2f2f2;
+}
+
+.lc-provider-button--google {
+  &.lc-provider-button--light,
+  &.lc-provider-button--auto {
+    @include google-light;
+  }
+
+  &.lc-provider-button--dark {
+    @include google-dark;
+  }
+
+  &.lc-provider-button--neutral {
+    @include google-neutral;
+  }
+}
+
+// `auto` follows the app theme with the theme stylesheets' own selectors: dark
+// for `:root.dark` and for a root without a theme class (dark-first), and for
+// `:root.system` while the OS is dark (G-6); light otherwise. A `.dark`
+// ancestor also turns it dark. Ancestors are matched with `:host-context` —
+// under emulated encapsulation a plain `:root.dark &` can never match.
+:host-context(.dark) .lc-provider-button--google.lc-provider-button--auto,
+:host-context(:root:not(.light):not(.system)) .lc-provider-button--google.lc-provider-button--auto {
+  @include google-dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :host-context(:root.system:not(.light)) .lc-provider-button--google.lc-provider-button--auto {
+    @include google-dark;
+  }
+}
+
+// Windows high contrast: keep a visible boundary in the system colours.
+@media (forced-colors: active) {
+  .lc-provider-button {
+    border-color: ButtonText;
+  }
+}

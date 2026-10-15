@@ -36,9 +36,14 @@
     height: auto !important;
     min-height: 80px !important;
   }
+  /* The LifeCorner lockup is never squeezed: fixed height, proportional width,
+     and object-fit keeps the drawing intact if the sidebar is narrower. */
   .sidebar-header img {
     max-width: 100% !important;
     max-height: none !important;
-    height: 60px !important;
+    height: 40px !important;
+    width: auto !important;
+    object-fit: contain;
+    object-position: left center;
   }
 </style>

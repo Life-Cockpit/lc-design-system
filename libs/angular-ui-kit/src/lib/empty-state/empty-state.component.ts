@@ -3,6 +3,9 @@ import { IconComponent } from '../icon/icon.component';
 
 export type EmptyStateSize = 'sm' | 'md' | 'lg';
 
+/** Heading level of `lc-empty-state`'s heading (3.3, G-9). */
+export type EmptyStateHeadingLevel = 2 | 3 | 4 | 5 | 6;
+
 /**
  * Empty state component for "no data" placeholder displays.
  *
@@ -50,6 +53,13 @@ export class EmptyStateComponent {
    * Bold heading text
    */
   readonly heading = input<string>();
+
+  /**
+   * Heading level of `heading` (`h2`–`h6`), so the empty state fits the
+   * page's outline. Semantics only, the look stays the same.
+   * @default 3
+   */
+  readonly headingLevel = input<EmptyStateHeadingLevel>(3);
 
   /**
    * Description text

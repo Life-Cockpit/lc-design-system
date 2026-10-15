@@ -7,7 +7,7 @@ import { provideHttpClient, withXhr } from '@angular/common/http';
   standalone: true,
   imports: [AvatarGroupComponent],
   changeDetection: ChangeDetectionStrategy.Eager,
-  template: `<lc-avatar-group [avatars]="avatars" [size]="size" [max]="max" />`,
+  template: `<lc-avatar-group [avatars]="avatars" [size]="size" [max]="max" [ring]="ring" [overlap]="overlap" />`,
 })
 class TestHostComponent {
   avatars: AvatarGroupItem[] = [
@@ -17,6 +17,8 @@ class TestHostComponent {
   ];
   size: 'xs' | 'sm' | 'md' | 'lg' | 'xl' = 'md';
   max = 5;
+  ring = false;
+  overlap = '';
 }
 
 describe('AvatarGroupComponent', () => {
@@ -89,5 +91,55 @@ describe('AvatarGroupComponent', () => {
 
     const avatarEls = fixture.nativeElement.querySelectorAll('lc-avatar');
     expect(avatarEls.length).toBe(2);
+  });
+
+  describe('member colours, ring and overlap (LK-7)', () => {
+    it('passes each item colour to its avatar', () => {
+      host.avatars = [
+        { name: 'Johanna Apfelbaum', color: 'member-1' },
+        { name: 'Tom Ek', color: 'member-2' },
+        { name: 'No Colour' },
+      ];
+      fixture.detectChanges();
+      const avatars = fixture.nativeElement.querySelectorAll('.lc-avatar');
+      expect(avatars[0].classList).toContain('lc-avatar--member-1');
+      expect(avatars[1].classList).toContain('lc-avatar--member-2');
+      expect(avatars[2].classList).not.toContain('lc-avatar--member');
+    });
+
+    it('keeps the bordered stack without ring', () => {
+      fixture.detectChanges();
+      const group = fixture.nativeElement.querySelector('.avatar-group');
+      expect(group.classList).not.toContain('avatar-group--ring');
+      expect(fixture.nativeElement.querySelector('.lc-avatar--ring')).toBeNull();
+    });
+
+    it('rings every avatar when ring is set', () => {
+      host.ring = true;
+      fixture.detectChanges();
+      const group = fixture.nativeElement.querySelector('.avatar-group');
+      expect(group.classList).toContain('avatar-group--ring');
+      expect(fixture.nativeElement.querySelectorAll('.lc-avatar--ring').length).toBe(3);
+    });
+
+    it('keeps the size default overlap when none is given', () => {
+      fixture.detectChanges();
+      const group: HTMLElement = fixture.nativeElement.querySelector('.avatar-group');
+      expect(group.style.getPropertyValue('--lc-avatar-group-overlap')).toBe('');
+    });
+
+    it('sets the overlap when given', () => {
+      host.overlap = '4px';
+      fixture.detectChanges();
+      const group: HTMLElement = fixture.nativeElement.querySelector('.avatar-group');
+      expect(group.style.getPropertyValue('--lc-avatar-group-overlap')).toBe('4px');
+    });
+
+    it('stacks later avatars on top (DOM order)', () => {
+      host.avatars = [{ name: 'A B' }, { name: 'C D' }];
+      fixture.detectChanges();
+      const items = fixture.nativeElement.querySelectorAll('lc-avatar');
+      expect(items[0].compareDocumentPosition(items[1]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
   });
 });

@@ -23,7 +23,8 @@ export type CalloutVariant = 'info' | 'success' | 'warning' | 'error' | 'neutral
  *
  * Features:
  * - Semantic variants (info, success, warning, error, neutral)
- * - Auto-mapped variant icons
+ * - Auto-mapped variant icons (override with `icon`); decorative unless
+ *   `iconAriaLabel` names them — no built-in English word
  * - Optional title text
  * - Dismissible with close button; `visible` is two-way bindable so a
  *   dismissed callout can be shown again
@@ -41,6 +42,17 @@ export class CalloutComponent {
 
   /** Title text (optional) */
   title = input<string>();
+
+  /** Icon name instead of the variant's default icon. */
+  icon = input<string | undefined>(undefined);
+
+  /**
+   * Accessible name of the icon, e.g. „Hinweis“. Leave it unset when the
+   * title or text already says what kind of note this is: the icon is then
+   * decorative (`aria-hidden`). The kit sets no default text, so no English
+   * word is read on a page in another language.
+   */
+  iconAriaLabel = input<string | undefined>(undefined);
 
   /** Whether the callout can be dismissed */
   dismissible = input<boolean>(false);
@@ -69,18 +81,6 @@ export class CalloutComponent {
     this.variant() === 'error' || this.variant() === 'warning' ? 'alert' : 'status',
   );
 
-  /** Accessible name of the variant icon (it conveys the callout's tone). */
-  protected iconLabel = computed(() => {
-    const map: Record<CalloutVariant, string> = {
-      info: 'Info',
-      success: 'Success',
-      warning: 'Warning',
-      error: 'Error',
-      neutral: 'Note',
-    };
-    return map[this.variant()];
-  });
-
   protected iconName = computed(() => {
     const map: Record<CalloutVariant, string> = {
       info: 'information-circle',
@@ -89,7 +89,7 @@ export class CalloutComponent {
       error: 'x-circle',
       neutral: 'information-circle',
     };
-    return map[this.variant()];
+    return this.icon() || map[this.variant()];
   });
 
   dismiss(): void {

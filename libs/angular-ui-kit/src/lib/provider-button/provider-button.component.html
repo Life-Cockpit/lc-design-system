@@ -1,0 +1,23 @@
+<button
+  [type]="type()"
+  [class]="classes()"
+  [disabled]="isDisabled()"
+  [attr.aria-label]="iconOnly() ? title() : null"
+  [attr.aria-busy]="loading() ? 'true' : null"
+  (click)="handleClick()"
+>
+  <img
+    class="lc-provider-button__logo"
+    [src]="logoSrc()"
+    alt=""
+    width="20"
+    height="20"
+    draggable="false"
+  />
+  @if (!iconOnly()) {
+    <span class="lc-provider-button__label">{{ title() }}</span>
+  }
+  @if (loading() && !iconOnly()) {
+    <span class="lc-provider-button__spinner" aria-hidden="true"></span>
+  }
+</button>

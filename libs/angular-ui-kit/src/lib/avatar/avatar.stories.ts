@@ -21,6 +21,19 @@ const meta: Meta<AvatarComponent> = {
     },
     name: { description: 'Full name — initials are extracted automatically (e.g. "John Doe" → "JD")' },
     src: { description: 'URL for the avatar image. Falls back to initials if the image fails to load' },
+    color: {
+      control: 'select',
+      options: ['default', 'member-1', 'member-2', 'member-3', 'member-4', 'member-5', 'member-6'],
+      description:
+        'Background of the initials: `default` (neutral) or a member colour `member-1` … `member-6` (teal, rust, violet, sage, berry, slate) with white initials, each at least 4.5:1. Assign per person in a stable order; `AVATAR_MEMBER_COLORS` lists them',
+      table: { defaultValue: { summary: 'default' } },
+    },
+    ring: {
+      control: 'boolean',
+      description:
+        'A ring in the page colour around the avatar (3 px; 2 px for xs/sm) so stacked avatars stay apart. Colour: `--lc-avatar-ring-color` (default `--color-background`)',
+      table: { defaultValue: { summary: 'false' } },
+    },
   },
 
   parameters: {
@@ -34,6 +47,8 @@ Avatar component for circular user representation.
 - Auto-generated initials from user name
 - Status indicator (online, offline, busy, away)
 - Multiple size variants (xs, sm, md, lg, xl)
+- Member colours (\`color\`: \`member-1\` … \`member-6\`) with white initials — colour is never the only cue, the initials and the name stay
+- \`ring\`: a gap in the page colour, for stacks and avatars on tints
 - Accessible with alt text support
 `,
       },
@@ -165,3 +180,24 @@ export const AvatarStack: Story = {
       </div>`,
   }),
 };
+
+/** The six member colours (LK-7) in join order, white initials on each. */
+export const MemberColors: Story = {
+  render: () => ({
+    template: `
+      <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+        <lc-avatar name="Johanna Apfelbaum" color="member-1" />
+        <lc-avatar name="Tom Ek" color="member-2" />
+        <lc-avatar name="Lena Morgen" color="member-3" />
+        <lc-avatar name="Ole Sand" color="member-4" />
+        <lc-avatar name="Bea Kraus" color="member-5" />
+        <lc-avatar name="Kai Stein" color="member-6" />
+      </div>`,
+  }),
+};
+
+/** A member colour with the ring, as in a stack on the page. */
+export const MemberWithRing: Story = {
+  args: { name: 'Tom Ek', size: 'lg', color: 'member-2', ring: true },
+};
+

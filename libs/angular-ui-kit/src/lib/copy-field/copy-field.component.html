@@ -1,0 +1,27 @@
+<div
+  class="lc-copy-field"
+  [class.lc-copy-field--stacked]="layout() === 'stacked'"
+  [class.lc-copy-field--inline]="layout() === 'inline'"
+>
+  <div class="lc-copy-field__value">
+    <lc-input
+      [label]="label()"
+      [value]="value()"
+      [helperText]="helperText()"
+      size="lg"
+      [readonly]="true"
+      [readonlyWrap]="true"
+    />
+  </div>
+
+  <div class="lc-copy-field__action">
+    <lc-button variant="outline" size="lg" [fullWidth]="layout() === 'stacked'" (clicked)="copy()">
+      @if (showIcon()) {
+        <lc-icon slot="icon-before" [name]="isCopied() ? 'check' : 'clipboard-document'" size="sm" [decorative]="true" />
+      }
+      {{ isCopied() ? copiedLabel() : copyLabel() }}
+    </lc-button>
+  </div>
+
+  <span class="lc-copy-field__live" role="status" aria-live="polite">{{ isCopied() ? copiedAnnouncement() : '' }}</span>
+</div>

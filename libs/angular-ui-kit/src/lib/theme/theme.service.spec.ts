@@ -51,13 +51,13 @@ describe('ThemeService', () => {
 
   beforeEach(() => {
     localStorage.clear();
-    document.documentElement.classList.remove('dark', 'light');
+    document.documentElement.classList.remove('dark', 'light', 'system');
     mockPrefersDark(false);
   });
 
   afterEach(() => {
     localStorage.clear();
-    document.documentElement.classList.remove('dark', 'light');
+    document.documentElement.classList.remove('dark', 'light', 'system');
   });
 
   describe('Initialization', () => {
@@ -253,6 +253,100 @@ describe('ThemeService', () => {
     });
   });
 
+  describe('Following the OS through the `system` root class (G-6)', () => {
+    const root = () => document.documentElement.classList;
+
+    beforeEach(() => {
+      root().add('system');
+    });
+
+    it('should mirror a light OS without adding a theme class (the CSS follows the OS)', () => {
+      mockPrefersDark(false);
+      service = createService();
+
+      expect(service.currentTheme().currentMode).toBe('light');
+      expect(service.currentTheme().prefersDark).toBe(false);
+      expect(service.isDark()).toBe(false);
+      expect(root().contains('system')).toBe(true);
+      expect(root().contains('light')).toBe(false);
+      expect(root().contains('dark')).toBe(false);
+    });
+
+    it('should mirror a dark OS without adding a theme class', () => {
+      mockPrefersDark(true);
+      service = createService();
+
+      expect(service.currentTheme().currentMode).toBe('dark');
+      expect(service.isDark()).toBe(true);
+      expect(root().contains('dark')).toBe(false);
+    });
+
+    it('should follow a later OS change and keep the meta theme-color in step', () => {
+      const meta = document.createElement('meta');
+      meta.setAttribute('name', 'theme-color');
+      document.head.appendChild(meta);
+      mockPrefersDark(false);
+      service = createService();
+      expect(meta.getAttribute('content')).toBe('#ffffff');
+
+      mediaQuery.emitChange(true);
+      expect(service.currentTheme().currentMode).toBe('dark');
+      expect(meta.getAttribute('content')).toBe('#0a121b');
+      expect(root().contains('dark')).toBe(false);
+      expect(root().contains('system')).toBe(true);
+
+      meta.remove();
+    });
+
+    it('should win over a persisted mode (the app asked to follow the OS)', () => {
+      localStorage.setItem(ThemeService.STORAGE_KEY, 'light');
+      mockPrefersDark(true);
+      service = createService();
+
+      expect(service.currentTheme().currentMode).toBe('dark');
+      expect(root().contains('light')).toBe(false);
+    });
+
+    it('should let an explicit light or dark root class win over `system`', () => {
+      root().add('light');
+      mockPrefersDark(true);
+      service = createService();
+
+      expect(service.currentTheme().currentMode).toBe('light');
+      expect(mediaQuery.addEventListener).not.toHaveBeenCalled();
+    });
+
+    it('should leave system mode on an explicit setTheme', () => {
+      mockPrefersDark(false);
+      service = createService();
+      service.setTheme('dark');
+
+      expect(root().contains('system')).toBe(false);
+      expect(root().contains('dark')).toBe(true);
+      expect(mediaQuery.removeEventListener).toHaveBeenCalledWith('change', expect.any(Function));
+      expect(localStorage.getItem(ThemeService.STORAGE_KEY)).toBe('dark');
+
+      mediaQuery.emitChange(false);
+      expect(service.currentTheme().currentMode).toBe('dark');
+    });
+
+    it('should not persist anything while following the OS', () => {
+      service = createService();
+      mediaQuery.emitChange(true);
+      expect(localStorage.getItem(ThemeService.STORAGE_KEY)).toBeNull();
+    });
+
+    it('should keep the CSS in charge when useSystemPreference is called in system mode', () => {
+      mockPrefersDark(true);
+      service = createService();
+      service.useSystemPreference();
+
+      expect(service.currentTheme().currentMode).toBe('dark');
+      expect(root().contains('dark')).toBe(false);
+      expect(root().contains('system')).toBe(true);
+    });
+  });
+
   describe('DOM Updates', () => {
     beforeEach(() => {
       service = createService();
@@ -268,8 +362,9 @@ describe('ThemeService', () => {
       service.setTheme('dark');
       expect(meta.getAttribute('content')).toBe('#0a121b');
 
+      // Light `--color-background` is the white "Weite" sky since 3.3.
       service.setTheme('light');
-      expect(meta.getAttribute('content')).toBe('#f3f4f6');
+      expect(meta.getAttribute('content')).toBe('#ffffff');
 
       meta.remove();
     });

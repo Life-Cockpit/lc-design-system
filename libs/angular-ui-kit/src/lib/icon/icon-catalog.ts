@@ -1,5 +1,7 @@
 // Canonical `lc-icon` name catalog + validation helpers (public API).
 import { ICON_NAMES } from './icon-names.data';
+import type { IconVariant } from './icon.component';
+import { resolveInlineIconSvg } from './icon-inline-lookup';
 
 export { ICON_NAMES } from './icon-names.data';
 export { ICON_ALIASES } from './icon-aliases';
@@ -30,3 +32,24 @@ const ICON_NAME_SET: ReadonlySet<string> = new Set(ICON_NAMES);
 export function isValidIconName(name: string): boolean {
   return ICON_NAME_SET.has(name);
 }
+
+/**
+ * Whether `name` renders from markup shipped in the kit — no request, so it
+ * shows offline, at once and in prerendered HTML (3.3, gap G-7). Covers the
+ * hand-picked inline set, the Tabler icons inlined at build time (mail,
+ * users, settings, logout, key, chevron-right, …) and aliases that resolve
+ * to either. Use it to lint an app or a static site against icons that would
+ * be fetched.
+ *
+ * @example
+ * ```ts
+ * isInlineIconName('x-mark');           // true  (hand-picked, by its alias name)
+ * isInlineIconName('envelope');         // true  (alias of the inlined Tabler `mail`)
+ * isInlineIconName('anchor');           // false (fetched from the Tabler assets)
+ * isInlineIconName('robot', 'solid');   // false (Tabler has no filled robot)
+ * ```
+ */
+export function isInlineIconName(name: string, variant: IconVariant = 'outline'): boolean {
+  return resolveInlineIconSvg(name, variant) !== undefined;
+}
+
