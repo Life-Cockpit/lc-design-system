@@ -9,7 +9,7 @@ Angular UI component library for the **LifeCorner Design System** — 110 access
 | 📖 **Live documentation & Storybook** | https://design.life-cockpit.de (moves to `design.lifecorner.de` once that domain is registered) |
 | 🤖 **MCP server for AI agents** | https://design.life-cockpit.de/mcp |
 | 📦 **npm package** | https://www.npmjs.com/package/@lifecorner/angular-ui-kit |
-| 🐙 **Source code** | https://github.com/LifeCorner/lc-design-system |
+| 🐙 **Source code** | https://github.com/getlifecorner/lc-design-system |
 
 > **Renamed in 3.3.0.** Up to 3.2.x this package was `@life-cockpit/angular-ui-kit` (now deprecated). Replace the import and `@use` paths with `@lifecorner/angular-ui-kit`; the `lc-` selectors, `LC_*` tokens and the API stay the same. The docs site and the MCP endpoint stay on `design.life-cockpit.de` until `lifecorner.de` is registered, then move to `design.lifecorner.de`.
 

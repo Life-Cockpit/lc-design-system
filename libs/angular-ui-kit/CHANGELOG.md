@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.3.1] - 2026-10-16
+
+### Fixed
+
+- **Repository link**: 3.3.0 pointed `repository` to `github.com/LifeCorner`,
+  a GitHub account that isn't ours. The organisation is `getlifecorner`:
+  `https://github.com/getlifecorner/lc-design-system`. No code changes.
+
+### Build
+
+- **3.3.1 is the first release of `@lifecorner/angular-ui-kit` through npm
+  trusted publishing with a provenance statement**; 3.3.0 was published by
+  hand to create the package.
+
 ## [3.3.0] - 2026-10-16
 
 The **LifeCorner Design System**: the kit's new name and brand (Edu and the
@@ -51,7 +65,7 @@ changes what you see, *Changed* or *Fixed* says so.
   Apps that copy the assets with a glob keep working; an app that links the
   old logo files directly switches to the new names. Package metadata:
   description "LifeCorner Design System – Angular UI component library",
-  keyword `lifecorner`, repository `github.com/LifeCorner/lc-design-system`
+  keyword `lifecorner`, repository `github.com/getlifecorner/lc-design-system` (corrected in 3.3.1)
   (old URLs redirect). Renamed everywhere visible: READMEs, the docs pages,
   Storybook (title and logo), the story sample texts, `tools/compat` and the
   publish workflow.
