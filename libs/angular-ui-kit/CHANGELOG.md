@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.4.1] - 2026-10-16
+
+Two hyphenation fixes found while rendering the LifeCorner legal pages on a
+360 px phone. No API breaks.
+
+### Fixed
+
+- **`lc-markdown` never hyphenates links.** Under the prose's
+  `hyphens: auto`, a German page turned `kontakt@lifecorner.de` into
+  `kontakt@life-corner.de` and `https://aws.amazon.com/…` into
+  `https://aw-s.amazon.com/…` at a line end: a reader who copies the address
+  gets a wrong one. Links now have `hyphens: none`; a long address still wraps
+  through the root's `overflow-wrap: anywhere`, without an inserted hyphen.
+- **`lc-page-header` hyphenates a long title.** `word-break: break-word` cut
+  a long German word such as "Datenschutzerklärung" at 32 px without a hyphen.
+  The title now uses `hyphens: auto` in the page language (`lang` on `<html>`
+  or an ancestor) and `overflow-wrap: break-word`, so an unbreakable string
+  still wraps. New hook `--lc-page-header-title-hyphens` (default `auto`;
+  `manual` keeps a name in one piece).
+
 ## [3.4.0] - 2026-10-16
 
 One addition for full-width page bands: `lc-hero` `contentWidth` and the
