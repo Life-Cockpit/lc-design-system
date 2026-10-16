@@ -2,6 +2,37 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.4.0] - 2026-10-16
+
+One addition for full-width page bands: `lc-hero` `contentWidth` and the
+`[hero-media]` slot. No API breaks; without the new inputs the hero renders as
+in 3.3.
+
+### Added
+
+- **`lc-hero` for full-width page bands: `contentWidth` and a `[hero-media]`
+  slot** (G-13 of the life-os website concept; it blocks the LifeCorner
+  website build). Both optional; without them the hero renders as in 3.3.
+  - **`contentWidth`** (`HeroContentWidth`: `'full'` | `'lg'`, default
+    `'full'`). With `'lg'` the background stays full-bleed and, from 1024 px,
+    the content box is the `lc-container` `lg` page column: centred, at most
+    928 px wide, never closer to the edge than the size padding
+    (`padding-inline: max(<size padding>, calc((100% - 1024px) / 2 + 3rem))`).
+    At 1280 px the text starts at x 176 for `sm` and `md`, in line with
+    `lc-container size="lg"` content below. Below 1024 px nothing changes.
+  - **`[hero-media]`**: a content slot for a visual, outside `.hero__body`,
+    so it is never under the body's 85 % opacity. Below 1024 px it follows
+    the text in one column, at most `--lc-hero-media-width` wide, with the
+    spacing and rule `[hero-footer]` has (2 / 2.5 rem margin, a 1 px
+    `rgba(255,255,255,.2)` rule, 1.5 rem padding; slim and light variants
+    adjusted like the footer). From 1024 px text and media sit side by side:
+    `grid-template-columns: minmax(0, 1fr) var(--lc-hero-media-width, 23rem)`,
+    a 3.5 rem gap, vertically centred, no rule. `[hero-footer]` keeps
+    spanning the full width below both. New hook `--lc-hero-media-width`
+    (default `23rem`). Pure CSS (`:has()`), so the layout holds in
+    prerendered HTML before JavaScript.
+  - Stories: *Layout / Hero / With Media* and *Page Band*.
+
 ## [3.3.1] - 2026-10-16
 
 ### Fixed
