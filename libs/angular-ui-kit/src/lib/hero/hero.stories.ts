@@ -16,6 +16,8 @@ Use it at the top of pages to introduce content, highlight key information, or s
 - 3 visual variants: default (dark gradient), slim (compact banner), light (soft pastel with dark text)
 - 3 size variants (sm, md, lg) with mobile-first responsive padding and typography
 - Content projection for body text and a footer slot for metadata / stats
+- A media slot (\`[hero-media]\`) for a visual: below the text on small screens, beside it from 1024 px, outside the body's 85 % opacity
+- \`contentWidth="lg"\`: a full-bleed band whose content sits on the 1024 px page column, so its text lines up with the page below
 - Configurable border radius
         `,
       },
@@ -63,6 +65,13 @@ Use it at the top of pages to introduce content, highlight key information, or s
       options: ['default', 'slim', 'light'],
       description: 'Visual variant: default (dark gradient), slim (compact), light (pastel)',
       table: { defaultValue: { summary: 'default' } },
+    },
+    contentWidth: {
+      control: 'select',
+      options: ['full', 'lg'],
+      description:
+        'Content box: full (to the hero padding) or lg (from 1024 px on the 1024 px page column, centred; the background stays full-bleed)',
+      table: { defaultValue: { summary: 'full' } },
     },
   },
 };
@@ -309,6 +318,75 @@ export const AllLightColors: Story = {
         <lc-hero title="Accent Orange Light" color="accent-orange" size="sm" borderRadius="md" variant="light"></lc-hero>
         <lc-hero title="Accent Purple Light" color="accent-purple" size="sm" borderRadius="md" variant="light"></lc-hero>
         <lc-hero title="Accent Violet Light" color="accent-violet" size="sm" borderRadius="md" variant="light"></lc-hero>
+      </div>`,
+  }),
+};
+
+const mediaCardStyle =
+  'display: flex; flex-direction: column; gap: 12px; padding: 20px; border-radius: 18px; background: #fff; color: #111827; box-shadow: 0 1px 3px rgba(16, 24, 40, 0.1);';
+const mediaRowStyle = 'height: 12px; border-radius: 6px; background: #e0f1f4;';
+
+export const WithMedia: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'A visual in the `[hero-media]` slot: below the text with the footer rule on small screens, beside it from 1024 px. It is not under the body\'s 85 % opacity. `--lc-hero-media-width` sets its column (default 23rem).',
+      },
+    },
+  },
+  args: {
+    label: 'MEDIA SLOT',
+    title: 'Text on the left, a visual on the right',
+    color: 'primary',
+    size: 'md',
+    borderRadius: 'lg',
+  },
+  render: (args) => ({
+    props: args,
+    template: `
+      <lc-hero [label]="label" [title]="title" [color]="color" [size]="size" [borderRadius]="borderRadius">
+        <p style="margin: 0;">One or two sentences of supporting text under the headline.</p>
+        <div hero-media style="${mediaCardStyle}">
+          <div style="${mediaRowStyle} width: 60%;"></div>
+          <div style="${mediaRowStyle}"></div>
+          <div style="${mediaRowStyle} width: 80%;"></div>
+        </div>
+      </lc-hero>`,
+  }),
+};
+
+export const PageBand: Story = {
+  parameters: {
+    layout: 'fullscreen',
+    docs: {
+      description: {
+        story:
+          'A full-bleed page band: `borderRadius="none"` and `contentWidth="lg"`. From 1024 px its label, title, body and media sit on the same 1024 px column as the page content below (`lc-container size="lg"`), so the text lines up; below 1024 px the size padding applies as usual.',
+      },
+    },
+  },
+  args: {
+    label: 'THE COCKPIT FOR FAMILY LIFE',
+    title: 'Everything that keeps your family running. Connected and at a glance.',
+    color: 'primary',
+    size: 'md',
+    borderRadius: 'none',
+    contentWidth: 'lg',
+  },
+  render: (args) => ({
+    props: args,
+    template: `
+      <lc-hero [label]="label" [title]="title" [color]="color" [size]="size" [borderRadius]="borderRadius" [contentWidth]="contentWidth">
+        <p style="margin: 0;">Shows you every day what matters, and why.</p>
+        <div hero-media style="${mediaCardStyle}">
+          <div style="${mediaRowStyle} width: 60%;"></div>
+          <div style="${mediaRowStyle}"></div>
+          <div style="${mediaRowStyle} width: 80%;"></div>
+        </div>
+      </lc-hero>
+      <div style="max-width: 1024px; margin: 0 auto; padding: 32px 48px; box-sizing: border-box;">
+        <p style="margin: 0;">Page content on the same column (here a plain 1024 px container with 48 px sides).</p>
       </div>`,
   }),
 };

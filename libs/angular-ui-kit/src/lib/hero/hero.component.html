@@ -1,11 +1,16 @@
 <div [class]="heroClasses()">
-  <div class="hero__content">
-    @if (label()) {
-      <span class="hero__label">{{ label() }}</span>
-    }
-    <h1 class="hero__title">{{ title() }}</h1>
-    <div class="hero__body">
-      <ng-content></ng-content>
+  <div class="hero__inner">
+    <div class="hero__content">
+      @if (label()) {
+        <span class="hero__label">{{ label() }}</span>
+      }
+      <h1 class="hero__title">{{ title() }}</h1>
+      <div class="hero__body">
+        <ng-content></ng-content>
+      </div>
+    </div>
+    <div class="hero__media">
+      <ng-content select="[hero-media]"></ng-content>
     </div>
   </div>
   <ng-content select="[hero-footer]"></ng-content>

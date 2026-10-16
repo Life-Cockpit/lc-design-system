@@ -247,10 +247,41 @@ $hero-colors: (
 }
 
 // ---------------------------------------------------------------------------
+// Content width – `lg` puts the content on the 1024 px page column
+// ---------------------------------------------------------------------------
+// The `lc-container` `lg` content box is 1024 px minus its 48 px sides. From
+// 1024 px the inline padding grows so the content box is that column, centred,
+// while the background stays full-bleed; it is never smaller than the size
+// padding. Two classes, so it wins over the size rules' `padding` shorthand.
+.hero--content-lg {
+  @media (min-width: 1024px) {
+    &.hero--sm {
+      padding-inline: max(3rem, calc((100% - 1024px) / 2 + 3rem));
+    }
+
+    &.hero--md {
+      padding-inline: max(3.5rem, calc((100% - 1024px) / 2 + 3rem));
+    }
+
+    &.hero--lg {
+      padding-inline: max(4rem, calc((100% - 1024px) / 2 + 3rem));
+    }
+
+    &.hero--slim {
+      padding-inline: max(3rem, calc((100% - 1024px) / 2 + 3rem)) !important;
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Content area
 // ---------------------------------------------------------------------------
-.hero__content {
+.hero__inner {
   flex: 1;
+}
+
+.hero__content {
+  min-width: 0;
 }
 
 .hero__label {
@@ -330,6 +361,56 @@ $hero-colors: (
 
   &:empty {
     display: none;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Media slot (`[hero-media]`: a visual, an illustration)
+// ---------------------------------------------------------------------------
+// Outside `.hero__body`, so never under its 85 % opacity. Below 1024 px it
+// follows the text with the footer's spacing and rule, at most
+// `--lc-hero-media-width` wide; from 1024 px it sits beside the text.
+.hero__media {
+  max-width: var(--lc-hero-media-width, 23rem);
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+
+  @media (min-width: 640px) {
+    margin-top: 2.5rem;
+  }
+
+  &:empty {
+    display: none;
+  }
+
+  .hero--slim & {
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+
+    @media (min-width: 640px) {
+      margin-top: 1.25rem;
+    }
+  }
+
+  .hero--light & {
+    border-top-color: rgba(0, 0, 0, 0.12);
+  }
+}
+
+@media (min-width: 1024px) {
+  .hero__inner:has(> .hero__media:not(:empty)) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--lc-hero-media-width, 23rem);
+    column-gap: 3.5rem;
+    align-items: center;
+
+    > .hero__media {
+      max-width: none;
+      margin-top: 0;
+      padding-top: 0;
+      border-top: 0;
+    }
   }
 }
 

@@ -20,6 +20,15 @@ export type HeroSize = 'sm' | 'md' | 'lg';
 export type HeroVariant = 'default' | 'slim' | 'light';
 
 /**
+ * Width of the hero's content box.
+ * - `full`: the content runs to the hero's own padding (default, as before 3.4)
+ * - `lg`: from 1024 px the content sits on the `lc-container` `lg` page column
+ *   (1024 px minus its 48 px sides, so at most 928 px), centred, while the
+ *   background stays full-bleed
+ */
+export type HeroContentWidth = 'full' | 'lg';
+
+/**
  * Hero component for prominent page headers with gradient backgrounds.
  *
  * Features:
@@ -30,12 +39,20 @@ export type HeroVariant = 'default' | 'slim' | 'light';
  * - Configurable border radius
  * - Content projection for body and footer sections
  * - Footer slot for metadata, stats, or CTAs
+ * - Media slot (`[hero-media]`) for a visual: below the text on small screens,
+ *   beside it from 1024 px, never under the body's 85 % opacity
+ * - Content width `lg`: a full-bleed band whose text lines up with the page column
  *
  * @example
  * ```html
  * <lc-hero label="MY APP" title="Welcome" color="primary" variant="slim">
  *   <p>Description text</p>
  *   <div hero-footer>Status: Active</div>
+ * </lc-hero>
+ *
+ * <lc-hero title="Everything in view" borderRadius="none" contentWidth="lg">
+ *   <p>Description text</p>
+ *   <lc-card hero-media variant="elevated">…</lc-card>
  * </lc-hero>
  * ```
  */
@@ -84,6 +101,16 @@ export class HeroComponent {
    */
   variant = input<HeroVariant>('default');
 
+  /**
+   * Width of the content box. `lg` keeps the background full-bleed and, from
+   * 1024 px, puts the label, title, body, media and footer on the 1024 px page
+   * column (the `lc-container` `lg` content box), never closer to the edge than
+   * the size padding. Use it for a full-width band (`borderRadius="none"`) whose
+   * text should line up with the page content below.
+   * @default 'full'
+   */
+  contentWidth = input<HeroContentWidth>('full');
+
   protected heroClasses = computed(() => {
     return [
       'hero',
@@ -91,6 +118,7 @@ export class HeroComponent {
       `hero--${this.size()}`,
       `hero--radius-${this.borderRadius()}`,
       `hero--${this.variant()}`,
+      `hero--content-${this.contentWidth()}`,
     ].join(' ');
   });
 }
