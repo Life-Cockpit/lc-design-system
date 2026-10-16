@@ -256,6 +256,13 @@ describe('PageHeaderComponent', () => {
         expect(o).toMatch(/color:\s*var\(--color-overline/);
       });
 
+      it('hyphenates a long title in the page language instead of cutting a word without a hyphen', () => {
+        const title = rule('.lc-page-header__title');
+        expect(title).toMatch(/hyphens:\s*var\(--lc-page-header-title-hyphens, auto\)/);
+        expect(title).toMatch(/overflow-wrap:\s*break-word/);
+        expect(title).not.toMatch(/word-break:\s*break-word/);
+      });
+
       it.each([
         ['title', '--font-size-title, 2rem'],
         ['display', '--font-size-display, 2.5rem'],

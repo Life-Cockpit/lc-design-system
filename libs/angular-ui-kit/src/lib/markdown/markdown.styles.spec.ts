@@ -33,6 +33,13 @@ describe('lc-markdown prose styles (G-8)', () => {
     expect(root).toMatch(/overflow-wrap:\s*var\(--lc-markdown-overflow-wrap, anywhere\)/);
   });
 
+  it('never hyphenates links: an inserted hyphen changes an URL or an e-mail address', () => {
+    const link = rule('.lc-markdown a');
+    expect(link).toMatch(/hyphens:\s*none/);
+    // long addresses still wrap through the root's overflow-wrap, without a fake hyphen
+    expect(link).not.toMatch(/overflow-wrap:\s*normal/);
+  });
+
   it('never hyphenates code', () => {
     expect(rule('.lc-markdown code')).toMatch(/hyphens:\s*none/);
     expect(rule('.lc-markdown pre')).toMatch(/hyphens:\s*none/);

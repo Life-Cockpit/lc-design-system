@@ -46,6 +46,10 @@
   a {
     color: var(--lc-markdown-link-color, var(--color-link, #1a6a79));
     text-decoration: var(--lc-markdown-link-decoration, underline);
+    // Never hyphenate a link: a hyphen inserted into an URL or an e-mail
+    // address changes what a reader copies ("kontakt@life-corner.de"). A long
+    // address still wraps through the root's `overflow-wrap: anywhere`.
+    hyphens: none;
     text-decoration-thickness: 1px;
     text-underline-offset: 0.18em;
 

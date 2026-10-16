@@ -126,7 +126,12 @@
     align-items: center;
     gap: var(--lc-density-gap-sm, 0.5rem);
     min-width: 0;
-    word-break: break-word;
+    // A long word ("Datenschutzerklärung" at 32 px on a phone) is hyphenated
+    // in the page language (`lang` on <html> or an ancestor) instead of being
+    // cut without a hyphen; an unbreakable string still wraps. Hook:
+    // --lc-page-header-title-hyphens (e.g. `manual` for a product name).
+    hyphens: var(--lc-page-header-title-hyphens, auto);
+    overflow-wrap: break-word;
   }
 
   // Public theming hooks (stable API — set them on the host or any ancestor):
@@ -135,6 +140,8 @@
   //   --lc-page-header-subtitle-font-size   overrides the size variant's font-size
   //   --lc-page-header-subtitle-line-clamp  max line count, e.g. 2 (needs the
   //                                         default display; `none` = no clamp)
+  //   --lc-page-header-title-hyphens        title hyphenation, default `auto`
+  //                                         (`manual` keeps a name in one piece)
   // The default display is -webkit-box (which renders plain text identically
   // to block) so that setting only the line-clamp hook is enough to clamp.
   &__subtitle {
