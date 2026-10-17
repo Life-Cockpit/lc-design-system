@@ -23,10 +23,11 @@
             "budgets": []
           },
           "configurations": {
-            "production": {
-              "outputHashing": "all",
+            "production": { "outputHashing": "all", "optimization": true, "sourceMap": false },
+            "csp": {
+              "outputPath": "dist/compat-csp",
               "optimization": { "scripts": true, "styles": { "minify": true, "inlineCritical": false }, "fonts": false },
-              "sourceMap": false
+              "fileReplacements": [{ "replace": "src/app/app.config.ts", "with": "src/app/app.config.csp.ts" }]
             }
           },
           "defaultConfiguration": "production"

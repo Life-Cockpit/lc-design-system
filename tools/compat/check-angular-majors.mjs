@@ -13,8 +13,10 @@
  *
  * The app has two route sets: `''` imports everything from the primary entry
  * (as consumers did before 3.5), `/tt` imports the F1 set from the secondary
- * entries only (3.5, request 001). tools/compat/check-trusted-types.mjs opens
- * the built `/tt` pages in a browser under a Trusted Types CSP.
+ * entries only (3.5, request 001). The build keeps Angular's defaults (the
+ * existing consumers); tools/compat/check-trusted-types.mjs builds the app
+ * once more with life-os's settings (`csp` configuration) and opens the `/tt`
+ * pages in a browser under a Trusted Types CSP.
  *
  * Prerequisite: `npx nx build angular-ui-kit` (reads dist/libs/angular-ui-kit).
  *
@@ -96,7 +98,23 @@ const EXPECT_IN_HTML = [
   ['tt: every inline icon prerendered (AS-14)', everyInlineIconPrerendered, 'tt/icons/index.html'],
   ['tt: one IconComponent class across entries (AS-15)', /id="tt-primary-icon"[^>]*data-same-class="true"|data-same-class="true"[^>]*id="tt-primary-icon"/, 'tt/icons/index.html'],
   ['tt: fetched icons stay empty on the server', /<lc-icon[^>]*id="tt-anchor"[^>]*><div[^>]*class="icon-container[^"]*"[^>]*><\/div>/, 'tt/fetched/index.html'],
+  // 3.5.1: this build keeps Angular's defaults (22: incremental hydration's
+  // event-dispatch script; 21: critical-CSS `onload`); the csp build is below.
+  ["Angular's default inline scripts (not the csp settings)", (html) => html.includes('</html>') && !noInlineScript(html), 'tt/index.html'],
 ];
+
+/**
+ * The entry that is built once more with the `csp` configuration (life-os's
+ * settings) for check-trusted-types.mjs; `withNoIncrementalHydration` needs 22.
+ */
+const CSP_ENTRY = '22';
+const CSP_PAGES = ['tt/index.html', 'tt/household/index.html', 'tt/icons/index.html', 'tt/fetched/index.html'];
+
+/** Nothing `script-src 'self'` blocks: no inline script (JSON data blocks aside), no inline event handler. */
+function noInlineScript(html) {
+  const scripts = [...html.matchAll(/<script\b([^>]*)>/g)].map((m) => m[1]);
+  return html.includes('</html>') && scripts.every((a) => /\bsrc=/.test(a) || /type="application\/json"/.test(a)) && !/<[a-z][^>]*\son[a-z]+=/i.test(html);
+}
 
 function run(cmd, cmdArgs, cwd) {
   const res = spawnSync(cmd, cmdArgs, { cwd, encoding: 'utf8', env: { ...process.env, NG_CLI_ANALYTICS: 'false', CI: '1' } });
@@ -187,16 +205,19 @@ for (const entry of MATRIX.filter((m) => !only || only.includes(m.name))) {
     continue;
   }
   const pages = new Map();
-  const page = (name) => {
-    if (!pages.has(name)) {
-      const file = join(dir, 'dist/compat/browser', name);
-      pages.set(name, existsSync(file) ? readFileSync(file, 'utf8') : '');
-    }
-    return pages.get(name);
+  const page = (name, out = 'compat') => {
+    const file = join(dir, `dist/${out}/browser`, name);
+    if (!pages.has(file)) pages.set(file, existsSync(file) ? readFileSync(file, 'utf8') : '');
+    return pages.get(file);
   };
   for (const [label, test, name = 'index.html'] of EXPECT_IN_HTML) {
     const html = page(name);
     result.checks.push([label, typeof test === 'function' ? test(html) : test.test(html)]);
+  }
+  if (entry.name === CSP_ENTRY) {
+    const csp = run('npx', ['ng', 'build', '--configuration=production,csp'], dir);
+    writeFileSync(join(dir, 'build-csp.log'), csp.out);
+    result.checks.push(['csp build: /tt pages without inline script', csp.code === 0 && CSP_PAGES.every((name) => noInlineScript(page(name, 'compat-csp')))]);
   }
   results.push(result);
 }

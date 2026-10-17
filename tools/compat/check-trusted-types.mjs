@@ -3,11 +3,13 @@
  * The compat app's `/tt` pages in headless Chromium under a Trusted Types CSP
  * (request 001: AC-10, AC-11, AC-12, AC-13, AC-16, AC-24).
  *
- * The pages are the prerendered output of tools/compat/check-angular-majors.mjs
- * (Angular 22): this script serves `<app>/dist/compat/browser` with life-os's
- * CSP (ADR-0034) plus `lc-icon`, opens every `/tt` page at 1280 and 360 px,
- * lets it hydrate, opens the overlays, follows the side navigation and checks
- * the DOM. It collects `securitypolicyviolation` events (through an init
+ * The pages are the `csp` build of tools/compat/check-angular-majors.mjs
+ * (Angular 22): the app with life-os's settings (no incremental hydration, no
+ * critical-CSS inlining, so no inline script), while its matrix build keeps
+ * Angular's defaults. This script serves `<app>/dist/compat-csp/browser` with
+ * life-os's CSP (ADR-0034) plus `lc-icon`, opens every `/tt` page at 1280 and
+ * 360 px, lets it hydrate, opens the overlays, follows the side navigation and
+ * checks the DOM. It collects `securitypolicyviolation` events (through an init
  * script and a binding that survives navigations), console and Log entries
  * that match life-os's violation pattern, uncaught exceptions and hydration
  * messages (NG05xx). A second run drops `lc-icon` from `trusted-types`
@@ -41,9 +43,9 @@ if (typeof args.app !== 'string') {
   console.error('check-trusted-types: pass --app=<compat work dir>/app-22 (run check-angular-majors.mjs --only=22 --work=<dir> first)');
   process.exit(2);
 }
-const DIST = resolve(args.app, 'dist/compat/browser');
+const DIST = resolve(args.app, 'dist/compat-csp/browser');
 if (!existsSync(join(DIST, 'tt/index.html'))) {
-  console.error(`check-trusted-types: no prerendered /tt in ${DIST}`);
+  console.error(`check-trusted-types: no prerendered /tt in ${DIST} (the csp build of check-angular-majors.mjs --only=22)`);
   process.exit(2);
 }
 const TABLER = join(ROOT, 'node_modules/@tabler/icons/icons');
@@ -117,10 +119,17 @@ function findChrome() {
   process.exit(2);
 }
 
+/**
+ * GitHub's Ubuntu runners block the unprivileged user namespaces Chrome's
+ * sandbox needs (AppArmor), so Chrome exits at once. In CI only, run it
+ * without the sandbox, as Playwright does by default; the pages are the
+ * fixture's own. Locally the sandbox stays on.
+ */
+const IN_CI = !!process.env.CI && !/^(0|false)$/i.test(process.env.CI);
 const profile = mkdtempSync(join(tmpdir(), 'lc-tt-'));
 const chrome = spawn(findChrome(), [
   '--headless', '--remote-debugging-port=0', `--user-data-dir=${profile}`, '--no-first-run',
-  '--no-default-browser-check', '--hide-scrollbars', 'about:blank',
+  '--no-default-browser-check', '--hide-scrollbars', ...(IN_CI ? ['--no-sandbox'] : []), 'about:blank',
 ], { stdio: ['ignore', 'ignore', 'pipe'] });
 const browserWs = await new Promise((res, rej) => {
   let buffer = '';

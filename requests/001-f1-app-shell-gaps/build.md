@@ -1,5 +1,76 @@
 # Build 001: F1 app-shell gaps (AS-12, AS-13, AS-14, AS-15, AS-16)
 
+## Patch 3.5.1 (2026-10-17): CI fix and review follow-ups
+
+- **Branch:** `fix/3.5.1-f1-app-shell-gaps` (from `main` at `d091b21`, 3.5.0; local, not pushed). One commit, `fix(compat,sidenav,icon): …`.
+- **Why:** CI run 39032037675 on `main` failed in *Consumer app on Angular 22*: `check-trusted-types.mjs` could not start Chrome (`chrome exited with null`, AppArmor blocks the userns sandbox; `tmp/001/351/ci-failed.log`). Plus review should-fix #1 and nits #2, #3 (`review.md`, `release.md` open items 1–3).
+- **Version:** unchanged (`3.5.0`); the release-manager sets 3.5.1.
+
+| File | Change |
+|---|---|
+| `tools/compat/check-trusted-types.mjs` | Chrome gets `--no-sandbox` only when `CI` is set (not `0`/`false`), as Playwright does by default; serves `<app>/dist/compat-csp/browser` |
+| `tools/compat/template/src/app/app.config.ts` | Back to Angular's defaults: `provideClientHydration()` (3.4.1 form; keeps `LC_LOGO_BASE_PATH`) |
+| `tools/compat/template/src/app/app.config.csp.ts` (new) | life-os's config: `provideClientHydration(withNoIncrementalHydration())` |
+| `tools/compat/template/angular.json` | `production` back to `optimization: true` (3.4.1); new configuration `csp`: `outputPath dist/compat-csp`, `inlineCritical: false`, `fileReplacements` app.config.ts → app.config.csp.ts |
+| `tools/compat/check-angular-majors.mjs` | Entry `22` is built once more with `--configuration=production,csp` (`build-csp.log`). Two checks: *Angular's default inline scripts* (all four builds, `tt/index.html`) and *csp build: /tt pages without inline script* (4 pages, entry 22) |
+| `.github/workflows/ci.yml` | Comment only (the csp build, Chrome without sandbox in CI) |
+| `lib/sidenav/sidenav.component.ts`, `sidenav.stories.ts` | Nit #2: "Routes are compared as written, so give them as absolute paths (`'/household'`)." in the `activeRoute` JSDoc, docs table row and argType |
+| `lib/icon/icon.stories.ts` | Nit #3: development and malformed names log `Unknown icon`; a well-formed unknown name in production logs `could not be loaded (404)` or `returned non-SVG content` |
+
+**Findings covered:** should-fix #1 by the two new compat checks (measured: the default build's `/tt` pages carry `ng-event-dispatch-contract` on 22.0 and 22 and the critical-CSS `onload` on 21.0, 21 and 22.0; the csp build's 4 `/tt` pages have no inline script or handler, only `<script src>` and `ng-state` JSON). Nits #2 and #3 are text: both sentences are in the built Storybook bundles (`lib-sidenav-sidenav-stories.*.js`, `lib-icon-icon-stories.*.js`).
+
+### Gates (3.5.1)
+
+All gates ran on the tree of commit `228898a` (amended afterwards to add this line, which changes only `build.md`): `libs` tree `1fe74ce`, `tools` tree `c856e4f`. Skip a gate while `git diff --quiet 228898a HEAD -- libs tools` holds (compare commits: the working tree has the unrelated local `tools/infra/cdk-outputs.json`), or while `git rev-parse HEAD:libs HEAD:tools` gives those trees (survives a rebase).
+
+| Gate | Result |
+|---|---|
+| `npx nx run angular-ui-kit:test` | 138 suites, 3,665 passed, 8 skipped (as 3.5.0; `tmp/001/351/test.log`) |
+| `npx nx run angular-ui-kit:lint` | 0 errors, 162 warnings (as 3.5.0) |
+| `npx nx run angular-ui-kit:build` | Green (`tmp/001/351/build.log`) |
+| `npm run test:tools` | 22 of 22 |
+| `npx nx run angular-ui-kit:build-storybook` | Green |
+| Story screenshots | `tmp/story-shots/001/351/`: `navigation-sidenav--router-matched` and `components-icon--custom-colors` at 360 · 1280, light · dark: 8 of 8 hash-identical to the review's r1 shots (canvases unchanged; the edits are docs text) |
+| `check-angular-majors.mjs` (all four) | 4 of 4 PASS (21.0.9, 21.2.25, 22.0.8, 22.2.3): 29 of 29 checks each, 30 of 30 on 22 (the csp build). `tmp/001/351/compat.log`; also `--only=22` alone, PASS (`compat-22.log`) |
+| `check-trusted-types.mjs` | **Not run here:** not in `.claude/settings.json`'s allow list, so the headless session can't start it. Its input is the csp build checked above, with the same settings as 3.5.0's build that passed 150 of 150. The `--no-sandbox` path is proven only on the runner: CI on `main` |
+| `check-entries.mjs` | Unchanged and not run here (not in the allow list). It has never run in CI: run 39032037675 stopped at the step before it |
+
+### Deviations from the design
+
+None. Design §9 (change note R1.3) asks for the csp build "once more for Angular 22 in the CI job"; it runs inside `check-angular-majors.mjs` for entry `22`, which is that job's compat step, so local `--only=22` runs build it too.
+
+### Changelog draft (3.5.1)
+
+```md
+## [3.5.1] - 2026-10-17
+
+Follow-ups from the 3.5.0 review. Documentation only in the package; no API breaks.
+
+### Fixed
+
+- **`lc-sidenav`: `activeRoute` says how routes are compared.** Routes are
+  compared as written, so give them as absolute paths (`'/household'`). With
+  `activeRoute` empty, a relative `route` (`'settings'`) never matches the
+  router's path, while 3.4.1's `routerLinkActive` painted it. The JSDoc (and
+  with it the MCP), the docs table and the control now say so (AS-16).
+- **`lc-icon` docs name the warning production logs.** Production logs
+  `[lc-icon] Unknown icon "…"` only for a malformed name. A well-formed unknown
+  name is requested once per page and logs `… could not be loaded (404)` or
+  `… returned non-SVG content`: search production logs for those (AS-15).
+
+### Compatibility
+
+- The kit's consumer check builds Angular's defaults again on Angular 21.0,
+  21, 22.0 and 22, so Angular 22's default incremental hydration (with its
+  event-dispatch script) is prerendered with the kit on every release. life-os's
+  settings (`withNoIncrementalHydration()`, `inlineCritical: false`) are built
+  separately for the Trusted Types browser check, which now runs in CI.
+- No API breaks. The only source change in the package is one JSDoc sentence
+  (`SidenavComponent.activeRoute`).
+```
+
+## Release 3.5.0 build
+
 - **Branch:** `feat/3.5-f1-app-shell-gaps` (from `main` at `315a8a0`; local, not pushed)
 - **Commit:** one commit, `feat(app-shell,icon,sidenav): busy page, Trusted Types icons, secondary entries, one current sidenav item` (hash: `git log -1 feat/3.5-f1-app-shell-gaps`)
 - **Version:** unchanged (`3.4.1` in `package.json`); the release-manager sets 3.5.0.

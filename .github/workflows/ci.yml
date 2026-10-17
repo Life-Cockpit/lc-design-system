@@ -66,8 +66,10 @@ jobs:
       - name: Build and prerender a consumer app against the packed library
         run: node tools/compat/check-angular-majors.mjs --only=${{ matrix.angular }} --work=${{ runner.temp }}/lc-compat
 
-      # The prerendered /tt pages of that app in Chromium under life-os's
-      # Trusted Types CSP (+ lc-icon), and once with lc-icon refused.
+      # That app built once more with life-os's settings (`csp` configuration),
+      # its prerendered /tt pages in Chromium under life-os's Trusted Types CSP
+      # (+ lc-icon), and once with lc-icon refused. Chrome runs without its
+      # sandbox when CI is set: the runner's AppArmor blocks it.
       - name: Install chrome-headless-shell
         if: matrix.angular == '22'
         run: npx -y playwright@1.64.0 install --with-deps chromium-headless-shell

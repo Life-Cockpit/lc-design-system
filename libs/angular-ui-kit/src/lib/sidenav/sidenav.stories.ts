@@ -41,7 +41,7 @@ const meta: Meta<SidenavComponent> = {
     collapsed: { description: 'Collapse to 56px icon-rail mode' },
     activeRoute: {
       description:
-        'The current route. Set: the first link whose `route` equals it is the current item (`aria-current="page"` and the current look), whatever the router matches. Empty: the link whose route equals the router URL\'s path, otherwise the longest route the path starts with (`/` only on `/`)',
+        'The current route. Set: the first link whose `route` equals it is the current item (`aria-current="page"` and the current look), whatever the router matches. Empty: the link whose route equals the router URL\'s path, otherwise the longest route the path starts with (`/` only on `/`). Routes are compared as written, so give them as absolute paths (`\'/household\'`)',
       table: { defaultValue: { summary: "''" } },
     },
     width: { description: 'Custom width (CSS value, e.g. "280px")' },
@@ -112,7 +112,7 @@ Sidenav component for application navigation sidebar.
 | \`logoSize\` | \`'xs' \\| 'sm' \\| 'md' \\| 'lg' \\| 'xl'\` | \`'md'\` | Size of the brand logo (logo area grows automatically) |
 | \`mobileBreakpoint\` | \`number\` | \`768\` | Viewport width (px) below which docked → drawer |
 | \`items\` | \`NavigationItem[]\` | \`[]\` | Navigation items |
-| \`activeRoute\` | \`string\` | \`''\` | The current route. Set: the first link (display order) whose \`route\` equals it is the current item — it alone gets \`aria-current="page"\` and the current look, whatever the router matches. Empty: the sidenav follows the router — the link whose route equals the URL's path, otherwise the one with the longest route the path starts with (\`/household\` on \`/household/members\`; \`/\` only on \`/\`) |
+| \`activeRoute\` | \`string\` | \`''\` | The current route. Set: the first link (display order) whose \`route\` equals it is the current item — it alone gets \`aria-current="page"\` and the current look, whatever the router matches. Empty: the sidenav follows the router — the link whose route equals the URL's path, otherwise the one with the longest route the path starts with (\`/household\` on \`/household/members\`; \`/\` only on \`/\`). Routes are compared as written, so give them as absolute paths (\`'/household'\`) |
 | \`hasOverlay\` | \`boolean\` | \`true\` | Show backdrop in drawer mode |
 | \`ariaLabel\` | \`string\` | \`'Side navigation'\` | ARIA label |
 | \`theme\` | \`'auto' \\| 'light' \\| 'dark'\` | \`'auto'\` | Theme variant |

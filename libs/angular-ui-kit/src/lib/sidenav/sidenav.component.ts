@@ -180,7 +180,8 @@ export class SidenavComponent implements OnDestroy {
    * and the current look, whatever the router matches. When empty, the
    * sidenav follows the router: the link whose route equals the URL's path is
    * current, otherwise the one with the longest route the path starts with
-   * (`/household` on `/household/members`; `/` only on `/`).
+   * (`/household` on `/household/members`; `/` only on `/`). Routes are
+   * compared as written, so give them as absolute paths (`'/household'`).
    * @default ''
    */
   readonly activeRoute = input('');

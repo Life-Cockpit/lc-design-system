@@ -120,13 +120,14 @@ Icon component - Tabler Icons wrapper for displaying SVG icons
 
 The component serves the **Tabler** icon set and also accepts a set of documented
 **Heroicon/Material aliases**. An unknown name (a typo, or an un-aliased Heroicon
-name like \`beaker\` / \`table-cells\`) no longer disappears silently: it logs
-\`[lc-icon] Unknown icon "…"\` (once per name, in development **and** production)
-and always renders a **visible placeholder** (a dashed frame with a "?"). In
-development builds it is checked against the full name list and never requested.
-Production builds leave the ~5,000 names out of the bundle (3.5): they check a name
-only by its form, request a well-formed unknown name **once per page**, and show the
-placeholder with one warning when the answer is not an icon (404 included). Set
+name like \`beaker\` / \`table-cells\`) no longer disappears silently: it always
+renders a **visible placeholder** (a dashed frame with a "?") and logs one warning
+per name. In development builds it is checked against the full name list, never
+requested, and logs \`[lc-icon] Unknown icon "…"\`. Production builds leave the
+~5,000 names out of the bundle (3.5) and check a name only by its form: a malformed
+name logs \`Unknown icon\` as in development, a well-formed unknown name is requested
+**once per page** and, when the answer is not an icon, logs
+\`[lc-icon] "…": … could not be loaded (404)\` or \`… returned non-SVG content\`. Set
 \`[strict]="true"\` to additionally throw in dev — useful as a CI guard (no effect in
 production builds).
 
