@@ -219,6 +219,8 @@ function highlightLines(code: string, language: string): CodeLine[] {
  * - Copy-to-clipboard button
  * - Optional header with filename and language label
  * - Dark-mode compatible color scheme
+ * - Keyboard: the body is a focusable, named region that scrolls with the
+ *   arrow keys; `wrap` wraps instead
  *
  * @example
  * ```html
@@ -243,6 +245,23 @@ export class CodeBlockComponent {
 
   /** Whether the code block has a header bar */
   showHeader = input<boolean>(true);
+
+  /**
+   * Accessible name of the scrollable code region (`role="region"`). When it
+   * is unset or empty, the `filename` is used, then the `language`. Set a
+   * short, localised name that is unique on the page, such as "Befehl für
+   * Claude Code". Not used when `wrap` is set.
+   * @default undefined
+   */
+  regionLabel = input<string | undefined>(undefined);
+
+  /**
+   * Wraps long lines (`white-space: pre-wrap`, breaking anywhere if needed)
+   * instead of scrolling sideways. A wrapped block doesn't scroll, so its body
+   * is neither a tab stop nor a region.
+   * @default false
+   */
+  wrap = input<boolean>(false);
 
   /** Visible label of the copy button. */
   copyLabel = input('Copy');
@@ -270,8 +289,13 @@ export class CodeBlockComponent {
     return this.filename() || this.language();
   });
 
+  /** The region's name: `regionLabel`, then `filename`, then `language` (`''` falls through). */
+  protected regionName = computed(() => this.regionLabel() || this.headerLabel());
+
   protected codeClasses = computed(() => {
-    return ['code-block', `code-block--${this.language()}`].join(' ');
+    const classes = ['code-block', `code-block--${this.language()}`];
+    if (this.wrap()) classes.push('code-block--wrap');
+    return classes.join(' ');
   });
 
   protected async copyToClipboard(): Promise<void> {

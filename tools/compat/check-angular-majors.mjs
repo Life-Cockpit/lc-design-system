@@ -99,6 +99,20 @@ function codeBlocksPrerendered(html) {
     prerenderedCode(html, id) === lines.map((l) => `${l || String.fromCharCode(160)}\n`).join(''));
 }
 
+/** The opening tag of a code block's body on `/tt/code` (3.7, AS-21). */
+function codeBlockBody(html, id) {
+  return html.match(new RegExp(`<lc-code-block[^>]*\\bid="${id}"[^]*?(<div[^>]*class="code-block__body"[^>]*>)`))?.[1] ?? '';
+}
+
+/** `/tt/code`: every body is a named region and a tab stop before JS: `regionLabel`, else the language (AC-9). */
+function codeBlockRegions(html) {
+  const names = { 'tt-code-ts': 'Beispielcode', 'tt-code-html': 'html', 'tt-code-bash': 'bash' };
+  return Object.entries(names).every(([id, name]) => {
+    const tag = codeBlockBody(html, id);
+    return /\btabindex="0"/.test(tag) && /\brole="region"/.test(tag) && tag.includes(`aria-label="${name}"`);
+  });
+}
+
 /**
  * What the prerendered pages must contain (rendered on the server, no JS):
  * `[label, RegExp | (html) => boolean, page]`, page `index.html` unless named.
@@ -147,6 +161,8 @@ const EXPECT_IN_HTML = [
   ['tt: code-block token spans (AS-20)', /class="code-block__line-content"[^>]*>(?:<!--[^]*?-->)*<span[^>]*class="token-keyword"[^>]*>const<\/span>/, 'tt/code/index.html'],
   ['tt: code-block markup in the source is text (AS-20)', /<span[^>]*class="token-tag"[^>]*>&lt;a<\/span>/, 'tt/code/index.html'],
   ['tt: code-block text equals the source (AS-20)', codeBlocksPrerendered, 'tt/code/index.html'],
+  // 3.7 (request 004): the scroll body is a named region and a tab stop before JS
+  ['tt: code-block body is a named, focusable region (AS-21)', codeBlockRegions, 'tt/code/index.html'],
 ];
 
 /**

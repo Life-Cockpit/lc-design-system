@@ -21,7 +21,12 @@
       }
     </div>
   }
-  <div class="code-block__body">
+  <div
+    class="code-block__body"
+    [attr.tabindex]="wrap() ? null : 0"
+    [attr.role]="wrap() ? null : 'region'"
+    [attr.aria-label]="wrap() ? null : regionName()"
+  >
     <pre class="code-block__pre"><code class="code-block__code">@for (line of highlightedLines(); track $index; let i = $index) {<span class="code-block__line">@if (showLineNumbers()) {<span class="code-block__line-number">{{ lineNumbers()[i] }}</span>}<span class="code-block__line-content">@for (segment of line; track $index) {@if (segment.className) {<span [attr.class]="segment.className">{{ segment.text }}</span>}@else{{{ segment.text }}}}</span></span>
 }</code></pre>
   </div>
