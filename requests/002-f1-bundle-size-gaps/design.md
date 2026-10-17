@@ -2,6 +2,7 @@
 
 - **Status:** ready, if the spec-writer accepts the proposals in §10 Q1–Q3 (the AC-1 target and the AC-2/4 and AC-11 wording). The design doesn't change if they do.
 - **Spec:** [spec.md](spec.md), AC-1 … AC-16
+- **Change note 2026-10-17 (review round 1, build.md deviations 1–4, all accepted):** (1) the kit renders 31 glyphs itself, not 26 (§9 AC-3); (2) the placeholder includes `-boxes` subsets of the partial's mixins (§3); (3) the icon shape uses `--border-radius-sm`, which is 10 px, so it is a circle (§3 table); (4) with the hook at `none`, hover shows the 2 px hover line (§2). The design was wrong on (1) and (3); (2) and (4) are better than what it asked for.
 
 ## 1. Approach
 
@@ -51,7 +52,7 @@
 | input | `showLogo` / `logoSize` | `boolean` / `'xs'…'xl'` | `false` / `'md'` | Reserves the logo block. |
 | CSS hook | `--lc-sidenav-placeholder-fill` | colour | `color-mix(in srgb, var(--lc-sidenav-fg) 16%, transparent)` | Fill of the skeleton shapes. The `--lc-sidenav-*` hooks apply as on `lc-sidenav` (set them on an ancestor of both). |
 
-**`lc-button` / `a[lcButton]`:** a CSS hook `--lc-btn-inline-text-decoration`, a `text-decoration` value, default `underline`. Set it to `none` for a non-text use such as a linked counter in a table cell. Hover then underlines as in 3.5.1.
+**`lc-button` / `a[lcButton]`:** a CSS hook `--lc-btn-inline-text-decoration`, a `text-decoration` value, default `underline`. Set it to `none` for a non-text use such as a linked counter in a table cell. Hover then underlines with the same 2 px line and 0.15em offset as in running text (3.5.1 had the browser's auto thickness and offset; the hook is new, so no consumer sees a change).
 
 **Internal entries (not in `src/index.ts`):** `internal/icon-set` holds a copy of the 3.5.1 maps, written by `scripts/generate-icon-names.mjs` next to the `icons` constants. It must **not** import `icons`: a file that both the initial and the lazy graph reach goes into a shared, eagerly loaded chunk. `internal/navigation` holds the 3.5 current-item function, moved out of the sidenav unchanged and used by both components. Kit components register their glyphs through an exported but undocumented `ɵprovideKitIcons()`, which sets no mode and no "the app registers" flag.
 
@@ -69,7 +70,7 @@
 3. A 3.5.1 inline name or alias target for that variant (a key index without markup, about 0.4 kB gzip): `'load'` → *pending* (the container is left untouched, so it keeps a prerendered `<svg>` on hydration), then `import('@lifecorner/angular-ui-kit/internal/icon-set')` once per page under `PendingTasks`, then the 3.5.1 markup. `'placeholder'` → placeholder plus a warning.
 4. Anything else is fetched exactly as in 3.5.1. A failed chunk import shows the placeholder, warns once and is retried by the next icon.
 
-**Sidenav placeholder.** It builds the docked DOM skeleton with **the same classes and element types as `lc-sidenav`**: `div.lc-sidenav.lc-sidenav--docked…`, then `div.lc-sidenav__nav--docked`, then rows `div.lc-sidenav__nav-item-row > div.lc-sidenav__nav-item`. Sections use `h2.lc-sidenav__section-title` and `ul/li`; the logo block and `div.lc-sidenav__content--docked` are there too. The host gets `lc-sidenav-container lc-sidenav-container--docked`. Its geometry comes from a shared partial, `lib/sidenav/_sidenav-docked.scss` (box rules only: container, docked/collapsed/transparent/theme/position, logo sizes, nav, section, item box, icon, children, label, content). `lc-sidenav` `@use`s that partial at the same point of its cascade, so its compiled CSS stays the same. Badges, action buttons and chevrons aren't drawn, because they don't change any box height (labels are `nowrap` with an ellipsis).
+**Sidenav placeholder.** It builds the docked DOM skeleton with **the same classes and element types as `lc-sidenav`**: `div.lc-sidenav.lc-sidenav--docked…`, then `div.lc-sidenav__nav--docked`, then rows `div.lc-sidenav__nav-item-row > div.lc-sidenav__nav-item`. Sections use `h2.lc-sidenav__section-title` and `ul/li`; the logo block and `div.lc-sidenav__content--docked` are there too. The host gets `lc-sidenav-container lc-sidenav-container--docked`. Its geometry comes from a shared partial, `lib/sidenav/_sidenav-docked.scss` (box rules only: container, docked/collapsed/transparent/theme/position, logo sizes, nav, section, item box, icon, children, label, content). `lc-sidenav` `@use`s that partial at the same point of its cascade, so its compiled CSS stays the same. Where a mixin also sets colours, type or drawer rules, the placeholder includes a `-boxes` subset with only the box and surface declarations (the full mixins cost 0.6 kB gzip of AC-8). Badges, action buttons and chevrons aren't drawn, because they don't change any box height (labels are `nowrap` with an ellipsis).
 
 ```
 360 px: app shell, the nav column is display:none → placeholder hidden, viewport trigger never fires, no sidenav JS
@@ -97,7 +98,7 @@ Collapsed: rail 56, nav padding 8, rows 39×44, gap 2, icon 22×22 centred on 28
 
 | Skeleton shape | Size | Shape | Fill |
 |---|---|---|---|
-| icon | the `.lc-sidenav__nav-icon` box (20, or 22 collapsed) | radius `--border-radius-sm` (4 px) | `--lc-sidenav-placeholder-fill` |
+| icon | the `.lc-sidenav__nav-icon` box (20, or 22 collapsed) | radius `--border-radius-sm` (10 px: a circle at 20 px, nearly one at 22 px; the kit has no 4 px token) | `--lc-sidenav-placeholder-fill` |
 | label | 10 px high, inside `.lc-sidenav__nav-label` | radius `--border-radius-full` | same |
 | section title | 8 × 64 px on the 28 px line | full | same |
 | logo | 28 px × 50 % (collapsed: 32 × 32) in the logo block | `--border-radius-md` | same |
@@ -163,7 +164,7 @@ Docs page `src/docs/bundle-size.mdx`, `<Meta title="Bundle Size" />` → `bundle
 |---|---|---|
 | AC-1 | `tools/compat` fixture, production build, gzip of the initial chunks: 3.5.1 vs 25 registered + `'placeholder'`; grep the initial chunks for a glyph nobody registered (e.g. the `robot` path) | Measured now: all 136 strings are 58.7 kB raw / **12.0 kB gzip**; 25 outline glyphs 2.65 kB; those 25 plus 22 internal 3.96 kB. Expected cut about 8 kB gzip (target: §10 Q1). Robot path absent. |
 | AC-2 | `icon.component.spec.ts`: assertions unchanged; synchronous cases register `BUNDLED_ICONS` in setup; prerender: registered glyph in `EXPECT_IN_HTML` | green; same markup |
-| AC-3 | Per component: renders its internal glyphs with no app registration, synchronously, no request. `kit-icons.spec.ts` scans the kit templates and name maps: every 3.5.1-inline literal is in that component's `ɵprovideKitIcons` | 26 glyphs (x-mark, check-circle, circle-x, exclamation-triangle, information-circle, exclamation-circle, alert-triangle, x, check, plus, star + solid, chevron-left/right/down, bars-3, user, sun, moon, eye, eye-slash, calendar, file, file-text, external-link, trash); docs table matches |
+| AC-3 | Per component: renders its internal glyphs with no app registration, synchronously, no request. `kit-icons.spec.ts` scans the kit templates and name maps: every 3.5.1-inline literal is in that component's `ɵprovideKitIcons` | 31 glyphs (x-mark, check-circle, circle-x, exclamation-triangle, information-circle, exclamation-circle, alert-triangle, x, check, plus, star + solid, chevron-left/right/down, bars-3, user, sun, moon, eye, eye-slash, calendar, file, file-text, external-link, trash, and from the build's scan dots, mail, logout, key, settings); docs table matches |
 | AC-4 | TT and prod specs: assertions unchanged. New: a registered glyph passes through `createHTML`; a non-kit string registered as a definition fails the builder, shows the placeholder, and `createHTML` throws | green; no CSP or Trusted Types text in the console on success |
 | AC-5 | Unit test (`'placeholder'`): placeholder, 1 warning, no HTTP, no chunk import, `strict` throws in dev; story `unregistered-name` at 360 | three boxes 24×24 |
 | AC-6 | Over all `ICON_NAMES` in `'load'`: after the set loads, inline markup or fetch path equals the 3.5.1 algorithm; compat prerendered HTML diff; `components-icon--inline-set` hash vs baseline; CLS via `PerformanceObserver('layout-shift')` | identical; CLS 0.00 |

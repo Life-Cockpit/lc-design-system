@@ -14,7 +14,9 @@ Traps from request 001 (2026-10-17), each cost a debugging round:
 - **`ConfirmService`** mounts the dialog on a plain `<div>` host, so there is no `lc-confirm-dialog` element to query.
 - **`lc-skeleton` with a percentage width** applies it to host and box, so it compounds (45 % → 20 %). Put the percentage on a wrapper.
 - **Unicode escapes in written files:** writing `﻿` through the file tools produced a literal BOM, and eslint failed with `no-irregular-whitespace`. Grep for the escape after writing such code.
-- **Storybook:** a story-level `applicationConfig` appends its providers after the global ones, so a story's `provideRouter(…, withHashLocation())` wins over preview's `provideRouter([])`.
+- **Storybook:** a story-level `applicationConfig` appends its providers after the global ones, so a story's `provideRouter(…, withHashLocation())` wins over preview's `provideRouter([])`. `@defer (on timer(…))` works in the JIT stories.
+- **Entry graph (request 002):** ng-packagr finds entry dependencies with `ts.preProcessFile`, which counts `import type` and dynamic `import()`; a type-only import back from a lazily imported entry is a cycle. Comments with `from '@lifecorner/…'` trip `entries.spec.ts` (cycle/self-import regex).
+- **Specs that read SCSS source text** (`sidenav.app-shell.spec.ts`) break when rules move to a partial; inline the partial's mixins in the spec setup instead of touching assertions. `--border-radius-sm` is 10 px in DS 2.0 (designs sometimes say 4 px).
 
 **Why:** these are not visible in the code and each looked like a kit regression at first.
 **How to apply:** check this list before debugging a failing fixture, browser check or story; add new traps here.

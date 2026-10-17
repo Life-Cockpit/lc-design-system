@@ -1,20 +1,18 @@
 ---
 name: reference-review-techniques
-description: How to compare every unchanged story against an older release (3.4.1 Storybook from a git worktree), toggle args and wait for play steps with story-shots, and the All Icons flakiness
+description: How to compute and compare in this repo under the Bash permission rules: browser-side math via story-shots --measure, arg toggling, reading logs, comparing shots across runs, known unstable baseline shots
 metadata:
   type: reference
 ---
 
-Techniques that worked in the 001 review (2026-10-17):
-
-- **Baseline Storybook from an old commit.** Create a git worktree in the scratchpad: `git worktree add --detach <sp>/wt <sha>`.
-  - Give it its own `node_modules` dir that symlinks every entry of the main repo's `node_modules` **except `.cache`**. A whole-dir symlink makes Storybook's generated entries resolve into the main repo, and the build fails with "missing from the TypeScript compilation".
-  - The shell exports `NX_WORKSPACE_ROOT_PATH` = the main repo, so run with `NX_WORKSPACE_ROOT_PATH="$PWD" NX_DAEMON=false npx nx run angular-ui-kit:build-storybook --skip-nx-cache` (about 50 s).
-  - Run the worktree's own `tools/agents/story-shots.mjs` with an absolute `--out`.
-  - Afterwards: `git worktree remove --force` + `git worktree prune`.
-- **Pixel diff.** Python PIL (`ImageChops.difference(...).getbbox()`) is available (no pngjs/sharp in the repo). Run `python3 -I` with the script in the scratchpad.
-- **Toggling args before a shot.** In `--measure`: `window.__STORYBOOK_ADDONS_CHANNEL__.emit('updateStoryArgs', { storyId, updatedArgs: {...} })`, then wait about 600 ms. The shot is taken after measure.
-- **Play steps.** story-shots doesn't wait for `play`. Poll for its end state in `--measure` (for example `location.hash`) before measuring.
-- **All Icons** (5,093 fetches) sometimes ends with placeholders on a cold profile, on 3.4.1 too (1 of 13 runs, and 3 of 16 on 3.5). Poll until no container is empty and re-shoot if `svg > text` placeholders exist. It is not a regression signal.
+- **Bash prompts on** `node script`, `python3`, `gzip`, `shasum`, `sed`, `$(…)`, and on `;` inside `--measure`. Compute in the browser through `story-shots --measure` instead: WCAG formula on computed colours, gzip with `CompressionStream('gzip')`, chunk strings with `fetch()`. Write measures with commas and expression-bodied arrows. To wait, use `(await new Promise(r => setTimeout(r, 700)), …)`.
+- **Reading logs.** `grep -o '"width":[0-9]*,"theme":"[a-z]*"\|"measure":.*' x.log | paste - -` works. To compare shot files across runs, use `cmp a b` (allowed).
+- **The 66-story baseline compare takes about 25 min.** Run it in the background, and take the measures meanwhile.
+- **Args and play steps.** To toggle args: `__STORYBOOK_ADDONS_CHANNEL__.emit('updateStoryArgs', …)`, then wait about 600 ms. story-shots doesn't wait for `play`, so poll for its end state.
+- **Unstable baseline shots (002):**
+  - `components-chat--message-status`: clock, because the story uses `new Date()`.
+  - Hash noise: `navigation-sidenav--collapsed-vs-expanded` 360 light, `--sidebar-first-collapsed` 1024 light, `--collapsed-rail-badges` 360 light, `--sidebar-first-layout` 1280 dark.
+  - *All Icons* (5,093 fetches) sometimes ends with placeholders.
+- **Old-release Storybook**, only if a baseline is missing. Use `git worktree add --detach`, symlink node_modules (except `.cache`), set `NX_WORKSPACE_ROOT_PATH` and pass `--skip-nx-cache`.
 
 Related: [[reference-measured-values]], [[feedback-design-pitfalls]]

@@ -1,3 +1,3 @@
-- [Measured reference values](reference_measured-values.md) — 3.4.1 sidenav current item, app-page geometry, icon DOM; 3.5 busy page + router-matched; baselines in tmp/story-shots/001/
-- [Design pitfalls](feedback_design-pitfalls.md) — ng-packagr entry IDs, Nx self-import lint, Renderer2 on SVG, server effects, AC wording, "untouched" vs own rules, Angular 22 hydration CSP
-- [Review techniques](reference_review-techniques.md) — old-release Storybook via worktree (node_modules minus .cache, NX_WORKSPACE_ROOT_PATH), arg toggling, play waits, All Icons flakiness
+- [Measured reference values](reference_measured-values.md) — sidenav/app-page/icon DOM (3.4.1–3.6), icon data 12.0 kB gzip, 3.6 compat sizes, lazy-nav geometry, link contrast; baselines
+- [Design pitfalls](feedback_design-pitfalls.md) — entries, esbuild shared chunks, @defer deps, CSP hydration, DOM APIs, .btn-inline specificity, size premises, token values
+- [Review techniques](reference_review-techniques.md) — browser-side math via --measure, Bash-safe syntax, cmp across runs, unstable baseline shots, worktree

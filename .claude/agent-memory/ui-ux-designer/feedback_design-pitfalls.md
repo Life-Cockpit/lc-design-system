@@ -1,25 +1,22 @@
 ---
 name: feedback-design-pitfalls
-description: Non-obvious traps in kit designs (ng-packagr entry IDs, Nx self-import lint, Renderer2 _ngcontent on built SVG, AC wording, 'untouched' lines vs own packaging rules, string route matching, Angular 22 hydration under CSP)
+description: Traps that decide whether a kit design is buildable (ng-packagr entries, esbuild shared chunks, @defer deps, hydration under CSP, Renderer2 on SVG, server effects, CSS specificity, spec premises)
 metadata:
   type: feedback
 ---
 
-Traps to check before fixing a design (found in request 001, 2026-10-17):
+- **Entries.** A stub `libs/angular-ui-kit/<entry>/ng-package.json` with `entryFile: ../src/lib/<entry>/index.ts` is the pattern. A relative import across entries fails with TS6059. The Nx lint needs `allowCircularSelfDependency`.
+- **esbuild.** A file that both the initial and a lazy graph reach goes into an eagerly loaded shared chunk. Lazy data therefore needs its own entry, with its own copy.
+- **`@defer` dependencies** must be imported from the secondary entry and used only inside the block.
+- **Hydration.** life-os runs `withNoIncrementalHydration()` because its CSP blocks the inline script, so `hydrate` triggers aren't available and the server renders `@placeholder`. A CSP fixture needs that setting plus `inlineCritical: false`.
+- **DOM.** For DOM that must equal earlier output, use `DOCUMENT` APIs, not Renderer2 (it stamps `_ngcontent`). A server-side write belongs in an `effect`, not an `afterRender` hook.
+- **CSS specificity.** `a.btn` (0,1,1) beats `.btn-inline`; use `.btn.btn-inline`.
+- **Spec premises.** Measure a requester's size figures before accepting a target. In 002, "136 SVGs ≈ 20 kB" turned out to be 12.0 kB.
+- **Token values.** Read the value before writing "token (N px)". `--border-radius-sm` is 10 px, and there is no 4 px radius token.
+- **Wording.** Check an AC's wording (for example "no emitted .js contains X", "file unchanged") against what the design has to move.
 
-- **ng-packagr entry IDs.** ng-packagr derives a secondary entry's module ID from the folder of its `ng-package.json`, relative to the primary root. So `src/lib/icon/ng-package.json` would become `…/src/lib/icon`.
-  - A stub `libs/angular-ui-kit/<entry>/ng-package.json` with `entryFile: ../src/lib/<entry>/index.ts` works (prototyped with 22.2.4).
-  - A relative import across entries then fails with TS6059 (rootDir). That error is the duplicate-module guard.
-- **Nx self-import lint.** Nx `enforce-module-boundaries` only recognises secondary entries when `ng-package.json` sits next to the sources. With stubs, the lint needs `allowCircularSelfDependency`.
-- **Building DOM inside a component.** A component's `Renderer2` stamps `_ngcontent-*` onto every element it creates (emulated encapsulation). For DOM that must equal earlier output (icons), build with `DOCUMENT` APIs instead.
-- **Server-side DOM writes.** `afterRender*` hooks don't run on the server. DOM writes that must be in prerendered HTML belong in a component `effect`.
-- **Spec wording.** An AC like "no emitted .js contains X" also rules out lazy chunks. Check the alternatives the spec offers against such wording before choosing.
-- **Verification lines against your own rules** (found in the 001 review). "0 changed files under `lib/bottom-nav/`" contradicted the design's rule that every cross-folder import uses a package path. Write "template, styles, logic and spec unchanged" instead, and check each "untouched" expectation against the packaging rules.
-- **Replacing `routerLinkActive` with string matching.** `routerLinkActive` resolves relative routes; comparing `route` strings doesn't. State "absolute routes" in the API docs.
-- **Angular 22 hydration under a CSP.** Since 22.0 incremental hydration is on by default, and it writes an inline event-dispatch script; critical-CSS inlining writes one too. A `script-src 'self'` fixture needs `withNoIncrementalHydration()` + `inlineCritical: false`, but only in that fixture. Compat builds that stand for existing consumers keep the defaults.
+**Why:** each of these cost a round trip or would have broken the build.
 
-**Why:** these decide whether a design is buildable at all, and they cost a round trip when found during the build.
+**How to apply:** name the relevant ones in the design's risk list.
 
-**How to apply:** for packaging or DOM-insertion designs, prototype in the scratchpad (with ng-packagr from the repo's node_modules) before fixing the layout, and name these pitfalls in the design's risk list.
-
-Related: [[reference-measured-values]]
+Related: [[reference-measured-values]], [[reference-review-techniques]]

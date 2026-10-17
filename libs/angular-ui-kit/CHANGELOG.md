@@ -2,6 +2,120 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.6.0] - 2026-10-17
+
+Three gaps that block life-os feature F1 (the LifeCorner app shell, §7.1 of the
+app-shell concept; initial JS 186.9 kB gzip against a 150 kB budget): icons you
+bundle one by one (AS-17), a side navigation that phones never load (AS-18) and
+inline links that are underlined at rest (AS-19). Measured in the kit's F1-shaped
+consumer app (production build, gzip): 137.28 kB with 3.5.1, 129.00 kB with 25
+registered glyphs (-8.27 kB), 122.94 kB with the sidenav deferred as well
+(-6.06 kB more). No API breaks: every export of 3.5.1 stays, and an app that
+changes nothing renders as before.
+
+### Added
+
+- **Tree-shakable icons** (AS-17). Register the glyphs your app draws; only they
+  (plus the 31 the kit's own components render, listed in the **Bundle Size**
+  docs) are in your initial JS. Registered glyphs render synchronously, also in
+  prerendered HTML, with the same markup, sizes and `aria-*` as 3.5.1.
+  - `provideLcIcons(icons: readonly LcIconDefinition[], options?: LcIconOptions)`
+    from `@lifecorner/angular-ui-kit/icon`. Use it in `app.config`, a route's
+    `providers` or a component's `providers`; glyphs add up along the injector
+    tree and across calls.
+  - New entry `@lifecorner/angular-ui-kit/icons` (116 entries in total): one
+    constant per glyph (`ICON_HOME`, `ICON_MAIL`, `ICON_X_MARK`; the solid
+    variant as `ICON_X_MARK_SOLID`) and `BUNDLED_ICONS`, all of them (the
+    3.5.1 set, for tests or an app that wants the old behaviour, eagerly).
+  - Types `LcIconDefinition` (`name`, `variant`, `svg`), `LcIconOptions`
+    (`unregistered?: LcIconFallback`, `@default 'load'`) and
+    `LcIconFallback` (`'load' | 'placeholder'`).
+  - `unregistered: 'load'` (the default): a kit glyph nobody registered loads
+    the kit's whole set once, as one lazy chunk (about 12 kB gzip), and renders
+    it. Registering nothing is the smallest initial JS (127.08 kB) but loads the
+    set right after start, and in a client-only render the glyphs appear a
+    moment later (prerendered HTML is unchanged). Registering what the app
+    renders (129.00 kB) loads no extra chunk.
+    `unregistered: 'placeholder'`: the placeholder, plus a warning once per name
+    (also in production); the set never loads.
+  - `[strict]="true"` additionally throws in development when a kit glyph is
+    not registered and `unregistered` is `'placeholder'` (as it already does for
+    an unknown name). No effect in production.
+  - The Trusted Types policy `lc-icon` and the strict SVG allow-list are
+    unchanged; registered markup goes through the same builder, and markup you
+    write yourself is not supported.
+- **`lc-sidenav-placeholder`** (AS-18), entry
+  `@lifecorner/angular-ui-kit/sidenav-placeholder`: an inert skeleton (`inert`,
+  `aria-hidden`, no landmark, no focusable) with the docked sidenav's boxes and
+  its bindings, for the `@placeholder` of `@defer (on viewport)`. Below 1024 px
+  the shell hides the column, the trigger never fires and a phone never loads
+  `lc-sidenav`. On desktop, rail, rows, sections and `<main>` are the same
+  before and after the swap: CLS 0 at 1024 to 1920 px, English and German. Only
+  the section title is 84 against 90.9 px wide, at the same height.
+- `--lc-btn-inline-text-decoration` (default `underline`).
+
+### Fixed
+
+- **Inline links are underlined at rest** (AS-19, WCAG 1.4.1, axe
+  `link-in-text-block`): `lc-button` and `a[lcButton]` with `inline` draw a 1 px
+  underline (offset about 2 px), thicker on hover, also in forced colours. Line
+  height stays at 72 px (EN) and 96 px (DE) for the sign-in paragraph at 360 px,
+  and the link colour is unchanged (6.21:1 light, 11.78:1 dark). Outside running
+  text set the hook to `none`; hover then still shows the 2 px line.
+
+### Usage
+
+```bash
+npm install @lifecorner/angular-ui-kit@3.6.0
+```
+
+Register the glyphs once:
+
+```ts
+// app.config.ts
+import { provideLcIcons } from '@lifecorner/angular-ui-kit/icon';
+import { ICON_HOME, ICON_MAIL, ICON_X_MARK, ICON_X_MARK_SOLID } from '@lifecorner/angular-ui-kit/icons';
+
+export const appConfig: ApplicationConfig = {
+  providers: [
+    provideLcIcons([ICON_HOME, ICON_MAIL, ICON_X_MARK, ICON_X_MARK_SOLID], { unregistered: 'placeholder' }),
+  ],
+};
+```
+
+Defer the side navigation:
+
+```html
+<lc-app-shell>
+  <lc-header shell-header … />
+  <div shell-nav>
+    @defer (on viewport) {
+      <lc-sidenav mode="docked" [isOpen]="true" width="100%" [mobileBreakpoint]="0"
+                  variant="transparent" ariaLabel="Hauptnavigation" [items]="nav" [activeRoute]="url()" />
+    } @placeholder {
+      <lc-sidenav-placeholder [isOpen]="true" width="100%" variant="transparent" [items]="nav" [activeRoute]="url()" />
+    }
+  </div>
+  <router-outlet />
+</lc-app-shell>
+```
+
+Import `SidenavComponent` from `@lifecorner/angular-ui-kit/sidenav` and use it
+only inside the `@defer` block; any other reference (a second `<lc-sidenav>`, a
+`viewChild(SidenavComponent)`) loads it eagerly. Wrap the block in an element
+with `shell-nav`.
+
+### Compatibility
+
+- No API breaks; the peer range (`^21.0.0 || ^22.0.0`) and the dependencies are
+  unchanged. Compat check passes on Angular 22 (33 prerendered HTML checks, 3
+  new); Angular 21 runs in CI.
+- Unit tests that assert an unregistered inline glyph right after
+  `detectChanges()`: register `BUNDLED_ICONS` in the test setup or
+  `await fixture.whenStable()`.
+- A Trusted Types CSP keeps `trusted-types … lc-icon`; the lazy set is a normal
+  script chunk (`script-src 'self'`).
+
 ## [3.5.1] - 2026-10-17
 
 Follow-ups from the 3.5.0 review. Documentation only in the package; no API breaks.

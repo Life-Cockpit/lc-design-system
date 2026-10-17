@@ -1,25 +1,22 @@
 ---
 name: reference-measured-values
-description: Measured 3.4.1 reference values (sidenav current item, lc-app-page geometry, lc-icon DOM) and where the baseline shots/IDs/manifest live; use for "unchanged look" checks
+description: Measured kit reference values (3.4.1/3.5 sidenav, app page, icon DOM; 3.5.1 icon data size, docked sidenav geometry, inline-link contrast) and where the baseline shots live; use for "unchanged look" checks and size targets
 metadata:
   type: reference
 ---
 
-Measured on 3.4.1 (lib at 315a8a0, 2026-10-17) with story-shots; files in `tmp/story-shots/001/baseline/` (shots, `story-ids-3.4.1.json` = 824 IDs, `components-manifest-3.4.1.json` = 112 components / 1178 inputs).
-
-- **Sidenav current item.** Light: ink rgb(20,79,91) on rgb(224,241,244) = 7.85:1. Dark: ink rgb(163,213,223) on rgba(32,132,151,.24) over #0a121b (composite rgb(15,45,57)) = 9.03:1. Other links: text-secondary, 7.56 (light) / 12.17 (dark).
-  - Transparent variant at 1280 (app shell): 48 px pills, radius 9999, 16 px / 600 (others 500); x 24, width 192, rows y 112 / 164, padding 0 16, gap 12.
-  - Default variant and drawer at 360: 44 px, radius 12, 14 px / 600; x 8, width 264.
-- **lc-app-page `<main>`** (Today story).
-  - 360: x 0, padding 24 / 24 / 16, content 312, gap 24.
-  - 1024: x 240, width 784, padding 48, content 688, gap 40.
-  - 1280 with aside: main 680 wide, padding 56, content 568; aside x 920, width 360.
-- **lc-icon DOM.** `div.icon-container.icon-<size>.icon-<variant>[style=width/height px] > svg`. Attributes in order: source attributes, then `width`, `height`, `role`, `style="color: currentcolor;"`.
-- **Storybook router.** In Storybook, `routerLinkActive` never matches anything (global `provideRouter([])`), so a router-matched state needs its own story router (hash location).
-- **3.5 (request 001, reviewed at 3a46591).**
-  - The busy page `layout-app-shell--today-loading` without an aside: main x 0 / 240 / 240, width 360 / 784 / 1040, padding 24·24·16 / 48·48·32 / 56·56·32, content 312 / 688 / 880.
-  - Skeleton at 360: 140.4×17, 218.4×42, 156×42, 34 px circles, 312×96 r 24, 3 × 98.7×74 r 18.
-  - `navigation-sidenav--router-matched` (width 248): pills x 41, width 200, 48 high, rows 52 apart.
-  - Shots: `tmp/story-shots/001/r1/` (`base341/` = a real 3.4.1 build of 33 stories × 6, plus All Icons).
+- **3.4.1 / 3.5 (request 001).** Sidenav current item: 7.85:1 light, 9.03:1 dark. Transparent pills at 1280: x 24, 192×48, r 9999, 16 px/600. Default and drawer items: 44 px, r 12. `lc-app-page` main: at 360 x 0, padding 24/24/16, content 312; at 1024 x 240, width 784, padding 48. lc-icon `<svg>` attributes in order: source attributes, width, height, role, style.
+- **3.5.1 (request 002, main 079fae5).** The 136 bundled SVG strings are 58.7 kB raw / **12.0 kB gzip**; the whole icon entry is about 20 kB gzip. Docked sidenav:
+  - default: nav padding 16/8, rows 303×44, gap 0;
+  - transparent: padding 48/24/24, pills 48, gap 4;
+  - collapsed: rail 56, padding 8, rows 39×44, gap 2, icon 22;
+  - content div: 32 px.
+- **3.6 (request 002, f6f3ca8).**
+  - Compat initial JS (gzip): 3.5.1 137.28, opt-in to nothing 127.08, 25 registered 129.00, plus a deferred sidenav 122.94 kB.
+  - App-shell nav column: at 1024 and 1280 it is 240 wide, with pills x 24, 192×48 and the first one at y 112; at 1920 it is 280 wide with 232 px pills. `lc-sidenav-placeholder` matches every box of `lc-sidenav`, except the section title width (84 vs 90.9 px).
+  - The `.btn-inline` underline is 1 px with a 0.15em offset. A 312 px paragraph is 72 px (EN) and 96 px (DE), with or without the line.
+- **Inline link colours (3.5.1).** Light rgb(26,106,121): 6.21:1 on white, 2.86:1 against the text. Dark rgb(163,213,223): 11.78:1, 1.47:1 against the text.
+- **Baselines.** `tmp/story-shots/001/{baseline,r1}` and `tmp/story-shots/002/baseline` (66 stories, 700 ms wait).
+- **Storybook router.** `routerLinkActive` never matches anything in Storybook, so a router-matched state needs its own story router.
 
 Related: [[feedback-design-pitfalls]]
