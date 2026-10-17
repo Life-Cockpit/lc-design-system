@@ -3,6 +3,7 @@
 - **Status:** ready
 - **Spec:** [spec.md](spec.md) — AC-1 … AC-11
 - **Measured on:** main 93c42ec (3.6.1), static Storybook, headless Chromium, SF Mono 12.25 px
+- **Change note (review round 1):** §3 said the 400-character line wraps to 3 rows at 1280 and has a 13.475 px row pitch. Measured on 373e0b8: 4 rows at 1280 (the URL run breaks only at its hyphens, then anywhere) and a 13.47 px pitch (rows snap to 1/64 px). These are figures in the drawing only; no AC or code depends on them.
 
 ## 1. Approach
 
@@ -51,8 +52,8 @@ x16                                                    x344
 │  1  claude mcp list                                  │ number box x33 w40 · content x73 w254
 │                                                      │
 │  2  claude mcp add --transport http --               │ "2" and row 1 share the text top (Δ 0)
-│     scope user --client-id 3f9c2a7e-                 │ continuation rows at x73, pitch 13.475
-│     …  (13 rows at 360, 4 at 1024, 3 at 1280)        │ scrollWidth 326 = clientWidth
+│     scope user --client-id 3f9c2a7e-                 │ continuation rows at x73, pitch 13.47
+│     …  (13 rows at 360, 4 at 1024, 4 at 1280)        │ scrollWidth 326 = clientWidth
 │  3  claude mcp get lifecorner                        │
 ```
 

@@ -2,6 +2,43 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.7.0] - 2026-10-17
+
+`lc-code-block`'s scrolling body is keyboard-reachable (life-os account
+settings, AS-21). No API breaks.
+
+### Added
+
+- **`regionLabel` on `lc-code-block`** (AS-21): the accessible name of the code
+  region. Unset or empty, the block uses `filename`, then `language`. Set a
+  short, localised name that is unique on the page ("Befehl für Claude Code").
+- **`wrap` on `lc-code-block`**: long lines wrap (`pre-wrap`, breaking anywhere
+  if needed) instead of scrolling. A 400-character command fits 360 px (13 rows);
+  the line number stays on the first row. A wrapped body is no tab stop.
+
+### Fixed
+
+- **A long line scrolls with the keyboard** (AS-21, WCAG 2.1.1). On the life-os
+  account-settings page (state B) a long `claude mcp add …` command scrolled
+  sideways with nothing focusable in it, and axe reported
+  `scrollable-region-focusable` (serious). The body is now the block's only
+  scroller and a tab stop after the copy button, with `role="region"` and a
+  name, already in prerendered HTML; ←/→ scroll it. Focused, it shows an inset
+  2 px `--color-primary-500` ring: 4.14:1 (light) and 9.56:1 (dark) on the
+  block's `#0c1722`, `Highlight` in forced colors.
+
+### Compatibility
+
+- No API breaks. Both inputs are optional; with defaults every line, colour,
+  header and copy button render as in 3.6.1 (84 of 84 screenshots identical).
+- Each block without `wrap` adds one tab stop and one named landmark, also the
+  blocks inside `lc-markdown` and `lc-document-viewer` (named by language).
+  Two blocks with the same fallback name (two `bash` blocks) share a landmark
+  name: set a unique `regionLabel`.
+- `.code-block__pre` no longer scrolls (`overflow: visible`); the global `pre`
+  rule had made it the scroller. Style `.code-block__body` if you styled the
+  scrollbar.
+
 ## [3.6.1] - 2026-10-17
 
 `lc-code-block` works under a Trusted Types CSP (life-os app shell, AS-20). No

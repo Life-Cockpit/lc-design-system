@@ -17,7 +17,8 @@ metadata:
   - The `.btn-inline` underline is 1 px with a 0.15em offset. A 312 px paragraph is 72 px (EN) and 96 px (DE), with or without the line.
 - **Inline link colours (3.5.1).** Light rgb(26,106,121): 6.21:1 on white, 2.86:1 against the text. Dark rgb(163,213,223): 11.78:1, 1.47:1 against the text.
 - **lc-code-block 3.6.0 (request 003).** Code text is 12.25 px mono with a 13.475 px line height. The header is 45 px, the copy button 76.8×44 and its icon 20 px. The number box is x 33, w 40; the content starts at x 73. A 2,000-line block (10k spans) renders in 66 ms and re-renders in 59 ms. Token contrast on #0c1722 is ≥ 5.66, **except comment #5c6370 at 2.99**. Golden output: `requests/003-…/golden-3.6.0.json`. 3.6.1: every line rect 13.469 px (empty lines too), comment #93a4ad 7.02:1, Python/Java shots differ from 3.6.0, the other 72 are identical.
-- **Baselines.** `tmp/story-shots/001/{baseline,r1}`; `002/baseline` (66 stories, 700 ms wait); `003/baseline` (14 code-block stories, `--full`, 84 shots, re-run 84/84 identical).
+- **lc-code-block 3.6.1 → 3.7 (request 004).** Logical lines are 26.95 px apart (a blank row from the `\n` text node after each line); wrapped rows 13.47 apart. Body at 360: x 17, w 326, h 58.94. Inset ring (2px, offset −4, r 0 0 11 11) `--color-primary-500` on #0c1722: 4.14 light, 9.56 dark. LONG_COMMAND scrollWidth 1780; WRAP_COMMAND rows 13/4/4 at 360/1024/1280. "Kopieren" button 105.6×44.
+- **Baselines.** `tmp/story-shots/001/{baseline,r1}`; `002/baseline` (66 stories, 700 ms wait); `003/baseline` and `004/baseline` (93c42ec): the 14 stories that render lc-code-block (code-block, markdown, document-viewer, timeline transcript), `--full`, 84 shots.
 - **Storybook router.** `routerLinkActive` never matches anything in Storybook, so a router-matched state needs its own story router.
 
 Related: [[feedback-design-pitfalls]]

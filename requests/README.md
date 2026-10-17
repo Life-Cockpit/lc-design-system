@@ -36,3 +36,4 @@ Interactively, in this repository: `/lc-request <requirement or path> [--from <p
 | [001](001-f1-app-shell-gaps/) F1 app-shell gaps | life-os | AS-12, AS-14, AS-15, AS-16 (AS-13 optional) | 3.5.1 | 3.5.1 |
 | [002](002-f1-bundle-size-gaps/) F1 bundle-size and link-cue gaps | life-os | AS-17, AS-18, AS-19 | 3.6.0 | 3.6.0 |
 | [003](003-code-block-trusted-types/) lc-code-block under Trusted Types | life-os | AS-20 | 3.6.1 | 3.6.1 |
+| [004](004-code-block-scroll-region/) lc-code-block scroll region | life-os | AS-21 | 3.7.0 | |

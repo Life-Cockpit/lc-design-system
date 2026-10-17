@@ -11,9 +11,10 @@ metadata:
 - **Hydration.** life-os runs `withNoIncrementalHydration()` because its CSP blocks the inline script, so `hydrate` triggers aren't available and the server renders `@placeholder`. A CSP fixture needs that setting plus `inlineCritical: false`.
 - **DOM.** For DOM that must equal earlier output, use `DOCUMENT` APIs, not Renderer2 (it stamps `_ngcontent`). A server-side write belongs in an `effect`, not an `afterRender` hook.
 - **CSS specificity.** `a.btn` (0,1,1) beats `.btn-inline`; use `.btn.btn-inline`.
-- **Spec premises.** Measure a requester's size figures before accepting a target. In 002, "136 SVGs ≈ 20 kB" turned out to be 12.0 kB.
+- **Spec premises.** Measure a requester's size figures before accepting a target. In 002, "136 SVGs ≈ 20 kB" turned out to be 12.0 kB. Measure wrap row counts too: URL runs break only at hyphens, so the estimate of 3 rows was really 4 (004).
 - **Token values.** Read the value before writing "token (N px)". `--border-radius-sm` is 10 px, and there is no 4 px radius token.
 - **"Output equal to the old version."** Capture the old output in the browser before promising it. The innerHTML-era code block had quirks that came from HTML-parser recovery: SCSS showed `&amp;`, multi-line tokens were coloured on the first line only, and an empty line collapsed to 0 px (003).
+- **Global element styles.** `_typography.scss` gives every `pre` `overflow-x: auto`, so inside lc-code-block the `pre` was the real scroller (axe flagged `.code-block__pre`, not the body). Measure which element scrolls before placing `tabindex`. A ring inside `overflow: hidden` must be inset.
 - **Wording.** Check an AC's wording (for example "no emitted .js contains X", "file unchanged") against what the design has to move.
 
 **Why:** each of these cost a round trip or would have broken the build.
