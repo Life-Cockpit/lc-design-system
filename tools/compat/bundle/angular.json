@@ -25,6 +25,12 @@
             },
             "defer": {
               "fileReplacements": [{ "replace": "src/app/shell.ts", "with": "src/app/shell.defer.ts" }]
+            },
+            "code": {
+              "fileReplacements": [
+                { "replace": "src/app/app.config.ts", "with": "src/app/app.config.code.ts" },
+                { "replace": "src/app/shell.ts", "with": "src/app/shell.code.ts" }
+              ]
             }
           },
           "defaultConfiguration": "production"

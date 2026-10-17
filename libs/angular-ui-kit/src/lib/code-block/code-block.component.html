@@ -10,10 +10,10 @@
           (click)="copyToClipboard()"
         >
           @if (copied()) {
-            <lc-icon name="check" size="sm" />
+            <lc-icon name="check" size="sm" [decorative]="true" />
             <span>{{ copiedLabel() }}</span>
           } @else {
-            <lc-icon name="clipboard-document" size="sm" />
+            <lc-icon name="clipboard-document" size="sm" [decorative]="true" />
             <span>{{ copyLabel() }}</span>
           }
         </button>
@@ -22,7 +22,7 @@
     </div>
   }
   <div class="code-block__body">
-    <pre class="code-block__pre"><code class="code-block__code">@for (line of highlightedLines(); track $index; let i = $index) {<span class="code-block__line">@if (showLineNumbers()) {<span class="code-block__line-number">{{ lineNumbers()[i] }}</span>}<span class="code-block__line-content" [innerHTML]="line"></span></span>
+    <pre class="code-block__pre"><code class="code-block__code">@for (line of highlightedLines(); track $index; let i = $index) {<span class="code-block__line">@if (showLineNumbers()) {<span class="code-block__line-number">{{ lineNumbers()[i] }}</span>}<span class="code-block__line-content">@for (segment of line; track $index) {@if (segment.className) {<span [attr.class]="segment.className">{{ segment.text }}</span>}@else{{{ segment.text }}}}</span></span>
 }</code></pre>
   </div>
 </div>

@@ -1,12 +1,10 @@
 import {
   ChangeDetectionStrategy,
   Component,
-  inject,
   input,
   computed,
   signal,
 } from '@angular/core';
-import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { IconComponent, ɵprovideKitIcons } from '@lifecorner/angular-ui-kit/icon';
 import { ICON_CHECK } from '@lifecorner/angular-ui-kit/icons';
 
@@ -54,11 +52,13 @@ const LANGUAGE_RULES: Record<string, TokenRule[]> = {
     { pattern: /\b(?:import|export|from|const|let|var|function|return|if|else|for|while|class|extends|new|this|super|async|await|yield|of|in|typeof|instanceof|delete|throw|try|catch|finally|switch|case|default|break|continue|do)\b/g, className: 'token-keyword' },
     { pattern: /\b(?:true|false|null|undefined|NaN|Infinity)\b/g, className: 'token-constant' },
   ],
+  // The tokenizer reads the raw source (3.6.1): `<` and `>` instead of the
+  // `&lt;`/`&gt;` the escaped text had. Up to 3.6.0 an html comment rule ran on
+  // that escaped text and never matched; it is gone, so comments stay plain.
   html: [
-    { pattern: /<!--[\s\S]*?-->/g, className: 'token-comment' },
     ...SHARED_RULES,
-    { pattern: /&lt;\/?[\w-]+/g, className: 'token-tag' },
-    { pattern: /\/?&gt;/g, className: 'token-tag' },
+    { pattern: /<\/?[\w-]+/g, className: 'token-tag' },
+    { pattern: /\/?>/g, className: 'token-tag' },
     { pattern: /\b[\w-]+(?==)/g, className: 'token-attr' },
   ],
   css: [
@@ -114,30 +114,37 @@ const LANGUAGE_RULES: Record<string, TokenRule[]> = {
   ],
 };
 
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+/** A run of source text; `className` is one `token-*` class, or `null` for plain text. */
+interface CodeSegment {
+  readonly text: string;
+  readonly className: string | null;
 }
 
-function highlightCode(code: string, language: string): string {
-  const escaped = escapeHtml(code);
+/** One rendered line: its segments in order. */
+type CodeLine = readonly CodeSegment[];
+
+/**
+ * What an empty line renders: U+00A0, the glyph the `&nbsp;` of 3.6.0
+ * produced, so the line keeps its height and a selection its text.
+ */
+const EMPTY_LINE: CodeLine = [{ text: String.fromCharCode(0xa0), className: null }];
+
+/** Matches of the language's rules on the raw source, sorted, without overlaps. */
+function tokenize(code: string, language: string): { start: number; end: number; className: string }[] {
   const rules = LANGUAGE_RULES[language];
-  if (!rules) return escaped;
+  if (!rules) return [];
 
   // Collect all matches with positions
-  const tokens: { start: number; end: number; className: string; text: string }[] = [];
+  const tokens: { start: number; end: number; className: string }[] = [];
 
   for (const rule of rules) {
     const regex = new RegExp(rule.pattern.source, rule.pattern.flags);
     let match: RegExpExecArray | null;
-    while ((match = regex.exec(escaped)) !== null) {
+    while ((match = regex.exec(code)) !== null) {
       tokens.push({
         start: match.index,
         end: match.index + match[0].length,
         className: rule.className,
-        text: match[0],
       });
     }
   }
@@ -154,20 +161,44 @@ function highlightCode(code: string, language: string): string {
       lastEnd = token.end;
     }
   }
+  return filtered;
+}
 
-  // Build highlighted string
-  let result = '';
+/**
+ * The highlighted source as lines of text segments, rendered by the template
+ * as text nodes and `<span class="token-…">` elements: no markup string, so
+ * nothing for Trusted Types to block and nothing in the source is parsed.
+ *
+ * A token that runs across a line break keeps its class on the part before
+ * the first break only; the later parts are plain, as the HTML parser closed
+ * the open span at each line end up to 3.6.0.
+ */
+function highlightLines(code: string, language: string): CodeLine[] {
+  const lines: CodeSegment[][] = [[]];
+  const append = (text: string, className: string | null) => {
+    text.split('\n').forEach((part, i) => {
+      if (i > 0) lines.push([]);
+      if (!part) return;
+      const line = lines[lines.length - 1];
+      const cls = i === 0 ? className : null;
+      const last = line[line.length - 1];
+      if (cls === null && last?.className === null) {
+        line[line.length - 1] = { text: last.text + part, className: null };
+      } else {
+        line.push({ text: part, className: cls });
+      }
+    });
+  };
+
   let cursor = 0;
-  for (const token of filtered) {
-    if (token.start > cursor) {
-      result += escaped.slice(cursor, token.start);
-    }
-    result += `<span class="${token.className}">${token.text}</span>`;
+  for (const token of tokenize(code, language)) {
+    append(code.slice(cursor, token.start), null);
+    append(code.slice(token.start, token.end), token.className);
     cursor = token.end;
   }
-  result += escaped.slice(cursor);
+  append(code.slice(cursor), null);
 
-  return result;
+  return lines.map(line => (line.length ? line : EMPTY_LINE));
 }
 
 @Component({
@@ -227,14 +258,9 @@ export class CodeBlockComponent {
 
   protected copied = signal(false);
 
-  private readonly sanitizer = inject(DomSanitizer);
-
-  protected highlightedLines = computed<SafeHtml[]>(() => {
-    const highlighted = highlightCode(this.code(), this.language());
-    return highlighted.split('\n').map(line =>
-      this.sanitizer.bypassSecurityTrustHtml(line || '&nbsp;')
-    );
-  });
+  protected highlightedLines = computed<CodeLine[]>(() =>
+    highlightLines(this.code(), this.language())
+  );
 
   protected lineNumbers = computed(() => {
     return this.code().split('\n').map((_, i) => i + 1);

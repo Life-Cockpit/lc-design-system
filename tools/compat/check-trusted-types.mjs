@@ -16,6 +16,10 @@
  * (AC-11): the app must keep working, bundled icons show the placeholder, and
  * the page says so once.
  *
+ * 3.6.1 (request 003, AS-20): `/tt/code` renders three lc-code-blocks, whose
+ * tokens are elements; both runs check their text, spans, line heights and
+ * the decorative copy icons.
+ *
  * No dependency: chrome-headless-shell over the DevTools protocol (Node's
  * WebSocket), like tools/agents/story-shots.mjs. CHROME_PATH overrides the
  * browser; otherwise Playwright's cache is searched
@@ -269,6 +273,28 @@ const SIDENAV = `(() => {
   };
 })()`;
 
+/**
+ * Every lc-code-block with a `data-code` source (3.6.1, AS-20): the rendered
+ * text against the source (an empty line holds U+00A0), its token spans, the
+ * elements inside `<code>`, line numbers, line heights and copy icons.
+ */
+const CODE = `[...document.querySelectorAll('lc-code-block[data-code]')].map((block) => {
+  const nbsp = String.fromCharCode(160);
+  const contents = [...block.querySelectorAll('.code-block__line-content')];
+  const heights = [...block.querySelectorAll('.code-block__line')].map((l) => Math.round(l.getBoundingClientRect().height * 100) / 100);
+  return {
+    id: block.id,
+    text: contents.map((l) => (l.textContent === nbsp ? '' : l.textContent)).join('\\n') === block.dataset.code,
+    lines: contents.length,
+    empty: contents.filter((l) => l.textContent === nbsp).length,
+    tokens: block.querySelectorAll('.code-block__line-content > span[class^="token-"]').length,
+    onlySpans: [...block.querySelectorAll('code *')].every((el) => el.tagName === 'SPAN'),
+    numbers: block.querySelectorAll('.code-block__line-number').length,
+    heights: [...new Set(heights)],
+    icons: [...block.querySelectorAll('.code-block__copy svg')].map((s) => s.getAttribute('aria-hidden') + '/' + s.getAttribute('role')),
+  };
+})`;
+
 const click = (selector) => evaluate(`(() => { const el = document.querySelector(${JSON.stringify(selector)}); if (!el) throw new Error('no ${selector}'); el.click(); return true; })()`);
 const pressEscape = () => evaluate(`document.activeElement?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })) || document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))`);
 
@@ -411,6 +437,19 @@ try {
       const warned = (name) => log.console.filter((l) => l.level === 'warning' && l.text.includes(`"${name}"`)).length;
       check(run, width, '/tt/fetched: one warning each for the fallback and the crafted SVG', warned('lc-typo-icon') === 1 && warned('lc-crafted') === 1, log.console.filter((l) => l.level === 'warning').map((l) => l.text));
       checkLog(run, width, '/tt/fetched');
+
+      // Code (3.6.1, AS-20): no TrustedHTML write left, under either policy list (AC-2, AC-3).
+      await load('/tt/code');
+      await waitFor(`document.querySelectorAll('lc-code-block .code-block__copy svg').length === 3`, 'the copy icons');
+      await settle();
+      const blocks = Object.fromEntries((await evaluate(CODE)).map((b) => [b.id, b]));
+      const all3 = ['tt-code-ts', 'tt-code-html', 'tt-code-bash'].map((id) => blocks[id]);
+      check(run, width, '/tt/code: the three code blocks render their source as text (AC-2)', all3.every((b) => b?.text && b.lines > 0), blocks);
+      check(run, width, '/tt/code: token spans, and nothing but spans inside the code (AC-5)', all3.every((b) => b?.tokens > 0 && b.onlySpans), blocks);
+      check(run, width, '/tt/code: line numbers on (typescript) and off (html, bash)', blocks['tt-code-ts']?.numbers === blocks['tt-code-ts']?.lines && blocks['tt-code-html']?.numbers === 0 && blocks['tt-code-bash']?.numbers === 0, blocks);
+      check(run, width, '/tt/code: every line of a block one height, empty lines included (AC-6)', all3.every((b) => b?.heights.length === 1 && b.heights[0] > 0) && blocks['tt-code-ts']?.empty === 1 && blocks['tt-code-bash']?.empty === 1, all3.map((b) => [b?.id, b?.heights, b?.empty]));
+      check(run, width, '/tt/code: the copy icons are decorative (AC-8)', all3.every((b) => b?.icons.join() === 'true/null'), all3.map((b) => [b?.id, b?.icons]));
+      checkLog(run, width, '/tt/code');
     }
   }
 } catch (error) {

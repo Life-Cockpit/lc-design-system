@@ -22,10 +22,12 @@
  *
  * `--measure` also builds tools/compat/bundle (the F1 shell, Angular 22)
  * against 3.5.1 and this build and checks the initial-JS savings of request
- * 002 (AS-17 icons, AS-18 deferred side navigation); see bundle-size.mjs.
+ * 002 (AS-17 icons, AS-18 deferred side navigation), and a lazy lc-code-block
+ * against 3.6.0 (request 003, AS-20); see bundle-size.mjs.
  *
  * Usage: node tools/compat/check-angular-majors.mjs [--only=21.0,22] [--keep]
  *          [--legacy-peer-deps] [--work=<dir>] [--measure]
+ *          [--code-before=<npm version | kit .tgz>]  (the kit of the code-block "before" build; default 3.6.0)
  */
 import { execFileSync, spawnSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
@@ -65,6 +67,36 @@ function oneCurrentSidenavLink(html) {
 function everyInlineIconPrerendered(html) {
   const icons = [...html.matchAll(/<lc-icon[^>]*data-icon="[^"]+"[^>]*>([^]*?)<\/lc-icon>/g)];
   return icons.length > 100 && icons.every(([, inner]) => (inner.match(/<svg\b(?=[^>]*width="24px")(?=[^>]*role="img")[^>]*>/g) ?? []).length === 1);
+}
+
+/**
+ * The prerendered text of a code block on `/tt/code` (3.6.1, AS-20): its
+ * lines with the line numbers, tags and comments dropped and the entities
+ * decoded. Each line ends with the template's line feed.
+ */
+function prerenderedCode(html, id) {
+  const code = html.match(new RegExp(`<lc-code-block[^>]*\\bid="${id}"[^]*?<code[^>]*>([^]*?)</code>`))?.[1];
+  if (code === undefined) return null;
+  return code
+    .replace(/<span[^>]*class="code-block__line-number"[^>]*>[^<]*<\/span>/g, '')
+    .replace(/<!--[^]*?-->/g, '')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, String.fromCharCode(160))
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, '&');
+}
+
+/** `/tt/code`: every block's prerendered text is its source, an empty line U+00A0 (AC-11). */
+function codeBlocksPrerendered(html) {
+  const sources = {
+    'tt-code-ts': ["const greeting = 'Hallo';", '', 'export function greet(name: string): string {', '  return greeting + ", " + name; // Gruß', '}'],
+    'tt-code-html': ['<a href="x">&amp; "q"</a>'],
+    'tt-code-bash': ['npm install @lifecorner/angular-ui-kit', '', 'npm test'],
+  };
+  return Object.entries(sources).every(([id, lines]) =>
+    prerenderedCode(html, id) === lines.map((l) => `${l || String.fromCharCode(160)}\n`).join(''));
 }
 
 /**
@@ -111,6 +143,10 @@ const EXPECT_IN_HTML = [
   // (Angular may write a [class] string's classes in another order: lookaheads.)
   ['sidenav placeholder: inert, hidden, the docked rail (AS-18)', /<lc-sidenav-placeholder(?=[^>]*id="compat-sidenav-placeholder")(?=[^>]*aria-hidden="true")(?=[^>]*\binert\b)(?=[^>]*class="[^"]*\blc-sidenav-container--docked\b)[^>]*>[^]*?<div(?=[^>]*class="lc-sidenav(?=[^"]*\blc-sidenav--docked\b)(?=[^"]*\blc-sidenav--open\b)[^"]*")(?=[^>]*style="width: 240px;?")[^>]*>/],
   ['inline link in running text (AS-19)', /<a(?=[^>]*href="\/de\/datenschutz")(?=[^>]*class="[^"]*\bbtn-link\b)(?=[^>]*class="[^"]*\bbtn-inline\b)[^>]*>/],
+  // 3.6.1 (request 003): lc-code-block's tokens are elements, written by the server
+  ['tt: code-block token spans (AS-20)', /class="code-block__line-content"[^>]*>(?:<!--[^]*?-->)*<span[^>]*class="token-keyword"[^>]*>const<\/span>/, 'tt/code/index.html'],
+  ['tt: code-block markup in the source is text (AS-20)', /<span[^>]*class="token-tag"[^>]*>&lt;a<\/span>/, 'tt/code/index.html'],
+  ['tt: code-block text equals the source (AS-20)', codeBlocksPrerendered, 'tt/code/index.html'],
 ];
 
 /**
@@ -118,7 +154,7 @@ const EXPECT_IN_HTML = [
  * settings) for check-trusted-types.mjs; `withNoIncrementalHydration` needs 22.
  */
 const CSP_ENTRY = '22';
-const CSP_PAGES = ['tt/index.html', 'tt/household/index.html', 'tt/icons/index.html', 'tt/fetched/index.html'];
+const CSP_PAGES = ['tt/index.html', 'tt/household/index.html', 'tt/icons/index.html', 'tt/fetched/index.html', 'tt/code/index.html'];
 
 /** Nothing `script-src 'self'` blocks: no inline script (JSON data blocks aside), no inline event handler. */
 function noInlineScript(html) {
@@ -234,9 +270,11 @@ for (const entry of MATRIX.filter((m) => !only || only.includes(m.name))) {
 
 let measured = null;
 if (args.measure) {
-  console.log('\nMeasuring the F1 shell (tools/compat/bundle) against 3.5.1 …');
+  console.log('\nMeasuring the F1 shell (tools/compat/bundle) against 3.5.1, and a lazy code block against 3.6.0 …');
   try {
-    measured = measureBundles({ work, tarball, run });
+    const before = args['code-before'];
+    const codeBefore = typeof before === 'string' ? (before.endsWith('.tgz') ? `file:${resolve(before)}` : before) : undefined;
+    measured = measureBundles({ work, tarball, run, codeBefore });
   } catch (error) {
     measured = { error: String(error.stack ?? error) };
   }

@@ -14,6 +14,11 @@
  * Sizes: the initial JS chunks (main and its static imports, from the esbuild
  * metafile), raw and gzip -9; kB = 1000 bytes.
  *
+ * 3.6.1 (request 003, AC-12): the `code` configuration, a bare shell with
+ * lc-code-block on a lazy route, against 3.6.0 (E) and this build (F). Checks:
+ * Angular's HTML sanitizer is in no chunk of F; reports where 3.6.0 had it
+ * and the size of the code-block chunk before and after.
+ *
  * Used by check-angular-majors.mjs --measure (needs the network: npm).
  */
 import { cpSync, existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -29,6 +34,10 @@ const ANGULAR = '^22.0.0';
 const ROBOT = '<path d="M5 16l4 -2"/><path d="M15 14l4 2"/>';
 /** A class only lc-sidenav's own template and styles have (the drawer's close button). */
 const SIDENAV_ONLY = 'lc-sidenav__close';
+/** Angular's HTML sanitizer (`_sanitizeHtml`): its void-element list survives minification. */
+const SANITIZER = 'area,br,col,hr,img,wbr';
+/** A class only lc-code-block's template and styles have. */
+const CODE_BLOCK_ONLY = 'code-block__line-content';
 
 const kb = (n) => `${(n / 1000).toFixed(2)} kB`;
 
@@ -71,7 +80,23 @@ function analyze(out) {
     gzip += gzipSync(body, { level: 9 }).length;
   }
   const text = (files) => files.map((o) => read(o).toString('utf8'));
-  return { raw, gzip, initialText: text([...initial]).join('\n'), lazyText: text(js.filter((o) => !initial.has(o))).join('\n'), lazyFiles: js.length - initial.size };
+  const lazy = js.filter((o) => !initial.has(o));
+  const lazyChunks = lazy.map((o) => {
+    const body = read(o);
+    return { raw: body.length, gzip: gzipSync(body, { level: 9 }).length, text: body.toString('utf8') };
+  });
+  return { raw, gzip, initialText: text([...initial]).join('\n'), lazyText: text(lazy).join('\n'), lazyFiles: lazy.length, lazyChunks };
+}
+
+/** The lazy chunk that holds `marker` (the route's own chunk), or null. */
+function lazyChunkWith(r, marker) {
+  return r.lazyChunks.find((c) => c.text.includes(marker)) ?? null;
+}
+
+/** Where a build has `marker`: initial, lazy, both or none. */
+function whereIs(r, marker) {
+  const where = [r.initialText.includes(marker) && 'initial', r.lazyText.includes(marker) && 'lazy'].filter(Boolean);
+  return where.length ? where.join(' + ') : 'none';
 }
 
 function build(dir, label, configuration, run) {
@@ -82,22 +107,33 @@ function build(dir, label, configuration, run) {
 }
 
 /**
- * Builds the fixture four times and returns `{ rows, checks }`: rows
+ * Builds the fixture six times and returns `{ rows, checks }`: rows
  * `[label, { raw, gzip, lazyFiles }]`, checks `[label, ok, detail]`.
+ * `codeBefore` is the kit E is built with: an npm version or `file:<tarball>`
+ * (3.6.0 while it is staged and not yet public).
  */
-export function measureBundles({ work, tarball, run }) {
+export function measureBundles({ work, tarball, run, codeBefore }) {
   const before = app(work, '351', '3.5.1', run);
   const A = build(before, 'base', 'production', run);
   const next = app(work, 'next', `file:${tarball}`, run);
   const B = build(next, 'base', 'production', run);
   const C = build(next, 'icons', 'production,icons', run);
   const D = build(next, 'icons-defer', 'production,icons,defer', run);
+  const prev = app(work, '360', codeBefore ?? '3.6.0', run);
+  const E = build(prev, 'code', 'production,code', run);
+  const F = build(next, 'code', 'production,code', run);
   const rows = [
     ['A 3.5.1, opts into nothing', A],
     ['B 3.6, opts into nothing', B],
     ['C 3.6, 25 glyphs registered', C],
     ['D C + deferred side navigation', D],
+    ['E 3.6.0, code block on a lazy route', E],
+    ['F this build, code block on a lazy route', F],
   ];
+  const chunk = (r) => {
+    const c = lazyChunkWith(r, CODE_BLOCK_ONLY);
+    return c ? `${kb(c.raw)} raw, ${kb(c.gzip)} gzip` : 'not found';
+  };
   const checks = [
     ['AC-1: A − C ≥ 7 kB gzip', A.gzip - C.gzip >= 7000, kb(A.gzip - C.gzip)],
     ['AC-1: the robot glyph (nobody registered it) is in no initial chunk of C', !C.initialText.includes(ROBOT), ''],
@@ -105,6 +141,9 @@ export function measureBundles({ work, tarball, run }) {
     ['AC-6: B keeps every glyph, in a lazy chunk', !B.initialText.includes(ROBOT) && B.lazyText.includes(ROBOT), ''],
     ['AC-8: C − D ≥ 6 kB gzip', C.gzip - D.gzip >= 6000, kb(C.gzip - D.gzip)],
     ['AC-8: lc-sidenav is in no initial chunk of D, but in a lazy one', !D.initialText.includes(SIDENAV_ONLY) && D.lazyText.includes(SIDENAV_ONLY), ''],
+    ['003 AC-12: lc-code-block is in a lazy chunk of E and F only (the probe is valid)', [E, F].every((r) => whereIs(r, CODE_BLOCK_ONLY) === 'lazy'), ''],
+    ["003 AC-12: Angular's HTML sanitizer is in no chunk of F", whereIs(F, SANITIZER) === 'none', `E (3.6.0): ${whereIs(E, SANITIZER)}`],
+    ['003 AC-12: the code-block chunk, E → F', !!lazyChunkWith(F, CODE_BLOCK_ONLY), `${chunk(E)} → ${chunk(F)}`],
   ];
   return { rows: rows.map(([label, r]) => [label, { raw: r.raw, gzip: r.gzip, lazyFiles: r.lazyFiles }]), checks };
 }

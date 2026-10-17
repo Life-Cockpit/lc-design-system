@@ -1,0 +1,1653 @@
+{
+  "_source": "3.6.0 output of lc-code-block in Chromium, from the 3.6.0 Storybook build (main 86bef1a). samples: one per CodeBlockLanguage (ui-ux-designer, request 003). stories: the 7 code-block stories (web-developer, request 003); their code is the line texts joined with a line feed, an empty line counted as empty. Per line: t is the textContent of .code-block__line-content (U+00A0 for an empty line), k its child nodes (a string is a text node, [class, text] a span).",
+  "samples": {
+    "typescript": {
+      "code": "/** Doc\n * line */\n@Input() name: string = \"a<b>&c\"\nconst n = 42 // note\ntype T = Foo<Bar>\n\nconst t = `x\ny`",
+      "lines": [
+        {
+          "t": "/** Doc",
+          "k": [
+            [
+              "token-comment",
+              "/** Doc"
+            ]
+          ]
+        },
+        {
+          "t": " * line */",
+          "k": [
+            " * line */"
+          ]
+        },
+        {
+          "t": "@Input() name: string = \"a<b>&c\"",
+          "k": [
+            [
+              "token-decorator",
+              "@Input"
+            ],
+            "() name: ",
+            [
+              "token-type",
+              "string"
+            ],
+            " = ",
+            [
+              "token-string",
+              "\"a<b>&c\""
+            ]
+          ]
+        },
+        {
+          "t": "const n = 42 // note",
+          "k": [
+            [
+              "token-keyword",
+              "const"
+            ],
+            " n = ",
+            [
+              "token-number",
+              "42"
+            ],
+            " ",
+            [
+              "token-comment",
+              "// note"
+            ]
+          ]
+        },
+        {
+          "t": "type T = Foo<Bar>",
+          "k": [
+            [
+              "token-keyword",
+              "type"
+            ],
+            " ",
+            [
+              "token-type",
+              "T"
+            ],
+            " = Foo<Bar>"
+          ]
+        },
+        {
+          "t": " ",
+          "k": [
+            " "
+          ]
+        },
+        {
+          "t": "const t = `x",
+          "k": [
+            [
+              "token-keyword",
+              "const"
+            ],
+            " t = ",
+            [
+              "token-string",
+              "`x"
+            ]
+          ]
+        },
+        {
+          "t": "y`",
+          "k": [
+            "y`"
+          ]
+        }
+      ]
+    },
+    "javascript": {
+      "code": "// js\nlet a = b && c ? 1.5 : null\nconst s = `t ${a}`\nif (a > 0 && b < 2) return",
+      "lines": [
+        {
+          "t": "// js",
+          "k": [
+            [
+              "token-comment",
+              "// js"
+            ]
+          ]
+        },
+        {
+          "t": "let a = b && c ? 1.5 : null",
+          "k": [
+            [
+              "token-keyword",
+              "let"
+            ],
+            " a = b && c ? ",
+            [
+              "token-number",
+              "1.5"
+            ],
+            " : ",
+            [
+              "token-constant",
+              "null"
+            ]
+          ]
+        },
+        {
+          "t": "const s = `t ${a}`",
+          "k": [
+            [
+              "token-keyword",
+              "const"
+            ],
+            " s = ",
+            [
+              "token-string",
+              "`t ${a}`"
+            ]
+          ]
+        },
+        {
+          "t": "if (a > 0 && b < 2) return",
+          "k": [
+            [
+              "token-keyword",
+              "if"
+            ],
+            " (a > ",
+            [
+              "token-number",
+              "0"
+            ],
+            " && b < ",
+            [
+              "token-number",
+              "2"
+            ],
+            ") ",
+            [
+              "token-keyword",
+              "return"
+            ]
+          ]
+        }
+      ]
+    },
+    "html": {
+      "code": "<!-- comment -->\n<a href=\"x\" data-id='1'>Tom & \"Jerry\" &lt;b&gt;</a>\n\n<br/>\n<p>Don't</p>\n<p>it's</p>",
+      "lines": [
+        {
+          "t": "<!-- comment -->",
+          "k": [
+            "<!-- comment --",
+            [
+              "token-tag",
+              ">"
+            ]
+          ]
+        },
+        {
+          "t": "<a href=\"x\" data-id='1'>Tom & \"Jerry\" &lt;b&gt;</a>",
+          "k": [
+            [
+              "token-tag",
+              "<a"
+            ],
+            " ",
+            [
+              "token-attr",
+              "href"
+            ],
+            "=",
+            [
+              "token-string",
+              "\"x\""
+            ],
+            " ",
+            [
+              "token-attr",
+              "data-id"
+            ],
+            "=",
+            [
+              "token-string",
+              "'1'"
+            ],
+            [
+              "token-tag",
+              ">"
+            ],
+            "Tom & ",
+            [
+              "token-string",
+              "\"Jerry\""
+            ],
+            " &lt;b&gt;",
+            [
+              "token-tag",
+              "</a"
+            ],
+            [
+              "token-tag",
+              ">"
+            ]
+          ]
+        },
+        {
+          "t": " ",
+          "k": [
+            " "
+          ]
+        },
+        {
+          "t": "<br/>",
+          "k": [
+            [
+              "token-tag",
+              "<br"
+            ],
+            [
+              "token-tag",
+              "/>"
+            ]
+          ]
+        },
+        {
+          "t": "<p>Don't</p>",
+          "k": [
+            [
+              "token-tag",
+              "<p"
+            ],
+            [
+              "token-tag",
+              ">"
+            ],
+            "Don",
+            [
+              "token-string",
+              "'t</p>"
+            ]
+          ]
+        },
+        {
+          "t": "<p>it's</p>",
+          "k": [
+            "<p>it's",
+            [
+              "token-tag",
+              "</p"
+            ],
+            [
+              "token-tag",
+              ">"
+            ]
+          ]
+        }
+      ]
+    },
+    "css": {
+      "code": ".a > .b, #id { margin: 0 4px; color: red }\n/* multi\n   line */",
+      "lines": [
+        {
+          "t": ".a > .b, #id { margin: 0 4px; color: red }",
+          "k": [
+            [
+              "token-selector",
+              ".a"
+            ],
+            " > ",
+            [
+              "token-selector",
+              ".b"
+            ],
+            ", ",
+            [
+              "token-selector",
+              "#id"
+            ],
+            " { ",
+            [
+              "token-property",
+              "margin"
+            ],
+            ": ",
+            [
+              "token-number",
+              "0"
+            ],
+            " 4px; ",
+            [
+              "token-property",
+              "color"
+            ],
+            ": red }"
+          ]
+        },
+        {
+          "t": "/* multi",
+          "k": [
+            [
+              "token-comment",
+              "/* multi"
+            ]
+          ]
+        },
+        {
+          "t": "   line */",
+          "k": [
+            "   line */"
+          ]
+        }
+      ]
+    },
+    "scss": {
+      "code": "$gap: 8px\n.card {\n  &:hover > .title { gap: $gap }\n  @include mq(1024px)\n}",
+      "lines": [
+        {
+          "t": "$gap: 8px",
+          "k": [
+            [
+              "token-variable",
+              "$gap"
+            ],
+            ": 8px"
+          ]
+        },
+        {
+          "t": ".card {",
+          "k": [
+            [
+              "token-selector",
+              ".card"
+            ],
+            " {"
+          ]
+        },
+        {
+          "t": "  &amp;:hover &gt; .title { gap: $gap }",
+          "k": [
+            "  ",
+            [
+              "token-selector",
+              "&"
+            ],
+            "amp;:hover ",
+            [
+              "token-selector",
+              "&"
+            ],
+            "gt; ",
+            [
+              "token-selector",
+              ".title"
+            ],
+            " { gap: ",
+            [
+              "token-variable",
+              "$gap"
+            ],
+            " }"
+          ]
+        },
+        {
+          "t": "  @include mq(1024px)",
+          "k": [
+            "  ",
+            [
+              "token-keyword",
+              "@include"
+            ],
+            " mq(1024px)"
+          ]
+        },
+        {
+          "t": "}",
+          "k": [
+            "}"
+          ]
+        }
+      ]
+    },
+    "json": {
+      "code": "{\"a\": [1, 2.5, true, null], \"b<c>\": \"&\"}",
+      "lines": [
+        {
+          "t": "{\"a\": [1, 2.5, true, null], \"b<c>\": \"&\"}",
+          "k": [
+            "{",
+            [
+              "token-string",
+              "\"a\""
+            ],
+            ": [",
+            [
+              "token-number",
+              "1"
+            ],
+            ", ",
+            [
+              "token-number",
+              "2.5"
+            ],
+            ", ",
+            [
+              "token-constant",
+              "true"
+            ],
+            ", ",
+            [
+              "token-constant",
+              "null"
+            ],
+            "], ",
+            [
+              "token-string",
+              "\"b<c>\""
+            ],
+            ": ",
+            [
+              "token-string",
+              "\"&\""
+            ],
+            "}"
+          ]
+        }
+      ]
+    },
+    "bash": {
+      "code": "# install\nnpm install --save-dev x && echo \"$HOME\"\ngit commit -m 'fix: <b> & co'",
+      "lines": [
+        {
+          "t": "# install",
+          "k": [
+            [
+              "token-comment",
+              "# install"
+            ],
+            [
+              "token-builtin",
+              ""
+            ]
+          ]
+        },
+        {
+          "t": "npm install --save-dev x && echo \"$HOME\"",
+          "k": [
+            "npm install ",
+            [
+              "token-flag",
+              "--save-dev"
+            ],
+            " x &&",
+            [
+              "token-builtin",
+              " echo"
+            ],
+            " ",
+            [
+              "token-string",
+              "\"$HOME\""
+            ],
+            [
+              "token-builtin",
+              ""
+            ]
+          ]
+        },
+        {
+          "t": "git commit -m 'fix: <b> & co'",
+          "k": [
+            "git commit ",
+            [
+              "token-flag",
+              "-m"
+            ],
+            " ",
+            [
+              "token-string",
+              "'fix: <b> & co'"
+            ]
+          ]
+        }
+      ]
+    },
+    "python": {
+      "code": "def f(self):\n    \"\"\"Doc\n    more\"\"\"\n    return [True, None, 0x1F]",
+      "lines": [
+        {
+          "t": "def f(self):",
+          "k": [
+            [
+              "token-keyword",
+              "def"
+            ],
+            " f(",
+            [
+              "token-variable",
+              "self"
+            ],
+            "):"
+          ]
+        },
+        {
+          "t": "    \"\"\"Doc",
+          "k": [
+            "    ",
+            [
+              "token-string",
+              "\"\"\"Doc"
+            ]
+          ]
+        },
+        {
+          "t": "    more\"\"\"",
+          "k": [
+            "    more\"\"\""
+          ]
+        },
+        {
+          "t": "    return [True, None, 0x1F]",
+          "k": [
+            "    ",
+            [
+              "token-keyword",
+              "return"
+            ],
+            " [",
+            [
+              "token-constant",
+              "True"
+            ],
+            ", ",
+            [
+              "token-constant",
+              "None"
+            ],
+            ", 0x1F]"
+          ]
+        }
+      ]
+    },
+    "java": {
+      "code": "@Override\npublic List<String> f(int a) { return a > 0 && b ? \"x\" : null; }",
+      "lines": [
+        {
+          "t": "@Override",
+          "k": [
+            [
+              "token-decorator",
+              "@Override"
+            ]
+          ]
+        },
+        {
+          "t": "public List<String> f(int a) { return a > 0 && b ? \"x\" : null; }",
+          "k": [
+            [
+              "token-keyword",
+              "public"
+            ],
+            " ",
+            [
+              "token-type",
+              "List"
+            ],
+            "<",
+            [
+              "token-type",
+              "String"
+            ],
+            "> f(",
+            [
+              "token-type",
+              "int"
+            ],
+            " a) { ",
+            [
+              "token-keyword",
+              "return"
+            ],
+            " a > ",
+            [
+              "token-number",
+              "0"
+            ],
+            " && b ? ",
+            [
+              "token-string",
+              "\"x\""
+            ],
+            " : ",
+            [
+              "token-constant",
+              "null"
+            ],
+            "; }"
+          ]
+        }
+      ]
+    },
+    "text": {
+      "code": "<img src=x onerror=alert(1)>\n&lt;b&gt;\n\nend",
+      "lines": [
+        {
+          "t": "<img src=x onerror=alert(1)>",
+          "k": [
+            "<img src=x onerror=alert(1)>"
+          ]
+        },
+        {
+          "t": "&lt;b&gt;",
+          "k": [
+            "&lt;b&gt;"
+          ]
+        },
+        {
+          "t": " ",
+          "k": [
+            " "
+          ]
+        },
+        {
+          "t": "end",
+          "k": [
+            "end"
+          ]
+        }
+      ]
+    }
+  },
+  "stories": {
+    "type-script": {
+      "code": "import { Component, input } from '@angular/core';\n\n@Component({\n  selector: 'lc-example',\n  standalone: true,\n  template: `<p>{{ message() }}</p>`,\n})\nexport class ExampleComponent {\n  message = input.required<string>();\n}",
+      "lines": [
+        {
+          "t": "import { Component, input } from '@angular/core';",
+          "k": [
+            [
+              "token-keyword",
+              "import"
+            ],
+            " { Component, input } ",
+            [
+              "token-keyword",
+              "from"
+            ],
+            " ",
+            [
+              "token-string",
+              "'@angular/core'"
+            ],
+            ";"
+          ]
+        },
+        {
+          "t": " ",
+          "k": [
+            " "
+          ]
+        },
+        {
+          "t": "@Component({",
+          "k": [
+            [
+              "token-decorator",
+              "@Component"
+            ],
+            "({"
+          ]
+        },
+        {
+          "t": "  selector: 'lc-example',",
+          "k": [
+            "  selector: ",
+            [
+              "token-string",
+              "'lc-example'"
+            ],
+            ","
+          ]
+        },
+        {
+          "t": "  standalone: true,",
+          "k": [
+            "  standalone: ",
+            [
+              "token-constant",
+              "true"
+            ],
+            ","
+          ]
+        },
+        {
+          "t": "  template: `<p>{{ message() }}</p>`,",
+          "k": [
+            "  template: ",
+            [
+              "token-string",
+              "`<p>{{ message() }}</p>`"
+            ],
+            ","
+          ]
+        },
+        {
+          "t": "})",
+          "k": [
+            "})"
+          ]
+        },
+        {
+          "t": "export class ExampleComponent {",
+          "k": [
+            [
+              "token-keyword",
+              "export"
+            ],
+            " ",
+            [
+              "token-keyword",
+              "class"
+            ],
+            " ",
+            [
+              "token-type",
+              "ExampleComponent"
+            ],
+            " {"
+          ]
+        },
+        {
+          "t": "  message = input.required<string>();",
+          "k": [
+            "  message = input.required<",
+            [
+              "token-type",
+              "string"
+            ],
+            ">();"
+          ]
+        },
+        {
+          "t": "}",
+          "k": [
+            "}"
+          ]
+        }
+      ]
+    },
+    "json": {
+      "code": "{\n  \"name\": \"@lifecorner/angular-ui-kit\",\n  \"version\": \"1.0.0\",\n  \"dependencies\": {\n    \"@angular/core\": \"^19.0.0\"\n  }\n}",
+      "lines": [
+        {
+          "t": "{",
+          "k": [
+            "{"
+          ]
+        },
+        {
+          "t": "  \"name\": \"@lifecorner/angular-ui-kit\",",
+          "k": [
+            "  ",
+            [
+              "token-string",
+              "\"name\""
+            ],
+            ": ",
+            [
+              "token-string",
+              "\"@lifecorner/angular-ui-kit\""
+            ],
+            ","
+          ]
+        },
+        {
+          "t": "  \"version\": \"1.0.0\",",
+          "k": [
+            "  ",
+            [
+              "token-string",
+              "\"version\""
+            ],
+            ": ",
+            [
+              "token-string",
+              "\"1.0.0\""
+            ],
+            ","
+          ]
+        },
+        {
+          "t": "  \"dependencies\": {",
+          "k": [
+            "  ",
+            [
+              "token-string",
+              "\"dependencies\""
+            ],
+            ": {"
+          ]
+        },
+        {
+          "t": "    \"@angular/core\": \"^19.0.0\"",
+          "k": [
+            "    ",
+            [
+              "token-string",
+              "\"@angular/core\""
+            ],
+            ": ",
+            [
+              "token-string",
+              "\"^19.0.0\""
+            ]
+          ]
+        },
+        {
+          "t": "  }",
+          "k": [
+            "  }"
+          ]
+        },
+        {
+          "t": "}",
+          "k": [
+            "}"
+          ]
+        }
+      ]
+    },
+    "bash": {
+      "code": "npm install @lifecorner/angular-ui-kit\nnpx nx build angular-ui-kit\nnpx nx test angular-ui-kit",
+      "lines": [
+        {
+          "t": "npm install @lifecorner/angular-ui-kit",
+          "k": [
+            [
+              "token-builtin",
+              "npm"
+            ],
+            " install @lifecorner/angular",
+            [
+              "token-flag",
+              "-ui-kit"
+            ],
+            [
+              "token-builtin",
+              ""
+            ]
+          ]
+        },
+        {
+          "t": "npx nx build angular-ui-kit",
+          "k": [
+            "npx nx build angular",
+            [
+              "token-flag",
+              "-ui-kit"
+            ],
+            [
+              "token-builtin",
+              ""
+            ]
+          ]
+        },
+        {
+          "t": "npx nx test angular-ui-kit",
+          "k": [
+            "npx nx test angular",
+            [
+              "token-flag",
+              "-ui-kit"
+            ]
+          ]
+        }
+      ]
+    },
+    "no-header": {
+      "code": "const sum = (a: number, b: number) => a + b;",
+      "lines": [
+        {
+          "t": "const sum = (a: number, b: number) => a + b;",
+          "k": [
+            [
+              "token-keyword",
+              "const"
+            ],
+            " sum = (a: ",
+            [
+              "token-type",
+              "number"
+            ],
+            ", b: ",
+            [
+              "token-type",
+              "number"
+            ],
+            ") => a + b;"
+          ]
+        }
+      ]
+    },
+    "html": {
+      "code": "<lc-button variant=\"primary\" size=\"md\">\n  Click me\n</lc-button>\n\n<lc-card>\n  <h3>Title</h3>\n  <p>Content goes here</p>\n</lc-card>",
+      "lines": [
+        {
+          "t": "<lc-button variant=\"primary\" size=\"md\">",
+          "k": [
+            [
+              "token-tag",
+              "<lc-button"
+            ],
+            " ",
+            [
+              "token-attr",
+              "variant"
+            ],
+            "=",
+            [
+              "token-string",
+              "\"primary\""
+            ],
+            " ",
+            [
+              "token-attr",
+              "size"
+            ],
+            "=",
+            [
+              "token-string",
+              "\"md\""
+            ],
+            [
+              "token-tag",
+              ">"
+            ]
+          ]
+        },
+        {
+          "t": "  Click me",
+          "k": [
+            "  Click me"
+          ]
+        },
+        {
+          "t": "</lc-button>",
+          "k": [
+            [
+              "token-tag",
+              "</lc-button"
+            ],
+            [
+              "token-tag",
+              ">"
+            ]
+          ]
+        },
+        {
+          "t": " ",
+          "k": [
+            " "
+          ]
+        },
+        {
+          "t": "<lc-card>",
+          "k": [
+            [
+              "token-tag",
+              "<lc-card"
+            ],
+            [
+              "token-tag",
+              ">"
+            ]
+          ]
+        },
+        {
+          "t": "  <h3>Title</h3>",
+          "k": [
+            "  ",
+            [
+              "token-tag",
+              "<h3"
+            ],
+            [
+              "token-tag",
+              ">"
+            ],
+            "Title",
+            [
+              "token-tag",
+              "</h3"
+            ],
+            [
+              "token-tag",
+              ">"
+            ]
+          ]
+        },
+        {
+          "t": "  <p>Content goes here</p>",
+          "k": [
+            "  ",
+            [
+              "token-tag",
+              "<p"
+            ],
+            [
+              "token-tag",
+              ">"
+            ],
+            "Content goes here",
+            [
+              "token-tag",
+              "</p"
+            ],
+            [
+              "token-tag",
+              ">"
+            ]
+          ]
+        },
+        {
+          "t": "</lc-card>",
+          "k": [
+            [
+              "token-tag",
+              "</lc-card"
+            ],
+            [
+              "token-tag",
+              ">"
+            ]
+          ]
+        }
+      ]
+    },
+    "python": {
+      "code": "from dataclasses import dataclass\nfrom typing import Optional\n\n@dataclass\nclass User:\n    name: str\n    age: int\n    email: Optional[str] = None\n\n    def greet(self) -> str:\n        \"\"\"Return a greeting message.\"\"\"\n        return f\"Hello, {self.name}!\"\n\n    @staticmethod\n    def validate_age(age: int) -> bool:\n        return 0 < age < 150\n\n# Create a user\nuser = User(name=\"Alice\", age=30)\nprint(user.greet())  # Hello, Alice!\n\nfor i in range(5):\n    if i % 2 == 0:\n        print(f\"{i} is even\")",
+      "lines": [
+        {
+          "t": "from dataclasses import dataclass",
+          "k": [
+            [
+              "token-keyword",
+              "from"
+            ],
+            " dataclasses ",
+            [
+              "token-keyword",
+              "import"
+            ],
+            " dataclass"
+          ]
+        },
+        {
+          "t": "from typing import Optional",
+          "k": [
+            [
+              "token-keyword",
+              "from"
+            ],
+            " typing ",
+            [
+              "token-keyword",
+              "import"
+            ],
+            " Optional"
+          ]
+        },
+        {
+          "t": " ",
+          "k": [
+            " "
+          ]
+        },
+        {
+          "t": "@dataclass",
+          "k": [
+            [
+              "token-decorator",
+              "@dataclass"
+            ]
+          ]
+        },
+        {
+          "t": "class User:",
+          "k": [
+            [
+              "token-keyword",
+              "class"
+            ],
+            " User:"
+          ]
+        },
+        {
+          "t": "    name: str",
+          "k": [
+            "    name: ",
+            [
+              "token-type",
+              "str"
+            ]
+          ]
+        },
+        {
+          "t": "    age: int",
+          "k": [
+            "    age: ",
+            [
+              "token-type",
+              "int"
+            ]
+          ]
+        },
+        {
+          "t": "    email: Optional[str] = None",
+          "k": [
+            "    email: Optional[",
+            [
+              "token-type",
+              "str"
+            ],
+            "] = ",
+            [
+              "token-constant",
+              "None"
+            ]
+          ]
+        },
+        {
+          "t": " ",
+          "k": [
+            " "
+          ]
+        },
+        {
+          "t": "    def greet(self) -> str:",
+          "k": [
+            "    ",
+            [
+              "token-keyword",
+              "def"
+            ],
+            " greet(",
+            [
+              "token-variable",
+              "self"
+            ],
+            ") -> ",
+            [
+              "token-type",
+              "str"
+            ],
+            ":"
+          ]
+        },
+        {
+          "t": "        \"\"\"Return a greeting message.\"\"\"",
+          "k": [
+            "        ",
+            [
+              "token-string",
+              "\"\"\"Return a greeting message.\"\"\""
+            ]
+          ]
+        },
+        {
+          "t": "        return f\"Hello, {self.name}!\"",
+          "k": [
+            "        ",
+            [
+              "token-keyword",
+              "return"
+            ],
+            " f",
+            [
+              "token-string",
+              "\"Hello, {self.name}!\""
+            ]
+          ]
+        },
+        {
+          "t": " ",
+          "k": [
+            " "
+          ]
+        },
+        {
+          "t": "    @staticmethod",
+          "k": [
+            "    ",
+            [
+              "token-decorator",
+              "@staticmethod"
+            ]
+          ]
+        },
+        {
+          "t": "    def validate_age(age: int) -> bool:",
+          "k": [
+            "    ",
+            [
+              "token-keyword",
+              "def"
+            ],
+            " validate_age(age: ",
+            [
+              "token-type",
+              "int"
+            ],
+            ") -> ",
+            [
+              "token-type",
+              "bool"
+            ],
+            ":"
+          ]
+        },
+        {
+          "t": "        return 0 < age < 150",
+          "k": [
+            "        ",
+            [
+              "token-keyword",
+              "return"
+            ],
+            " ",
+            [
+              "token-number",
+              "0"
+            ],
+            " < age < ",
+            [
+              "token-number",
+              "150"
+            ]
+          ]
+        },
+        {
+          "t": " ",
+          "k": [
+            " "
+          ]
+        },
+        {
+          "t": "# Create a user",
+          "k": [
+            [
+              "token-comment",
+              "# Create a user"
+            ]
+          ]
+        },
+        {
+          "t": "user = User(name=\"Alice\", age=30)",
+          "k": [
+            "user = User(name=",
+            [
+              "token-string",
+              "\"Alice\""
+            ],
+            ", age=",
+            [
+              "token-number",
+              "30"
+            ],
+            ")"
+          ]
+        },
+        {
+          "t": "print(user.greet())  # Hello, Alice!",
+          "k": [
+            [
+              "token-builtin",
+              "print"
+            ],
+            "(user.greet())  ",
+            [
+              "token-comment",
+              "# Hello, Alice!"
+            ]
+          ]
+        },
+        {
+          "t": " ",
+          "k": [
+            " "
+          ]
+        },
+        {
+          "t": "for i in range(5):",
+          "k": [
+            [
+              "token-keyword",
+              "for"
+            ],
+            " i ",
+            [
+              "token-keyword",
+              "in"
+            ],
+            " ",
+            [
+              "token-builtin",
+              "range"
+            ],
+            "(",
+            [
+              "token-number",
+              "5"
+            ],
+            "):"
+          ]
+        },
+        {
+          "t": "    if i % 2 == 0:",
+          "k": [
+            "    ",
+            [
+              "token-keyword",
+              "if"
+            ],
+            " i % ",
+            [
+              "token-number",
+              "2"
+            ],
+            " == ",
+            [
+              "token-number",
+              "0"
+            ],
+            ":"
+          ]
+        },
+        {
+          "t": "        print(f\"{i} is even\")",
+          "k": [
+            "        ",
+            [
+              "token-builtin",
+              "print"
+            ],
+            "(f",
+            [
+              "token-string",
+              "\"{i} is even\""
+            ],
+            ")"
+          ]
+        }
+      ]
+    },
+    "java": {
+      "code": "import java.util.List;\nimport java.util.stream.Collectors;\n\npublic class UserService {\n    private final List<User> users;\n\n    public UserService(List<User> users) {\n        this.users = users;\n    }\n\n    /**\n     * Find all active users older than the given age.\n     */\n    public List<User> findActiveUsers(int minAge) {\n        return users.stream()\n            .filter(u -> u.isActive() && u.getAge() > minAge)\n            .sorted((a, b) -> a.getName().compareTo(b.getName()))\n            .collect(Collectors.toList());\n    }\n\n    @Override\n    public String toString() {\n        return \"UserService{count=\" + users.size() + \"}\";\n    }\n}",
+      "lines": [
+        {
+          "t": "import java.util.List;",
+          "k": [
+            [
+              "token-keyword",
+              "import"
+            ],
+            " java.util.",
+            [
+              "token-type",
+              "List"
+            ],
+            ";"
+          ]
+        },
+        {
+          "t": "import java.util.stream.Collectors;",
+          "k": [
+            [
+              "token-keyword",
+              "import"
+            ],
+            " java.util.stream.",
+            [
+              "token-type",
+              "Collectors"
+            ],
+            ";"
+          ]
+        },
+        {
+          "t": " ",
+          "k": [
+            " "
+          ]
+        },
+        {
+          "t": "public class UserService {",
+          "k": [
+            [
+              "token-keyword",
+              "public"
+            ],
+            " ",
+            [
+              "token-keyword",
+              "class"
+            ],
+            " UserService {"
+          ]
+        },
+        {
+          "t": "    private final List<User> users;",
+          "k": [
+            "    ",
+            [
+              "token-keyword",
+              "private"
+            ],
+            " ",
+            [
+              "token-keyword",
+              "final"
+            ],
+            " ",
+            [
+              "token-type",
+              "List"
+            ],
+            "<User> users;"
+          ]
+        },
+        {
+          "t": " ",
+          "k": [
+            " "
+          ]
+        },
+        {
+          "t": "    public UserService(List<User> users) {",
+          "k": [
+            "    ",
+            [
+              "token-keyword",
+              "public"
+            ],
+            " UserService(",
+            [
+              "token-type",
+              "List"
+            ],
+            "<User> users) {"
+          ]
+        },
+        {
+          "t": "        this.users = users;",
+          "k": [
+            "        ",
+            [
+              "token-keyword",
+              "this"
+            ],
+            ".users = users;"
+          ]
+        },
+        {
+          "t": "    }",
+          "k": [
+            "    }"
+          ]
+        },
+        {
+          "t": " ",
+          "k": [
+            " "
+          ]
+        },
+        {
+          "t": "    /**",
+          "k": [
+            "    ",
+            [
+              "token-comment",
+              "/**"
+            ]
+          ]
+        },
+        {
+          "t": "     * Find all active users older than the given age.",
+          "k": [
+            "     * Find all active users older than the given age."
+          ]
+        },
+        {
+          "t": "     */",
+          "k": [
+            "     */"
+          ]
+        },
+        {
+          "t": "    public List<User> findActiveUsers(int minAge) {",
+          "k": [
+            "    ",
+            [
+              "token-keyword",
+              "public"
+            ],
+            " ",
+            [
+              "token-type",
+              "List"
+            ],
+            "<User> findActiveUsers(",
+            [
+              "token-type",
+              "int"
+            ],
+            " minAge) {"
+          ]
+        },
+        {
+          "t": "        return users.stream()",
+          "k": [
+            "        ",
+            [
+              "token-keyword",
+              "return"
+            ],
+            " users.stream()"
+          ]
+        },
+        {
+          "t": "            .filter(u -> u.isActive() && u.getAge() > minAge)",
+          "k": [
+            "            .filter(u -> u.isActive() && u.getAge() > minAge)"
+          ]
+        },
+        {
+          "t": "            .sorted((a, b) -> a.getName().compareTo(b.getName()))",
+          "k": [
+            "            .sorted((a, b) -> a.getName().compareTo(b.getName()))"
+          ]
+        },
+        {
+          "t": "            .collect(Collectors.toList());",
+          "k": [
+            "            .collect(",
+            [
+              "token-type",
+              "Collectors"
+            ],
+            ".toList());"
+          ]
+        },
+        {
+          "t": "    }",
+          "k": [
+            "    }"
+          ]
+        },
+        {
+          "t": " ",
+          "k": [
+            " "
+          ]
+        },
+        {
+          "t": "    @Override",
+          "k": [
+            "    ",
+            [
+              "token-decorator",
+              "@Override"
+            ]
+          ]
+        },
+        {
+          "t": "    public String toString() {",
+          "k": [
+            "    ",
+            [
+              "token-keyword",
+              "public"
+            ],
+            " ",
+            [
+              "token-type",
+              "String"
+            ],
+            " toString() {"
+          ]
+        },
+        {
+          "t": "        return \"UserService{count=\" + users.size() + \"}\";",
+          "k": [
+            "        ",
+            [
+              "token-keyword",
+              "return"
+            ],
+            " ",
+            [
+              "token-string",
+              "\"UserService{count=\""
+            ],
+            " + users.size() + ",
+            [
+              "token-string",
+              "\"}\""
+            ],
+            ";"
+          ]
+        },
+        {
+          "t": "    }",
+          "k": [
+            "    }"
+          ]
+        },
+        {
+          "t": "}",
+          "k": [
+            "}"
+          ]
+        }
+      ]
+    }
+  }
+}

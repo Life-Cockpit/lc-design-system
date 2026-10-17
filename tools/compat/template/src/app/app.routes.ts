@@ -5,6 +5,7 @@ import { TtToday } from './tt/tt-today';
 import { TtHousehold } from './tt/tt-household';
 import { TtIcons } from './tt/tt-icons';
 import { TtFetched } from './tt/tt-fetched';
+import { TtCode } from './tt/tt-code';
 
 export const routes: Routes = [
   { path: '', component: HomePage },
@@ -16,6 +17,7 @@ export const routes: Routes = [
       { path: 'household', component: TtHousehold },
       { path: 'icons', component: TtIcons },
       { path: 'fetched', component: TtFetched },
+      { path: 'code', component: TtCode },
     ],
   },
 ];

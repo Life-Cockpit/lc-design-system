@@ -130,8 +130,9 @@
       color: #d19a66;
     }
 
+    // 3.6.1 (AS-20, AC-15): the muted ink, 7.02:1 on the block (was #5c6370, 2.99:1).
     ::ng-deep .token-comment {
-      color: #5c6370;
+      color: var(--lc-code-block-muted);
       font-style: italic;
     }
 
