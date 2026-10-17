@@ -6,7 +6,9 @@ argument-hint: <requirement text | path to a file> [--from <project>] [--headles
 
 # Running a request through the pipeline
 
-You (the main session) are the dispatcher. The agents decide the route: each one ends with a HANDOFF block (format in `CLAUDE.md` → *Agent pipeline*) that names the next agent and its task. You carry out these handoffs and keep the log. Don't do the agents' work yourself, and don't rewrite their tasks. Pass them on. The release needs nobody's go: once the review is approved and every gate is green, the `release-manager` ships it through the pipeline.
+You (the main session) are the dispatcher. Run a request in a fresh session, such as `scripts/lc-request.sh` or a new `claude` in this repository, never at the end of a long conversation: every handoff re-reads the dispatcher's whole context. Keep your own part small. Pass tasks on verbatim, don't add what the documents already say, and tell the owner each handoff in one line.
+
+The agents decide the route: each one ends with a HANDOFF block (format in `CLAUDE.md` → *Agent pipeline*) that names the next agent and its task. You carry out these handoffs and keep the log. Don't do the agents' work yourself, and don't rewrite their tasks. Pass them on. The release needs nobody's go: once the review is approved and every gate is green, the `release-manager` ships it through the pipeline.
 
 Arguments: `$ARGUMENTS`
 

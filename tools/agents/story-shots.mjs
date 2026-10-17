@@ -14,11 +14,16 @@
  *   node tools/agents/story-shots.mjs --stories=layout-hero--page-band[,…]
  *        [--widths=360,1024,1280] [--themes=light,dark] [--height=900] [--full]
  *        [--measure='<JS expression, may use await; result must be JSON>']
- *        [--out=tmp/story-shots]
+ *        [--out=tmp/story-shots] [--compare=<baseline dir>]
  *
- * Prints one JSON line per shot: { story, width, theme, file, measure }.
+ * Prints one JSON line per shot: { story, width, theme, file, measure }. With
+ * --compare, each shot is compared by hash with the file of the same name in the
+ * baseline directory; only shots that differ or have no baseline are printed,
+ * then a summary line { identical, different, missing }.
+ * Refuses a Storybook build that is older than the library source (rebuild it).
  * CHROME_PATH overrides the browser.
  */
+import { createHash } from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:http';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
@@ -46,6 +51,23 @@ function fail(message) {
 if (!existsSync(join(STORYBOOK, 'index.json'))) {
   fail('no Storybook build in dist/storybook/angular-ui-kit - run `npx nx build-storybook angular-ui-kit` first');
 }
+/** Newest modification time of the files below `dir`, in ms. */
+function newestMtime(dir) {
+  let newest = 0;
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const path = join(dir, entry.name);
+    newest = Math.max(newest, entry.isDirectory() ? newestMtime(path) : statSync(path).mtimeMs);
+  }
+  return newest;
+}
+const sourceChanged = Math.max(
+  newestMtime(join(ROOT, 'libs/angular-ui-kit/src')),
+  newestMtime(join(ROOT, 'libs/angular-ui-kit/.storybook')),
+);
+if (sourceChanged > statSync(join(STORYBOOK, 'index.json')).mtimeMs) {
+  fail('the Storybook build is older than libs/angular-ui-kit/src - run `npx nx run angular-ui-kit:build-storybook` first');
+}
+
 const storyIds = Object.values(JSON.parse(readFileSync(join(STORYBOOK, 'index.json'), 'utf8')).entries)
   .filter((e) => e.type === 'story')
   .map((e) => e.id);
@@ -68,6 +90,10 @@ const themes = list(args.themes, ['light', 'dark']);
 const height = Number(args.height ?? 900);
 const out = resolve(ROOT, typeof args.out === 'string' ? args.out : 'tmp/story-shots');
 mkdirSync(out, { recursive: true });
+const baseline = typeof args.compare === 'string' ? resolve(ROOT, args.compare) : null;
+if (baseline && !existsSync(baseline)) fail(`no baseline directory ${args.compare}`);
+const counts = { identical: 0, different: 0, missing: 0 };
+const sha = (buffer) => createHash('sha256').update(buffer).digest('hex');
 
 // --- Static server for the Storybook build ---
 
@@ -214,9 +240,19 @@ try {
             clip = { x: 0, y: 0, width, height: Math.ceil(cssContentSize.height), scale: 1 };
           }
           const { data } = await page.send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: !!clip, ...(clip && { clip }) });
-          const file = join(out, `${story}--${width}-${theme}.png`);
-          writeFileSync(file, Buffer.from(data, 'base64'));
-          console.log(JSON.stringify({ story, width, theme, file: file.replace(`${ROOT}/`, ''), ...(measure !== undefined && { measure }) }));
+          const name = `${story}--${width}-${theme}.png`;
+          const file = join(out, name);
+          const png = Buffer.from(data, 'base64');
+          writeFileSync(file, png);
+          let compare;
+          if (baseline) {
+            const before = join(baseline, name);
+            compare = !existsSync(before) ? 'missing' : sha(readFileSync(before)) === sha(png) ? 'identical' : 'different';
+            counts[compare]++;
+          }
+          if (compare !== 'identical' || measure !== undefined) {
+            console.log(JSON.stringify({ story, width, theme, file: file.replace(`${ROOT}/`, ''), ...(compare && { compare }), ...(measure !== undefined && { measure }) }));
+          }
         } catch (error) {
           failed = true;
           console.log(JSON.stringify({ story, width, theme, error: error.message }));
@@ -231,4 +267,5 @@ try {
   server.close();
   rmSync(profile, { recursive: true, force: true });
 }
+if (baseline) console.log(JSON.stringify(counts));
 process.exit(failed ? 1 : 0);

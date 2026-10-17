@@ -15,6 +15,8 @@
 
 ## Gates
 
+All gates ran on commit `<full hash>` (later agents skip a gate while `git diff --quiet <hash> -- libs tools` holds).
+
 | Gate | Result |
 |---|---|
 | `npx nx run angular-ui-kit:test` | <suites / tests, all green> |
@@ -23,7 +25,7 @@
 | `npm run test:tools` | <or "tools unchanged"> |
 | `npx nx run angular-ui-kit:build-storybook` | |
 | Story screenshots | `tmp/story-shots/<NNN>/…` |
-| `node tools/compat/check-angular-majors.mjs --only=22` | <or "server rendering unchanged"> |
+| `node tools/compat/check-angular-majors.mjs` | <lines run, or "server rendering unchanged"> |
 
 ## Deviations from the design
 

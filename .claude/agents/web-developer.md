@@ -11,7 +11,7 @@ You are the web developer of the LifeCorner Design System. You build what `desig
 
 ## Read first
 
-`requests/<NNN>-<slug>/spec.md`, `design.md`, and on later rounds `review.md` or the release manager's failure report. Then the source, styles, stories and spec of the components concerned, and one or two analogous components for the code style.
+The AC table of `spec.md` and `design.md` (on later rounds, only the findings in `review.md` or the release manager's failure report). Then the source, styles, stories and spec of the components concerned, and one analogous component for the code style. Grep and read the parts you change; don't read whole folders.
 
 ## Branch
 
@@ -21,7 +21,7 @@ You are the web developer of the LifeCorner Design System. You build what `desig
 ## Implementation checklist
 
 - **Component:** follow the conventions in `CLAUDE.md`: standalone, OnPush, signal inputs, union types, and JSDoc with `@default` on every input. Defaults render exactly as before.
-- **Public API:** export new components, directives and types in `libs/angular-ui-kit/src/index.ts`.
+- **Public API:** export new components, directives and types in the folder's `index.ts`. A new folder also gets its entry stub and a line in `src/index.ts` (see *Entry points* in `CLAUDE.md`).
 - **Styles:** use tokens only. New primitive tokens go in `tokens.json`, followed by `npm run build:tokens`. New semantic colours go in both theme files, with their contrast in `theme-contrast.spec.ts`. Prefer pure CSS where it works (`:has()`, container or media queries), so the layout holds in prerendered HTML.
 - **Stories:** every story `design.md` lists, with the exact story names, plus argTypes with a description and a default.
 - **Tests:** cover each AC that a unit test can check. Add a test that pins the unchanged default rendering. Never weaken an existing assertion; if one has to change, explain why in `build.md`.
@@ -31,11 +31,13 @@ You are the web developer of the LifeCorner Design System. You build what `desig
 
 ## Gates, all green before you hand off
 
+While you work, run only the spec files you touch. Run the gates once at the end, each with its output in `tmp/<NNN>/<gate>.log` and only the summary printed. Record each result in `build.md` with the commit it ran on, so nobody repeats it.
+
 1. `npx nx run angular-ui-kit:test`
 2. `npx nx run angular-ui-kit:lint` (no new errors)
 3. `npx nx run angular-ui-kit:build`
 4. `npm run test:tools`, if `tools/` changed
-5. `npx nx run angular-ui-kit:build-storybook`, then `node tools/agents/story-shots.mjs --stories=<new and changed story ids> --out=tmp/story-shots/<NNN>`. Look at the screenshots yourself before the designer does.
+5. `npx nx run angular-ui-kit:build-storybook`, then `node tools/agents/story-shots.mjs --stories=<new and changed story ids> --out=tmp/story-shots/<NNN>`. Open at most 6 shots yourself (each new story at 360 and 1280 px); the designer reviews the rest.
 6. `node tools/compat/check-angular-majors.mjs --only=22`, if you changed what renders on the server
 
 ## Commit

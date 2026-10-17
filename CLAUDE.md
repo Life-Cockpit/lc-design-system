@@ -21,8 +21,8 @@ Use the `npx nx run angular-ui-kit:<target>` form: the project settings allow ex
 
 ## Layout
 
-- `libs/angular-ui-kit/src/lib/<component>/`: `<name>.component.{ts,html,scss,spec.ts}` and `<name>.stories.ts`. Shared helpers are in `lib/shared/`, and the theme service is in `lib/theme/`.
-- `libs/angular-ui-kit/src/index.ts`: the public API. Every component, directive and exported type goes there.
+- `libs/angular-ui-kit/src/lib/<component>/`: `<name>.component.{ts,html,scss,spec.ts}`, `<name>.stories.ts`, and an `index.ts` that is the folder's public API. The theme service is in `lib/theme/`, and internal helpers are in `lib/internal/{overlay,chart,url}/`.
+- **Entry points (since 3.5):** each folder is a secondary entry `@lifecorner/angular-ui-kit/<folder>` through a one-line stub `libs/angular-ui-kit/<folder>/ng-package.json`. Imports across folders use the package path, never a relative path; a relative path fails the build with TS6059. `src/index.ts` (the primary entry) only re-exports the public entries. A new folder therefore needs a stub, an `index.ts` and a line in `src/index.ts`.
 - `libs/angular-ui-kit/src/styles/`: the global styles. The semantic colour tokens for both themes are in `_theme-light.scss` and `_theme-dark.scss`, and their contrast is asserted in `theme-contrast.spec.ts`. The other global files are `_typography.scss`, `_utilities.scss` and `_horizon.scss`.
 - `libs/angular-ui-kit/src/docs/*.mdx`: the token and guideline pages in Storybook.
 - `libs/angular-ui-kit/CHANGELOG.md`: the consumers' changelog, also served by the MCP (`get_changelog`).
@@ -52,6 +52,19 @@ The version lives in `libs/angular-ui-kit/package.json`. Releases run only throu
 - **By hand:** pushing a tag `vX.Y.Z` runs the same publish job, without the tag job.
 
 The staged version becomes public once it is approved with 2FA (`npm stage approve <id>`). A push to `main` also runs CI and `deploy-docs.yml` (Storybook and the MCP on `design.life-cockpit.de`). **Never run `npm publish` or `npm stage approve` locally, never push a release tag by hand from an agent, and never deploy the docs stack by hand.**
+
+## Working economically (every agent)
+
+Tokens are the pipeline's main cost. A request is done by doing what your role needs once, not by re-checking everyone else's work.
+
+- **Read narrowly.** `Grep` first, then `Read` with `offset` and `limit`. Never read a whole concept file from a consuming project; grep the gap ID and read that section. Read only the request documents your role needs (see your agent file), and in those, the sections you work on.
+- **Quiet commands.** Send long output to a log and print only the summary, for example `npx nx run angular-ui-kit:test > tmp/<NNN>/test.log 2>&1; tail -n 15 tmp/<NNN>/test.log`. Grep the log when something fails. Run single spec files (`--testFile=…`) while you work, and the full suite once at the end.
+- **No repeated gates.** `build.md` records the commit each gate passed on. A later agent doesn't repeat a gate as long as `git diff --quiet <that commit> -- libs tools` holds. CI runs the tests, the build and the compat matrix again on `main` anyway.
+- **Reuse the Storybook build.** `story-shots.mjs` refuses a build older than the source, so rebuild only when it says so.
+- **Screenshots:** compare by hash (`--compare=<baseline dir>`); the script prints only shots that differ. Open (Read) only new or differing shots, at most 12 per round, and prefer `--measure` values to looking. Never build an old version for comparison: the baselines come from the design step.
+- **Short documents.** Use tables, not prose, and refer (`AC-7`, `design.md §3`) instead of copying. Guide lengths: spec ≤ 150 lines, design ≤ 200, build, review and release ≤ 80 each.
+- **Short replies.** Your reply goes to the dispatcher: at most 10 lines plus the HANDOFF. Everything else belongs in the documents.
+- **Memory:** only durable facts that save the next run work, at most 40 lines per agent.
 
 ## Agent pipeline
 
