@@ -16,10 +16,10 @@ import {
 import { NgStyle, NgTemplateOutlet } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { TableCellDirective } from './table-cell.directive';
-import { InputComponent } from '../input/input.component';
-import { SelectComponent } from '../select/select.component';
-import { ButtonComponent, ButtonVariant } from '../button/button.component';
-import { IconComponent } from '../icon/icon.component';
+import { InputComponent } from '@lifecorner/angular-ui-kit/input';
+import { SelectComponent } from '@lifecorner/angular-ui-kit/select';
+import { ButtonComponent, ButtonVariant } from '@lifecorner/angular-ui-kit/button';
+import { IconComponent } from '@lifecorner/angular-ui-kit/icon';
 
 type TableCellClass = string | ((
   value: unknown,

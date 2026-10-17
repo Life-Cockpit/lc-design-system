@@ -4,7 +4,7 @@ import {
   input,
   computed,
 } from '@angular/core';
-import { ChartValueFormatter, formatChartValue, toFinite } from '../shared/chart-scale';
+import { ChartValueFormatter, formatChartValue, toFinite } from '@lifecorner/angular-ui-kit/internal/chart';
 
 export interface RadarChartSeries {
   label: string;

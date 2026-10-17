@@ -4,7 +4,7 @@ import { provideHttpClient, withXhr } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { InteractivityChecker } from '@angular/cdk/a11y';
 import { DrawerComponent } from './drawer.component';
-import { OverlayStackService } from '../shared/overlay-stack.service';
+import { OverlayStackService } from '../internal/overlay/overlay-stack.service';
 
 @Component({
   standalone: true,

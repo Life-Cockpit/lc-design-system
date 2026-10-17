@@ -1,0 +1,5 @@
+{
+  "lib": {
+    "entryFile": "../src/lib/progress-ring/index.ts"
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "lib": {
+    "entryFile": "../src/lib/document-viewer/index.ts"
+  }
+}

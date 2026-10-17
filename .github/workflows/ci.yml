@@ -64,4 +64,20 @@ jobs:
         run: npx nx build angular-ui-kit --configuration=production
 
       - name: Build and prerender a consumer app against the packed library
-        run: node tools/compat/check-angular-majors.mjs --only=${{ matrix.angular }}
+        run: node tools/compat/check-angular-majors.mjs --only=${{ matrix.angular }} --work=${{ runner.temp }}/lc-compat
+
+      # The prerendered /tt pages of that app in Chromium under life-os's
+      # Trusted Types CSP (+ lc-icon), and once with lc-icon refused.
+      - name: Install chrome-headless-shell
+        if: matrix.angular == '22'
+        run: npx -y playwright@1.64.0 install --with-deps chromium-headless-shell
+
+      - name: Check the /tt pages under a Trusted Types CSP
+        if: matrix.angular == '22'
+        run: node tools/compat/check-trusted-types.mjs --app=${{ runner.temp }}/lc-compat/app-22
+
+      # The packed entries against 3.4.1, and a fixture app that proves the
+      # split (lazy routes, the name list, an app without mermaid).
+      - name: Check the secondary entries and the bundle split
+        if: matrix.angular == '22'
+        run: node tools/compat/check-entries.mjs

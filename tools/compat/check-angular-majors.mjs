@@ -11,6 +11,11 @@
  * also executes every rendered component on the server) and checks the
  * prerendered HTML.
  *
+ * The app has two route sets: `''` imports everything from the primary entry
+ * (as consumers did before 3.5), `/tt` imports the F1 set from the secondary
+ * entries only (3.5, request 001). tools/compat/check-trusted-types.mjs opens
+ * the built `/tt` pages in a browser under a Trusted Types CSP.
+ *
  * Prerequisite: `npx nx build angular-ui-kit` (reads dist/libs/angular-ui-kit).
  *
  * Usage: node tools/compat/check-angular-majors.mjs [--only=21.0,22] [--keep]
@@ -21,6 +26,7 @@ import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, 
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { inlineIconsModule } from './inline-icons.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const args = Object.fromEntries(
@@ -41,7 +47,23 @@ const MATRIX = [
   { name: '22', angular: '^22.0.0', typescript: '~6.0.2' },
 ];
 
-/** Strings the prerendered page must contain (rendered on the server, no JS). */
+/** The sidenav's `<nav>` on `/tt`: exactly one aria-current link, the `/tt` one, painted current too (AC-24). */
+function oneCurrentSidenavLink(html) {
+  const nav = html.match(/<nav(?=[^>]*class="lc-sidenav__nav)[^>]*>([^]*?)<\/nav>/)?.[1] ?? '';
+  const current = [...nav.matchAll(/<a\b[^>]*aria-current="page"[^>]*>/g)].map((m) => m[0]);
+  return current.length === 1 && /href="\/tt"/.test(current[0]) && /lc-sidenav__nav-item--active/.test(current[0]);
+}
+
+/** Every inline icon on `/tt/icons` is prerendered as one decorated `<svg>` (AC-10 a, before JS). */
+function everyInlineIconPrerendered(html) {
+  const icons = [...html.matchAll(/<lc-icon[^>]*data-icon="[^"]+"[^>]*>([^]*?)<\/lc-icon>/g)];
+  return icons.length > 100 && icons.every(([, inner]) => (inner.match(/<svg\b(?=[^>]*width="24px")(?=[^>]*role="img")[^>]*>/g) ?? []).length === 1);
+}
+
+/**
+ * What the prerendered pages must contain (rendered on the server, no JS):
+ * `[label, RegExp | (html) => boolean, page]`, page `index.html` unless named.
+ */
 const EXPECT_IN_HTML = [
   ['header', /<header[^>]*class="lc-header/],
   ['primary lg button', /class="btn btn-primary[^"]*btn-lg/],
@@ -65,6 +87,15 @@ const EXPECT_IN_HTML = [
   ['app page aside', /<main[^>]*id="shell-main"[^]*?<\/main>\s*<aside(?=[^>]*aria-label="Mitglieder")[^>]*>/],
   ['shell horizon', /class="lc-app-shell__horizon lc-horizon"/],
   ['page header overline', /class="[^"]*lc-overline[^"]*"[^>]*>\s*Montag, 12\. Oktober/],
+  // 3.5 (request 001)
+  ['app page busy (AS-12)', /<main(?=[^>]*id="shell-main")(?=[^>]*aria-busy="true")[^>]*>/],
+  ['inline icon decorated (AS-14)', /<div[^>]*class="icon-container icon-md icon-outline"[^>]*><svg(?=[^>]*width="24px")(?=[^>]*height="24px")(?=[^>]*role="img")[^>]*>/],
+  ['tt: page busy before JS (AS-12)', /<main(?=[^>]*id="tt-main")(?=[^>]*aria-busy="true")[^>]*>/, 'tt/index.html'],
+  ['tt: one current sidenav link (AS-16)', oneCurrentSidenavLink, 'tt/index.html'],
+  ['tt: logo base path from the primary entry (AS-15)', /<lc-logo[^>]*id="tt-logo"[^]*?src="\/compat-logo\/lifecorner-/, 'tt/index.html'],
+  ['tt: every inline icon prerendered (AS-14)', everyInlineIconPrerendered, 'tt/icons/index.html'],
+  ['tt: one IconComponent class across entries (AS-15)', /id="tt-primary-icon"[^>]*data-same-class="true"|data-same-class="true"[^>]*id="tt-primary-icon"/, 'tt/icons/index.html'],
+  ['tt: fetched icons stay empty on the server', /<lc-icon[^>]*id="tt-anchor"[^>]*><div[^>]*class="icon-container[^"]*"[^>]*><\/div>/, 'tt/fetched/index.html'],
 ];
 
 function run(cmd, cmdArgs, cwd) {
@@ -90,6 +121,7 @@ for (const entry of MATRIX.filter((m) => !only || only.includes(m.name))) {
   const dir = join(work, `app-${entry.name}`);
   rmSync(dir, { recursive: true, force: true });
   cpSync(TEMPLATE, dir, { recursive: true });
+  writeFileSync(join(dir, 'src/app/tt/inline-icons.ts'), inlineIconsModule(ROOT));
   const a = entry.angular;
   writeFileSync(
     join(dir, 'package.json'),
@@ -154,8 +186,18 @@ for (const entry of MATRIX.filter((m) => !only || only.includes(m.name))) {
     results.push(result);
     continue;
   }
-  const html = readFileSync(join(dir, 'dist/compat/browser/index.html'), 'utf8');
-  for (const [label, re] of EXPECT_IN_HTML) result.checks.push([label, re.test(html)]);
+  const pages = new Map();
+  const page = (name) => {
+    if (!pages.has(name)) {
+      const file = join(dir, 'dist/compat/browser', name);
+      pages.set(name, existsSync(file) ? readFileSync(file, 'utf8') : '');
+    }
+    return pages.get(name);
+  };
+  for (const [label, test, name = 'index.html'] of EXPECT_IN_HTML) {
+    const html = page(name);
+    result.checks.push([label, typeof test === 'function' ? test(html) : test.test(html)]);
+  }
   results.push(result);
 }
 

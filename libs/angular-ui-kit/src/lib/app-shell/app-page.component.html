@@ -1,5 +1,5 @@
 <div [class]="pageClasses()" [style.--lc-app-page-content-max]="contentMaxWidth()">
-  <main class="lc-app-page__main" [id]="mainId()">
+  <main class="lc-app-page__main" [id]="mainId()" [attr.aria-busy]="busy() ? 'true' : null">
     <div class="lc-app-page__content"><ng-content /></div>
   </main>
   @if (hasAside()) {

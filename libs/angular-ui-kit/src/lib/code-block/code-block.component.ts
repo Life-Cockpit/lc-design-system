@@ -7,7 +7,7 @@ import {
   signal,
 } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
-import { IconComponent } from '../icon/icon.component';
+import { IconComponent } from '@lifecorner/angular-ui-kit/icon';
 
 export type CodeBlockLanguage =
   | 'typescript'

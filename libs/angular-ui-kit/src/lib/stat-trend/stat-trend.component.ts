@@ -4,8 +4,8 @@ import {
   input,
   computed,
 } from '@angular/core';
-import { SparklineComponent, SparklineColor } from '../sparkline/sparkline.component';
-import { IconComponent } from '../icon/icon.component';
+import { SparklineComponent, SparklineColor } from '@lifecorner/angular-ui-kit/sparkline';
+import { IconComponent } from '@lifecorner/angular-ui-kit/icon';
 
 export type StatTrendDirection = 'up' | 'down' | 'neutral';
 

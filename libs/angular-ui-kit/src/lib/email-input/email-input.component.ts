@@ -13,7 +13,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
-import { InputAutocapitalize, InputComponent, InputEnterKeyHint } from '../input/input.component';
+import { InputAutocapitalize, InputComponent, InputEnterKeyHint } from '@lifecorner/angular-ui-kit/input';
 
 /**
  * Email input component with built-in RFC 5322 validation.

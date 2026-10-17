@@ -7,7 +7,7 @@ import {
   computed,
   ViewEncapsulation,
 } from '@angular/core';
-import { IconComponent } from '../icon/icon.component';
+import { IconComponent } from '@lifecorner/angular-ui-kit/icon';
 
 export type AlertVariant = 'success' | 'error' | 'warning' | 'info';
 

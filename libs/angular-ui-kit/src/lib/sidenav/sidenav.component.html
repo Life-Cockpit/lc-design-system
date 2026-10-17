@@ -160,9 +160,9 @@
                             @for (grandchild of child.children; track grandchild.id) {
                               <a
                                 [routerLink]="grandchild.route"
-                                routerLinkActive="lc-sidenav__nav-item--active"
                                 class="lc-sidenav__nav-item lc-sidenav__nav-item--child"
                                 (click)="handleItemClick(grandchild)"
+                                [class.lc-sidenav__nav-item--active]="isItemActive(grandchild)"
                                 [attr.aria-current]="isItemActive(grandchild) ? 'page' : null">
                                 @if (grandchild.icon) {
                                   <lc-icon [name]="grandchild.icon" size="sm" [decorative]="true" class="lc-sidenav__nav-icon" />
@@ -180,10 +180,9 @@
                         <div class="lc-sidenav__nav-item-row">
                           <a
                             [routerLink]="child.route"
-                            routerLinkActive="lc-sidenav__nav-item--active"
-                            [routerLinkActiveOptions]="{ exact: child.route === '/' }"
                             class="lc-sidenav__nav-item lc-sidenav__nav-item--child"
                             (click)="handleItemClick(child)"
+                            [class.lc-sidenav__nav-item--active]="isItemActive(child)"
                             [attr.aria-current]="isItemActive(child) ? 'page' : null"
                             [title]="collapsed() ? child.label : ''">
                             @if (child.icon) {
@@ -243,9 +242,9 @@
                 @for (child of item.children; track child.id) {
                   <a
                     [routerLink]="child.route"
-                    routerLinkActive="lc-sidenav__nav-item--active"
                     class="lc-sidenav__nav-item lc-sidenav__nav-item--child"
                     (click)="handleItemClick(child)"
+                    [class.lc-sidenav__nav-item--active]="isItemActive(child)"
                     [attr.aria-current]="isItemActive(child) ? 'page' : null">
                     <lc-icon [name]="child.icon" size="sm" [decorative]="true" class="lc-sidenav__nav-icon" />
                     <span class="lc-sidenav__nav-label">{{ child.label }}</span>
@@ -261,10 +260,9 @@
             <div class="lc-sidenav__nav-item-row">
               <a
                 [routerLink]="item.route"
-                routerLinkActive="lc-sidenav__nav-item--active"
-                [routerLinkActiveOptions]="{ exact: item.route === '/' }"
                 class="lc-sidenav__nav-item"
                 (click)="handleItemClick(item)"
+                [class.lc-sidenav__nav-item--active]="isItemActive(item)"
                 [attr.aria-current]="isItemActive(item) ? 'page' : null"
                 [title]="collapsed() ? item.label : ''">
                 <lc-icon [name]="item.icon" size="sm" [decorative]="true" class="lc-sidenav__nav-icon" />

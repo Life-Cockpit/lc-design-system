@@ -58,6 +58,9 @@ function formatComponent(comp: Record<string, unknown>): string {
   // `api` holds the full Angular API block since 3.3; `summary` is a one-line description now
   // (manifests from 3.2 and earlier kept the API in `summary`).
   const api = comp.api ?? (comp.reactComponentMeta ? undefined : comp.summary);
+  // 3.5: the import line from the component's secondary entry (manifest doc entry `import`).
+  const importDoc = (comp.docs as Record<string, { content?: string }> | undefined)?.import;
+  if (importDoc?.content) text += `\n### Import\n${importDoc.content}\n`;
   if (api) text += `\n### Props\n\`\`\`typescript\n${api}\n\`\`\`\n`;
   const stories = comp.stories as Array<{ id: string; name: string; snippet?: string }> | undefined;
   if (stories?.length) {

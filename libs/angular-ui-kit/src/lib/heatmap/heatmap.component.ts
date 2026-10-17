@@ -9,7 +9,7 @@ import {
   cleanNumber,
   formatChartValue,
   toFinite,
-} from '../shared/chart-scale';
+} from '@lifecorner/angular-ui-kit/internal/chart';
 
 export interface HeatmapCell {
   row: number;

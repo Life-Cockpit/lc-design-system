@@ -7,6 +7,7 @@ import { SidenavComponent } from '../sidenav/sidenav.component';
 import { BottomNavComponent } from '../bottom-nav/bottom-nav.component';
 import { AvatarGroupComponent } from '../avatar-group/avatar-group.component';
 import { ListComponent } from '../list/list.component';
+import { SkeletonComponent } from '../skeleton/skeleton.component';
 
 const nav = [
   { id: 'today', icon: 'sun', label: 'Heute', route: '/', displayOrder: 1 },
@@ -61,7 +62,7 @@ const meta: Meta<AppShellComponent> = {
   component: AppShellComponent,
   decorators: [
     moduleMetadata({
-      imports: [AppPageComponent, HeaderComponent, SidenavComponent, BottomNavComponent, AvatarGroupComponent, ListComponent],
+      imports: [AppPageComponent, HeaderComponent, SidenavComponent, BottomNavComponent, AvatarGroupComponent, ListComponent, SkeletonComponent],
     }),
   ],
   argTypes: {
@@ -91,6 +92,8 @@ The frame of an app: header, side navigation, page, bottom bar, footer and the h
 Input \`horizon\` closes the page with the horizon block (\`.lc-horizon\`, from the kit's styles).
 
 **\`lc-app-page\`** — the page inside the shell: \`<main [id]="mainId">\` (default \`main\`) with the content as a column (24 px apart, 40 px from 1024 px), centred and at most \`contentMaxWidth\` wide (880 px; side padding 24 · 32 · 48 · 56 · 72 · 96 px). \`[page-aside]\` is the right column: an \`<aside>\` after \`<main>\`, docked to the window's right edge from 1280 px (360 · 400 · 460 px; \`--lc-app-page-aside-width\`) with a fading tint and hairline that start behind the header (set a changed \`--lc-app-page-aside-width\` on the shell, so both parts line up), hidden below 1280 px (show a narrow equivalent inside main). It renders only with \`asideLabelledby\` or \`asideAriaLabel\`.
+
+\`busy\` marks the page as loading: \`aria-busy="true"\` on its \`<main>\` while \`true\`, no attribute while \`false\` (default). Set it while a skeleton stands in for the content. Screen readers may hold back changes inside a busy region until it clears, so a loading message that must be heard belongs outside \`<main>\` (for example a \`.sr-only\` \`role="status"\` next to the page, in the shell's default slot) or is static text such as a \`.sr-only\` line inside the page, read when reached. No visual change (3.5, AS-12).
 
 Needs \`<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\`. Breakpoints are CSS media queries, so the layout holds before JavaScript (SSR, prerendering).
 `,
@@ -152,5 +155,79 @@ export const ContentPage: Story = {
         </lc-app-page>
         <lc-bottom-nav shell-bottom-nav variant="floating" ariaLabel="Hauptnavigation" [items]="nav" activeRoute="/household" />
       </lc-app-shell>`,
+  }),
+};
+
+/** The skeleton life-os shows while Today loads (board t08), inside a busy page. */
+const todayLoadingTemplate = `
+  <lc-app-shell [horizon]="horizon">
+    <lc-header shell-header variant="transparent" [sticky]="false" title="Produkt" titleTag="span"
+               subtitle="Unser Haushalt" homeAriaLabel="Produkt – Startseite"
+               userMenuTrigger="avatar" userAvatarColor="member-1"
+               userName="Johanna-Friederike Apfelbaum-Kieselbacher-Morgentau"
+               userMenuAriaLabel="Menü für Johanna-Friederike Apfelbaum-Kieselbacher-Morgentau" />
+    <lc-sidenav shell-nav mode="docked" [isOpen]="true" width="100%" [mobileBreakpoint]="0"
+                variant="transparent" ariaLabel="Hauptnavigation" [items]="nav" activeRoute="/" />
+    <lc-app-page [busy]="busy">
+      <p class="sr-only">Heute wird geladen …</p>
+      <!-- lc-skeleton sizes its host and its box with the same width, so a
+           percentage goes on a wrapper and the skeleton fills it. -->
+      <div class="story-skeleton-heading">
+        <div style="width: 45%"><lc-skeleton height="17px" borderRadius="6px" /></div>
+        <div style="width: 70%"><lc-skeleton height="42px" borderRadius="8px" /></div>
+        <div style="width: 50%"><lc-skeleton height="42px" borderRadius="8px" /></div>
+      </div>
+      <div class="story-skeleton-members">
+        <span class="story-skeleton-avatars">
+          <lc-skeleton variant="circle" width="34px" height="34px" />
+          <lc-skeleton variant="circle" width="34px" height="34px" />
+        </span>
+        <div style="width: 30%"><lc-skeleton height="20px" borderRadius="6px" /></div>
+      </div>
+      <lc-skeleton variant="rect" height="96px" borderRadius="24px" />
+      <div class="story-skeleton-tiles">
+        <lc-skeleton variant="rect" height="74px" borderRadius="18px" />
+        <lc-skeleton variant="rect" height="74px" borderRadius="18px" />
+        <lc-skeleton variant="rect" height="74px" borderRadius="18px" />
+      </div>
+    </lc-app-page>
+    <lc-bottom-nav shell-bottom-nav variant="floating" ariaLabel="Hauptnavigation" [items]="nav" activeRoute="/" />
+  </lc-app-shell>
+  <style>
+    .story-skeleton-heading { display: flex; flex-direction: column; gap: 12px; }
+    .story-skeleton-members { display: flex; align-items: center; gap: 12px; min-height: 44px; }
+    .story-skeleton-avatars { display: flex; }
+    .story-skeleton-avatars lc-skeleton + lc-skeleton { margin-left: -4px; }
+    .story-skeleton-avatars .lc-skeleton { box-shadow: 0 0 0 3px var(--color-background); }
+    .story-skeleton-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  </style>`;
+
+/**
+ * Today while it loads: the page is busy (`aria-busy="true"` on `<main>`) and a
+ * skeleton stands in for the content; the member row shows at every width and
+ * there is no right column yet.
+ */
+export const TodayLoading: StoryObj<AppShellComponent & { busy: boolean }> = {
+  name: 'Today (loading, busy page)',
+  args: { horizon: true, busy: true },
+  argTypes: {
+    busy: {
+      control: 'boolean',
+      description:
+        'Marks the page as loading: `aria-busy="true"` on its `<main>` while `true`, no attribute while `false`. Set it while a skeleton stands in for the content.',
+      table: { defaultValue: { summary: 'false' } },
+    },
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '`lc-app-page [busy]="true"` sets `aria-busy="true"` on the page\'s `<main>`; `false` removes the attribute. Screen readers may hold back what changes inside a busy region until it clears, so the loading text here is static `.sr-only` text inside the page (read when reached). A status that must be announced belongs outside `<main>`, e.g. a `.sr-only` `role="status"` next to `lc-app-page` in the shell. Toggling `busy` changes no pixel.',
+      },
+    },
+  },
+  render: (args) => ({
+    props: { ...args, nav },
+    template: todayLoadingTemplate,
   }),
 };

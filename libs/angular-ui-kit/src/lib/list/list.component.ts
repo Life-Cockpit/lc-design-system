@@ -7,10 +7,10 @@ import {
   output,
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
-import { IconComponent } from '../icon/icon.component';
-import { ButtonComponent, ButtonSize, ButtonVariant } from '../button/button.component';
+import { IconComponent } from '@lifecorner/angular-ui-kit/icon';
+import { ButtonComponent, ButtonSize, ButtonVariant } from '@lifecorner/angular-ui-kit/button';
 import { ListItemTemplateDirective } from './list-item-template.directive';
-import type { AvatarColor } from '../avatar/avatar.component';
+import type { AvatarColor } from '@lifecorner/angular-ui-kit/avatar';
 
 /**
  * List orientation type

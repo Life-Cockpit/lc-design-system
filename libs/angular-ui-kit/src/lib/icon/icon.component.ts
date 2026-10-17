@@ -1,5 +1,6 @@
 import {
   Component,
+  ElementRef,
   input,
   computed,
   signal,
@@ -8,29 +9,27 @@ import {
   ChangeDetectionStrategy,
   inject,
   PLATFORM_ID,
+  viewChild,
 } from '@angular/core';
-import { isPlatformBrowser } from '@angular/common';
-import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { DOCUMENT, isPlatformBrowser } from '@angular/common';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Observable, map, retry, shareReplay, tap, throwError, timer } from 'rxjs';
+import { Observable, catchError, map, of, retry, shareReplay, tap, throwError, timer } from 'rxjs';
+import { isValidIconName } from '@lifecorner/angular-ui-kit/icon-names';
 import { ICON_ALIASES } from './icon-aliases';
 import { resolveInlineIconSvg } from './icon-inline-lookup';
-import { isValidIconName } from './icon-catalog';
+import { buildSvg, looksLikeSvgDocument } from './icon-svg-builder';
+import { decorateSvg, parseBundledSvg, placeholderSvg } from './icon-dom';
 
 export type IconVariant = 'outline' | 'solid';
 export type IconSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 
 /**
- * Visible placeholder rendered when an icon cannot be resolved (unknown name or
- * failed asset load). Deliberately distinct from any real icon — a dashed frame
- * with a "?" — so missing icons are immediately obvious instead of showing an
- * empty space or an ambiguous glyph.
+ * The form every icon name has (all 5,161 do): lower-case words joined by `-`
+ * or `_`, at most 64 characters. Production builds check names by this form
+ * only; the full list is for development builds (3.5, AS-15).
  */
-const ICON_FALLBACK_SVG =
-  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">' +
-  '<rect x="3.5" y="3.5" width="17" height="17" rx="3" stroke-dasharray="2.5 2.5" />' +
-  '<text x="12" y="16.5" text-anchor="middle" font-size="12" font-weight="700" font-family="system-ui, -apple-system, sans-serif" fill="currentColor" stroke="none">?</text>' +
-  '</svg>';
+const ICON_NAME_FORM = /^[a-z0-9]+(?:[-_][a-z0-9]+)*$/;
+const MAX_ICON_NAME_LENGTH = 64;
 
 /**
  * Icon names already reported to the console. A page with dozens of instances
@@ -55,45 +54,30 @@ export function resetIconWarnings(): void {
   warnedIconNames.clear();
 }
 
-/** DOM APIs the component needs to validate and decorate SVG markup. */
-function hasDomParser(): boolean {
-  return typeof DOMParser !== 'undefined' && typeof XMLSerializer !== 'undefined';
-}
+const unknownIconMessage = (name: string) =>
+  `[lc-icon] Unknown icon "${name}". Use a Tabler name or a documented alias (see ICON_NAMES / ICON_ALIASES). Rendering a placeholder instead.`;
 
 /**
- * Parse SVG text and return the root `<svg>` element, or `null` when the input
- * is not a standalone SVG document — a parse error, or a non-`<svg>` root such
- * as an HTML page. On parse errors DOMParser yields a `<parsererror>` root
- * (Firefox) or embeds a `<parsererror>` element in partially-parsed output
- * (Chromium) — both must never reach the DOM.
+ * Outcome of one asset fetch. A 404 is an outcome too, so the cache keeps it
+ * and a later instance of the same missing name asks no second time.
  */
-function parseSvg(svgText: string): HTMLElement | null {
-  const doc = new DOMParser().parseFromString(svgText, 'image/svg+xml');
-  const svg = doc.documentElement;
-  if (
-    svg.nodeName.toLowerCase() !== 'svg' ||
-    doc.getElementsByTagName('parsererror').length > 0
-  ) {
-    return null;
-  }
-  return svg;
-}
-
-/** Outcome of one asset fetch; `svg` is `null` for a non-SVG response. */
-interface IconFetchResult {
-  svg: string | null;
-  contentType: string;
-}
+type IconFetchResult =
+  | { kind: 'svg'; svg: SVGElement }
+  | { kind: 'non-svg'; contentType: string }
+  | { kind: 'dropped'; reason: string }
+  | { kind: 'failed'; status: string };
 
 /**
  * One in-flight/completed fetch per asset path, shared by every `lc-icon`
  * instance on the page (a table with 200 rows of the same status icon used to
- * fire 200 identical requests). Failed fetches are evicted so the next
- * instance tries again; a completed one — valid or not — is kept.
+ * fire 200 identical requests). Transient failures are evicted so the next
+ * instance tries again; a completed one — valid, dropped or 404 — is kept.
  */
 const iconFetchCache = new Map<string, Observable<IconFetchResult>>();
 
-function fetchIconSvg(http: HttpClient, path: string): Observable<IconFetchResult> {
+const isNotFound = (error: unknown) => error instanceof HttpErrorResponse && error.status === 404;
+
+function fetchIcon(http: HttpClient, doc: Document, path: string): Observable<IconFetchResult> {
   let cached = iconFetchCache.get(path);
   if (!cached) {
     cached = http.get(path, { observe: 'response', responseType: 'text' }).pipe(
@@ -104,23 +88,21 @@ function fetchIconSvg(http: HttpClient, path: string): Observable<IconFetchResul
       // retried.
       retry({
         count: 2,
-        delay: (error, retryCount) =>
-          error instanceof HttpErrorResponse && error.status === 404
-            ? throwError(() => error)
-            : timer(200 * retryCount),
+        delay: (error, retryCount) => (isNotFound(error) ? throwError(() => error) : timer(200 * retryCount)),
       }),
       // Validate before anything touches the DOM: SPA deployments answer
       // missing asset paths with `index.html` and status 200 — that document
-      // must be dropped, never injected. A text/html content-type is rejected
-      // outright; everything else must parse as a standalone <svg> document.
+      // must be dropped, never rendered. A text/html content-type is rejected
+      // outright; everything else is rebuilt through the allow-list builder,
+      // which creates the <svg> node by node and never hands text to a parser.
       map((response): IconFetchResult => {
         const contentType = response.headers.get('content-type') ?? '';
-        if (contentType.includes('text/html')) {
-          return { svg: null, contentType };
-        }
-        const svg = parseSvg(response.body ?? '');
-        return { svg: svg ? new XMLSerializer().serializeToString(svg) : null, contentType };
+        const body = response.body ?? '';
+        if (contentType.includes('text/html') || !looksLikeSvgDocument(body)) return { kind: 'non-svg', contentType };
+        const built = buildSvg(doc, body);
+        return built.svg ? { kind: 'svg', svg: built.svg } : { kind: 'dropped', reason: built.reason };
       }),
+      catchError((error: unknown) => (isNotFound(error) ? of<IconFetchResult>({ kind: 'failed', status: '404' }) : throwError(() => error))),
       tap({ error: () => iconFetchCache.delete(path) }),
       shareReplay({ bufferSize: 1, refCount: false })
     );
@@ -138,6 +120,16 @@ export function resetIconCache(): void {
   iconFetchCache.clear();
 }
 
+/** What the container shows: nothing, a bundled constant, a fetched (built) icon, or the placeholder. */
+type IconSource =
+  | { kind: 'none' }
+  | { kind: 'bundled'; markup: string }
+  | { kind: 'fetched'; svg: SVGElement }
+  | { kind: 'placeholder' };
+
+const NO_ICON: IconSource = { kind: 'none' };
+const PLACEHOLDER: IconSource = { kind: 'placeholder' };
+
 /**
  * Icon component - Tabler Icons wrapper for displaying SVG icons
  *
@@ -153,18 +145,34 @@ export function resetIconCache(): void {
  *   then by its alias target
  * - Dynamic SVG loading from Tabler Icons for everything else
  * - Fail-loud on unknown names: a console warning (once per name, in dev AND
- *   prod) + a visible placeholder (never a silent empty space) — and **no
- *   network request**, because in SPA deployments the server answers missing
- *   asset paths with the index.html fallback. See {@link ICON_NAMES} /
- *   {@link isValidIconName} for the canonical set of valid names, and
+ *   prod) + a visible placeholder (never a silent empty space). Development
+ *   builds check every name against {@link ICON_NAMES} / {@link isValidIconName}
+ *   and request **no** unknown name, because in SPA deployments the server
+ *   answers missing asset paths with the index.html fallback. Production
+ *   builds leave the ~5,000 names out of the bundle (3.5, AS-15): they check
+ *   a name only by its form, request a well-formed unknown name once per
+ *   page, and show the placeholder when the answer is not an icon. See
  *   {@link ICON_ALIASES} for the supported Heroicon/Material aliases.
- * - Fetched responses are validated (content-type + parsed `<svg>` root)
- *   before anything is trusted — a non-SVG response (e.g. the SPA index.html
- *   fallback) is dropped and replaced by the placeholder.
- * - One request per asset path per page (shared cache); a name change cancels
- *   the instance's pending load so a slow old response never overwrites the
- *   newer icon; `size` / `color` / `decorative` / `ariaLabel` re-decorate the
- *   loaded markup without refetching.
+ * - Fetched responses are validated before anything reaches the page: a
+ *   `text/html` or non-SVG response (e.g. the SPA index.html fallback) is
+ *   dropped, and an SVG is rebuilt from an allow-list — basic shapes (`g`,
+ *   `path`, `circle`, `ellipse`, `line`, `polyline`, `polygon`, `rect`,
+ *   `text`) with paint and geometry attributes. Scripts, event handlers,
+ *   references (`href`, `url(…)`) and anything else drop the icon, which
+ *   then shows the placeholder.
+ * - One request per asset path per page (shared cache, a 404 included); a
+ *   name change cancels the instance's pending load so a slow old response
+ *   never overwrites the newer icon; `size` / `color` / `decorative` /
+ *   `ariaLabel` re-decorate the rendered `<svg>` in place, without refetching.
+ *
+ * **Trusted Types** (3.5, AS-14): bundled icons go through one policy,
+ * `lc-icon`, created on the first icon render; it accepts only the kit's own
+ * SVG strings. If your Content Security Policy enforces Trusted Types, add
+ * `lc-icon` to its `trusted-types` directive (with two copies of the kit on
+ * one page, the second needs `'allow-duplicates'`). Fetched icons need no
+ * policy: they are rebuilt node by node from the allow-list above. When the
+ * page refuses the policy, bundled icons show the placeholder and the console
+ * says so once. No sanitizer bypass, no HTML binding.
  *
  * @example
  * ```html
@@ -199,15 +207,15 @@ export function resetIconCache(): void {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class IconComponent {
-  private readonly sanitizer = inject(DomSanitizer);
   private readonly http = inject(HttpClient);
+  private readonly doc = inject(DOCUMENT);
   /**
-   * SVG can only be validated/decorated with DOMParser + XMLSerializer. Off
-   * the browser (SSR) inline icons and the placeholder render as their raw
-   * (trusted, constant) markup and nothing is fetched — the client takes over
-   * on hydration.
+   * Fetching needs a browser; the server renders inline icons and the
+   * placeholder (through the allow-list builder) and leaves fetched names
+   * empty — the client takes over on hydration.
    */
-  private readonly canUseDom = isPlatformBrowser(inject(PLATFORM_ID)) && hasDomParser();
+  private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
+  private readonly container = viewChild.required<ElementRef<HTMLElement>>('container');
 
   /**
   * Icon name from Tabler Icons library
@@ -264,34 +272,30 @@ export class IconComponent {
   readonly strict = input<boolean>(false);
 
   /**
-   * Undecorated markup for the current name/variant: `''` renders nothing,
-   * `null` renders the placeholder (unknown name, failed load, non-SVG
-   * response), otherwise the validated SVG (inline constant or fetched).
-   * Loading writes here; presentation is derived below.
+   * What the container shows for the current name/variant. Loading writes
+   * here; the element and its decoration are derived below.
    */
-  private readonly rawSvg = signal<string | null>('');
+  private readonly source = signal<IconSource>(NO_ICON);
 
   /**
-   * SVG content as rendered: the raw markup decorated with the CURRENT size,
-   * color and accessibility inputs. A computed, so a later change of any of
-   * them re-decorates a loaded (fetched) icon — they used to be applied only
-   * inside the load callback and were frozen at load time.
-   * @internal
+   * A fresh `<svg>` for the current source, undecorated. It depends on the
+   * source only, so a change of `size`, `color`, `decorative` or `ariaLabel`
+   * re-decorates the same element instead of building a new one.
    */
-  readonly svgContent = computed<SafeHtml>(() => {
-    const raw = this.rawSvg();
-    if (raw === '') return '';
-    const decorated =
-      (raw === null ? null : this.decorateSvg(raw)) ??
-      this.decorateSvg(ICON_FALLBACK_SVG) ??
-      ICON_FALLBACK_SVG;
-    // The bypass is only safe because `decorated` is either the re-serialized
-    // output of parseSvg (a validated standalone <svg> document) or one of
-    // this module's own constants — never raw fetched text. Do NOT add
-    // callers that skip that validation, and do NOT "simplify" the gates
-    // away: without them, a SPA server's index.html fallback (status 200,
-    // text/html) gets injected into the page once per icon instance.
-    return this.sanitizer.bypassSecurityTrustHtml(decorated);
+  private readonly svgElement = computed<SVGElement | null>(() => {
+    const source = this.source();
+    switch (source.kind) {
+      case 'none':
+        return null;
+      case 'fetched':
+        return source.svg.cloneNode(true) as SVGElement;
+      case 'bundled': {
+        const svg = this.isBrowser ? parseBundledSvg(this.doc, source.markup) : (buildSvg(this.doc, source.markup).svg ?? null);
+        return svg ?? placeholderSvg(this.doc, this.isBrowser);
+      }
+      case 'placeholder':
+        return placeholderSvg(this.doc, this.isBrowser);
+    }
   });
 
   /**
@@ -341,33 +345,37 @@ export class IconComponent {
   });
 
   constructor() {
-    // Resolve the markup when name or variant changes.
+    // Resolve the source when name or variant changes.
     effect((onCleanup) => {
       const rawName = this.name();
       const iconVariant = this.variant();
 
       if (!rawName) {
-        this.rawSvg.set('');
+        this.source.set(NO_ICON);
         return;
       }
 
       // Fail loud on names outside the canonical set (typos, un-aliased
-      // Heroicon names, …) — in dev AND prod, once per name. Crucially, an
-      // unknown name is never fetched: in SPA deployments the server answers
-      // missing asset paths with the index.html fallback (status 200), so a
-      // fetch for a typo'd name would come back as a full HTML document. The
-      // placeholder is rendered instead.
-      if (!isValidIconName(rawName)) {
-        warnOnce(
-          rawName,
-          `[lc-icon] Unknown icon "${rawName}". Use a Tabler name or a documented alias (see ICON_NAMES / ICON_ALIASES). Rendering a placeholder instead.`
-        );
-        if (isDevMode() && this.strict()) {
-          throw new Error(
-            `[lc-icon] Unknown icon "${rawName}" (strict mode). Use a Tabler name or a documented alias.`
-          );
+      // Heroicon names, …), once per name. Development builds check the full
+      // list and never fetch an unknown name: in SPA deployments the server
+      // answers missing asset paths with the index.html fallback (status 200).
+      // Production builds fold this branch away (ngDevMode is false there),
+      // so the list stays out of the bundle; they check the name's form and
+      // validate whatever the server answers instead.
+      if (typeof ngDevMode === 'undefined' || ngDevMode) {
+        if (!isValidIconName(rawName)) {
+          warnOnce(rawName, unknownIconMessage(rawName));
+          if (isDevMode() && this.strict()) {
+            throw new Error(
+              `[lc-icon] Unknown icon "${rawName}" (strict mode). Use a Tabler name or a documented alias.`
+            );
+          }
+          this.source.set(PLACEHOLDER);
+          return;
         }
-        this.rawSvg.set(null);
+      } else if (rawName.length > MAX_ICON_NAME_LENGTH || !ICON_NAME_FORM.test(rawName)) {
+        warnOnce(rawName, unknownIconMessage(rawName));
+        this.source.set(PLACEHOLDER);
         return;
       }
 
@@ -375,89 +383,88 @@ export class IconComponent {
       // HTML): by the name as written, then by its alias target (G-7).
       const inlineSvg = resolveInlineIconSvg(rawName, iconVariant);
       if (inlineSvg) {
-        this.rawSvg.set(inlineSvg);
+        this.source.set({ kind: 'bundled', markup: inlineSvg });
         return;
       }
 
-      // Fallback to HTTP loading. Without DOM APIs (SSR) a response cannot be
-      // validated, so nothing is fetched and nothing is rendered.
+      // Everything else is fetched, in the browser only. While it loads the
+      // container is empty (it keeps its px size).
       const path = this.iconPath();
-      if (!path || !this.canUseDom) {
-        this.rawSvg.set('');
-        return;
-      }
+      this.source.set(NO_ICON);
+      if (!path || !this.isBrowser) return;
 
-      const subscription = fetchIconSvg(this.http, path).subscribe({
-        next: ({ svg, contentType }) => {
-          if (svg === null) {
-            warnOnce(
-              rawName,
-              `[lc-icon] "${rawName}": ${path} returned non-SVG content` +
-                (contentType ? ` (${contentType})` : '') +
-                ' — dropped. In SPA deployments this is typically the index.html fallback for a missing asset.'
-            );
+      const subscription = fetchIcon(this.http, this.doc, path).subscribe({
+        next: (result) => {
+          switch (result.kind) {
+            case 'svg':
+              this.source.set({ kind: 'fetched', svg: result.svg });
+              return;
+            case 'non-svg':
+              warnOnce(
+                rawName,
+                `[lc-icon] "${rawName}": ${path} returned non-SVG content` +
+                  (result.contentType ? ` (${result.contentType})` : '') +
+                  ' — dropped. In SPA deployments this is typically the index.html fallback for a missing asset.'
+              );
+              break;
+            case 'dropped':
+              warnOnce(
+                rawName,
+                `[lc-icon] "${rawName}": ${path} was dropped: ${result.reason}. Fetched icons may contain only basic shapes with paint and geometry attributes. Rendering a placeholder instead.`
+              );
+              break;
+            case 'failed':
+              this.warnLoadFailure(rawName, path, result.status);
+              break;
           }
-          this.rawSvg.set(svg);
+          this.source.set(PLACEHOLDER);
         },
-        error: () => {
-          // Asset missing or unreachable: render a visible placeholder so the
-          // gap is obvious rather than an empty space. Unknown names were
-          // already reported above; a known-but-unloadable name (e.g. offline,
-          // SSR, or unit tests where assets are not served) stays quiet here to
-          // avoid console noise.
-          this.rawSvg.set(null);
+        error: (error: unknown) => {
+          // Asset unreachable after the retries: render a visible placeholder
+          // so the gap is obvious rather than an empty space.
+          this.warnLoadFailure(rawName, path, error instanceof HttpErrorResponse && error.status ? String(error.status) : 'network error');
+          this.source.set(PLACEHOLDER);
         },
       });
       // A name/variant change (or destroy) while the load is in flight: stop
       // listening, so a slow old response cannot overwrite the newer icon.
       onCleanup(() => subscription.unsubscribe());
     });
+
+    // Put the element into the container and decorate it with the CURRENT
+    // inputs. Runs during change detection, so it also runs on the server and
+    // the prerendered HTML carries the decorated <svg>. After hydration it
+    // replaces the server's <svg> with the client's. Built with the document's
+    // own DOM APIs, never the renderer: the renderer would stamp _ngcontent
+    // attributes onto every node and change the SVG's DOM.
+    effect(() => {
+      const host = this.container().nativeElement;
+      const svg = this.svgElement();
+      if (svg) {
+        decorateSvg(svg, {
+          size: this.sizeInPixels(),
+          color: this.colorStyle(),
+          decorative: this.decorative(),
+          label: this.ariaLabel(),
+        });
+      }
+      const inPlace = svg ? host.childNodes.length === 1 && host.firstChild === svg : host.childNodes.length === 0;
+      if (inPlace) return;
+      while (host.firstChild) host.removeChild(host.firstChild);
+      if (svg) host.appendChild(svg);
+    });
   }
 
   /**
-   * Decorate SVG markup with the current size, color and accessibility inputs
-   * (reads them, so a computed calling this tracks them).
-   *
-   * Returns `null` when the input is not a standalone SVG document — the
-   * caller must treat that as "do not render"; the raw input is never passed
-   * through. Without DOM APIs the markup is returned untouched: that path is
-   * only reachable for this module's own constants (nothing is fetched then).
-   * @private
+   * A known name whose asset can't be loaded stays quiet in development (as
+   * before: unit tests and offline work have no assets). Production can't
+   * tell it from a typo — the list isn't there — so it says so, once.
    */
-  private decorateSvg(svgText: string): string | null {
-    if (!this.canUseDom) {
-      return svgText;
-    }
-    const svg = parseSvg(svgText);
-    if (!svg) {
-      return null;
-    }
-
-    // Set size
-    const size = this.sizeInPixels();
-    svg.setAttribute('width', size);
-    svg.setAttribute('height', size);
-
-    // Set color
-    svg.style.color = this.colorStyle();
-
-    // Set accessibility attributes
-    if (this.decorative()) {
-      svg.setAttribute('aria-hidden', 'true');
-      svg.removeAttribute('role');
-      svg.removeAttribute('aria-label');
-    } else {
-      svg.setAttribute('role', 'img');
-      svg.removeAttribute('aria-hidden');
-
-      const label = this.ariaLabel();
-      if (label) {
-        svg.setAttribute('aria-label', label);
-      } else {
-        svg.removeAttribute('aria-label');
-      }
-    }
-
-    return new XMLSerializer().serializeToString(svg);
+  private warnLoadFailure(name: string, path: string, status: string): void {
+    if (typeof ngDevMode === 'undefined' || ngDevMode) return;
+    warnOnce(
+      name,
+      `[lc-icon] "${name}": ${path} could not be loaded (${status}) — an unknown name or a missing asset. Rendering a placeholder instead.`
+    );
   }
 }

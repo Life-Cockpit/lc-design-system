@@ -6,7 +6,7 @@ import {
   computed,
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
-import { IconComponent } from '../icon/icon.component';
+import { IconComponent } from '@lifecorner/angular-ui-kit/icon';
 
 /**
  * Status of a single pipeline node.

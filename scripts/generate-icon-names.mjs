@@ -9,7 +9,9 @@
  *   3. `INLINE_ICON_SVGS` keys — inlined common icons (icon-inline-svgs.ts).
  *
  * Emits:
- *   - src/lib/icon/icon-names.data.ts  → `ICON_NAMES` (compact, space-joined).
+ *   - src/lib/icon-names/icon-names.data.ts → `ICON_NAMES` (compact, space-joined),
+ *     in its own entry (`@lifecorner/angular-ui-kit/icon-names`) so production
+ *     bundles leave it out (3.5, gap AS-15).
  *   - src/assets/icon-names.json       → the same array, shipped for tooling.
  *   - src/lib/icon/icon-inline-tabler.data.ts → `INLINE_TABLER_SVGS`: the
  *     Tabler artwork of `INLINE_TABLER_NAMES` below, inlined at build time so
@@ -27,6 +29,7 @@ import { join } from 'path';
 
 const ROOT = process.cwd();
 const ICON_DIR = join(ROOT, 'libs/angular-ui-kit/src/lib/icon');
+const ICON_NAMES_DIR = join(ROOT, 'libs/angular-ui-kit/src/lib/icon-names');
 const TABLER_ROOT = join(ROOT, 'node_modules/@tabler/icons/icons');
 
 /** Base names (without `.svg`) of every icon in the given Tabler variant dir. */
@@ -152,7 +155,7 @@ export const ICON_NAMES: readonly string[] = Object.freeze(
 );
 `;
 
-writeFileSync(join(ICON_DIR, 'icon-names.data.ts'), ts);
+writeFileSync(join(ICON_NAMES_DIR, 'icon-names.data.ts'), ts);
 writeFileSync(
   join(ROOT, 'libs/angular-ui-kit/src/assets/icon-names.json'),
   JSON.stringify(names, null, 0) + '\n'

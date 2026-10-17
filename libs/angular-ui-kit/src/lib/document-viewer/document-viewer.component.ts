@@ -12,11 +12,11 @@ import {
   untracked,
 } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
-import { IconComponent } from '../icon/icon.component';
-import { SpinnerComponent } from '../spinner/spinner.component';
-import { CodeBlockComponent, CodeBlockLanguage } from '../code-block/code-block.component';
-import { MarkdownComponent } from '../markdown/markdown.component';
-import { isSafeResourceUrl } from '../shared/safe-url';
+import { IconComponent } from '@lifecorner/angular-ui-kit/icon';
+import { SpinnerComponent } from '@lifecorner/angular-ui-kit/spinner';
+import { CodeBlockComponent, CodeBlockLanguage } from '@lifecorner/angular-ui-kit/code-block';
+import { MarkdownComponent } from '@lifecorner/angular-ui-kit/markdown';
+import { isSafeResourceUrl } from '@lifecorner/angular-ui-kit/internal/url';
 
 export type DocumentType = 'pdf' | 'markdown' | 'image' | 'text' | 'code' | 'auto';
 

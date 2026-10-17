@@ -10,7 +10,7 @@ import {
   signal,
   output,
 } from '@angular/core';
-import { IconComponent } from '../icon/icon.component';
+import { IconComponent } from '@lifecorner/angular-ui-kit/icon';
 
 export interface KanbanCard {
   id: string;

@@ -16,8 +16,8 @@ import {
   OnDestroy,
   inject,
 } from '@angular/core';
-import { IconComponent } from '../icon/icon.component';
-import { OverlayStackService } from '../shared/overlay-stack.service';
+import { IconComponent } from '@lifecorner/angular-ui-kit/icon';
+import { OverlayStackService } from '@lifecorner/angular-ui-kit/internal/overlay';
 
 export interface MenuItem {
   id: string;

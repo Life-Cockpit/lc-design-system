@@ -122,23 +122,43 @@ The component serves the **Tabler** icon set and also accepts a set of documente
 **Heroicon/Material aliases**. An unknown name (a typo, or an un-aliased Heroicon
 name like \`beaker\` / \`table-cells\`) no longer disappears silently: it logs
 \`[lc-icon] Unknown icon "…"\` (once per name, in development **and** production)
-and always renders a **visible placeholder** (a dashed frame with a "?") — without
-issuing a network request. Set \`[strict]="true"\` to additionally throw in dev —
-useful as a CI guard (no effect in production builds).
+and always renders a **visible placeholder** (a dashed frame with a "?"). In
+development builds it is checked against the full name list and never requested.
+Production builds leave the ~5,000 names out of the bundle (3.5): they check a name
+only by its form, request a well-formed unknown name **once per page**, and show the
+placeholder with one warning when the answer is not an icon (404 included). Set
+\`[strict]="true"\` to additionally throw in dev — useful as a CI guard (no effect in
+production builds).
 
 **SPA-safe loading**
 
-Icons loaded over HTTP are validated before they are rendered: the response must
-not be \`text/html\` and must parse as a standalone \`<svg>\` document. This matters
-because SPA deployments answer missing asset paths with the \`index.html\` fallback
-and status 200 — without the gate, that document would be injected into the page
-once per icon instance. Non-SVG responses are dropped with a single console
-warning per name, and the placeholder is shown instead.
+Icons loaded over HTTP are validated before they are rendered: a \`text/html\` or
+non-SVG response is dropped. This matters because SPA deployments answer missing
+asset paths with the \`index.html\` fallback and status 200 — without the gate,
+that document would be injected into the page once per icon instance. An SVG
+response is rebuilt node by node from an **allow-list**: basic shapes (\`g\`,
+\`path\`, \`circle\`, \`ellipse\`, \`line\`, \`polyline\`, \`polygon\`, \`rect\`,
+\`text\`) with paint and geometry attributes. Scripts, event handlers, references
+(\`href\`, \`url(…)\`), a DOCTYPE or anything else drop the icon. Dropped responses
+get a single console warning per name, and the placeholder is shown instead.
+
+**Trusted Types**
+
+Bundled icons go through one Trusted Types policy, \`lc-icon\`, created on the
+first icon render; it accepts only the kit's own SVG strings (the inline sets and
+the placeholder). If your Content Security Policy enforces Trusted Types, add
+\`lc-icon\` to its \`trusted-types\` directive, for example
+\`require-trusted-types-for 'script'; trusted-types angular lc-icon\`. Fetched
+icons need no policy: they are rebuilt from the allow-list above. When the page
+refuses the policy, bundled icons show the placeholder (with their size, colour and
+label) and the console says so once. There is no sanitizer bypass and no HTML
+binding, so \`angular#unsafe-bypass\` is not needed for icons.
 
 The canonical set of valid names is exported for static checking:
 
 \`\`\`ts
-import { ICON_NAMES, isValidIconName, ICON_ALIASES } from '@lifecorner/angular-ui-kit';
+import { ICON_NAMES, isValidIconName } from '@lifecorner/angular-ui-kit/icon-names';
+import { ICON_ALIASES } from '@lifecorner/angular-ui-kit/icon';
 // or, for build tooling:
 import iconNames from '@lifecorner/angular-ui-kit/icon-names.json';
 

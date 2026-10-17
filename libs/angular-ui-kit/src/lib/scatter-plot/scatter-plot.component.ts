@@ -6,13 +6,13 @@ import {
   signal,
   output,
 } from '@angular/core';
-import { chartColor } from '../shared/chart-palette';
+import { chartColor } from '@lifecorner/angular-ui-kit/internal/chart';
 import {
   ChartValueFormatter,
   formatChartValue,
   niceScale,
   toFinite,
-} from '../shared/chart-scale';
+} from '@lifecorner/angular-ui-kit/internal/chart';
 
 export interface ScatterPoint {
   x: number;

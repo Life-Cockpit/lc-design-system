@@ -23,7 +23,11 @@
             "budgets": []
           },
           "configurations": {
-            "production": { "outputHashing": "all", "optimization": true, "sourceMap": false }
+            "production": {
+              "outputHashing": "all",
+              "optimization": { "scripts": true, "styles": { "minify": true, "inlineCritical": false }, "fonts": false },
+              "sourceMap": false
+            }
           },
           "defaultConfiguration": "production"
         }

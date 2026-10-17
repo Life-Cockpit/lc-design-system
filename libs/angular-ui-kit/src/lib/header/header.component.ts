@@ -14,12 +14,12 @@ import {
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { ButtonComponent } from '../button/button.component';
-import { LogoComponent } from '../logo/logo.component';
-import { IconComponent } from '../icon/icon.component';
-import { AvatarColor, AvatarComponent } from '../avatar/avatar.component';
-import { MenuComponent, MenuItem } from '../menu/menu.component';
-import { ThemeService } from '../theme/theme.service';
+import { ButtonComponent } from '@lifecorner/angular-ui-kit/button';
+import { LogoComponent } from '@lifecorner/angular-ui-kit/logo';
+import { IconComponent } from '@lifecorner/angular-ui-kit/icon';
+import { AvatarColor, AvatarComponent } from '@lifecorner/angular-ui-kit/avatar';
+import { MenuComponent, MenuItem } from '@lifecorner/angular-ui-kit/menu';
+import { ThemeService } from '@lifecorner/angular-ui-kit/theme';
 
 /** A link in the header's main navigation (`navItems`). */
 export interface HeaderNavItem {

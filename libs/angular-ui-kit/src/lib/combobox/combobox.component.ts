@@ -17,9 +17,9 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { OverlayModule } from '@angular/cdk/overlay';
 import { Observable, Subject, catchError, debounce, defer, of, switchMap, timer } from 'rxjs';
-import { IconComponent } from '../icon/icon.component';
-import { SpinnerComponent } from '../spinner/spinner.component';
-import { ChipComponent } from '../chip/chip.component';
+import { IconComponent } from '@lifecorner/angular-ui-kit/icon';
+import { SpinnerComponent } from '@lifecorner/angular-ui-kit/spinner';
+import { ChipComponent } from '@lifecorner/angular-ui-kit/chip';
 
 export interface ComboboxOption {
   value: string;

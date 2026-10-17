@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, isSignal, reflectComponentType, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
@@ -30,6 +30,21 @@ class ShellHostComponent {
   readonly asideLabelledby = signal('');
   readonly asideAriaLabel = signal('');
   readonly contentMaxWidth = signal('880px');
+}
+
+/** A page with `busy` bound (AS-12); `ShellHostComponent` above leaves it unset. */
+@Component({
+  imports: [AppPageComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: `
+    <lc-app-page mainId="shell-main" [busy]="busy()" asideAriaLabel="Mitglieder">
+      <p class="t-content">Heute wird geladen …</p>
+      <section page-aside>Mitglieder</section>
+    </lc-app-page>
+  `,
+})
+class BusyHostComponent {
+  readonly busy = signal(false);
 }
 
 /** The element for `selector`; fails the test when it is missing. */
@@ -197,6 +212,58 @@ describe('AppShellComponent and AppPageComponent (AS-10, LK-6)', () => {
     it('steps the side padding 24 · 32 · 48 · 56 · 72 · 96 px', () => {
       const steps = [...pageScss.matchAll(/--_pad-x: var\(--lc-app-page-padding-x, (\d+)px\)/g)].map((m) => Number(m[1]));
       expect(steps).toEqual([24, 32, 48, 56, 72, 96]);
+    });
+  });
+
+  describe('lc-app-page busy (AS-12)', () => {
+    const appPageTs = readFileSync(resolve(__dirname, 'app-page.component.ts'), 'utf-8');
+
+    function renderBusy(busy: boolean) {
+      const fixture = TestBed.createComponent(BusyHostComponent);
+      fixture.componentInstance.busy.set(busy);
+      fixture.detectChanges();
+      return { fixture, main: q(fixture.nativeElement as HTMLElement, 'main') };
+    }
+
+    it('AC-1: is an optional boolean signal input named busy, false by default, documented with @default false', () => {
+      const inputs = reflectComponentType(AppPageComponent)?.inputs ?? [];
+      expect(inputs).toContainEqual(expect.objectContaining({ propName: 'busy', templateName: 'busy' }));
+      const page = TestBed.createComponent(AppPageComponent).componentInstance;
+      expect(isSignal(page.busy)).toBe(true);
+      expect(page.busy()).toBe(false);
+      expect(appPageTs).toMatch(/No visual change\.\s*\* @default false\s*\*\/\s*readonly busy = input\(false\);/);
+    });
+
+    it('AC-2: sets aria-busy="true" on <main> while busy', () => {
+      const { main } = renderBusy(true);
+      expect(main.getAttribute('aria-busy')).toBe('true');
+      expect(main.id).toBe('shell-main');
+    });
+
+    it('AC-2: renders no aria-busy attribute when unset or false (never "false")', () => {
+      const unset = render();
+      expect(q(unset.el, 'main').hasAttribute('aria-busy')).toBe(false);
+      const { main } = renderBusy(false);
+      expect(main.hasAttribute('aria-busy')).toBe(false);
+    });
+
+    it('AC-2: follows true → false → true and changes nothing else in the DOM', () => {
+      const idle = renderBusy(false);
+      const idleHtml = (idle.fixture.nativeElement as HTMLElement).innerHTML;
+      const { fixture, main } = renderBusy(true);
+      const host = fixture.nativeElement as HTMLElement;
+      expect(host.innerHTML).toBe(idleHtml.replace('id="shell-main">', 'id="shell-main" aria-busy="true">'));
+
+      fixture.componentInstance.busy.set(false);
+      fixture.detectChanges();
+      expect(main.hasAttribute('aria-busy')).toBe(false);
+      expect(host.innerHTML).toBe(idleHtml);
+
+      fixture.componentInstance.busy.set(true);
+      fixture.detectChanges();
+      expect(main.getAttribute('aria-busy')).toBe('true');
+      expect(q(host, 'aside').getAttribute('aria-label')).toBe('Mitglieder');
+      expect(main.className).toBe('lc-app-page__main');
     });
   });
 });

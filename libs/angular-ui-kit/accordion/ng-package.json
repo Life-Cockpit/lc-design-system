@@ -1,0 +1,5 @@
+{
+  "lib": {
+    "entryFile": "../src/lib/accordion/index.ts"
+  }
+}

@@ -4,7 +4,7 @@ import {
   input,
   computed,
 } from '@angular/core';
-import { ChartValueFormatter, toFinite } from '../shared/chart-scale';
+import { ChartValueFormatter, toFinite } from '@lifecorner/angular-ui-kit/internal/chart';
 
 export type GaugeColor = 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'info';
 export type GaugeSize = 'sm' | 'md' | 'lg';

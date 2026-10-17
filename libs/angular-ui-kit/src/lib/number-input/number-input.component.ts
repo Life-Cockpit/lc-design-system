@@ -10,7 +10,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
-import { IconComponent } from '../icon/icon.component';
+import { IconComponent } from '@lifecorner/angular-ui-kit/icon';
 
 /** Number of decimals a number is written with (`0.001` → 3, `1e-7` → 7, `5` → 0). */
 function decimalsOf(n: number): number {

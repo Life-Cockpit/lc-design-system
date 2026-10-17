@@ -14,7 +14,7 @@ import {
 import { Overlay, OverlayRef, ConnectedPosition } from '@angular/cdk/overlay';
 import { ComponentPortal } from '@angular/cdk/portal';
 import { Subscription } from 'rxjs';
-import { OverlayStackService } from '../shared/overlay-stack.service';
+import { OverlayStackService } from '@lifecorner/angular-ui-kit/internal/overlay';
 
 export type TooltipPosition = 'top' | 'bottom' | 'left' | 'right';
 

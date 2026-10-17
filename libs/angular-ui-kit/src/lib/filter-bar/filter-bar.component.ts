@@ -6,8 +6,8 @@ import {
   computed,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { SearchInputComponent } from '../search-input/search-input.component';
-import { SelectComponent, SelectOption } from '../select/select.component';
+import { SearchInputComponent } from '@lifecorner/angular-ui-kit/search-input';
+import { SelectComponent, SelectOption } from '@lifecorner/angular-ui-kit/select';
 
 /**
  * Configuration for a single filter in the FilterBar.

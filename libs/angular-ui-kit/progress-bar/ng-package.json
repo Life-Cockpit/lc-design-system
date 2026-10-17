@@ -1,0 +1,5 @@
+{
+  "lib": {
+    "entryFile": "../src/lib/progress-bar/index.ts"
+  }
+}

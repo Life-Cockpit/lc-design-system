@@ -1,0 +1,5 @@
+{
+  "lib": {
+    "entryFile": "../src/lib/password-input/index.ts"
+  }
+}

@@ -8,10 +8,10 @@ import {
   effect,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { IconComponent } from '../icon/icon.component';
-import { ButtonComponent } from '../button/button.component';
-import { InputComponent } from '../input/input.component';
-import { ModalComponent, ModalPlacement } from '../modal/modal.component';
+import { IconComponent } from '@lifecorner/angular-ui-kit/icon';
+import { ButtonComponent } from '@lifecorner/angular-ui-kit/button';
+import { InputComponent } from '@lifecorner/angular-ui-kit/input';
+import { ModalComponent, ModalPlacement } from '@lifecorner/angular-ui-kit/modal';
 
 export type ConfirmDialogVariant = 'default' | 'destructive' | 'warning';
 

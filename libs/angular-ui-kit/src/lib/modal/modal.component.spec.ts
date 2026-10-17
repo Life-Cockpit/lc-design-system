@@ -4,7 +4,7 @@ import { Component, ChangeDetectionStrategy, signal } from '@angular/core';
 import { ModalComponent, ModalPlacement } from './modal.component';
 import { compile } from 'sass';
 import { join } from 'path';
-import { OverlayStackService } from '../shared/overlay-stack.service';
+import { OverlayStackService } from '../internal/overlay/overlay-stack.service';
 import { OverlayModule } from '@angular/cdk/overlay';
 import { InteractivityChecker } from '@angular/cdk/a11y';
 import { HttpTestingController } from '@angular/common/http/testing';

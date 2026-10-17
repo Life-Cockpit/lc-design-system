@@ -17,7 +17,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { DomSanitizer } from '@angular/platform-browser';
-import { isSafeImageUrl, isSafeLinkUrl } from '../shared/safe-url';
+import { isSafeImageUrl, isSafeLinkUrl } from '@lifecorner/angular-ui-kit/internal/url';
 
 export type RichTextEditorMode = 'rich' | 'markdown' | 'split';
 export type ToolbarAction =

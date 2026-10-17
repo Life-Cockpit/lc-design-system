@@ -11,7 +11,7 @@ import {
   ConfirmDialogVariant,
   RequireTextConfig,
 } from './confirm-dialog.component';
-import type { ModalPlacement } from '../modal/modal.component';
+import type { ModalPlacement } from '@lifecorner/angular-ui-kit/modal';
 
 export interface ConfirmOptions {
   title: string;

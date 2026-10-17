@@ -4,7 +4,7 @@ import {
   input,
   computed,
 } from '@angular/core';
-import { AvatarColor, AvatarComponent, AvatarSize } from '../avatar/avatar.component';
+import { AvatarColor, AvatarComponent, AvatarSize } from '@lifecorner/angular-ui-kit/avatar';
 
 export interface AvatarGroupItem {
   /** Image source URL */

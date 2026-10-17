@@ -11,8 +11,8 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { ButtonComponent } from '../button/button.component';
-import { IconComponent } from '../icon/icon.component';
+import { ButtonComponent } from '@lifecorner/angular-ui-kit/button';
+import { IconComponent } from '@lifecorner/angular-ui-kit/icon';
 
 export type NextStepCardTone = 'neutral' | 'primary' | 'success' | 'warning' | 'info';
 

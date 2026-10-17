@@ -9,14 +9,14 @@ import {
   computed,
   signal,
 } from '@angular/core';
-import { chartColor } from '../shared/chart-palette';
-import { linearPath, smoothPath } from '../shared/chart-path';
+import { chartColor } from '@lifecorner/angular-ui-kit/internal/chart';
+import { linearPath, smoothPath } from '@lifecorner/angular-ui-kit/internal/chart';
 import {
   ChartValueFormatter,
   formatChartValue,
   niceScale,
   toFinite,
-} from '../shared/chart-scale';
+} from '@lifecorner/angular-ui-kit/internal/chart';
 
 export interface AreaChartSeries {
   label: string;

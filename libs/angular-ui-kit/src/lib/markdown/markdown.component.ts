@@ -16,8 +16,8 @@ import {
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { HttpClient } from '@angular/common/http';
 import { Subscription } from 'rxjs';
-import { CodeBlockComponent, CodeBlockLanguage } from '../code-block/code-block.component';
-import { isSafeImageUrl, isSafeLinkUrl } from '../shared/safe-url';
+import { CodeBlockComponent, CodeBlockLanguage } from '@lifecorner/angular-ui-kit/code-block';
+import { isSafeImageUrl, isSafeLinkUrl } from '@lifecorner/angular-ui-kit/internal/url';
 
 export interface MarkdownHeading {
   level: number;

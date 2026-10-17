@@ -1,6 +1,6 @@
 import { Component, ChangeDetectionStrategy, input, output, computed } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
-import { IconComponent } from '../icon/icon.component';
+import { IconComponent } from '@lifecorner/angular-ui-kit/icon';
 
 export type ChipVariant = 'default' | 'primary' | 'success' | 'warning' | 'error' | 'info';
 export type ChipSize = 'sm' | 'md' | 'lg';

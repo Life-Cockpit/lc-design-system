@@ -8,9 +8,9 @@ import {
   signal,
 } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
-import { IconComponent } from '../icon/icon.component';
-import { AlertComponent } from '../alert/alert.component';
-import type { InputAutocapitalize, InputEnterKeyHint } from '../input/input.component';
+import { IconComponent } from '@lifecorner/angular-ui-kit/icon';
+import { AlertComponent } from '@lifecorner/angular-ui-kit/alert';
+import type { InputAutocapitalize, InputEnterKeyHint } from '@lifecorner/angular-ui-kit/input';
 
 let nextUniqueId = 0;
 

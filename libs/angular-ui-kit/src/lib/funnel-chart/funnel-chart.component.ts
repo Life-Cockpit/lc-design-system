@@ -9,12 +9,12 @@ import {
   computed,
   signal,
 } from '@angular/core';
-import { readableInk } from '../shared/chart-color';
+import { readableInk } from '@lifecorner/angular-ui-kit/internal/chart';
 import {
   ChartValueFormatter,
   formatChartValue,
   toFinite,
-} from '../shared/chart-scale';
+} from '@lifecorner/angular-ui-kit/internal/chart';
 
 export interface FunnelStep {
   label: string;

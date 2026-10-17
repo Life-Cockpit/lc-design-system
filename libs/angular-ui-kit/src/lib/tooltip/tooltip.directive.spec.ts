@@ -3,7 +3,7 @@ import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { By } from '@angular/platform-browser';
 import { TooltipDirective } from './tooltip.directive';
 import { FlexibleConnectedPositionStrategy, OverlayModule, OverlayRef } from '@angular/cdk/overlay';
-import { OverlayStackService } from '../shared/overlay-stack.service';
+import { OverlayStackService } from '../internal/overlay/overlay-stack.service';
 
 describe('TooltipDirective', () => {
   let fixture: ComponentFixture<TestComponent>;

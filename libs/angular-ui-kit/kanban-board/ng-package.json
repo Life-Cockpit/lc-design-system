@@ -1,0 +1,5 @@
+{
+  "lib": {
+    "entryFile": "../src/lib/kanban-board/index.ts"
+  }
+}

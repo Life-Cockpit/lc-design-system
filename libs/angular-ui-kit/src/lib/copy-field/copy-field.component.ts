@@ -8,9 +8,9 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
-import { ButtonComponent } from '../button/button.component';
-import { IconComponent } from '../icon/icon.component';
-import { InputComponent } from '../input/input.component';
+import { ButtonComponent } from '@lifecorner/angular-ui-kit/button';
+import { IconComponent } from '@lifecorner/angular-ui-kit/icon';
+import { InputComponent } from '@lifecorner/angular-ui-kit/input';
 
 /** `stacked`: the button below the value at full width (phones); `inline`: beside it. */
 export type CopyFieldLayout = 'stacked' | 'inline';

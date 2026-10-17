@@ -1,0 +1,5 @@
+{
+  "lib": {
+    "entryFile": "../src/lib/gantt-chart/index.ts"
+  }
+}

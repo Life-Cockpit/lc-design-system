@@ -6,7 +6,7 @@ import {
   HostListener,
   computed,
 } from '@angular/core';
-import { IconComponent } from '../icon/icon.component';
+import { IconComponent } from '@lifecorner/angular-ui-kit/icon';
 
 /** Visual variant of `lc-card`. */
 export type CardVariant = 'elevated' | 'outlined' | 'flat' | 'raised' | 'dashed';

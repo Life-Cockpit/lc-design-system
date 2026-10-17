@@ -9,8 +9,8 @@ import {
   computed,
   signal,
 } from '@angular/core';
-import { linearPath, smoothPath } from '../shared/chart-path';
-import { ChartValueFormatter, formatChartValue, toFinite } from '../shared/chart-scale';
+import { linearPath, smoothPath } from '@lifecorner/angular-ui-kit/internal/chart';
+import { ChartValueFormatter, formatChartValue, toFinite } from '@lifecorner/angular-ui-kit/internal/chart';
 
 export type SparklineColor = 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'info';
 export type SparklineCurve = 'linear' | 'smooth';

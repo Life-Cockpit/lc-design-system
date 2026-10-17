@@ -4,8 +4,8 @@ import {
   input,
   computed,
 } from '@angular/core';
-import { chartColor } from '../shared/chart-palette';
-import { toFinite } from '../shared/chart-scale';
+import { chartColor } from '@lifecorner/angular-ui-kit/internal/chart';
+import { toFinite } from '@lifecorner/angular-ui-kit/internal/chart';
 
 export interface DonutSegment {
   /** Share of the whole. Non-finite and negative values count as 0. */

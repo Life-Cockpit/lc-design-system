@@ -6,8 +6,8 @@ import {
   computed,
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
-import { IconComponent } from '../icon/icon.component';
-import { BadgeComponent, BadgeVariant } from '../badge/badge.component';
+import { IconComponent } from '@lifecorner/angular-ui-kit/icon';
+import { BadgeComponent, BadgeVariant } from '@lifecorner/angular-ui-kit/badge';
 import {
   TimelineContentDirective,
   TimelineMetaDirective,

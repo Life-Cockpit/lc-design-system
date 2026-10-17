@@ -18,8 +18,8 @@ import {
   viewChild,
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
-import { MarkdownComponent } from '../markdown/markdown.component';
-import { IconComponent } from '../icon/icon.component';
+import { MarkdownComponent } from '@lifecorner/angular-ui-kit/markdown';
+import { IconComponent } from '@lifecorner/angular-ui-kit/icon';
 
 export type ChatMessageRole = 'user' | 'agent' | 'system';
 

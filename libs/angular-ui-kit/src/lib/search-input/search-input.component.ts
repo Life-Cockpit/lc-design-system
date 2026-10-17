@@ -11,7 +11,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { IconComponent } from '../icon/icon.component';
+import { IconComponent } from '@lifecorner/angular-ui-kit/icon';
 import { Subject, debounce, distinctUntilChanged, filter, of, timer } from 'rxjs';
 
 export type SearchInputSize = 'sm' | 'md' | 'lg';

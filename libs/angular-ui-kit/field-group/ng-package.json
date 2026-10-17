@@ -1,0 +1,5 @@
+{
+  "lib": {
+    "entryFile": "../src/lib/field-group/index.ts"
+  }
+}

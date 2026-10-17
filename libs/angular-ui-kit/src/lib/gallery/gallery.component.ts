@@ -14,9 +14,9 @@ import {
   viewChild,
 } from '@angular/core';
 import { CdkTrapFocus } from '@angular/cdk/a11y';
-import { IconComponent } from '../icon/icon.component';
+import { IconComponent } from '@lifecorner/angular-ui-kit/icon';
 import { NgStyle } from '@angular/common';
-import { isSafeImageUrl } from '../shared/safe-url';
+import { isSafeImageUrl } from '@lifecorner/angular-ui-kit/internal/url';
 
 export type GalleryLayout = 'grid' | 'masonry';
 export type GallerySize = 'sm' | 'md' | 'lg';

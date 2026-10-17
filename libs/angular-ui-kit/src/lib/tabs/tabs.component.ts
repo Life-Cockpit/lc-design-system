@@ -14,7 +14,7 @@ import {
   ElementRef,
 } from '@angular/core';
 import { NgClass, NgTemplateOutlet } from '@angular/common';
-import { BadgeComponent, BadgeVariant } from '../badge/badge.component';
+import { BadgeComponent, BadgeVariant } from '@lifecorner/angular-ui-kit/badge';
 
 let nextUniqueId = 0;
 

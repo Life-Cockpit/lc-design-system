@@ -6,8 +6,8 @@ import {
   computed,
   output,
 } from '@angular/core';
-import { IconComponent } from '../icon/icon.component';
-import { SearchInputComponent } from '../search-input/search-input.component';
+import { IconComponent } from '@lifecorner/angular-ui-kit/icon';
+import { SearchInputComponent } from '@lifecorner/angular-ui-kit/search-input';
 
 export type NotificationType = 'info' | 'success' | 'warning' | 'error';
 export type NotificationPriority = 'low' | 'normal' | 'high' | 'urgent';

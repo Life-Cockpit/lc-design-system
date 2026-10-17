@@ -1,9 +1,8 @@
-// Canonical `lc-icon` name catalog + validation helpers (public API).
-import { ICON_NAMES } from './icon-names.data';
+// `lc-icon` name helpers (public API). The full name list and `isValidIconName`
+// live in `@lifecorner/angular-ui-kit/icon-names`.
 import type { IconVariant } from './icon.component';
 import { resolveInlineIconSvg } from './icon-inline-lookup';
 
-export { ICON_NAMES } from './icon-names.data';
 export { ICON_ALIASES } from './icon-aliases';
 
 /**
@@ -12,26 +11,10 @@ export { ICON_ALIASES } from './icon-aliases';
  * There are ~5000 valid names, so this is intentionally a broad `string` alias
  * rather than a giant union type (which would bloat editors and builds). Prefer
  * runtime validation via {@link isValidIconName}, or lint your usages against
- * the {@link ICON_NAMES} array (also shipped as `icon-names.json`).
+ * the {@link ICON_NAMES} array (also shipped as `icon-names.json`), both from
+ * `@lifecorner/angular-ui-kit/icon-names`.
  */
 export type IconName = string;
-
-const ICON_NAME_SET: ReadonlySet<string> = new Set(ICON_NAMES);
-
-/**
- * Whether `name` is a valid `lc-icon` name — i.e. a served Tabler icon, a
- * documented alias ({@link ICON_ALIASES}), or an inlined icon.
- *
- * @example
- * ```ts
- * isValidIconName('flask');       // true  (Tabler)
- * isValidIconName('x-mark');      // true  (Heroicon alias)
- * isValidIconName('beaker');      // false (not a Tabler name — did you mean 'flask'?)
- * ```
- */
-export function isValidIconName(name: string): boolean {
-  return ICON_NAME_SET.has(name);
-}
 
 /**
  * Whether `name` renders from markup shipped in the kit — no request, so it
@@ -52,4 +35,3 @@ export function isValidIconName(name: string): boolean {
 export function isInlineIconName(name: string, variant: IconVariant = 'outline'): boolean {
   return resolveInlineIconSvg(name, variant) !== undefined;
 }
-

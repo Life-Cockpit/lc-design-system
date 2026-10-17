@@ -1,4 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/angular';
+import { applicationConfig } from '@storybook/angular';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { provideRouter, withHashLocation } from '@angular/router';
 import { fn, expect, userEvent, within } from 'storybook/test';
 import { SidenavComponent } from './sidenav.component';
 import { HeaderComponent } from '../header/header.component';
@@ -36,7 +39,11 @@ const meta: Meta<SidenavComponent> = {
     },
     isOpen: { description: 'Whether the sidenav is currently visible' },
     collapsed: { description: 'Collapse to 56px icon-rail mode' },
-    activeRoute: { description: 'The currently active route (highlights matching item)' },
+    activeRoute: {
+      description:
+        'The current route. Set: the first link whose `route` equals it is the current item (`aria-current="page"` and the current look), whatever the router matches. Empty: the link whose route equals the router URL\'s path, otherwise the longest route the path starts with (`/` only on `/`)',
+      table: { defaultValue: { summary: "''" } },
+    },
     width: { description: 'Custom width (CSS value, e.g. "280px")' },
     showLogo: { description: 'Show the logo at the top of the sidenav (for sidebar-first layouts)' },
     logoSize: {
@@ -84,7 +91,7 @@ Sidenav component for application navigation sidebar.
 - **Section headlines** for item grouping with optional action buttons (\`item.action\`)
 - **Action buttons** on any item — hover-reveal icon buttons that emit \`itemAction\`
 - **Badges** on items (\`item.badge\`) for counts or status indicators with color variants
-- **Active route highlighting** — active items keep their color on hover
+- **One current item** — the link for \`activeRoute\` (or, without it, the one the router's URL matches) gets \`aria-current="page"\` and the current look, every other link neither; the current item keeps its color on hover
 - **Keyboard navigation** — Escape closes drawer mode
 - Configurable **width** and **position** (left/right)
 - Optional **backdrop overlay**
@@ -105,7 +112,7 @@ Sidenav component for application navigation sidebar.
 | \`logoSize\` | \`'xs' \\| 'sm' \\| 'md' \\| 'lg' \\| 'xl'\` | \`'md'\` | Size of the brand logo (logo area grows automatically) |
 | \`mobileBreakpoint\` | \`number\` | \`768\` | Viewport width (px) below which docked → drawer |
 | \`items\` | \`NavigationItem[]\` | \`[]\` | Navigation items |
-| \`activeRoute\` | \`string\` | \`''\` | Currently active route |
+| \`activeRoute\` | \`string\` | \`''\` | The current route. Set: the first link (display order) whose \`route\` equals it is the current item — it alone gets \`aria-current="page"\` and the current look, whatever the router matches. Empty: the sidenav follows the router — the link whose route equals the URL's path, otherwise the one with the longest route the path starts with (\`/household\` on \`/household/members\`; \`/\` only on \`/\`) |
 | \`hasOverlay\` | \`boolean\` | \`true\` | Show backdrop in drawer mode |
 | \`ariaLabel\` | \`string\` | \`'Side navigation'\` | ARIA label |
 | \`theme\` | \`'auto' \\| 'light' \\| 'dark'\` | \`'auto'\` | Theme variant |
@@ -766,3 +773,63 @@ export const TransparentOnThePage: Story = {
   }),
 };
 
+/** An empty routed page for the story's own router. */
+@Component({ template: '', changeDetection: ChangeDetectionStrategy.OnPush })
+class RouterMatchedPageComponent {}
+
+/**
+ * No `activeRoute`: the sidenav follows the router (AS-16). The story has its
+ * own router on the iframe's hash, so the links really navigate.
+ */
+export const RouterMatched: Story = {
+  name: 'Router-matched current item',
+  decorators: [
+    applicationConfig({
+      providers: [provideRouter([{ path: '**', component: RouterMatchedPageComponent }], withHashLocation())],
+    }),
+  ],
+  args: {
+    isOpen: true,
+    mode: 'docked',
+    variant: 'transparent',
+    width: '248px',
+    mobileBreakpoint: 0,
+    ariaLabel: 'Hauptnavigation',
+    items: [
+      { id: 'today', icon: 'sun', label: 'Heute', route: '/', displayOrder: 1 },
+      { id: 'household', icon: 'home', label: 'Haushalt', route: '/household', displayOrder: 2 },
+      { id: 'members', icon: 'users', label: 'Mitglieder', route: '/household/members', displayOrder: 3 },
+      { id: 'settings', icon: 'settings', label: 'Einstellungen', route: '/settings', displayOrder: 4 },
+    ],
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Without `activeRoute` the sidenav follows the router: the link whose route equals the URL\'s path is the current item, otherwise the one with the longest route the path starts with (`/` only on `/`). Exactly one link is current, and it is both painted current and announced with `aria-current="page"`. Click *Mitglieder*: only it is current — 3.4 painted *Haushalt* too.',
+      },
+    },
+  },
+  render: (args) => ({
+    props: args,
+    template: `
+      <div style="display: flex; height: 360px; background: var(--color-background); border: 1px solid var(--color-border); border-radius: 12px; overflow: hidden;">
+        <lc-sidenav [isOpen]="isOpen" [mode]="mode" [variant]="variant" [width]="width" [mobileBreakpoint]="mobileBreakpoint"
+                    [ariaLabel]="ariaLabel" [items]="items" />
+        <div style="flex: 1; padding: 48px 24px; color: var(--color-text-secondary);">Page</div>
+      </div>`,
+  }),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole('link', { name: 'Mitglieder' }));
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    const current = canvasElement.querySelectorAll('a[aria-current="page"]');
+    await expect(current).toHaveLength(1);
+    await expect(current[0].textContent?.trim()).toBe('Mitglieder');
+    const painted = canvasElement.querySelectorAll('.lc-sidenav__nav-item--active');
+    await expect(painted).toHaveLength(1);
+    await expect(painted[0]).toBe(current[0]);
+    // Leave the current item without the click's focus ring, so the canvas shows its plain look.
+    (current[0] as HTMLElement).blur();
+  },
+};

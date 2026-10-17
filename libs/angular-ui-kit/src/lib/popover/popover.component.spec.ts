@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { By } from '@angular/platform-browser';
 import { PopoverComponent, PopoverPosition, PopoverTrigger } from './popover.component';
-import { OverlayStackService } from '../shared/overlay-stack.service';
+import { OverlayStackService } from '../internal/overlay/overlay-stack.service';
 
 @Component({
   standalone: true,

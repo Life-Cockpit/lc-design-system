@@ -1,0 +1,5 @@
+{
+  "lib": {
+    "entryFile": "../src/lib/rich-text-editor/index.ts"
+  }
+}

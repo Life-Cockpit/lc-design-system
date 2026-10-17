@@ -28,6 +28,8 @@ accordion, accordion-group, alert, app-page, app-shell, area-chart, avatar, avat
 
 New in 3.3: app-shell, app-page, bottom-nav, provider-button, radio-group, copy-field. Plus theme (`ThemeService`), design tokens and global classes (`.lc-horizon`, `.lc-display`, `.lc-title`, `.lc-overline`).
 
+Since 3.5 each component folder of `libs/angular-ui-kit/src/lib/` is a secondary entry, `@lifecorner/angular-ui-kit/<folder>` (for example `import { IconComponent } from '@lifecorner/angular-ui-kit/icon'`), built from a one-line `ng-package.json` stub in `libs/angular-ui-kit/<folder>/`. Entries import each other by package path (`@lifecorner/angular-ui-kit/icon`), never by a relative path; the primary entry `@lifecorner/angular-ui-kit` re-exports every public entry and keeps working. `internal/{overlay,chart,url}` are the kit's own shared helpers (formerly `lib/shared/`).
+
 ## Design Tokens
 
 Design tokens are managed via [Style Dictionary](https://amzn.github.io/style-dictionary/) and generate both TypeScript constants and SCSS variables from `libs/angular-ui-kit/tokens.json`.

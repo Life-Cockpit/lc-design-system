@@ -1,8 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { IconComponent } from '../icon/icon.component';
-import { BadgeComponent } from '../badge/badge.component';
+import { IconComponent } from '@lifecorner/angular-ui-kit/icon';
+import { BadgeComponent } from '@lifecorner/angular-ui-kit/badge';
 
 /**
  * A destination in the bottom navigation bar. A subset of `NavigationItem`, so

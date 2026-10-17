@@ -1,0 +1,5 @@
+{
+  "lib": {
+    "entryFile": "../src/lib/pagination/index.ts"
+  }
+}

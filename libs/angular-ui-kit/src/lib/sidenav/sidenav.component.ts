@@ -10,14 +10,17 @@ import {
   untracked,
   HostListener,
   OnDestroy,
+  inject,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NgTemplateOutlet, NgStyle } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { NavigationEnd, Router, RouterLink } from '@angular/router';
+import { filter } from 'rxjs';
 import { A11yModule } from '@angular/cdk/a11y';
-import { NavigationItem } from '../models/navigation-item.interface';
-import { IconComponent } from '../icon/icon.component';
-import { BadgeComponent } from '../badge/badge.component';
-import { LogoComponent } from '../logo/logo.component';
+import { NavigationItem } from '@lifecorner/angular-ui-kit/models';
+import { IconComponent } from '@lifecorner/angular-ui-kit/icon';
+import { BadgeComponent } from '@lifecorner/angular-ui-kit/badge';
+import { LogoComponent } from '@lifecorner/angular-ui-kit/logo';
 
 export type SidenavPosition = 'left' | 'right';
 export type SidenavMode = 'drawer' | 'docked';
@@ -42,7 +45,10 @@ export type SidenavVariant = 'default' | 'transparent';
  * - Section headlines for item grouping with optional action buttons
  * - Action buttons on any item (hover-reveal)
  * - Badge support on items (count / status indicator)
- * - Active route highlighting (no hover color change on active items)
+ * - One current item, announced and painted alike: the link for `activeRoute`
+ *   (or, without it, the one the router's URL matches) gets
+ *   `aria-current="page"` and the current look, every other link neither
+ *   (AS-16). No hover color change on the current item
  * - Keyboard navigation support (Escape closes drawer)
  * - Configurable width and position (left/right)
  * - Optional backdrop overlay
@@ -75,7 +81,7 @@ export type SidenavVariant = 'default' | 'transparent';
 @Component({
   selector: 'lc-sidenav',
   standalone: true,
-  imports: [NgTemplateOutlet, NgStyle, RouterModule, A11yModule, IconComponent, BadgeComponent, LogoComponent],
+  imports: [NgTemplateOutlet, NgStyle, RouterLink, A11yModule, IconComponent, BadgeComponent, LogoComponent],
   templateUrl: './sidenav.component.html',
   styleUrl: './sidenav.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -86,6 +92,15 @@ export type SidenavVariant = 'default' | 'transparent';
   },
 })
 export class SidenavComponent implements OnDestroy {
+  private readonly router = inject(Router);
+
+  /**
+   * The router's URL, updated on every `NavigationEnd`. Before the first
+   * navigation it is the router's initial URL (`/`). Read only when
+   * `activeRoute` is empty.
+   */
+  private readonly routerUrl = signal(this.router.url);
+
   /** Whether the sidenav is collapsed to icon-only rail (two-way bindable) */
   readonly collapsed = model(false);
 
@@ -153,11 +168,21 @@ export class SidenavComponent implements OnDestroy {
    * 'warning' | 'error' | 'info' }`), `action` (`{ icon: string; ariaLabel?:
    * string }`, a button that emits `itemAction`), `requiredRole` (for the
    * app's own filtering; not evaluated here). Items link with `routerLink`;
-   * the one whose `route` equals `activeRoute` gets `aria-current="page"`.
+   * exactly one link, the current item (see `activeRoute`), gets
+   * `aria-current="page"`.
+   * @default []
    */
   readonly items = input<NavigationItem[]>([]);
 
-  /** Current active route for highlighting */
+  /**
+   * The current route. When set, the first link (in display order) whose
+   * `route` equals it is the current item: it alone gets `aria-current="page"`
+   * and the current look, whatever the router matches. When empty, the
+   * sidenav follows the router: the link whose route equals the URL's path is
+   * current, otherwise the one with the longest route the path starts with
+   * (`/household` on `/household/members`; `/` only on `/`).
+   * @default ''
+   */
   readonly activeRoute = input('');
 
   /** Theme variant for the sidenav */
@@ -185,22 +210,23 @@ export class SidenavComponent implements OnDestroy {
 
   /**
    * Ids of the expanded parent items — the single source of truth for
-   * `isExpanded`. Seeded with the active child's parent whenever `activeRoute`
-   * changes (see constructor), so a group opens on navigation but can still
+   * `isExpanded`. Seeded with the current item's parent whenever it changes
+   * (see constructor), so a group opens on navigation but can still
    * be collapsed by the user. (It used to be OR-ed with `hasActiveChild` at
    * read time, so toggling such a group flipped the set without ever closing
    * it — the set drifted out of sync with what was on screen.)
    */
   readonly expandedItems = signal<Set<string>>(new Set());
 
-  /** Ids of the collapsible parents (top-level groups, section sub-groups) that contain the active route. */
+  /** Ids of the collapsible parents (top-level groups, section sub-groups) that contain the current item. */
   private readonly activeChildParents = computed(() => {
-    const route = this.activeRoute();
+    const current = this.currentItem();
     const ids: string[] = [];
+    if (!current) return ids;
     for (const item of this.items()) {
       const collapsibles = item.isSection ? (item.children ?? []) : [item];
       for (const parent of collapsibles) {
-        if (parent.children?.some((child) => child.route === route)) {
+        if (parent.children?.includes(current)) {
           ids.push(parent.id);
         }
       }
@@ -213,6 +239,58 @@ export class SidenavComponent implements OnDestroy {
    */
   readonly sortedItems = computed(() => {
     return [...this.items()].sort((a, b) => a.displayOrder - b.displayOrder);
+  });
+
+  /**
+   * Every item rendered as a link, in display order (depth first): simple
+   * items, the children of a group, the children of a section, and the
+   * children of a section's sub-group.
+   */
+  private readonly linkItems = computed(() => {
+    const links: NavigationItem[] = [];
+    for (const item of this.sortedItems()) {
+      if (item.isSection) {
+        for (const child of item.children ?? []) {
+          if (child.children?.length) links.push(...child.children);
+          else links.push(child);
+        }
+      } else if (item.children?.length) {
+        links.push(...item.children);
+      } else {
+        links.push(item);
+      }
+    }
+    return links;
+  });
+
+  /** The router URL's path: primary outlet only, no query, fragment or matrix parameters. */
+  private readonly routerPath = computed(() => {
+    const segments = this.router.parseUrl(this.routerUrl()).root.children['primary']?.segments ?? [];
+    return `/${segments.map((segment) => segment.path).join('/')}`;
+  });
+
+  /**
+   * The one current link (or none). The single source of both the current
+   * look (`lc-sidenav__nav-item--active`) and `aria-current="page"` (AS-16).
+   * With `activeRoute` set: the first link whose route equals it. Without:
+   * the router's path — the exact match wins, otherwise the longest link
+   * route the path continues with a `/` (`/` matches only `/`); ties go to
+   * the first link in display order.
+   */
+  private readonly currentItem = computed<NavigationItem | null>(() => {
+    const links = this.linkItems();
+    const active = this.activeRoute();
+    if (active !== '') return links.find((link) => link.route === active) ?? null;
+    const path = this.routerPath();
+    const exact = links.find((link) => link.route === path);
+    if (exact) return exact;
+    let best: NavigationItem | null = null;
+    for (const link of links) {
+      const route = link.route;
+      if (!route || route === '/' || !path.startsWith(`${route}/`)) continue;
+      if (!best || route.length > best.route.length) best = link;
+    }
+    return best;
   });
 
   /**
@@ -231,6 +309,13 @@ export class SidenavComponent implements OnDestroy {
   readonly itemAction = output<NavigationItem>();
 
   constructor() {
+    this.router.events
+      .pipe(
+        filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+        takeUntilDestroyed(),
+      )
+      .subscribe(() => this.routerUrl.set(this.router.url));
+
     // React to mobileBreakpoint changes
     effect(() => {
       this.mobileBreakpoint(); // track dependency
@@ -329,18 +414,19 @@ export class SidenavComponent implements OnDestroy {
   }
 
   /**
-   * Check if an item is active
+   * Whether the item is the current link (see `currentItem`): it alone is
+   * painted current and carries `aria-current="page"`.
    */
   isItemActive(item: NavigationItem): boolean {
-    return this.activeRoute() === item.route;
+    return this.currentItem() === item;
   }
 
   /**
-   * Check if a parent item has an active child
+   * Check if a parent item contains the current link
    */
   hasActiveChild(item: NavigationItem): boolean {
-    if (!item.children?.length) return false;
-    return item.children.some((child) => this.isItemActive(child));
+    const current = this.currentItem();
+    return !!current && !!item.children?.includes(current);
   }
 
   /**

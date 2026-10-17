@@ -12,8 +12,8 @@ import {
   OnDestroy,
 } from '@angular/core';
 import { A11yModule } from '@angular/cdk/a11y';
-import { IconComponent } from '../icon/icon.component';
-import { OverlayStackService } from '../shared/overlay-stack.service';
+import { IconComponent } from '@lifecorner/angular-ui-kit/icon';
+import { OverlayStackService } from '@lifecorner/angular-ui-kit/internal/overlay';
 
 export type DrawerPosition = 'left' | 'right';
 export type DrawerSize = 'sm' | 'md' | 'lg' | 'xl';

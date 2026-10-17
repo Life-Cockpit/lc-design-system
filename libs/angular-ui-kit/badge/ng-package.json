@@ -1,0 +1,5 @@
+{
+  "lib": {
+    "entryFile": "../src/lib/badge/index.ts"
+  }
+}

@@ -1,7 +1,12 @@
 /**
  * LifeCorner Design System (UI Kit)
  *
- * Public API for the design system library.
+ * Public API for the design system library: the primary entry
+ * `@lifecorner/angular-ui-kit` re-exports every public secondary entry
+ * (`@lifecorner/angular-ui-kit/<entry>`, one per folder of `src/lib/`). Import
+ * from the secondary entries to keep unused parts out of an app and to let
+ * lazy routes take kit parts with them (3.5, gap AS-15); this entry keeps
+ * working unchanged.
  *
  * To use global styles, import in your Angular application's styles.scss:
  * @import '@lifecorner/angular-ui-kit/styles/index.scss';
@@ -11,380 +16,363 @@
 // Design Tokens
 // ============================================================================
 // Import all generated token constants (colors, spacing, typography, etc.)
-export * from './lib/tokens';
+export * from '@lifecorner/angular-ui-kit/tokens';
 
 // ============================================================================
 // Theme System
 // ============================================================================
-// Theme types for TypeScript type safety
-export * from './lib/theme/theme.types';
-
-// Theme service for light/dark mode switching
-export * from './lib/theme/theme.service';
+// Theme types and the theme service for light/dark mode switching
+export * from '@lifecorner/angular-ui-kit/theme';
 
 // ============================================================================
 // Models & Interfaces
 // ============================================================================
 // Navigation Item interface
-export * from './lib/models/navigation-item.interface';
+export * from '@lifecorner/angular-ui-kit/models';
 
 // ============================================================================
 // Components
 // ============================================================================
 // Accordion Component
-export * from './lib/accordion/accordion.component';
-export * from './lib/accordion/accordion-group.component';
-export * from './lib/accordion/accordion-header.directive';
-export * from './lib/accordion/accordion-content.directive';
+export * from '@lifecorner/angular-ui-kit/accordion';
 
 // Button Component
-export * from './lib/button/button.component';
-export * from './lib/button/button-link.component';
+export * from '@lifecorner/angular-ui-kit/button';
 
 // Card Component
-export * from './lib/card/card.component';
+export * from '@lifecorner/angular-ui-kit/card';
 
 // Checkbox Component
-export * from './lib/checkbox/checkbox.component';
+export * from '@lifecorner/angular-ui-kit/checkbox';
 
 // Icon Component
-export * from './lib/icon/icon.component';
-export * from './lib/icon/icon-catalog';
+export * from '@lifecorner/angular-ui-kit/icon';
+// The canonical icon name list (ICON_NAMES, isValidIconName)
+export * from '@lifecorner/angular-ui-kit/icon-names';
 
 // Logo Component
-export * from './lib/logo/logo.component';
+export * from '@lifecorner/angular-ui-kit/logo';
 
 // Menu Component
-export * from './lib/menu/menu.component';
+export * from '@lifecorner/angular-ui-kit/menu';
 
 // Input Component
-export * from './lib/input/input.component';
+export * from '@lifecorner/angular-ui-kit/input';
 
-// Radio Component
-export * from './lib/radio/radio.component';
+// Radio Component, Radio Group Component (fieldset + legend around lc-radio)
+export * from '@lifecorner/angular-ui-kit/radio';
 
 // Typography Component
-export * from './lib/typography/typography.component';
+export * from '@lifecorner/angular-ui-kit/typography';
 
 // ============================================================================
 // Form Components
 // ============================================================================
 // DatePicker Component
-export * from './lib/datepicker/datepicker.component';
+export * from '@lifecorner/angular-ui-kit/datepicker';
 
 // Select Component
-export * from './lib/select/select.component';
+export * from '@lifecorner/angular-ui-kit/select';
 
 // Switch Component
-export * from './lib/switch/switch.component';
+export * from '@lifecorner/angular-ui-kit/switch';
 
 // Textarea Component
-export * from './lib/textarea/textarea.component';
+export * from '@lifecorner/angular-ui-kit/textarea';
 
 // Password Input Component
-export * from './lib/password-input/password-input.component';
+export * from '@lifecorner/angular-ui-kit/password-input';
 
 // Verification Code Input Component
-export * from './lib/verification-code-input/verification-code-input.component';
+export * from '@lifecorner/angular-ui-kit/verification-code-input';
 
 // Email Input Component
-export * from './lib/email-input/email-input.component';
+export * from '@lifecorner/angular-ui-kit/email-input';
 
 // Hero Component
-export * from './lib/hero/hero.component';
+export * from '@lifecorner/angular-ui-kit/hero';
 
 // Progress Bar Component
-export * from './lib/progress-bar/progress-bar.component';
+export * from '@lifecorner/angular-ui-kit/progress-bar';
 
 // Divider Component
-export * from './lib/divider/divider.component';
+export * from '@lifecorner/angular-ui-kit/divider';
 
 // Search Input Component
-export * from './lib/search-input/search-input.component';
+export * from '@lifecorner/angular-ui-kit/search-input';
 
 // File Upload Component
-export * from './lib/file-upload/file-upload.component';
+export * from '@lifecorner/angular-ui-kit/file-upload';
 
 // Popover Component
-export * from './lib/popover/popover.component';
+export * from '@lifecorner/angular-ui-kit/popover';
 
 // 3.3: forms & sign-in
 // Provider Button Component (Sign in with Google)
-export * from './lib/provider-button/provider-button.component';
-// Radio Group Component (fieldset + legend around lc-radio)
-export * from './lib/radio/radio-group.component';
-export * from './lib/radio/radio-group.token';
+export * from '@lifecorner/angular-ui-kit/provider-button';
 // Copy Field Component (read-only value + copy button)
-export * from './lib/copy-field/copy-field.component';
+export * from '@lifecorner/angular-ui-kit/copy-field';
 
 // ============================================================================
 // Layout Components
 // ============================================================================
 // Container Component
-export * from './lib/container/container.component';
+export * from '@lifecorner/angular-ui-kit/container';
 
 // Page Header Component
-export * from './lib/page-header/page-header.component';
+export * from '@lifecorner/angular-ui-kit/page-header';
 
 // Page Layout Component
-export * from './lib/page-layout/page-layout.component';
+export * from '@lifecorner/angular-ui-kit/page-layout';
 
 // Section Component
-export * from './lib/section/section.component';
+export * from '@lifecorner/angular-ui-kit/section';
 
 // Spacer Component
-export * from './lib/spacer/spacer.component';
+export * from '@lifecorner/angular-ui-kit/spacer';
 
 // Split Pane Component
-export * from './lib/split-pane/split-pane.component';
+export * from '@lifecorner/angular-ui-kit/split-pane';
 
 // Stack Component
-export * from './lib/stack/stack.component';
+export * from '@lifecorner/angular-ui-kit/stack';
 
 // Toolbar Component
-export * from './lib/toolbar/toolbar.component';
+export * from '@lifecorner/angular-ui-kit/toolbar';
 
 // ============================================================================
 // Feedback Components
 // ============================================================================
 // Alert Component
-export * from './lib/alert/alert.component';
+export * from '@lifecorner/angular-ui-kit/alert';
 
 // Error Display Component
-export * from './lib/error-display/error-display.component';
+export * from '@lifecorner/angular-ui-kit/error-display';
 
 // Toast Service, Component and Outlet
-export * from './lib/toast/toast.service';
-export * from './lib/toast/toast.component';
-export * from './lib/toast/toast-outlet.component';
+export * from '@lifecorner/angular-ui-kit/toast';
 
 // Modal Component
-export * from './lib/modal/modal.component';
+export * from '@lifecorner/angular-ui-kit/modal';
 
 // Tooltip Directive
-export * from './lib/tooltip/tooltip.directive';
+export * from '@lifecorner/angular-ui-kit/tooltip';
 
 // ============================================================================
 // Navigation Components
 // ============================================================================
 // Breadcrumbs Component
-export * from './lib/breadcrumbs/breadcrumbs.component';
+export * from '@lifecorner/angular-ui-kit/breadcrumbs';
 
 // Header Component
-export * from './lib/header/header.component';
+export * from '@lifecorner/angular-ui-kit/header';
 
 // Pagination Component
-export * from './lib/pagination/pagination.component';
+export * from '@lifecorner/angular-ui-kit/pagination';
 
 // Sidenav Component
-export * from './lib/sidenav/sidenav.component';
+export * from '@lifecorner/angular-ui-kit/sidenav';
 
 // Tabs Component
-export * from './lib/tabs/tabs.component';
+export * from '@lifecorner/angular-ui-kit/tabs';
 
 // 3.3: navigation & layout
 // Bottom Nav Component (phone and tablet navigation bar)
-export * from './lib/bottom-nav/bottom-nav.component';
+export * from '@lifecorner/angular-ui-kit/bottom-nav';
 // App Shell and App Page Components (the app frame; the page with its right column)
-export * from './lib/app-shell/app-shell.component';
-export * from './lib/app-shell/app-page.component';
+export * from '@lifecorner/angular-ui-kit/app-shell';
 
 // ============================================================================
 // Data Display Components
 // ============================================================================
 // Avatar Component
-export * from './lib/avatar/avatar.component';
+export * from '@lifecorner/angular-ui-kit/avatar';
 
 // Badge Component
-export * from './lib/badge/badge.component';
+export * from '@lifecorner/angular-ui-kit/badge';
 
 // Status Dot Component
-export * from './lib/status-dot/status-dot.component';
+export * from '@lifecorner/angular-ui-kit/status-dot';
 
 // ToggleGroup Component
-export * from './lib/toggle-group/toggle-group.component';
+export * from '@lifecorner/angular-ui-kit/toggle-group';
 
 // List Component
-export * from './lib/list/list.component';
-export * from './lib/list/list-item-template.directive';
+export * from '@lifecorner/angular-ui-kit/list';
 
 // Chip Component
-export * from './lib/chip/chip.component';
+export * from '@lifecorner/angular-ui-kit/chip';
 
 // Table Component
-export * from './lib/table/table.component';
-export * from './lib/table/table-cell.directive';
+export * from '@lifecorner/angular-ui-kit/table';
 
 // Field Group Component
-export * from './lib/field-group/field-group.component';
+export * from '@lifecorner/angular-ui-kit/field-group';
 
 // Stepper Component
-export * from './lib/stepper/stepper.component';
+export * from '@lifecorner/angular-ui-kit/stepper';
 
 // FilterBar Component
-export * from './lib/filter-bar/filter-bar.component';
+export * from '@lifecorner/angular-ui-kit/filter-bar';
 
 // Spinner Component
-export * from './lib/spinner/spinner.component';
+export * from '@lifecorner/angular-ui-kit/spinner';
 
 // Skeleton Component
-export * from './lib/skeleton/skeleton.component';
+export * from '@lifecorner/angular-ui-kit/skeleton';
 
 // Empty State Component
-export * from './lib/empty-state/empty-state.component';
+export * from '@lifecorner/angular-ui-kit/empty-state';
 
 // Drawer Component
-export * from './lib/drawer/drawer.component';
+export * from '@lifecorner/angular-ui-kit/drawer';
 
 // Timeline Component
-export * from './lib/timeline/timeline.component';
-export * from './lib/timeline/timeline-templates.directive';
+export * from '@lifecorner/angular-ui-kit/timeline';
 
 // Avatar Group Component
-export * from './lib/avatar-group/avatar-group.component';
+export * from '@lifecorner/angular-ui-kit/avatar-group';
 
 // Slider Component
-export * from './lib/slider/slider.component';
+export * from '@lifecorner/angular-ui-kit/slider';
 
 // Number Input Component
-export * from './lib/number-input/number-input.component';
+export * from '@lifecorner/angular-ui-kit/number-input';
 
 // Callout Component
-export * from './lib/callout/callout.component';
+export * from '@lifecorner/angular-ui-kit/callout';
 
 // Next Step Card Component
-export * from './lib/next-step-card/next-step-card.component';
+export * from '@lifecorner/angular-ui-kit/next-step-card';
 
 // Choice Prompt Component
-export * from './lib/choice-prompt/choice-prompt.component';
+export * from '@lifecorner/angular-ui-kit/choice-prompt';
 
 // Rating Component
-export * from './lib/rating/rating.component';
+export * from '@lifecorner/angular-ui-kit/rating';
 
 // Color Picker Component
-export * from './lib/color-picker/color-picker.component';
+export * from '@lifecorner/angular-ui-kit/color-picker';
 
 // Code Block Component
-export * from './lib/code-block/code-block.component';
+export * from '@lifecorner/angular-ui-kit/code-block';
 
 // Footer Component
-export * from './lib/footer/footer.component';
+export * from '@lifecorner/angular-ui-kit/footer';
 
 // ============================================================================
 // Chart Components
 // ============================================================================
 // Sparkline Component
-export * from './lib/sparkline/sparkline.component';
+export * from '@lifecorner/angular-ui-kit/sparkline';
 
 // Stat Trend Component
-export * from './lib/stat-trend/stat-trend.component';
+export * from '@lifecorner/angular-ui-kit/stat-trend';
 
 // Donut Chart Component
-export * from './lib/donut-chart/donut-chart.component';
+export * from '@lifecorner/angular-ui-kit/donut-chart';
 
 // Bar Chart Component
-export * from './lib/bar-chart/bar-chart.component';
+export * from '@lifecorner/angular-ui-kit/bar-chart';
 
 // Line Chart Component
-export * from './lib/line-chart/line-chart.component';
+export * from '@lifecorner/angular-ui-kit/line-chart';
 
 // Gauge Component
-export * from './lib/gauge/gauge.component';
+export * from '@lifecorner/angular-ui-kit/gauge';
 
 // Stacked Bar Chart Component
-export * from './lib/stacked-bar-chart/stacked-bar-chart.component';
+export * from '@lifecorner/angular-ui-kit/stacked-bar-chart';
 
 // Area Chart Component
-export * from './lib/area-chart/area-chart.component';
+export * from '@lifecorner/angular-ui-kit/area-chart';
 
 // Heatmap Component
-export * from './lib/heatmap/heatmap.component';
+export * from '@lifecorner/angular-ui-kit/heatmap';
 
 // Pie Chart Component
-export * from './lib/pie-chart/pie-chart.component';
+export * from '@lifecorner/angular-ui-kit/pie-chart';
 
 // Radar Chart Component
-export * from './lib/radar-chart/radar-chart.component';
+export * from '@lifecorner/angular-ui-kit/radar-chart';
 
 // Progress Ring Component
-export * from './lib/progress-ring/progress-ring.component';
+export * from '@lifecorner/angular-ui-kit/progress-ring';
 
 // Waterfall Chart Component
-export * from './lib/waterfall-chart/waterfall-chart.component';
+export * from '@lifecorner/angular-ui-kit/waterfall-chart';
 
 // ============================================================================
 // Complex Components
 // ============================================================================
 // Calendar Component
-export * from './lib/calendar/calendar.component';
+export * from '@lifecorner/angular-ui-kit/calendar';
 
 // Gantt Chart Component
-export * from './lib/gantt-chart/gantt-chart.component';
+export * from '@lifecorner/angular-ui-kit/gantt-chart';
 
 // Chat Component
-export * from './lib/chat/chat.component';
+export * from '@lifecorner/angular-ui-kit/chat';
 
 // Document Viewer Component
-export * from './lib/document-viewer/document-viewer.component';
+export * from '@lifecorner/angular-ui-kit/document-viewer';
 
 // Gallery Component
-export * from './lib/gallery/gallery.component';
+export * from '@lifecorner/angular-ui-kit/gallery';
 
 // Dependency Viewer Component
-export * from './lib/dependency-viewer/dependency-viewer.component';
+export * from '@lifecorner/angular-ui-kit/dependency-viewer';
 
 // Tree View Component
-export * from './lib/tree-view/tree-view.component';
-export * from './lib/tree-view/file-icons';
+export * from '@lifecorner/angular-ui-kit/tree-view';
 
 // Scatter Plot Component
-export * from './lib/scatter-plot/scatter-plot.component';
+export * from '@lifecorner/angular-ui-kit/scatter-plot';
 
 // Funnel Chart Component
-export * from './lib/funnel-chart/funnel-chart.component';
+export * from '@lifecorner/angular-ui-kit/funnel-chart';
 
 // Tag Input Component
-export * from './lib/tag-input/tag-input.component';
+export * from '@lifecorner/angular-ui-kit/tag-input';
 
 // Date Range Picker Component
-export * from './lib/date-range-picker/date-range-picker.component';
+export * from '@lifecorner/angular-ui-kit/date-range-picker';
 
 // Diff Viewer Component
-export * from './lib/diff-viewer/diff-viewer.component';
+export * from '@lifecorner/angular-ui-kit/diff-viewer';
 
 // Kanban Board Component
-export * from './lib/kanban-board/kanban-board.component';
+export * from '@lifecorner/angular-ui-kit/kanban-board';
 
 // Notification Center Component
-export * from './lib/notification-center/notification-center.component';
+export * from '@lifecorner/angular-ui-kit/notification-center';
 
 // Rich Text Editor Component
-export * from './lib/rich-text-editor/rich-text-editor.component';
+export * from '@lifecorner/angular-ui-kit/rich-text-editor';
 
 // Markdown Component
-export * from './lib/markdown/markdown.component';
+export * from '@lifecorner/angular-ui-kit/markdown';
 
 // Log Viewer Component
-export * from './lib/log-viewer/log-viewer.component';
+export * from '@lifecorner/angular-ui-kit/log-viewer';
 
 // Confirm Dialog Component & Service
-export * from './lib/confirm-dialog/confirm-dialog.component';
-export * from './lib/confirm-dialog/confirm.service';
+export * from '@lifecorner/angular-ui-kit/confirm-dialog';
 
 // Combobox Component
-export * from './lib/combobox/combobox.component';
+export * from '@lifecorner/angular-ui-kit/combobox';
 
 // Stage List Component
-export * from './lib/stage-list/stage-list.component';
+export * from '@lifecorner/angular-ui-kit/stage-list';
 
 // Description List Component
-export * from './lib/description-list/description-list.component';
+export * from '@lifecorner/angular-ui-kit/description-list';
 
 // Pipeline Component
-export * from './lib/pipeline/pipeline.component';
+export * from '@lifecorner/angular-ui-kit/pipeline';
 
 // ============================================================================
 // Styles
 // ============================================================================
-// Styles are available at: libs/shared/src/styles/index.scss
+// Styles are not exported from TypeScript.
 // Import path: '@lifecorner/angular-ui-kit/styles/index.scss'

@@ -20,6 +20,26 @@ export default [
     },
   },
   {
+    // The kit's secondary entries (`@lifecorner/angular-ui-kit/<entry>`) import
+    // each other by package path. Their `ng-package.json` stubs sit in
+    // `libs/angular-ui-kit/<entry>/`, not next to the sources, so the rule
+    // can't see them as entries and would flag every such import as a
+    // self-import. The ng-packagr build is the real guard: a relative import
+    // across entries fails it (TS6059), and so does a cycle.
+    files: ['**/*.ts'],
+    rules: {
+      '@nx/enforce-module-boundaries': [
+        'error',
+        {
+          enforceBuildableLibDependency: true,
+          allowCircularSelfDependency: true,
+          allow: ['^.*/eslint(\\.base)?\\.config\\.[cm]?[jt]s$'],
+          depConstraints: [{ sourceTag: '*', onlyDependOnLibsWithTags: ['*'] }],
+        },
+      ],
+    },
+  },
+  {
     files: ['**/*.ts'],
     rules: {
       '@angular-eslint/directive-selector': [

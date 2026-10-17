@@ -35,15 +35,14 @@ package's `exports` map points straight at the files):
 
 ## 3. Use components
 
-All components are **standalone** and can be imported directly:
+All components are **standalone**. Import each one from its **secondary entry**,
+`@lifecorner/angular-ui-kit/<entry>`:
 
 ```typescript
 import { Component } from '@angular/core';
-import {
-  ButtonComponent,
-  InputComponent,
-  CardComponent,
-} from '@lifecorner/angular-ui-kit';
+import { ButtonComponent } from '@lifecorner/angular-ui-kit/button';
+import { InputComponent } from '@lifecorner/angular-ui-kit/input';
+import { CardComponent } from '@lifecorner/angular-ui-kit/card';
 
 @Component({
   selector: 'app-my-page',
@@ -65,9 +64,49 @@ export class MyPageComponent {
 }
 ```
 
+**Why secondary entries (3.5).** Each entry is its own module in the package, so
+your bundler keeps only the entries you use, and a lazy route takes the entries
+only it uses into its own chunk instead of the initial one. The entry is the
+component's folder name: `lc-icon` → `/icon`, `lc-sidenav` → `/sidenav`, the
+types and services next to it come from the same entry. `@lifecorner/angular-ui-kit`
+keeps working unchanged and re-exports every entry.
+
+These are the ones whose entry isn't their own name:
+
+| Selector or symbol | Entry |
+|---|---|
+| `lc-app-page` | `@lifecorner/angular-ui-kit/app-shell` |
+| `a[lcButton]` (`ButtonLinkComponent`) | `@lifecorner/angular-ui-kit/button` |
+| `lc-toast`, `lc-toast-outlet`, `ToastService` | `@lifecorner/angular-ui-kit/toast` |
+| `lc-radio-group` | `@lifecorner/angular-ui-kit/radio` |
+| `lc-accordion-group` | `@lifecorner/angular-ui-kit/accordion` |
+| `lc-tab` | `@lifecorner/angular-ui-kit/tabs` |
+| `[lcTooltip]` | `@lifecorner/angular-ui-kit/tooltip` |
+| `ConfirmService` | `@lifecorner/angular-ui-kit/confirm-dialog` |
+| `NavigationItem` | `@lifecorner/angular-ui-kit/models` |
+| `ThemeService` and its types | `@lifecorner/angular-ui-kit/theme` |
+| the token constants (`Color*`, `Spacing*`, …) | `@lifecorner/angular-ui-kit/tokens` |
+| `ICON_NAMES`, `isValidIconName` | `@lifecorner/angular-ui-kit/icon-names` |
+
+Every component's documentation (and the MCP's `get-documentation`) shows its
+import line. Services such as `ThemeService`, `ToastService` and `ConfirmService`
+and the token `LC_LOGO_BASE_PATH` are the same singletons whichever entry you
+import them from. `@lifecorner/angular-ui-kit/internal/*` is the kit's own and has
+no semver guarantee: don't import it.
+
+### mermaid
+
+`mermaid` is an optional peer used only by `lc-markdown` for diagrams. It is needed
+only by the `markdown`, `chat` and `document-viewer` entries and by the primary
+entry `@lifecorner/angular-ui-kit`, because they reach `lc-markdown`'s lazy
+`import('mermaid')`. An app without `mermaid` imports from the other entries, or
+keeps `externalDependencies: ["mermaid"]` in its build options for the primary entry.
+
 ## 4. Provide HttpClient (for Icons)
 
-The `IconComponent` loads SVGs via HTTP. Make sure `provideHttpClient()` is included in your app config:
+The `IconComponent` loads SVGs that aren't inline via HTTP. The common icons are
+inline and need no request, but `lc-icon` still injects `HttpClient`, so make sure
+`provideHttpClient()` is included in your app config:
 
 ```typescript
 // app.config.ts
@@ -78,7 +117,29 @@ export const appConfig = {
 };
 ```
 
-## 5. Theming
+## 5. Content Security Policy
+
+`lc-icon` works under Trusted Types (3.5). If your CSP enforces them
+(`require-trusted-types-for 'script'`), add `lc-icon` to the `trusted-types`
+directive:
+
+```
+require-trusted-types-for 'script'; trusted-types angular lc-icon
+```
+
+- **`lc-icon`** is the one policy the kit creates, on the first icon render. It
+  accepts only the kit's own SVG strings (the inline icons and the placeholder).
+  Fetched icons need no policy: they are rebuilt node by node from an allow-list of
+  basic shapes. Without `lc-icon` in the directive, icons show a placeholder and the
+  console says so once.
+- **Two copies of the kit on one page** (two apps, or two versions): the second
+  `createPolicy('lc-icon')` needs `'allow-duplicates'` in `trusted-types`.
+- **Not yet under Trusted Types:** `lc-markdown`, `lc-code-block`, `lc-log-viewer`,
+  `lc-rich-text-editor` and `lc-document-viewer` still need `angular#unsafe-bypass`.
+- `lc-provider-button` draws Google's mark from a data URI, so the CSP needs
+  `img-src data:` (as before).
+
+## 6. Theming
 
 Components use CSS Custom Properties. Choose a theme by setting a CSS class on `:root` or `<body>`:
 
@@ -93,7 +154,7 @@ Components use CSS Custom Properties. Choose a theme by setting a CSS class on `
 <html class="system">
 ```
 
-## 6. Component Theming (Header, Sidenav, Logo)
+## 7. Component Theming (Header, Sidenav, Logo)
 
 Some components support an explicit `theme` input, allowing them to have a dark or light appearance **independently** of the global page theme.
 
@@ -164,7 +225,7 @@ Copy the package's `src/assets/` folder to your app's public `/assets/` (or set 
 | Angular (`core`, `common`, `forms`, `router`, `platform-browser`, `cdk`) | 21 or 22 (`^21.0.0 \|\| ^22.0.0`) |
 | TypeScript | the version your Angular major requires (5.9 for 21, 6.0 for 22) |
 | Node.js | the version your Angular CLI requires (Angular 22: `^22.22.3 \|\| ^24.15.0 \|\| >=26`) |
-| mermaid (optional) | `^11` — only for diagrams in `lc-markdown` |
+| mermaid (optional) | `^11` — only for diagrams in `lc-markdown`; needed to build with the `markdown`, `chat` or `document-viewer` entry or the primary entry (see *mermaid* above) |
 
 The package is built with Angular 22 in partial-compilation mode; every release is
 checked by building and prerendering a consumer app on Angular 21.0, the latest 21,

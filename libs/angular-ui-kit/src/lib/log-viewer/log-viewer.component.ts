@@ -17,7 +17,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { Observable, Subscription } from 'rxjs';
-import { IconComponent } from '../icon/icon.component';
+import { IconComponent } from '@lifecorner/angular-ui-kit/icon';
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 export type LogViewerVariant = 'terminal' | 'log';

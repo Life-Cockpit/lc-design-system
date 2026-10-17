@@ -14,7 +14,7 @@ import {
   formatChartValue,
   niceScale,
   toFinite,
-} from '../shared/chart-scale';
+} from '@lifecorner/angular-ui-kit/internal/chart';
 
 export interface WaterfallItem {
   label: string;

@@ -14,7 +14,7 @@ import {
   inject,
   OnDestroy,
 } from '@angular/core';
-import { OverlayStackService } from '../shared/overlay-stack.service';
+import { OverlayStackService } from '@lifecorner/angular-ui-kit/internal/overlay';
 
 export type PopoverPosition = 'top' | 'bottom' | 'left' | 'right';
 export type PopoverTrigger = 'click' | 'hover';

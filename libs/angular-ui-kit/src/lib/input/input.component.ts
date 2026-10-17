@@ -12,7 +12,7 @@ import {
   forwardRef,
 } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
-import { IconComponent } from '../icon/icon.component';
+import { IconComponent } from '@lifecorner/angular-ui-kit/icon';
 
 /** Values of the native `autocapitalize` attribute. */
 export type InputAutocapitalize = 'off' | 'none' | 'on' | 'sentences' | 'words' | 'characters';

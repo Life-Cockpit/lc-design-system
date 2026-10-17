@@ -17,6 +17,8 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
  *   inside main instead (e.g. a member row). It renders only with an
  *   accessible name — `asideLabelledby` (the id of its heading) or
  *   `asideAriaLabel`.
+ * - `busy` marks the page as loading: `aria-busy="true"` on `<main>` while a
+ *   skeleton stands in for the content (AS-12). No visual change.
  *
  * @example
  * ```html
@@ -52,6 +54,17 @@ export class AppPageComponent {
 
   /** Accessible name of the right column when it has no visible heading. */
   readonly asideAriaLabel = input('');
+
+  /**
+   * Marks the page as loading: `aria-busy="true"` on its `<main>` while
+   * `true`, no attribute while `false`. Set it while a skeleton stands in for
+   * the content. Screen readers may hold back changes inside a busy region
+   * until it clears, so a loading message that must be heard belongs outside
+   * `<main>` (for example a `.sr-only` `role="status"` next to the page) or is
+   * static text. No visual change.
+   * @default false
+   */
+  readonly busy = input(false);
 
   /** The right column renders only when it has an accessible name. */
   protected readonly hasAside = computed(() => !!(this.asideLabelledby() || this.asideAriaLabel()));

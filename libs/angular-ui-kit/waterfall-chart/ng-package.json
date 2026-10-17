@@ -1,0 +1,5 @@
+{
+  "lib": {
+    "entryFile": "../src/lib/waterfall-chart/index.ts"
+  }
+}

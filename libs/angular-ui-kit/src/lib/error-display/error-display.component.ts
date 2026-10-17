@@ -1,5 +1,5 @@
 import { Component, ChangeDetectionStrategy, input, computed, signal, effect } from '@angular/core';
-import { AlertComponent, AlertVariant } from '../alert/alert.component';
+import { AlertComponent, AlertVariant } from '@lifecorner/angular-ui-kit/alert';
 
 /**
  * Maps common Cognito error codes to user-friendly messages

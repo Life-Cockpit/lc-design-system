@@ -1,0 +1,5 @@
+{
+  "lib": {
+    "entryFile": "../src/lib/hero/index.ts"
+  }
+}

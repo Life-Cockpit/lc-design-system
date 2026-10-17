@@ -1,0 +1,5 @@
+{
+  "lib": {
+    "entryFile": "../src/lib/funnel-chart/index.ts"
+  }
+}

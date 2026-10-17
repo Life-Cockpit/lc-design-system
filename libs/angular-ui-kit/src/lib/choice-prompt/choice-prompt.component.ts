@@ -11,7 +11,7 @@ import {
   viewChild,
   viewChildren,
 } from '@angular/core';
-import { ButtonComponent } from '../button/button.component';
+import { ButtonComponent } from '@lifecorner/angular-ui-kit/button';
 
 /** One selectable answer of an `lc-choice-prompt`. */
 export interface ChoicePromptOption {

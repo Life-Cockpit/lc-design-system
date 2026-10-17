@@ -50,11 +50,16 @@ describe('IconComponent', () => {
     fixture.detectChanges();
   }
 
-  // A second, distinguishable asset body (identical markup is memoised — the
-  // rendered SafeHtml only changes when the markup does).
+  // A second, distinguishable asset body: a circle where MOCK_SVG has a path.
+  // (3.5: fetched icons are rebuilt from an allow-list that drops `data-*`
+  // attributes, so the tests tell the icons apart by their shapes.)
   const OTHER_SVG =
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" data-icon="other">' +
     '<circle cx="12" cy="12" r="9" /></svg>';
+
+  /** The rendered <svg> elements of a fixture's container. */
+  const rendered = (f: ComponentFixture<IconComponent> = fixture) =>
+    Array.from((f.nativeElement as HTMLElement).querySelectorAll('.icon-container > svg'));
 
   /**
    * Helper to wait for async operations
@@ -250,8 +255,10 @@ describe('IconComponent', () => {
       mockIconLoad('anchor');
       await waitForAsync();
 
-      // SVG content should be loaded
-      expect(component.svgContent()).toBeTruthy();
+      // SVG content should be loaded (3.5: asserted on the DOM; the internal
+      // svgContent() markup signal is gone, the <svg> is a real element now)
+      expect(rendered()).toHaveLength(1);
+      expect(rendered()[0].querySelector('path')).toBeTruthy();
     });
 
     it('should handle an unknown icon name gracefully with a visible fallback and NO fetch', async () => {
@@ -279,17 +286,18 @@ describe('IconComponent', () => {
       fixture.detectChanges();
       mockIconLoad('anchor');
       await waitForAsync();
-      const firstContent = component.svgContent();
+      const first = rendered()[0];
+      expect(first.querySelector('path')).toBeTruthy();
 
       // A fetched (not inlined) name: `settings` is inline since 3.3.
       fixture.componentRef.setInput('name', 'flask');
       fixture.detectChanges();
       mockIconLoad('flask', 'outline', OTHER_SVG);
       await waitForAsync();
-      const secondContent = component.svgContent();
 
-      expect(firstContent).not.toBe(secondContent);
-      expect(fixture.nativeElement.querySelector('svg[data-icon="other"]')).toBeTruthy();
+      expect(rendered()).toHaveLength(1);
+      expect(rendered()[0]).not.toBe(first);
+      expect(rendered()[0].querySelector('circle')).toBeTruthy();
     });
 
     it('should update SVG when variant changes', async () => {
@@ -298,16 +306,17 @@ describe('IconComponent', () => {
       fixture.detectChanges();
       mockIconLoad('anchor', 'outline');
       await waitForAsync();
-      const outlineContent = component.svgContent();
+      const outline = rendered()[0];
+      expect(outline.querySelector('path')).toBeTruthy();
 
       fixture.componentRef.setInput('variant', 'solid');
       fixture.detectChanges();
       mockIconLoad('anchor', 'solid', OTHER_SVG);
       await waitForAsync();
-      const solidContent = component.svgContent();
 
-      expect(outlineContent).not.toBe(solidContent);
-      expect(fixture.nativeElement.querySelector('svg[data-icon="other"]')).toBeTruthy();
+      expect(rendered()).toHaveLength(1);
+      expect(rendered()[0]).not.toBe(outline);
+      expect(rendered()[0].querySelector('circle')).toBeTruthy();
     });
   });
 
@@ -347,12 +356,16 @@ describe('IconComponent', () => {
       expect(later.nativeElement.querySelector('svg')).toBeTruthy();
     });
 
-    it('does not cache a failed load — the next instance retries the asset', async () => {
+    // 3.5 (design 001 §4): a 404 is now kept in the per-path cache, so a later
+    // instance of the same missing name asks no second time. The eviction this
+    // test pinned in 3.4 still holds for transient failures (after the retries).
+    it('does not cache a transiently failed load — the next instance retries the asset', async () => {
       fixture.componentRef.setInput('name', 'anchor');
       fixture.detectChanges();
-      httpMock
-        .expectOne('/tabler-icons/outline/anchor.svg')
-        .flush('Not Found', { status: 404, statusText: 'Not Found' });
+      for (let attempt = 0; attempt < 3; attempt++) {
+        httpMock.expectOne('/tabler-icons/outline/anchor.svg').error(new ProgressEvent('error'));
+        await new Promise<void>((r) => setTimeout(r, 200 * (attempt + 1) + 20));
+      }
       await waitForAsync();
       expect(fixture.nativeElement.innerHTML).toContain('stroke-dasharray');
 
@@ -367,6 +380,22 @@ describe('IconComponent', () => {
       expect(retryInstance.nativeElement.innerHTML).not.toContain('stroke-dasharray');
     });
 
+    it('keeps a 404 in the cache — a later instance of the missing name sends no request', async () => {
+      fixture.componentRef.setInput('name', 'anchor');
+      fixture.detectChanges();
+      httpMock
+        .expectOne('/tabler-icons/outline/anchor.svg')
+        .flush('Not Found', { status: 404, statusText: 'Not Found' });
+      await waitForAsync();
+      expect(fixture.nativeElement.innerHTML).toContain('stroke-dasharray');
+
+      const later = TestBed.createComponent(IconComponent);
+      later.componentRef.setInput('name', 'anchor');
+      later.detectChanges();
+      httpMock.expectNone('/tabler-icons/outline/anchor.svg');
+      expect(later.nativeElement.innerHTML).toContain('stroke-dasharray');
+    });
+
     it('ignores a slow response for the previous name once the name has changed', async () => {
       fixture.componentRef.setInput('name', 'anchor');
       fixture.detectChanges();
@@ -376,12 +405,13 @@ describe('IconComponent', () => {
       fixture.detectChanges();
       httpMock.expectOne('/tabler-icons/outline/flask.svg').flush(SECOND_SVG);
       await waitForAsync();
-      expect(fixture.nativeElement.querySelector('svg[data-icon="second"]')).toBeTruthy();
+      // SECOND_SVG is the circle (data-* attributes are dropped by the allow-list since 3.5)
+      expect(fixture.nativeElement.querySelector('svg circle')).toBeTruthy();
 
       // The old request completes late — it must not overwrite the newer icon.
       slowOld.flush(MOCK_SVG);
       await waitForAsync();
-      expect(fixture.nativeElement.querySelector('svg[data-icon="second"]')).toBeTruthy();
+      expect(rendered()).toHaveLength(1);
       expect(fixture.nativeElement.querySelector('svg circle')).toBeTruthy();
       expect(fixture.nativeElement.querySelector('svg path')).toBeNull();
     });
@@ -650,7 +680,8 @@ describe('IconComponent', () => {
       fixture.detectChanges();
 
       expect(warnSpy).not.toHaveBeenCalled();
-      expect(component.svgContent()).toBe('');
+      // 3.5: asserted on the DOM (the internal svgContent() markup signal is gone)
+      expect(fixture.nativeElement.querySelector('.icon-container')?.childNodes.length).toBe(0);
     });
 
     describe('strict mode', () => {

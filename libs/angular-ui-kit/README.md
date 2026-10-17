@@ -40,10 +40,12 @@ format dates take a `locale` — see **Internationalization** in the docs.
 
 ## Usage
 
-Import components directly in your Angular standalone components or modules:
+Import components from their secondary entries, `@lifecorner/angular-ui-kit/<entry>`
+(the component's folder name):
 
 ```typescript
-import { ButtonComponent, CardComponent } from '@lifecorner/angular-ui-kit';
+import { ButtonComponent } from '@lifecorner/angular-ui-kit/button';
+import { CardComponent } from '@lifecorner/angular-ui-kit/card';
 
 @Component({
   standalone: true,
@@ -56,6 +58,14 @@ import { ButtonComponent, CardComponent } from '@lifecorner/angular-ui-kit';
 })
 export class MyComponent {}
 ```
+
+Since 3.5 every component (or small group, such as `app-shell` with `lc-app-page`)
+is its own entry, so an app bundles only what it imports and lazy routes take kit
+parts with them. `@lifecorner/angular-ui-kit` keeps working unchanged and
+re-exports every entry. `mermaid` is needed only by the `markdown`, `chat` and
+`document-viewer` entries and the primary entry. With a Trusted Types CSP, add
+`lc-icon` to `trusted-types`. See **Installation** in the docs for the entry table
+and the CSP notes.
 
 ## Components
 

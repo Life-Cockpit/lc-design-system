@@ -9,7 +9,7 @@ import {
   output,
   signal,
 } from '@angular/core';
-import { IconComponent } from '../icon/icon.component';
+import { IconComponent } from '@lifecorner/angular-ui-kit/icon';
 import {
   FILE_FALLBACK_ICON,
   FOLDER_ICON,

@@ -8,12 +8,15 @@
  * input()/input.required()/model()/output() and @Input/@Output, read with the
  * TypeScript compiler (see components-manifest/extract-props.mjs) — and the
  * component and story descriptions from the stories files, also read with the
- * TypeScript compiler (components-manifest/extract-story-data.mjs).
+ * TypeScript compiler (components-manifest/extract-story-data.mjs) — and the
+ * import line from the component's secondary entry (an "Import" doc entry,
+ * components-manifest/import-line.mjs).
  */
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
 import { dirname, join, relative, resolve } from 'path';
 import { extractComponentApi, formatApiSummary, toComponentMeta } from './components-manifest/extract-props.mjs';
 import { extractStoryData } from './components-manifest/extract-story-data.mjs';
+import { importDoc } from './components-manifest/import-line.mjs';
 
 const ROOT = process.cwd();
 const STORYBOOK_OUTPUT = join(ROOT, 'dist/storybook/angular-ui-kit');
@@ -60,6 +63,20 @@ function oneLineSummary(description) {
     .trim();
   const sentence = plain.match(/^.*?[.!?](?=\s|$)/)?.[0] ?? plain;
   return sentence.length > 160 ? `${sentence.slice(0, 157).trimEnd()}...` : sentence || undefined;
+}
+
+/**
+ * The component and directive classes of a component file and the
+ * subcomponents its stories import (the main one first), for the import line.
+ */
+function importableClasses(componentPath, subcomponentPaths = []) {
+  const absPath = resolve(ROOT, componentPath.replace(/^\.\//, ''));
+  const names = [];
+  for (const path of [absPath, ...subcomponentPaths]) {
+    if (!existsSync(path)) continue;
+    for (const cls of extractComponentApi(readFileSync(path, 'utf-8'), path).classes) names.push(cls.name);
+  }
+  return names;
 }
 
 /**
@@ -151,6 +168,11 @@ for (const group of componentGroups.values()) {
     }
   }
 
+  const fields = props ? documentationFields(id, name, props) : {};
+  // The import line from the component's secondary entry (3.5, AS-15), first among the doc entries.
+  const importEntry = group.componentPath ? importDoc(id, name, group.componentPath, importableClasses(group.componentPath, localImports)) : undefined;
+  if (importEntry) fields.docs = { import: importEntry, ...fields.docs };
+
   components[id] = {
     id,
     path: group.componentPath || group.importPath,
@@ -160,7 +182,7 @@ for (const group of componentGroups.values()) {
     // and to the structured fields get-documentation renders (documentationFields).
     summary: oneLineSummary(description),
     api: propsSummary || undefined,
-    ...(props ? documentationFields(id, name, props) : {}),
+    ...fields,
     stories: group.stories.map(s => ({
       id: s.id,
       name: s.name,
