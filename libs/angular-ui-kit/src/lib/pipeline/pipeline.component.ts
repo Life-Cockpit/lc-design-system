@@ -6,7 +6,8 @@ import {
   computed,
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
-import { IconComponent } from '@lifecorner/angular-ui-kit/icon';
+import { IconComponent, ɵprovideKitIcons } from '@lifecorner/angular-ui-kit/icon';
+import { ICON_ALERT_TRIANGLE, ICON_CHECK, ICON_X } from '@lifecorner/angular-ui-kit/icons';
 
 /**
  * Status of a single pipeline node.
@@ -70,6 +71,7 @@ const STATUS_ICON: Record<PipelineStatus, string> = {
   selector: 'lc-pipeline',
   standalone: true,
   imports: [IconComponent, NgTemplateOutlet],
+  viewProviders: [ɵprovideKitIcons([ICON_CHECK, ICON_ALERT_TRIANGLE, ICON_X])],
   templateUrl: './pipeline.component.html',
   styleUrls: ['./pipeline.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

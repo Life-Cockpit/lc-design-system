@@ -12,7 +12,8 @@ import {
   untracked,
 } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
-import { IconComponent } from '@lifecorner/angular-ui-kit/icon';
+import { IconComponent, ɵprovideKitIcons } from '@lifecorner/angular-ui-kit/icon';
+import { ICON_EXCLAMATION_TRIANGLE, ICON_FILE, ICON_FILE_TEXT, ICON_PLUS } from '@lifecorner/angular-ui-kit/icons';
 import { SpinnerComponent } from '@lifecorner/angular-ui-kit/spinner';
 import { CodeBlockComponent, CodeBlockLanguage } from '@lifecorner/angular-ui-kit/code-block';
 import { MarkdownComponent } from '@lifecorner/angular-ui-kit/markdown';
@@ -102,6 +103,7 @@ const TYPE_ICONS: Record<string, string> = {
   selector: 'lc-document-viewer',
   standalone: true,
   imports: [IconComponent, SpinnerComponent, CodeBlockComponent, MarkdownComponent],
+  viewProviders: [ɵprovideKitIcons([ICON_PLUS, ICON_EXCLAMATION_TRIANGLE, ICON_FILE, ICON_FILE_TEXT])],
   templateUrl: './document-viewer.component.html',
   styleUrls: ['./document-viewer.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

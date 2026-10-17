@@ -14,7 +14,8 @@ import {
   viewChild,
 } from '@angular/core';
 import { NG_VALUE_ACCESSOR, ControlValueAccessor } from '@angular/forms';
-import { IconComponent } from '@lifecorner/angular-ui-kit/icon';
+import { IconComponent, ɵprovideKitIcons } from '@lifecorner/angular-ui-kit/icon';
+import { ICON_CALENDAR } from '@lifecorner/angular-ui-kit/icons';
 
 export interface DateRange {
   start: Date | null;
@@ -28,6 +29,7 @@ const REFERENCE_WEEK = Array.from({ length: 7 }, (_, i) => new Date(2024, 0, 1 +
   selector: 'lc-date-range-picker',
   standalone: true,
   imports: [IconComponent],
+  viewProviders: [ɵprovideKitIcons([ICON_CALENDAR])],
   templateUrl: './date-range-picker.component.html',
   styleUrls: ['./date-range-picker.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

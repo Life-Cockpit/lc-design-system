@@ -10,7 +10,8 @@ import {
   viewChildren,
 } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
-import { IconComponent } from '@lifecorner/angular-ui-kit/icon';
+import { IconComponent, ɵprovideKitIcons } from '@lifecorner/angular-ui-kit/icon';
+import { ICON_STAR, ICON_STAR_SOLID } from '@lifecorner/angular-ui-kit/icons';
 
 export type RatingSize = 'sm' | 'md' | 'lg';
 
@@ -18,6 +19,7 @@ export type RatingSize = 'sm' | 'md' | 'lg';
   selector: 'lc-rating',
   standalone: true,
   imports: [IconComponent],
+  viewProviders: [ɵprovideKitIcons([ICON_STAR, ICON_STAR_SOLID])],
   templateUrl: './rating.component.html',
   styleUrls: ['./rating.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

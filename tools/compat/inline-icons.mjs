@@ -9,7 +9,8 @@ import { join } from 'node:path';
 
 /** `[name, variant][]` in source order; `solid` only where the kit ships one. */
 export function inlineIcons(root) {
-  const dir = join(root, 'libs/angular-ui-kit/src/lib/icon');
+  // Since 3.6 (AS-17) both maps live in the lazy internal/icon-set entry.
+  const dir = join(root, 'libs/angular-ui-kit/src/lib/internal/icon-set');
   const icons = [];
   for (const file of ['icon-inline-svgs.ts', 'icon-inline-tabler.data.ts']) {
     const src = readFileSync(join(dir, file), 'utf8');

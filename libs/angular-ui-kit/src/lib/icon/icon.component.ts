@@ -8,6 +8,7 @@ import {
   isDevMode,
   ChangeDetectionStrategy,
   inject,
+  PendingTasks,
   PLATFORM_ID,
   viewChild,
 } from '@angular/core';
@@ -16,9 +17,12 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Observable, catchError, map, of, retry, shareReplay, tap, throwError, timer } from 'rxjs';
 import { isValidIconName } from '@lifecorner/angular-ui-kit/icon-names';
 import { ICON_ALIASES } from './icon-aliases';
-import { resolveInlineIconSvg } from './icon-inline-lookup';
+import { iconConstantName, resolveInlineGlyph } from './icon-inline-lookup';
 import { buildSvg, looksLikeSvgDocument } from './icon-svg-builder';
 import { decorateSvg, parseBundledSvg, placeholderSvg } from './icon-dom';
+import { LC_ICON_SCOPE, appRegistersIcons, findRegisteredGlyph, unregisteredFallback } from './icon-registry';
+import { loadIconSet, loadedIconSet } from './icon-set-loader';
+import { offerIconSvgs } from './icon-trusted-types';
 
 export type IconVariant = 'outline' | 'solid';
 export type IconSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
@@ -56,6 +60,13 @@ export function resetIconWarnings(): void {
 
 const unknownIconMessage = (name: string) =>
   `[lc-icon] Unknown icon "${name}". Use a Tabler name or a documented alias (see ICON_NAMES / ICON_ALIASES). Rendering a placeholder instead.`;
+
+/** 3.6 (AS-17): a kit glyph that nobody registered with provideLcIcons(). */
+const unregisteredMessage = (name: string, constant: string, outcome: string) =>
+  `[lc-icon] "${name}" is not registered. Add ${constant} from @lifecorner/angular-ui-kit/icons to provideLcIcons(). ${outcome}`;
+
+const iconSetFailedMessage = (reason: string) =>
+  `[lc-icon] The kit's icon set could not be loaded (${reason}). Rendering a placeholder instead.`;
 
 /**
  * Outcome of one asset fetch. A 404 is an outcome too, so the cache keeps it
@@ -120,14 +131,20 @@ export function resetIconCache(): void {
   iconFetchCache.clear();
 }
 
-/** What the container shows: nothing, a bundled constant, a fetched (built) icon, or the placeholder. */
+/**
+ * What the container shows: nothing, a bundled constant, a fetched (built)
+ * icon, or the placeholder. `pending` waits for the kit's lazy set (3.6): the
+ * container stays as it is, so a prerendered `<svg>` survives hydration.
+ */
 type IconSource =
   | { kind: 'none' }
+  | { kind: 'pending' }
   | { kind: 'bundled'; markup: string }
   | { kind: 'fetched'; svg: SVGElement }
   | { kind: 'placeholder' };
 
 const NO_ICON: IconSource = { kind: 'none' };
+const PENDING: IconSource = { kind: 'pending' };
 const PLACEHOLDER: IconSource = { kind: 'placeholder' };
 
 /**
@@ -143,6 +160,14 @@ const PLACEHOLDER: IconSource = { kind: 'placeholder' };
  *   inlined at build time, see {@link isInlineIconName}): no request, they
  *   render offline and in prerendered HTML; looked up by the name as written,
  *   then by its alias target
+ * - Tree-shakable glyphs (3.6, AS-17): register the ones an app renders with
+ *   `provideLcIcons([ICON_HOME, …])` (constants from
+ *   `@lifecorner/angular-ui-kit/icons`); only those, and the glyphs the kit's
+ *   own components render, are bundled. A registered glyph renders
+ *   synchronously. An inline name that nobody registered loads the kit's whole
+ *   set once, lazily (`unregistered: 'load'`, the default: the 3.5.1 output,
+ *   prerendered HTML unchanged), or shows the placeholder and warns
+ *   (`unregistered: 'placeholder'`)
  * - Dynamic SVG loading from Tabler Icons for everything else
  * - Fail-loud on unknown names: a console warning (once per name, in dev AND
  *   prod) + a visible placeholder (never a silent empty space). Development
@@ -215,7 +240,13 @@ export class IconComponent {
    * empty — the client takes over on hydration.
    */
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
+  /** The registered glyphs above this icon (3.6, AS-17): kit components' own, then the app's. */
+  private readonly scope = inject(LC_ICON_SCOPE, { optional: true });
+  /** Keeps the server (and `whenStable()`) waiting while the kit's set loads. */
+  private readonly pendingTasks = inject(PendingTasks);
   private readonly container = viewChild.required<ElementRef<HTMLElement>>('container');
+  /** Whether the container was written once; until then a pending icon leaves a prerendered `<svg>` alone. */
+  private rendered = false;
 
   /**
   * Icon name from Tabler Icons library
@@ -266,7 +297,9 @@ export class IconComponent {
    * Strict mode. When `true` and the name is not a valid icon (see
    * {@link isValidIconName}), the component **throws** in development mode
    * instead of only warning — useful as a CI guard to catch typos/unknown
-   * names. No effect in production builds.
+   * names. With `provideLcIcons(…, { unregistered: 'placeholder' })` (3.6), a
+   * kit glyph that is not registered also throws in development. No effect in
+   * production builds.
    * @default false
    */
   readonly strict = input<boolean>(false);
@@ -286,6 +319,7 @@ export class IconComponent {
     const source = this.source();
     switch (source.kind) {
       case 'none':
+      case 'pending':
         return null;
       case 'fetched':
         return source.svg.cloneNode(true) as SVGElement;
@@ -379,11 +413,24 @@ export class IconComponent {
         return;
       }
 
-      // Inline markup first (no request; renders offline and in prerendered
-      // HTML): by the name as written, then by its alias target (G-7).
-      const inlineSvg = resolveInlineIconSvg(rawName, iconVariant);
-      if (inlineSvg) {
-        this.source.set({ kind: 'bundled', markup: inlineSvg });
+      // A registered glyph first (no request; renders synchronously, offline
+      // and in prerendered HTML): by the name as written, then by its alias
+      // target (G-7), nearest scope first (3.6, AS-17).
+      const aliasTarget = ICON_ALIASES[rawName] ?? rawName;
+      const registered =
+        findRegisteredGlyph(this.scope, rawName, iconVariant) ??
+        (aliasTarget === rawName ? undefined : findRegisteredGlyph(this.scope, aliasTarget, iconVariant));
+      if (registered !== undefined) {
+        offerIconSvgs([registered]);
+        this.source.set({ kind: 'bundled', markup: registered });
+        return;
+      }
+
+      // A 3.5.1 inline name nobody registered: the kit's whole set, loaded
+      // once and lazily ('load', the default), or the placeholder.
+      const glyph = resolveInlineGlyph(rawName, iconVariant);
+      if (glyph) {
+        this.resolveUnregistered(rawName, glyph, iconVariant, onCleanup);
         return;
       }
 
@@ -439,6 +486,11 @@ export class IconComponent {
     // attributes onto every node and change the SVG's DOM.
     effect(() => {
       const host = this.container().nativeElement;
+      // Waiting for the kit's set: leave the first render alone (on hydration
+      // the container holds the server's <svg> for exactly this glyph); a
+      // later name change empties the box like a fetch does.
+      if (this.source().kind === 'pending' && !this.rendered) return;
+      this.rendered = true;
       const svg = this.svgElement();
       if (svg) {
         decorateSvg(svg, {
@@ -453,6 +505,63 @@ export class IconComponent {
       while (host.firstChild) host.removeChild(host.firstChild);
       if (svg) host.appendChild(svg);
     });
+  }
+
+  /**
+   * A 3.5.1 inline name that no scope registered (3.6, AS-17). `'load'`
+   * renders it from the kit's lazily loaded set: synchronously once the set
+   * is there, otherwise after the chunk, with the server and `whenStable()`
+   * waiting through `PendingTasks`. `'placeholder'` never loads the set.
+   */
+  private resolveUnregistered(
+    name: string,
+    glyph: string,
+    variant: IconVariant,
+    onCleanup: (cleanup: () => void) => void,
+  ): void {
+    const constant = iconConstantName(glyph, variant);
+    if (unregisteredFallback(this.scope) === 'placeholder') {
+      warnOnce(`${variant}:${name}`, unregisteredMessage(name, constant, 'Rendering a placeholder instead.'));
+      if (isDevMode() && this.strict()) {
+        throw new Error(`[lc-icon] "${name}" is not registered (strict mode). Add ${constant} to provideLcIcons().`);
+      }
+      this.source.set(PLACEHOLDER);
+      return;
+    }
+    // Only an app that registers glyphs wants to hear about the ones it
+    // missed; an app that opted into nothing gets 3.5.1's output quietly.
+    if ((typeof ngDevMode === 'undefined' || ngDevMode) && appRegistersIcons(this.scope)) {
+      warnOnce(`${variant}:${name}`, unregisteredMessage(name, constant, "Loading the kit's icon set instead."));
+    }
+    const set = loadedIconSet();
+    if (set) {
+      this.showFromSet(set.svg(glyph, variant));
+      return;
+    }
+    this.source.set(PENDING);
+    let current = true;
+    onCleanup(() => (current = false));
+    const done = this.pendingTasks.add();
+    loadIconSet()
+      .then(
+        (loaded) => {
+          if (current) this.showFromSet(loaded.svg(glyph, variant));
+        },
+        (error: unknown) => {
+          warnOnce('[lc-icon set]', iconSetFailedMessage(error instanceof Error ? error.message : String(error)));
+          if (current) this.source.set(PLACEHOLDER);
+        },
+      )
+      .finally(done);
+  }
+
+  private showFromSet(markup: string | undefined): void {
+    if (markup === undefined) {
+      this.source.set(PLACEHOLDER);
+      return;
+    }
+    offerIconSvgs([markup]);
+    this.source.set({ kind: 'bundled', markup });
   }
 
   /**

@@ -49,6 +49,8 @@ export * from '@lifecorner/angular-ui-kit/checkbox';
 export * from '@lifecorner/angular-ui-kit/icon';
 // The canonical icon name list (ICON_NAMES, isValidIconName)
 export * from '@lifecorner/angular-ui-kit/icon-names';
+// One constant per kit glyph, for provideLcIcons (ICON_HOME, …, BUNDLED_ICONS)
+export * from '@lifecorner/angular-ui-kit/icons';
 
 // Logo Component
 export * from '@lifecorner/angular-ui-kit/logo';
@@ -172,6 +174,8 @@ export * from '@lifecorner/angular-ui-kit/pagination';
 
 // Sidenav Component
 export * from '@lifecorner/angular-ui-kit/sidenav';
+// The inert stand-in of a docked lc-sidenav while it loads (@defer placeholder)
+export * from '@lifecorner/angular-ui-kit/sidenav-placeholder';
 
 // Tabs Component
 export * from '@lifecorner/angular-ui-kit/tabs';

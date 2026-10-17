@@ -8,7 +8,8 @@ import {
   signal,
 } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
-import { IconComponent } from '@lifecorner/angular-ui-kit/icon';
+import { IconComponent, ɵprovideKitIcons } from '@lifecorner/angular-ui-kit/icon';
+import { ICON_EYE, ICON_EYE_SLASH } from '@lifecorner/angular-ui-kit/icons';
 import { AlertComponent } from '@lifecorner/angular-ui-kit/alert';
 import type { InputAutocapitalize, InputEnterKeyHint } from '@lifecorner/angular-ui-kit/input';
 
@@ -86,6 +87,7 @@ export type PasswordStrengthMode = 'composition' | 'length';
   selector: 'lc-password-input',
   standalone: true,
   imports: [IconComponent, AlertComponent],
+  viewProviders: [ɵprovideKitIcons([ICON_EYE, ICON_EYE_SLASH])],
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,

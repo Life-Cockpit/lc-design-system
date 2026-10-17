@@ -1,0 +1,99 @@
+@use '../sidenav/sidenav-docked' as docked;
+
+// lc-sidenav-placeholder (3.6, AS-18): the docked lc-sidenav's boxes, from the
+// same partial and in the same order as sidenav.component.scss includes them
+// (the `-boxes` subsets where a part also styles colours, type or the drawer),
+// plus the static skeleton shapes. Nothing here moves or animates.
+
+@include docked.container;
+@include docked.host-tokens-boxes;
+
+.lc-sidenav {
+  @include docked.panel-boxes;
+
+  &--collapsed {
+    @include docked.collapsed-rail;
+
+    .lc-sidenav__nav-item {
+      @include docked.collapsed-item;
+    }
+
+    @include docked.collapsed-icon;
+    @include docked.collapsed-rest;
+  }
+}
+
+@include docked.logo;
+@include docked.nav;
+@include docked.sections-boxes;
+
+.lc-sidenav__nav-item {
+  @include docked.item;
+}
+
+@include docked.icon-boxes;
+@include docked.children;
+@include docked.label-boxes;
+
+.lc-sidenav__nav-item-row {
+  @include docked.item-row;
+}
+
+.lc-sidenav__content {
+  @include docked.content-boxes;
+}
+
+@include docked.themes-boxes;
+
+.lc-sidenav--transparent {
+  @include docked.transparent-boxes;
+  @include docked.transparent-title;
+}
+
+// ── Skeleton shapes ────────────────────────────────────────────────────────
+// Hook: --lc-sidenav-placeholder-fill, default 16 % of the rail's ink over
+// the rail (decorative and aria-hidden, so WCAG 1.4.11 does not apply).
+.lc-sidenav-placeholder__shape {
+  display: block;
+  background-color: var(
+    --lc-sidenav-placeholder-fill,
+    color-mix(in srgb, var(--lc-sidenav-fg) 16%, transparent)
+  );
+
+  @media (forced-colors: active) {
+    forced-color-adjust: none;
+    background-color: GrayText;
+  }
+}
+
+// The icon fills the .lc-sidenav__nav-icon box (20 px, 22 px collapsed).
+.lc-sidenav-placeholder__icon {
+  border-radius: var(--border-radius-sm);
+}
+
+// The label: a 10 px bar inside .lc-sidenav__nav-label; its width cycles per row.
+.lc-sidenav-placeholder__label {
+  height: 10px;
+  border-radius: var(--border-radius-full);
+}
+
+// The section title: 8 × 64 px on the title's 28 px line.
+.lc-sidenav-placeholder__title {
+  display: inline-block;
+  vertical-align: middle;
+  width: 64px;
+  height: 8px;
+  border-radius: var(--border-radius-full);
+}
+
+// The logo: 28 px high, half the block; 32 × 32 on the rail.
+.lc-sidenav-placeholder__logo {
+  width: 50%;
+  height: 28px;
+  border-radius: var(--border-radius-md);
+
+  .lc-sidenav--collapsed & {
+    width: 32px;
+    height: 32px;
+  }
+}

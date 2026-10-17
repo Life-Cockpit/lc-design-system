@@ -6,7 +6,14 @@ import {
   computed,
   ViewEncapsulation,
 } from '@angular/core';
-import { IconComponent } from '@lifecorner/angular-ui-kit/icon';
+import { IconComponent, ɵprovideKitIcons } from '@lifecorner/angular-ui-kit/icon';
+import {
+  ICON_CHECK_CIRCLE,
+  ICON_CIRCLE_X,
+  ICON_EXCLAMATION_TRIANGLE,
+  ICON_INFORMATION_CIRCLE,
+  ICON_X_MARK,
+} from '@lifecorner/angular-ui-kit/icons';
 import type { Toast, ToastVariant } from './toast.service';
 
 /**
@@ -31,6 +38,9 @@ import type { Toast, ToastVariant } from './toast.service';
   selector: 'lc-toast',
   standalone: true,
   imports: [IconComponent],
+  viewProviders: [
+    ɵprovideKitIcons([ICON_X_MARK, ICON_CHECK_CIRCLE, ICON_CIRCLE_X, ICON_EXCLAMATION_TRIANGLE, ICON_INFORMATION_CIRCLE]),
+  ],
   templateUrl: './toast.component.html',
   styleUrls: ['./toast.component.scss'],
   encapsulation: ViewEncapsulation.None, // Required for dynamic variant class styling

@@ -1,11 +1,13 @@
-import type { IconVariant } from './icon.component';
+import type { IconSetVariant as IconVariant } from './icon-set-types';
 
 /**
- * Inline SVG map for common icons.
+ * Inline SVG map for common icons (the hand-picked set). The source of truth:
+ * `scripts/generate-icon-names.mjs` derives the key index of `lc-icon` and the
+ * `ICON_*` constants of `@lifecorner/angular-ui-kit/icons` from it.
  *
- * These are rendered directly (avoiding an HTTP request) for the most frequently
- * used icons, and act as a resilient fallback in environments where the Tabler
- * assets are not served. Keyed by the (alias-resolved) icon name, then variant.
+ * Since 3.6 (AS-17) this map lives in the lazy `internal/icon-set` entry:
+ * `lc-icon` loads it only for a 3.5.1 inline name that nobody registered.
+ * Keyed by the (alias-resolved) icon name, then variant.
  *
  * Every key is included in {@link ICON_NAMES} as a valid `lc-icon` name.
  *

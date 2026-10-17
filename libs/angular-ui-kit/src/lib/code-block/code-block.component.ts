@@ -7,7 +7,8 @@ import {
   signal,
 } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
-import { IconComponent } from '@lifecorner/angular-ui-kit/icon';
+import { IconComponent, ɵprovideKitIcons } from '@lifecorner/angular-ui-kit/icon';
+import { ICON_CHECK } from '@lifecorner/angular-ui-kit/icons';
 
 export type CodeBlockLanguage =
   | 'typescript'
@@ -173,6 +174,7 @@ function highlightCode(code: string, language: string): string {
   selector: 'lc-code-block',
   standalone: true,
   imports: [IconComponent],
+  viewProviders: [ɵprovideKitIcons([ICON_CHECK])],
   templateUrl: './code-block.component.html',
   styleUrls: ['./code-block.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

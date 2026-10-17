@@ -1,7 +1,7 @@
 // `lc-icon` name helpers (public API). The full name list and `isValidIconName`
 // live in `@lifecorner/angular-ui-kit/icon-names`.
 import type { IconVariant } from './icon.component';
-import { resolveInlineIconSvg } from './icon-inline-lookup';
+import { resolveInlineGlyph } from './icon-inline-lookup';
 
 export { ICON_ALIASES } from './icon-aliases';
 
@@ -18,11 +18,12 @@ export type IconName = string;
 
 /**
  * Whether `name` renders from markup shipped in the kit — no request, so it
- * shows offline, at once and in prerendered HTML (3.3, gap G-7). Covers the
+ * shows offline and in prerendered HTML (3.3, gap G-7): registered with
+ * `provideLcIcons()` or loaded with the kit's set (3.6, AS-17). Covers the
  * hand-picked inline set, the Tabler icons inlined at build time (mail,
  * users, settings, logout, key, chevron-right, …) and aliases that resolve
- * to either. Use it to lint an app or a static site against icons that would
- * be fetched.
+ * to either — the same names as in 3.5.1. Use it to lint an app or a static
+ * site against icons that would be fetched.
  *
  * @example
  * ```ts
@@ -33,5 +34,5 @@ export type IconName = string;
  * ```
  */
 export function isInlineIconName(name: string, variant: IconVariant = 'outline'): boolean {
-  return resolveInlineIconSvg(name, variant) !== undefined;
+  return resolveInlineGlyph(name, variant) !== undefined;
 }

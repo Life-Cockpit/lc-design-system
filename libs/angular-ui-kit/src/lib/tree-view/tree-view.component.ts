@@ -9,7 +9,15 @@ import {
   output,
   signal,
 } from '@angular/core';
-import { IconComponent } from '@lifecorner/angular-ui-kit/icon';
+import { IconComponent, ɵprovideKitIcons } from '@lifecorner/angular-ui-kit/icon';
+import {
+  ICON_CHECK,
+  ICON_CHEVRON_RIGHT,
+  ICON_FILE,
+  ICON_FILE_TEXT,
+  ICON_KEY,
+  ICON_SETTINGS,
+} from '@lifecorner/angular-ui-kit/icons';
 import {
   FILE_FALLBACK_ICON,
   FOLDER_ICON,
@@ -153,6 +161,8 @@ function isExpandable(node: TreeNode): boolean {
   selector: 'lc-tree-view',
   standalone: true,
   imports: [IconComponent],
+  // Its own glyphs and the inline ones of the built-in file-type map (file-icons.ts).
+  viewProviders: [ɵprovideKitIcons([ICON_CHEVRON_RIGHT, ICON_CHECK, ICON_FILE, ICON_FILE_TEXT, ICON_KEY, ICON_SETTINGS])],
   templateUrl: './tree-view.component.html',
   styleUrls: ['./tree-view.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

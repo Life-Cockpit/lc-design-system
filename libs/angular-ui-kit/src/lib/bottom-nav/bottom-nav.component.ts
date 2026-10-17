@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { RouterModule } from '@angular/router';
-import { IconComponent } from '@lifecorner/angular-ui-kit/icon';
+import { IconComponent, ɵprovideKitIcons } from '@lifecorner/angular-ui-kit/icon';
+import { ICON_DOTS } from '@lifecorner/angular-ui-kit/icons';
 import { BadgeComponent } from '@lifecorner/angular-ui-kit/badge';
 
 /**
@@ -83,6 +84,8 @@ interface BottomNavEntry {
   selector: 'lc-bottom-nav',
   standalone: true,
   imports: [NgTemplateOutlet, RouterModule, IconComponent, BadgeComponent],
+  // The default "more" glyph (moreIcon); the items' glyphs are the app's.
+  viewProviders: [ɵprovideKitIcons([ICON_DOTS])],
   templateUrl: './bottom-nav.component.html',
   styleUrl: './bottom-nav.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -17,7 +17,8 @@ import {
   viewChild,
 } from '@angular/core';
 import { Observable, Subscription } from 'rxjs';
-import { IconComponent } from '@lifecorner/angular-ui-kit/icon';
+import { IconComponent, ɵprovideKitIcons } from '@lifecorner/angular-ui-kit/icon';
+import { ICON_TRASH } from '@lifecorner/angular-ui-kit/icons';
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 export type LogViewerVariant = 'terminal' | 'log';
@@ -80,6 +81,7 @@ const AT_BOTTOM_THRESHOLD = 30;
   selector: 'lc-log-viewer',
   standalone: true,
   imports: [IconComponent],
+  viewProviders: [ɵprovideKitIcons([ICON_TRASH])],
   templateUrl: './log-viewer.component.html',
   styleUrls: ['./log-viewer.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

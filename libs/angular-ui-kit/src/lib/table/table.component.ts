@@ -19,7 +19,8 @@ import { TableCellDirective } from './table-cell.directive';
 import { InputComponent } from '@lifecorner/angular-ui-kit/input';
 import { SelectComponent } from '@lifecorner/angular-ui-kit/select';
 import { ButtonComponent, ButtonVariant } from '@lifecorner/angular-ui-kit/button';
-import { IconComponent } from '@lifecorner/angular-ui-kit/icon';
+import { IconComponent, ɵprovideKitIcons } from '@lifecorner/angular-ui-kit/icon';
+import { ICON_CHEVRON_RIGHT } from '@lifecorner/angular-ui-kit/icons';
 
 type TableCellClass = string | ((
   value: unknown,
@@ -212,6 +213,7 @@ interface DisplayRow {
   selector: 'lc-table',
   standalone: true,
   imports: [NgTemplateOutlet, NgStyle, FormsModule, SelectComponent, InputComponent, ButtonComponent, IconComponent],
+  viewProviders: [ɵprovideKitIcons([ICON_CHEVRON_RIGHT])],
   templateUrl: './table.component.html',
   styleUrl: './table.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -119,7 +119,7 @@ export const InlineLink: Story = {
     docs: {
       description: {
         story:
-          '`inline` makes the button flow with the surrounding text and inherit its typography — for links inside copy, linked counters and clickable row titles. Pair with `variant="link"`.',
+          '`inline` makes the button flow with the surrounding text and inherit its typography — for links inside copy, linked counters and clickable row titles. Pair with `variant="link"`. Since 3.6 (AS-19, WCAG 1.4.1) it is underlined at rest, so it differs from the text by more than colour; hover makes the line thicker. `--lc-btn-inline-text-decoration` (default `underline`) switches the line off outside running text.',
       },
     },
   },
@@ -133,6 +133,52 @@ export const InlineLink: Story = {
       <h4 style="margin: 16px 0 0; font-size: 16px; font-weight: 600;">
         <lc-button variant="link" [inline]="true" style="--lc-button-link-fg: inherit;">Clickable row title</lc-button>
       </h4>`,
+  }),
+};
+
+/**
+ * 3.6 (AS-19): outside running text — a linked counter in a table cell, a
+ * clickable row title — the underline can go: `--lc-btn-inline-text-decoration: none`.
+ */
+export const InlineWithoutUnderline: Story = {
+  name: 'Inline without underline',
+  argTypes: {
+    // The hook, documented here (it is CSS, not an input).
+    '--lc-btn-inline-text-decoration': {
+      control: false,
+      description:
+        'CSS hook on `lc-button` / `a[lcButton]` with `inline`: the `text-decoration` of the inline link. Set it to `none` for a non-text use such as a linked counter in a table cell; hover then underlines it. Keep the default in running text (WCAG 1.4.1).',
+      table: { category: 'CSS hooks', defaultValue: { summary: 'underline' } },
+    },
+  } as Meta<ButtonComponent>['argTypes'],
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Linked counters in a table, with `--lc-btn-inline-text-decoration: none` on the table. Only outside running text: there the cell, the column and the number already say "this is a control", and a line under every count would be noise. In a sentence keep the underline (AS-19, WCAG 1.4.1).',
+      },
+    },
+  },
+  render: () => ({
+    template: `
+      <table style="--lc-btn-inline-text-decoration: none; border-collapse: collapse; font-size: 14px; min-width: 280px;">
+        <thead>
+          <tr>
+            <th style="text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--color-border); color: var(--color-text-secondary); font-weight: 600;">Liste</th>
+            <th style="text-align: right; padding: 8px 12px; border-bottom: 1px solid var(--color-border); color: var(--color-text-secondary); font-weight: 600;">Offen</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="padding: 8px 12px; border-bottom: 1px solid var(--color-border); color: var(--color-text-primary);">Einkauf</td>
+            <td style="padding: 8px 12px; border-bottom: 1px solid var(--color-border); text-align: right;"><lc-button variant="link" [inline]="true" ariaLabel="12 offene Einträge in Einkauf">12</lc-button></td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 12px; border-bottom: 1px solid var(--color-border); color: var(--color-text-primary);">Haushaltsaufgaben</td>
+            <td style="padding: 8px 12px; border-bottom: 1px solid var(--color-border); text-align: right;"><lc-button variant="link" [inline]="true" ariaLabel="3 offene Einträge in Haushaltsaufgaben">3</lc-button></td>
+          </tr>
+        </tbody>
+      </table>`,
   }),
 };
 

@@ -1,0 +1,35 @@
+{
+  "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
+  "version": 1,
+  "cli": { "analytics": false, "cache": { "enabled": false } },
+  "newProjectRoot": "projects",
+  "projects": {
+    "bundle": {
+      "projectType": "application",
+      "root": "",
+      "sourceRoot": "src",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:application",
+          "options": {
+            "outputPath": "dist/bundle",
+            "index": "src/index.html",
+            "browser": "src/main.ts",
+            "tsConfig": "tsconfig.json",
+            "budgets": []
+          },
+          "configurations": {
+            "production": { "outputHashing": "all", "optimization": true, "sourceMap": false, "extractLicenses": false },
+            "icons": {
+              "fileReplacements": [{ "replace": "src/app/app.config.ts", "with": "src/app/app.config.icons.ts" }]
+            },
+            "defer": {
+              "fileReplacements": [{ "replace": "src/app/shell.ts", "with": "src/app/shell.defer.ts" }]
+            }
+          },
+          "defaultConfiguration": "production"
+        }
+      }
+    }
+  }
+}

@@ -235,6 +235,26 @@ a.btn {
   border-radius: var(--border-radius-sm);
 }
 
+// The inline link's non-colour cue (3.6, AS-19; WCAG 1.4.1, axe
+// link-in-text-block): in running text the link differs from the copy by an
+// underline at rest, not by colour alone (2.86:1 light / 1.47:1 dark against
+// the body text, below 3:1). `.btn.btn-inline` outranks `a.btn`'s reset. The
+// line is decoration, so line boxes and wrapping stay as before; it stays on
+// hover (thicker), focus, disabled and in forced colours. The thickness
+// changes without a transition. Hook: `--lc-btn-inline-text-decoration`
+// (default `underline`); `none` for a non-text use such as a linked counter
+// in a table cell — hover then underlines as before.
+.btn.btn-inline {
+  text-decoration: var(--lc-btn-inline-text-decoration, underline);
+  text-decoration-thickness: max(1px, 0.0625em);
+  text-underline-offset: 0.15em;
+  transition-property: color, background-color, border-color, box-shadow;
+
+  &:hover:not(:disabled) {
+    text-decoration-thickness: max(2px, 0.125em);
+  }
+}
+
 // Loading Spinner
 .loading-spinner {
   display: inline-block;

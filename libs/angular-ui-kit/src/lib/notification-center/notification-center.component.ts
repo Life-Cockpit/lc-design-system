@@ -6,7 +6,13 @@ import {
   computed,
   output,
 } from '@angular/core';
-import { IconComponent } from '@lifecorner/angular-ui-kit/icon';
+import { IconComponent, ɵprovideKitIcons } from '@lifecorner/angular-ui-kit/icon';
+import {
+  ICON_CHECK_CIRCLE,
+  ICON_CIRCLE_X,
+  ICON_EXCLAMATION_TRIANGLE,
+  ICON_INFORMATION_CIRCLE,
+} from '@lifecorner/angular-ui-kit/icons';
 import { SearchInputComponent } from '@lifecorner/angular-ui-kit/search-input';
 
 export type NotificationType = 'info' | 'success' | 'warning' | 'error';
@@ -44,6 +50,7 @@ const PRIORITY_LABELS: Record<NotificationPriority, string> = {
   selector: 'lc-notification-center',
   standalone: true,
   imports: [IconComponent, SearchInputComponent],
+  viewProviders: [ɵprovideKitIcons([ICON_INFORMATION_CIRCLE, ICON_CHECK_CIRCLE, ICON_EXCLAMATION_TRIANGLE, ICON_CIRCLE_X])],
   templateUrl: './notification-center.component.html',
   styleUrls: ['./notification-center.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

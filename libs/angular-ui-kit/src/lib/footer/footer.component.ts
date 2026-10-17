@@ -4,7 +4,8 @@ import {
   input,
   computed,
 } from '@angular/core';
-import { IconComponent } from '@lifecorner/angular-ui-kit/icon';
+import { IconComponent, ɵprovideKitIcons } from '@lifecorner/angular-ui-kit/icon';
+import { ICON_EXTERNAL_LINK } from '@lifecorner/angular-ui-kit/icons';
 
 export interface FooterLink {
   /** Display label */
@@ -42,6 +43,7 @@ export type FooterHeadingLevel = 2 | 3 | 4 | 5 | 6;
   selector: 'lc-footer',
   standalone: true,
   imports: [IconComponent],
+  viewProviders: [ɵprovideKitIcons([ICON_EXTERNAL_LINK])],
   templateUrl: './footer.component.html',
   styleUrls: ['./footer.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

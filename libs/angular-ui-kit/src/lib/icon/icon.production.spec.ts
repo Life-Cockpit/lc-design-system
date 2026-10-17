@@ -4,6 +4,8 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { IconComponent, resetIconCache, resetIconWarnings } from './icon.component';
 import { resetIconRendering } from './icon-dom';
 import { ICON_NAMES } from '../icon-names/icon-names';
+import { BUNDLED_ICONS } from '@lifecorner/angular-ui-kit/icons';
+import { provideLcIcons } from './icon-registry';
 
 /**
  * Unknown names in development and production (3.5, AS-15, AC-18 and AC-19 of
@@ -24,9 +26,10 @@ describe('IconComponent: unknown names in development and production (AS-15)', (
   let devMode: unknown;
 
   beforeEach(async () => {
+    // 3.6 (AS-17): inline icons render synchronously once registered.
     await TestBed.configureTestingModule({
       imports: [IconComponent],
-      providers: [provideHttpClient(withXhr()), provideHttpClientTesting()],
+      providers: [provideHttpClient(withXhr()), provideHttpClientTesting(), provideLcIcons(BUNDLED_ICONS)],
     }).compileComponents();
     resetIconWarnings();
     resetIconCache();

@@ -12,7 +12,8 @@ import {
   inject,
 } from '@angular/core';
 import { A11yModule } from '@angular/cdk/a11y';
-import { IconComponent } from '@lifecorner/angular-ui-kit/icon';
+import { IconComponent, ɵprovideKitIcons } from '@lifecorner/angular-ui-kit/icon';
+import { ICON_X_MARK } from '@lifecorner/angular-ui-kit/icons';
 import { OverlayStackService } from '@lifecorner/angular-ui-kit/internal/overlay';
 
 export type ModalSize = 'sm' | 'md' | 'lg' | 'xl' | 'full';
@@ -54,6 +55,7 @@ export type ModalPlacement = 'center' | 'auto' | 'sheet';
   selector: 'lc-modal',
   standalone: true,
   imports: [A11yModule, IconComponent],
+  viewProviders: [ɵprovideKitIcons([ICON_X_MARK])],
   templateUrl: './modal.component.html',
   styleUrls: ['./modal.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

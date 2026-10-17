@@ -8,7 +8,8 @@ import {
   effect,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { IconComponent } from '@lifecorner/angular-ui-kit/icon';
+import { IconComponent, ɵprovideKitIcons } from '@lifecorner/angular-ui-kit/icon';
+import { ICON_EXCLAMATION_CIRCLE, ICON_EXCLAMATION_TRIANGLE } from '@lifecorner/angular-ui-kit/icons';
 import { ButtonComponent } from '@lifecorner/angular-ui-kit/button';
 import { InputComponent } from '@lifecorner/angular-ui-kit/input';
 import { ModalComponent, ModalPlacement } from '@lifecorner/angular-ui-kit/modal';
@@ -49,6 +50,7 @@ export interface RequireTextConfig {
   selector: 'lc-confirm-dialog',
   standalone: true,
   imports: [FormsModule, IconComponent, ButtonComponent, ModalComponent, InputComponent],
+  viewProviders: [ɵprovideKitIcons([ICON_EXCLAMATION_TRIANGLE, ICON_EXCLAMATION_CIRCLE])],
   templateUrl: './confirm-dialog.component.html',
   styleUrls: ['./confirm-dialog.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

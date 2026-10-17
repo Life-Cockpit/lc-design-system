@@ -78,7 +78,7 @@ and the CSP notes.
 | Button link | `a[lcButton]` | `lc-button` look on a native `<a href>` — native attributes pass through, works without JavaScript |
 | Card | `lc-card` | Content container with elevation; optional leading brand-tile header icon (`[icon]` / `[iconVariant]`) |
 | Chat | `lc-chat` | Conversational UI with streaming, custom message templates |
-| Icon | `lc-icon` | Tabler SVG icons; fail-loud on unknown names (dev warning + visible placeholder, optional `[strict]` throw); exports `ICON_NAMES` / `isValidIconName` / `ICON_ALIASES` (+ `icon-names.json`) for static checking |
+| Icon | `lc-icon` | Tabler SVG icons; fail-loud on unknown names (dev warning + visible placeholder, optional `[strict]` throw); exports `ICON_NAMES` / `isValidIconName` / `ICON_ALIASES` (+ `icon-names.json`) for static checking; tree-shakable glyphs: `provideLcIcons([ICON_HOME, …])` with the constants of `@lifecorner/angular-ui-kit/icons` |
 | Logo | `lc-logo` | LifeCorner logo: Edu, the emblem, and the LifeCorner lockup, with dark and small drawings |
 | Markdown | `lc-markdown` | GFM renderer (tables with alignment, task lists, autolinks, code/mermaid) with in-place change highlighting |
 | Menu | `lc-menu` | Dropdown menu |
@@ -126,6 +126,7 @@ and the CSP notes.
 | Header | `lc-header` | App shell or public-site header: plain `homeHref`, labelled `navItems`, `[slot='end']`, translatable labels |
 | Pagination | `lc-pagination` | Page navigation |
 | Sidenav | `lc-sidenav` | Side navigation; docked, drawer, or transparent with pill items |
+| Sidenav Placeholder | `lc-sidenav-placeholder` | Inert skeleton with the docked sidenav's boxes, the `@placeholder` of a deferred `lc-sidenav` (no layout shift; phones never load the sidenav) |
 | Tabs | `lc-tabs` | Tab navigation |
 
 ### Data Display

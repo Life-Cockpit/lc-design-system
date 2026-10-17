@@ -5,8 +5,11 @@ import { PLATFORM_ID } from '@angular/core';
 import { readFileSync, readdirSync } from 'fs';
 import { join, resolve } from 'path';
 import { IconComponent, resetIconCache, resetIconWarnings } from './icon.component';
-import { INLINE_ICON_SVGS } from './icon-inline-svgs';
-import { INLINE_TABLER_SVGS } from './icon-inline-tabler.data';
+// 3.6 (AS-17): the maps moved to the lazy internal entry; the bundled icons
+// render synchronously once registered, so the setup registers all of them.
+import { INLINE_ICON_SVGS, INLINE_TABLER_SVGS } from '@lifecorner/angular-ui-kit/internal/icon-set';
+import { BUNDLED_ICONS } from '@lifecorner/angular-ui-kit/icons';
+import { provideLcIcons } from './icon-registry';
 import { ICON_FALLBACK_SVG } from './icon-placeholder';
 import { buildSvg } from './icon-svg-builder';
 import { resetIconRendering } from './icon-dom';
@@ -117,7 +120,7 @@ describe('IconComponent under Trusted Types (AS-14)', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [IconComponent],
-      providers: [provideHttpClient(withXhr()), provideHttpClientTesting()],
+      providers: [provideHttpClient(withXhr()), provideHttpClientTesting(), provideLcIcons(BUNDLED_ICONS)],
     }).compileComponents();
     resetIconWarnings();
     resetIconCache();
@@ -359,12 +362,81 @@ describe('IconComponent under Trusted Types (AS-14)', () => {
     });
   });
 
+  describe('3.6 (AS-17): registered glyphs go through the same policy and allow-list', () => {
+    /** A string registered as if it were a kit glyph: it must never reach a parser. */
+    const CRAFTED = {
+      name: 'home',
+      variant: 'outline',
+      svg: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" onload="window.__pwned=1"><path d="M0 0h24"/></svg>',
+    } as const;
+
+    function registerOnly(...icons: Array<{ name: string; variant: 'outline' | 'solid'; svg: string }>): void {
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        imports: [IconComponent],
+        providers: [provideHttpClient(withXhr()), provideHttpClientTesting(), provideLcIcons(icons)],
+      });
+      httpMock = TestBed.inject(HttpTestingController);
+    }
+
+    it('renders registered glyphs through createHTML, with no CSP or Trusted Types message', () => {
+      const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+      const factory = installTrustedTypes();
+      const parse = jest.spyOn(DOMParser.prototype, 'parseFromString');
+      for (const name of ['home', 'x-mark', 'logout', 'mail']) render({ name, ariaLabel: name });
+      expect(factory.names.filter((n) => !n.startsWith('angular'))).toEqual(['lc-icon']);
+      expect(parse.mock.calls.length).toBeGreaterThan(0);
+      for (const [input] of parse.mock.calls) expect(input).toBeInstanceOf(FakeTrustedHTML);
+      const logged = [...warnSpy.mock.calls, ...errorSpy.mock.calls].map((args) => args.map(String).join(' '));
+      expect(logged.filter((m) => /trusted.?types|content.security.policy|\bCSP\b/i.test(m))).toEqual([]);
+    });
+
+    it('drops a non-kit string registered as a glyph: the builder rejects it, the placeholder shows, createHTML throws', () => {
+      registerOnly(CRAFTED);
+      const factory = installTrustedTypes();
+      const parse = jest.spyOn(DOMParser.prototype, 'parseFromString');
+      const fixture = render({ name: 'home', ariaLabel: 'Start' });
+      const [svg] = svgsOf(fixture);
+      expect(svgsOf(fixture)).toHaveLength(1);
+      expect(Array.from(svg.children).map((c) => c.tagName)).toEqual(['rect', 'text']);
+      expect(svg.getAttribute('aria-label')).toBe('Start');
+      expect(svg.hasAttribute('onload')).toBe(false);
+      expect((window as unknown as { __pwned?: unknown }).__pwned).toBeUndefined();
+      expect(() => factory.calls[0].rules.createHTML(CRAFTED.svg)).toThrow(TypeError);
+      expect(parse.mock.calls.map(([input]) => String(input))).not.toContain(CRAFTED.svg);
+    });
+
+    it('drops it without Trusted Types as well: no parser ever sees it', () => {
+      registerOnly(CRAFTED);
+      const parse = jest.spyOn(DOMParser.prototype, 'parseFromString');
+      const fixture = render({ name: 'home' });
+      const [svg] = svgsOf(fixture);
+      expect(Array.from(svg.children).map((c) => c.tagName)).toEqual(['rect', 'text']);
+      expect(parse.mock.calls.map(([input]) => String(input))).not.toContain(CRAFTED.svg);
+    });
+
+    it('rejects every string nobody registered, even a kit glyph of another scope', () => {
+      registerOnly({ name: 'home', variant: 'outline', svg: BUNDLED_ICONS[0].svg });
+      const factory = installTrustedTypes();
+      render({ name: 'home' });
+      const rules = factory.calls[0].rules;
+      expect(rules.createHTML(BUNDLED_ICONS[0].svg)).toBe(BUNDLED_ICONS[0].svg);
+      expect(() => rules.createHTML(BUNDLED_ICONS[1].svg)).toThrow(TypeError);
+      expect(() => rules.createHTML(readFileSync(TABLER('outline/anchor.svg'), 'utf-8'))).toThrow(TypeError);
+    });
+  });
+
   describe('on the server', () => {
     beforeEach(() => {
       TestBed.resetTestingModule();
       TestBed.configureTestingModule({
         imports: [IconComponent],
-        providers: [provideHttpClient(withXhr()), provideHttpClientTesting(), { provide: PLATFORM_ID, useValue: 'server' }],
+        providers: [
+          provideHttpClient(withXhr()),
+          provideHttpClientTesting(),
+          { provide: PLATFORM_ID, useValue: 'server' },
+          provideLcIcons(BUNDLED_ICONS),
+        ],
       });
       httpMock = TestBed.inject(HttpTestingController);
     });

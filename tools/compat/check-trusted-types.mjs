@@ -220,6 +220,20 @@ async function waitFor(expression, label, timeout = 15000) {
 
 const settle = () => evaluate('new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(r, 150))))');
 
+/**
+ * Since 3.6 (AS-17) an inline icon that the app did not register keeps its
+ * prerendered <svg> until the kit's set (a lazy chunk) has loaded, and only
+ * then renders — the placeholder, when the policy is refused. Waits for that,
+ * at most `timeout` ms; the check that follows decides.
+ */
+async function iconSetSettled(timeout = 5000) {
+  try {
+    await waitFor(`[...document.querySelectorAll('lc-icon .icon-container > svg')].every((s) => [...s.children].map((c) => c.tagName).join(',') === 'rect,text')`, 'the kit set', timeout);
+  } catch {
+    // reported by the check
+  }
+}
+
 /** Loads a page and waits until it has hydrated: `/tt` clears `aria-busy` after the browser's first render. */
 async function load(path) {
   resetLog();
@@ -311,7 +325,9 @@ try {
       const icons = await evaluate(ICONS);
       check(run, width, '/tt: every lc-icon has exactly one <svg> after hydration', icons.length > 5 && icons.every((i) => i.svgs === 1), icons.filter((i) => i.svgs !== 1));
       if (run.refused) {
-        check(run, width, '/tt: bundled icons show the placeholder and keep their label', icons.every((i) => i.children === 'rect,text'), icons.filter((i) => i.children !== 'rect,text'));
+        await iconSetSettled();
+        const refused = await evaluate(ICONS);
+        check(run, width, '/tt: bundled icons show the placeholder and keep their label', refused.every((i) => i.children === 'rect,text'), refused.filter((i) => i.children !== 'rect,text'));
       }
       check(run, width, '/tt: the logo uses the base path provided through the primary entry', await evaluate(`[...document.querySelectorAll('#tt-logo img')].every((img) => img.getAttribute('src').startsWith('/compat-logo/'))`));
 
@@ -369,6 +385,7 @@ try {
 
       // Icons: every inline name × variant, and the primary-entry probe.
       await load('/tt/icons');
+      if (run.refused) await iconSetSettled();
       const all = await evaluate(ICONS);
       const inline = all.filter((i) => i.id && i.id.includes(':'));
       check(run, width, `/tt/icons: all ${INLINE.length} inline name × variant render exactly one <svg>`, inline.length === INLINE.length && inline.every((i) => i.svgs === 1 && i.children.length > 0), inline.filter((i) => i.svgs !== 1).slice(0, 5));

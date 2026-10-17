@@ -1,0 +1,144 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Bundle Size" />
+
+# Bundle Size
+
+Two kit parts weigh on a phone's first load: the icon glyphs and the docked side navigation. Since 3.6
+an app bundles only the glyphs it renders (AS-17) and can load `lc-sidenav` only where it is shown (AS-18).
+Both are opt-in: an app that changes nothing renders exactly as with 3.5.1.
+
+## Icons: register the glyphs you render
+
+The kit ships one constant per glyph in `@lifecorner/angular-ui-kit/icons` (`ICON_HOME`, `ICON_X_MARK`,
+`ICON_HOME_SOLID`, … — the 3.5.1 key in upper snake case, `_SOLID` for the solid glyph; 133 in all). Each is a
+plain object literal, so a bundler keeps only the ones you import. Register them with `provideLcIcons` from
+`@lifecorner/angular-ui-kit/icon`:
+
+```ts
+// app.config.ts
+import { provideLcIcons } from '@lifecorner/angular-ui-kit/icon';
+import { ICON_HOME, ICON_MAIL, ICON_SETTINGS, ICON_SUN } from '@lifecorner/angular-ui-kit/icons';
+
+export const appConfig: ApplicationConfig = {
+  providers: [
+    provideLcIcons([ICON_HOME, ICON_SUN, ICON_MAIL, ICON_SETTINGS], { unregistered: 'placeholder' }),
+  ],
+};
+```
+
+- **Where:** `app.config`, a route's `providers` (glyphs that only a lazy route renders stay in its chunk) or
+  a component's `providers`. Glyphs add up along the injector tree and across several calls.
+- **Registered glyphs render synchronously** — in the browser and in prerendered HTML — exactly as in 3.5.1
+  (same markup, size, `aria-hidden` / `aria-label`).
+- **Aliases:** a name is looked up as written, then by its alias target: `envelope` finds `ICON_MAIL`,
+  `x-circle` finds `ICON_CIRCLE_X`, `cog-6-tooth` finds `ICON_SETTINGS`.
+- **Which constant?** The story [Icon constants](?path=/story/components-icon--icon-constants) shows every
+  constant with its glyph and name. `BUNDLED_ICONS` holds all 133 (for tests or Storybook; an app that imports it
+  bundles all of them).
+- **Trusted Types:** registered glyphs go through the same `lc-icon` policy as before and must pass the same
+  allow-list as a fetched icon; markup you write yourself is not supported.
+
+### What a name that nobody registered does
+
+| `unregistered` | A 3.5.1 inline name that is not registered | Other names |
+|---|---|---|
+| `'load'` (default) | The kit's whole set loads once, as a lazy chunk, and the 3.5.1 markup renders. Prerendered HTML is unchanged (the server waits for it); a client-only render shows the empty, correctly sized box a moment longer. Development warns, but only if the app registers glyphs at all. | Fetched from the Tabler assets, as before. |
+| `'placeholder'` | The dashed "?" placeholder in the same box, and one console warning per name — in development and production. The set never loads. With `[strict]="true"` the icon throws in development. | Fetched, as before. |
+
+The warning names the constant to add:
+
+```
+[lc-icon] "sun" is not registered. Add ICON_SUN from @lifecorner/angular-ui-kit/icons to provideLcIcons(). Rendering a placeholder instead.
+```
+
+If the set cannot load (offline, a deploy that removed the old chunk), the icon shows the placeholder, the
+console says `[lc-icon] The kit's icon set could not be loaded (…)` once, and the next icon tries again.
+
+### Finding the glyphs a page needs
+
+1. Set `unregistered: 'placeholder'` in development and open every page: each missing glyph warns once, with
+   its constant. In CI, `[strict]="true"` on your own icons turns a missing glyph into an error.
+2. Or catch the warnings in a test:
+
+```ts
+const warn = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
+TestBed.configureTestingModule({ providers: [provideLcIcons(APP_ICONS, { unregistered: 'placeholder' })] });
+// … render the page …
+expect(warn.mock.calls.map(([m]) => m).filter((m) => m.includes('is not registered'))).toEqual([]);
+```
+
+Unit tests that assert an unregistered inline glyph right after `detectChanges()` either register the glyphs
+(`provideLcIcons(BUNDLED_ICONS)`) or `await fixture.whenStable()` first.
+
+### Glyphs the kit renders itself
+
+Kit components register the glyphs they choose themselves; you do not register these, and they are bundled
+with the component. Names you pass in (`icon`, `items[].icon`, …) are yours to register.
+
+| Component | Its own glyphs |
+|---|---|
+| `lc-accordion` | chevron-down |
+| `lc-alert`, `lc-callout`, `lc-toast` | x-mark, check-circle, x-circle (circle-x), exclamation-triangle, information-circle |
+| `lc-bottom-nav` | dots (the default `moreIcon`) |
+| `lc-chat`, `lc-notification-center` | information-circle, check-circle, exclamation-triangle, x-circle (circle-x) |
+| `lc-code-block`, `lc-copy-field` | check |
+| `lc-combobox` | x-mark, plus |
+| `lc-confirm-dialog` | exclamation-triangle, exclamation-circle |
+| `lc-date-range-picker` | calendar |
+| `lc-document-viewer` | plus, exclamation-triangle, document (file), document-text (file-text) |
+| `lc-drawer`, `lc-modal`, `lc-search-input` | x-mark |
+| `lc-email-input` | envelope (mail) |
+| `lc-file-upload` | document (file), x-mark |
+| `lc-footer` | external-link |
+| `lc-gallery` | plus, x-mark, chevron-left, chevron-right |
+| `lc-header` | bars-3, sun, moon, user, chevron-down, logout (the profile menu) |
+| `lc-kanban-board` | exclamation-circle |
+| `lc-log-viewer` | trash |
+| `lc-next-step-card` | information-circle (the default `icon`), chevron-right, external-link |
+| `lc-number-input` | plus |
+| `lc-password-input` | eye, eye-slash |
+| `lc-pipeline` | check, alert-triangle, x |
+| `lc-rating` | star, star (solid) |
+| `lc-sidenav` | chevron-down, chevron-left, chevron-right |
+| `lc-table` | chevron-right |
+| `lc-tree-view` | chevron-right, check, and the file-type glyphs file, file-text, key, settings |
+
+Other glyphs these components show (`magnifying-glass`, `minus`, `bell`, …) are not in the inline set; they are
+fetched as before.
+
+## Side navigation: load it where it is shown
+
+`lc-sidenav` renders in the app shell only from 1024 px. Put it in a `@defer (on viewport)` block with
+[`lc-sidenav-placeholder`](?path=/docs/navigation-sidenav-placeholder--docs) as its placeholder: below
+1024 px the shell hides the column, the trigger never fires and a phone never loads the sidenav.
+
+```html
+<lc-app-shell>
+  <lc-header shell-header … />
+  <div shell-nav>
+    @defer (on viewport) {
+      <lc-sidenav mode="docked" [isOpen]="true" width="100%" [mobileBreakpoint]="0"
+                  variant="transparent" ariaLabel="Hauptnavigation" [items]="nav" [activeRoute]="url()" />
+    } @placeholder {
+      <lc-sidenav-placeholder [isOpen]="true" width="100%" variant="transparent" [items]="nav" [activeRoute]="url()" />
+    }
+  </div>
+  <router-outlet />
+</lc-app-shell>
+```
+
+- The placeholder takes the sidenav's bindings and has exactly its boxes (same width, rows, sections, expanded
+  groups), so the swap moves nothing — CLS 0, also in prerendered HTML, where the placeholder is what renders.
+- It is `aria-hidden` and `inert`: no landmark, no tab stop, nothing announced. The landmark, `aria-current` and
+  the tab order arrive with `lc-sidenav`.
+
+**Pitfalls**
+
+- Import `SidenavComponent` from `@lifecorner/angular-ui-kit/sidenav` (not the primary entry) and use it only
+  inside the `@defer` block. Any other reference in the same component — a second `<lc-sidenav>`, a
+  `viewChild(SidenavComponent)` — makes Angular load it eagerly.
+- Wrap the block in an element with `shell-nav` (`<div shell-nav>`), so the shell projects it into the column.
+- `@defer (hydrate …)` is not needed and needs incremental hydration, which a strict CSP may forbid.
+- Outside the app shell, hide the placeholder's container below your breakpoint yourself; otherwise the trigger
+  fires on phones too (correct, but it saves nothing).

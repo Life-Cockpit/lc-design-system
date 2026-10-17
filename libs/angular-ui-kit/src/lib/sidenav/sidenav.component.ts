@@ -18,7 +18,15 @@ import { NavigationEnd, Router, RouterLink } from '@angular/router';
 import { filter } from 'rxjs';
 import { A11yModule } from '@angular/cdk/a11y';
 import { NavigationItem } from '@lifecorner/angular-ui-kit/models';
-import { IconComponent } from '@lifecorner/angular-ui-kit/icon';
+import {
+  currentItemParents,
+  currentNavigationItem,
+  navigationLinks,
+  navigationPath,
+  sortNavigationItems,
+} from '@lifecorner/angular-ui-kit/internal/navigation';
+import { IconComponent, ɵprovideKitIcons } from '@lifecorner/angular-ui-kit/icon';
+import { ICON_CHEVRON_DOWN, ICON_CHEVRON_LEFT, ICON_CHEVRON_RIGHT } from '@lifecorner/angular-ui-kit/icons';
 import { BadgeComponent } from '@lifecorner/angular-ui-kit/badge';
 import { LogoComponent } from '@lifecorner/angular-ui-kit/logo';
 
@@ -82,6 +90,7 @@ export type SidenavVariant = 'default' | 'transparent';
   selector: 'lc-sidenav',
   standalone: true,
   imports: [NgTemplateOutlet, NgStyle, RouterLink, A11yModule, IconComponent, BadgeComponent, LogoComponent],
+  viewProviders: [ɵprovideKitIcons([ICON_CHEVRON_DOWN, ICON_CHEVRON_LEFT, ICON_CHEVRON_RIGHT])],
   templateUrl: './sidenav.component.html',
   styleUrl: './sidenav.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -220,55 +229,22 @@ export class SidenavComponent implements OnDestroy {
   readonly expandedItems = signal<Set<string>>(new Set());
 
   /** Ids of the collapsible parents (top-level groups, section sub-groups) that contain the current item. */
-  private readonly activeChildParents = computed(() => {
-    const current = this.currentItem();
-    const ids: string[] = [];
-    if (!current) return ids;
-    for (const item of this.items()) {
-      const collapsibles = item.isSection ? (item.children ?? []) : [item];
-      for (const parent of collapsibles) {
-        if (parent.children?.includes(current)) {
-          ids.push(parent.id);
-        }
-      }
-    }
-    return ids;
-  });
+  private readonly activeChildParents = computed(() => currentItemParents(this.items(), this.currentItem()));
 
   /**
    * Computed sorted navigation items by displayOrder
    */
-  readonly sortedItems = computed(() => {
-    return [...this.items()].sort((a, b) => a.displayOrder - b.displayOrder);
-  });
+  readonly sortedItems = computed(() => sortNavigationItems(this.items()));
 
   /**
    * Every item rendered as a link, in display order (depth first): simple
    * items, the children of a group, the children of a section, and the
    * children of a section's sub-group.
    */
-  private readonly linkItems = computed(() => {
-    const links: NavigationItem[] = [];
-    for (const item of this.sortedItems()) {
-      if (item.isSection) {
-        for (const child of item.children ?? []) {
-          if (child.children?.length) links.push(...child.children);
-          else links.push(child);
-        }
-      } else if (item.children?.length) {
-        links.push(...item.children);
-      } else {
-        links.push(item);
-      }
-    }
-    return links;
-  });
+  private readonly linkItems = computed(() => navigationLinks(this.sortedItems()));
 
   /** The router URL's path: primary outlet only, no query, fragment or matrix parameters. */
-  private readonly routerPath = computed(() => {
-    const segments = this.router.parseUrl(this.routerUrl()).root.children['primary']?.segments ?? [];
-    return `/${segments.map((segment) => segment.path).join('/')}`;
-  });
+  private readonly routerPath = computed(() => navigationPath(this.router, this.routerUrl()));
 
   /**
    * The one current link (or none). The single source of both the current
@@ -276,23 +252,12 @@ export class SidenavComponent implements OnDestroy {
    * With `activeRoute` set: the first link whose route equals it. Without:
    * the router's path — the exact match wins, otherwise the longest link
    * route the path continues with a `/` (`/` matches only `/`); ties go to
-   * the first link in display order.
+   * the first link in display order. The rules live in
+   * `internal/navigation` since 3.6, shared with `lc-sidenav-placeholder`.
    */
-  private readonly currentItem = computed<NavigationItem | null>(() => {
-    const links = this.linkItems();
-    const active = this.activeRoute();
-    if (active !== '') return links.find((link) => link.route === active) ?? null;
-    const path = this.routerPath();
-    const exact = links.find((link) => link.route === path);
-    if (exact) return exact;
-    let best: NavigationItem | null = null;
-    for (const link of links) {
-      const route = link.route;
-      if (!route || route === '/' || !path.startsWith(`${route}/`)) continue;
-      if (!best || route.length > best.route.length) best = link;
-    }
-    return best;
-  });
+  private readonly currentItem = computed<NavigationItem | null>(() =>
+    currentNavigationItem(this.linkItems(), this.activeRoute(), this.activeRoute() === '' ? this.routerPath() : ''),
+  );
 
   /**
    * Event emitted when the sidenav should close

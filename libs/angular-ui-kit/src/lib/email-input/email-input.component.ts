@@ -14,6 +14,8 @@ import {
 import { CommonModule } from '@angular/common';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { InputAutocapitalize, InputComponent, InputEnterKeyHint } from '@lifecorner/angular-ui-kit/input';
+import { ɵprovideKitIcons } from '@lifecorner/angular-ui-kit/icon';
+import { ICON_MAIL } from '@lifecorner/angular-ui-kit/icons';
 
 /**
  * Email input component with built-in RFC 5322 validation.
@@ -37,6 +39,8 @@ import { InputAutocapitalize, InputComponent, InputEnterKeyHint } from '@lifecor
 @Component({
   selector: 'lc-email-input',
   imports: [CommonModule, InputComponent],
+  // The `envelope` icon it hands to lc-input (an alias of the Tabler `mail`).
+  viewProviders: [ɵprovideKitIcons([ICON_MAIL])],
   templateUrl: './email-input.component.html',
   styleUrl: './email-input.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

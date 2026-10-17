@@ -12,7 +12,8 @@ import {
   viewChild,
 } from '@angular/core';
 import { ButtonComponent } from '@lifecorner/angular-ui-kit/button';
-import { IconComponent } from '@lifecorner/angular-ui-kit/icon';
+import { IconComponent, ɵprovideKitIcons } from '@lifecorner/angular-ui-kit/icon';
+import { ICON_CHEVRON_RIGHT, ICON_EXTERNAL_LINK, ICON_INFORMATION_CIRCLE } from '@lifecorner/angular-ui-kit/icons';
 
 export type NextStepCardTone = 'neutral' | 'primary' | 'success' | 'warning' | 'info';
 
@@ -86,6 +87,8 @@ export type NextStepCardActionSize = 'sm' | 'md' | 'lg';
   selector: 'lc-next-step-card',
   standalone: true,
   imports: [ButtonComponent, IconComponent],
+  // Its default `icon` and the action glyphs.
+  viewProviders: [ɵprovideKitIcons([ICON_INFORMATION_CIRCLE, ICON_CHEVRON_RIGHT, ICON_EXTERNAL_LINK])],
   templateUrl: './next-step-card.component.html',
   styleUrls: ['./next-step-card.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -1,9 +1,19 @@
 import type { Meta, StoryObj } from '@storybook/angular';
+import { applicationConfig } from '@storybook/angular';
 import { Component, signal, computed, ChangeDetectionStrategy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { IconComponent } from './icon.component';
-import { INLINE_TABLER_NAMES } from './icon-inline-tabler.data';
-import { INLINE_ICON_SVGS } from './icon-inline-svgs';
+import { provideLcIcons } from './icon-registry';
+// 3.6 (AS-17): the 3.5.1 maps live in the lazy internal entry; the constants in `icons`.
+import { INLINE_ICON_SVGS, INLINE_TABLER_NAMES } from '@lifecorner/angular-ui-kit/internal/icon-set';
+import {
+  BUNDLED_ICONS,
+  ICON_CHECK_CIRCLE,
+  ICON_CHECK_CIRCLE_SOLID,
+  ICON_HOME,
+  ICON_HOME_SOLID,
+  ICON_MAIL,
+} from '@lifecorner/angular-ui-kit/icons';
 // The package's exports map only exposes ./icons/*, so the catalogue JSON has to be
 // reached by path.
 // eslint-disable-next-line @nx/enforce-module-boundaries
@@ -146,14 +156,34 @@ get a single console warning per name, and the placeholder is shown instead.
 **Trusted Types**
 
 Bundled icons go through one Trusted Types policy, \`lc-icon\`, created on the
-first icon render; it accepts only the kit's own SVG strings (the inline sets and
-the placeholder). If your Content Security Policy enforces Trusted Types, add
+first icon render; it accepts only the kit's own SVG strings (registered \`ICON_*\`
+glyphs, the kit's lazily loaded set and the placeholder — since 3.6 each of them also
+passes the allow-list below). If your Content Security Policy enforces Trusted Types, add
 \`lc-icon\` to its \`trusted-types\` directive, for example
 \`require-trusted-types-for 'script'; trusted-types angular lc-icon\`. Fetched
 icons need no policy: they are rebuilt from the allow-list above. When the page
 refuses the policy, bundled icons show the placeholder (with their size, colour and
 label) and the console says so once. There is no sanitizer bypass and no HTML
 binding, so \`angular#unsafe-bypass\` is not needed for icons.
+
+**Register the glyphs you render (3.6)**
+
+The kit's inline glyphs are tree-shakable: register the ones your app renders and
+only those (plus the ones the kit's own components render) are bundled. Registered
+glyphs render synchronously, in prerendered HTML too.
+
+\`\`\`ts
+// app.config.ts
+import { provideLcIcons } from '@lifecorner/angular-ui-kit/icon';
+import { ICON_HOME, ICON_MAIL, ICON_X_MARK } from '@lifecorner/angular-ui-kit/icons';
+
+providers: [provideLcIcons([ICON_HOME, ICON_MAIL, ICON_X_MARK], { unregistered: 'placeholder' })]
+\`\`\`
+
+An inline name nobody registered loads the kit's whole set once, as a lazy chunk
+(\`unregistered: 'load'\`, the default — an app that opts into nothing renders as in
+3.5.1), or shows the placeholder and warns once (\`'placeholder'\`). See the
+**Bundle Size** page for the constants, the warnings and the lazy side navigation.
 
 The canonical set of valid names is exported for static checking:
 
@@ -301,6 +331,111 @@ export const InlineSet: Story = {
         @for (name of names; track name) {
           <li style="display: flex; align-items: center; gap: 8px; font: 12px monospace; color: var(--color-text-secondary);">
             <lc-icon [name]="name" size="md" [decorative]="true" />{{ name }}
+          </li>
+        }
+      </ul>`,
+  }),
+};
+
+const caption = 'font-size: 11px; color: var(--color-text-tertiary); margin-top: 4px; font-family: monospace;';
+
+/**
+ * 3.6 (AS-17): glyphs registered with `provideLcIcons` render synchronously —
+ * in every size and both variants — and only they are bundled.
+ */
+export const RegisteredIcons: Story = {
+  name: 'Registered icons',
+  decorators: [
+    applicationConfig({
+      providers: [provideLcIcons([ICON_HOME, ICON_HOME_SOLID, ICON_MAIL, ICON_CHECK_CIRCLE, ICON_CHECK_CIRCLE_SOLID])],
+    }),
+  ],
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'This story registers `ICON_HOME`, `ICON_HOME_SOLID`, `ICON_MAIL`, `ICON_CHECK_CIRCLE` and `ICON_CHECK_CIRCLE_SOLID` (from `@lifecorner/angular-ui-kit/icons`) with `provideLcIcons([...])` in its application config. Glyphs add up along the injector tree: `app.config`, a route\'s `providers` or a component\'s `providers`. An alias finds the glyph of its target (`envelope` → `ICON_MAIL`).',
+      },
+    },
+  },
+  render: () => ({
+    props: {
+      rows: [
+        { name: 'home', variant: 'outline', constant: 'ICON_HOME' },
+        { name: 'home', variant: 'solid', constant: 'ICON_HOME_SOLID' },
+        { name: 'envelope', variant: 'outline', constant: 'ICON_MAIL' },
+        { name: 'check-circle', variant: 'outline', constant: 'ICON_CHECK_CIRCLE' },
+        { name: 'check-circle', variant: 'solid', constant: 'ICON_CHECK_CIRCLE_SOLID' },
+      ],
+      sizes: ['xs', 'sm', 'md', 'lg', 'xl'],
+      caption,
+    },
+    template: `
+      <div style="display: grid; grid-template-columns: minmax(160px, auto) repeat(5, 48px); gap: 12px 8px; align-items: center;">
+        @for (row of rows; track row.constant) {
+          <div style="font: 12px monospace; color: var(--color-text-secondary);">{{ row.constant }}<div [style]="caption">{{ row.name }} · {{ row.variant }}</div></div>
+          @for (size of sizes; track size) {
+            <div style="display: flex; justify-content: center;"><lc-icon [name]="row.name" [variant]="row.variant" [size]="size" [ariaLabel]="row.name" /></div>
+          }
+        }
+      </div>`,
+  }),
+};
+
+/**
+ * 3.6 (AS-17): with `unregistered: 'placeholder'` an inline name nobody
+ * registered shows the placeholder (and warns once) instead of loading the
+ * kit's set; a name outside the inline set is fetched as before. Same box.
+ */
+export const UnregisteredName: Story = {
+  name: 'Unregistered name',
+  decorators: [applicationConfig({ providers: [provideLcIcons([ICON_HOME], { unregistered: 'placeholder' })] })],
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '`provideLcIcons([ICON_HOME], { unregistered: \'placeholder\' })`. `home` is registered and renders at once; `sun` is a kit glyph nobody registered: the placeholder, and once per name `[lc-icon] "sun" is not registered. Add ICON_SUN from @lifecorner/angular-ui-kit/icons to provideLcIcons(). Rendering a placeholder instead.` in the console (development and production); `anchor` is not in the inline set and is fetched from the Tabler assets as before. All three boxes are 24 × 24 px. With the default `\'load\'` the kit\'s set loads once instead, and the warning (development only) ends with "Loading the kit\'s icon set instead."',
+      },
+    },
+  },
+  render: () => ({
+    props: { caption },
+    template: `
+      <div style="display: flex; gap: 32px; align-items: flex-start;">
+        <div style="text-align: center;"><lc-icon name="home" size="md" ariaLabel="home" /><div [style]="caption">home · registered</div></div>
+        <div style="text-align: center;"><lc-icon name="sun" size="md" ariaLabel="sun" /><div [style]="caption">sun · placeholder</div></div>
+        <div style="text-align: center;"><lc-icon name="anchor" size="md" ariaLabel="anchor" /><div [style]="caption">anchor · fetched</div></div>
+      </div>`,
+  }),
+};
+
+/** Upper snake case of the 3.5.1 key, `_SOLID` for the solid glyph. */
+const constantOf = (name: string, variant: string) =>
+  `ICON_${name.toUpperCase().replace(/-/g, '_')}${variant === 'solid' ? '_SOLID' : ''}`;
+
+/**
+ * 3.6 (AS-17): every constant of `@lifecorner/angular-ui-kit/icons` with its
+ * glyph — "which constant do I need for this name?".
+ */
+export const IconConstants: Story = {
+  name: 'Icon constants',
+  decorators: [applicationConfig({ providers: [provideLcIcons(BUNDLED_ICONS)] })],
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'All 133 constants (`BUNDLED_ICONS` registers them all — for tests or a page that really shows every glyph; an app that imports it bundles all of them). A name that is an alias finds the constant of its target: `x-circle` → `ICON_CIRCLE_X`, `envelope` → `ICON_MAIL`, `cog-6-tooth` → `ICON_SETTINGS`.',
+      },
+    },
+  },
+  render: () => ({
+    props: { icons: BUNDLED_ICONS.map((icon) => ({ ...icon, constant: constantOf(icon.name, icon.variant) })), caption },
+    template: `
+      <ul style="list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px;">
+        @for (icon of icons; track icon.constant) {
+          <li style="display: flex; align-items: center; gap: 10px;">
+            <lc-icon [name]="icon.name" [variant]="icon.variant" size="md" [decorative]="true" />
+            <div style="font: 12px monospace; color: var(--color-text-secondary);">{{ icon.constant }}<div [style]="caption">{{ icon.name }} · {{ icon.variant }}</div></div>
           </li>
         }
       </ul>`,

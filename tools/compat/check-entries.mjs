@@ -137,7 +137,8 @@ const subpaths = Object.keys(next.pkg.exports).filter((k) => !nonEntry.includes(
 const entries = subpaths.map((k) => k.slice(2));
 const publicEntries = entries.filter((e) => !e.startsWith('internal/'));
 numbers.entries = { total: entries.length, public: publicEntries.length, internal: entries.length - publicEntries.length };
-check('AC-15', `${entries.length} subpaths (${publicEntries.length} public, ${entries.length - publicEntries.length} internal), each with types and default`, entries.length === 112 && subpaths.every((k) => existsSync(join(next.root, next.pkg.exports[k].types)) && existsSync(join(next.root, next.pkg.exports[k].default))));
+// 116 since 3.6 (request 002): + icons, sidenav-placeholder, internal/icon-set, internal/navigation.
+check('AC-15', `${entries.length} subpaths (${publicEntries.length} public, ${entries.length - publicEntries.length} internal), each with types and default`, entries.length === 116 &&subpaths.every((k) => existsSync(join(next.root, next.pkg.exports[k].types)) && existsSync(join(next.root, next.pkg.exports[k].default))));
 const entryExports = exportsOf(subpaths.map((k) => join(next.root, next.pkg.exports[k].types)));
 const unresolved = subpaths.filter((_, i) => !entryExports[i]);
 check('AC-15', 'every subpath\'s types resolve in TypeScript', unresolved.length === 0, unresolved);

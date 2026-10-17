@@ -4,6 +4,7 @@ import { AppShellComponent } from './app-shell.component';
 import { AppPageComponent } from './app-page.component';
 import { HeaderComponent } from '../header/header.component';
 import { SidenavComponent } from '../sidenav/sidenav.component';
+import { SidenavPlaceholderComponent } from '../sidenav-placeholder/sidenav-placeholder.component';
 import { BottomNavComponent } from '../bottom-nav/bottom-nav.component';
 import { AvatarGroupComponent } from '../avatar-group/avatar-group.component';
 import { ListComponent } from '../list/list.component';
@@ -62,7 +63,10 @@ const meta: Meta<AppShellComponent> = {
   component: AppShellComponent,
   decorators: [
     moduleMetadata({
-      imports: [AppPageComponent, HeaderComponent, SidenavComponent, BottomNavComponent, AvatarGroupComponent, ListComponent, SkeletonComponent],
+      imports: [
+        AppPageComponent, HeaderComponent, SidenavComponent, SidenavPlaceholderComponent, BottomNavComponent,
+        AvatarGroupComponent, ListComponent, SkeletonComponent,
+      ],
     }),
   ],
   argTypes: {
@@ -230,4 +234,66 @@ export const TodayLoading: StoryObj<AppShellComponent & { busy: boolean }> = {
     props: { ...args, nav },
     template: todayLoadingTemplate,
   }),
+};
+
+/**
+ * Today with the side navigation loaded lazily (3.6, AS-18): `@defer` around
+ * `lc-sidenav` with `lc-sidenav-placeholder` as its placeholder, in a
+ * `<div shell-nav>`. An app uses `on viewport` (the column is hidden below
+ * 1024 px, so a phone never loads the sidenav); the story waits 1.5 s
+ * (`on timer`) so both states can be seen and measured.
+ */
+const lazyNavTemplate = `
+  <lc-app-shell [horizon]="horizon">
+    <lc-header shell-header variant="transparent" [sticky]="false" title="Produkt" titleTag="span"
+               subtitle="Unser Haushalt" homeAriaLabel="Produkt – Startseite"
+               userMenuTrigger="avatar" userAvatarColor="member-1" userName="Johanna-Friederike Apfelbaum-Kieselbacher-Morgentau"
+               userMenuAriaLabel="Menü für Johanna-Friederike Apfelbaum-Kieselbacher-Morgentau" />
+    <div shell-nav>
+      @defer (on timer(1500ms)) {
+        <lc-sidenav mode="docked" [isOpen]="true" width="100%" [mobileBreakpoint]="0"
+                    variant="transparent" ariaLabel="Hauptnavigation" [items]="lazyNav" activeRoute="/" />
+      } @placeholder {
+        <lc-sidenav-placeholder [isOpen]="true" width="100%" variant="transparent" [items]="lazyNav" activeRoute="/" />
+      }
+    </div>
+    <lc-app-page>
+      <div>
+        <p style="margin: 0 0 12px; font-size: 13px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--color-overline, var(--color-link));">Donnerstag, 15. Oktober</p>
+        <h1 style="margin: 0; font-size: 40px; line-height: 1.05; letter-spacing: -0.035em; color: var(--color-text-primary);">Guten Abend, Johanna</h1>
+      </div>
+      ${placeholder('‹Der eine nächste Schritt›', 140)}
+      ${placeholder('‹Seiteninhalt›', 120)}
+    </lc-app-page>
+    <lc-bottom-nav shell-bottom-nav variant="floating" ariaLabel="Hauptnavigation" [items]="lazyNav" activeRoute="/" />
+  </lc-app-shell>`;
+
+const lazyNav = (labels: { today: string; household: string; settings: string }) => [
+  { id: 'today', icon: 'sun', label: labels.today, route: '/', displayOrder: 1 },
+  { id: 'household', icon: 'home', label: labels.household, route: '/household', displayOrder: 2 },
+  { id: 'settings', icon: 'settings', label: labels.settings, route: '/settings', displayOrder: 3 },
+];
+
+const EN = { today: 'Today', household: 'Household overview', settings: 'Notification settings' };
+const DE = { today: 'Heute', household: 'Haushaltsübersicht', settings: 'Benachrichtigungseinstellungen' };
+
+export const LazySideNavigation: Story = {
+  name: 'Lazy side navigation',
+  args: { horizon: true },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '`<div shell-nav> @defer (on viewport) { <lc-sidenav …/> } @placeholder { <lc-sidenav-placeholder …same bindings…/> } </div>`. The placeholder has the sidenav\'s boxes, so the swap moves neither the column nor `<main>` (CLS 0). Here `on timer(1500ms)` stands in for `on viewport`. Below 1024 px the column is hidden and nothing loads.',
+      },
+    },
+  },
+  render: (args) => ({ props: { ...args, lazyNav: lazyNav(EN) }, template: lazyNavTemplate }),
+};
+
+/** The same with long German labels: they end with an ellipsis at 1024 px, as before (AC-11). */
+export const LazySideNavigationGerman: Story = {
+  name: 'Lazy side navigation (German)',
+  args: { horizon: true },
+  render: (args) => ({ props: { ...args, lazyNav: lazyNav(DE) }, template: lazyNavTemplate }),
 };

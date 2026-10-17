@@ -17,7 +17,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 import { OverlayModule } from '@angular/cdk/overlay';
 import { Observable, Subject, catchError, debounce, defer, of, switchMap, timer } from 'rxjs';
-import { IconComponent } from '@lifecorner/angular-ui-kit/icon';
+import { IconComponent, ɵprovideKitIcons } from '@lifecorner/angular-ui-kit/icon';
+import { ICON_PLUS, ICON_X_MARK } from '@lifecorner/angular-ui-kit/icons';
 import { SpinnerComponent } from '@lifecorner/angular-ui-kit/spinner';
 import { ChipComponent } from '@lifecorner/angular-ui-kit/chip';
 
@@ -56,6 +57,7 @@ export type ComboboxSize = 'xs' | 'sm' | 'md' | 'lg';
   selector: 'lc-combobox',
   standalone: true,
   imports: [OverlayModule, IconComponent, SpinnerComponent, ChipComponent],
+  viewProviders: [ɵprovideKitIcons([ICON_X_MARK, ICON_PLUS])],
   templateUrl: './combobox.component.html',
   styleUrls: ['./combobox.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

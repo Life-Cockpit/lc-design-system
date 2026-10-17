@@ -27,6 +27,7 @@ import {
   AppPageComponent, AppShellComponent, BottomNavComponent, CopyFieldComponent, ProviderButtonComponent,
   RadioComponent, RadioGroupComponent, type BottomNavItem,
 } from '@lifecorner/angular-ui-kit';
+import { Probe36 } from './probe-36';
 
 /**
  * The broad page (route `''`): every component, imported from the PRIMARY
@@ -56,6 +57,8 @@ import {
     // 3.3
     AppPageComponent, AppShellComponent, BottomNavComponent, CopyFieldComponent, ProviderButtonComponent,
     RadioComponent, RadioGroupComponent,
+    // 3.6 (request 002)
+    Probe36,
   ],
   templateUrl: './home.html',
   changeDetection: ChangeDetectionStrategy.OnPush,

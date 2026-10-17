@@ -16,7 +16,8 @@ import { NgTemplateOutlet } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { ButtonComponent } from '@lifecorner/angular-ui-kit/button';
 import { LogoComponent } from '@lifecorner/angular-ui-kit/logo';
-import { IconComponent } from '@lifecorner/angular-ui-kit/icon';
+import { IconComponent, ɵprovideKitIcons } from '@lifecorner/angular-ui-kit/icon';
+import { ICON_BARS_3, ICON_CHEVRON_DOWN, ICON_LOGOUT, ICON_MOON, ICON_SUN, ICON_USER } from '@lifecorner/angular-ui-kit/icons';
 import { AvatarColor, AvatarComponent } from '@lifecorner/angular-ui-kit/avatar';
 import { MenuComponent, MenuItem } from '@lifecorner/angular-ui-kit/menu';
 import { ThemeService } from '@lifecorner/angular-ui-kit/theme';
@@ -147,6 +148,8 @@ export type HeaderUserMenuTrigger = 'icon' | 'avatar';
     AvatarComponent,
     MenuComponent,
   ],
+  // Its own glyphs, and the profile menu's (lc-menu renders them in this view).
+  viewProviders: [ɵprovideKitIcons([ICON_BARS_3, ICON_SUN, ICON_MOON, ICON_USER, ICON_CHEVRON_DOWN, ICON_LOGOUT])],
   templateUrl: './header.component.html',
   styleUrl: './header.component.scss',
   encapsulation: ViewEncapsulation.None,

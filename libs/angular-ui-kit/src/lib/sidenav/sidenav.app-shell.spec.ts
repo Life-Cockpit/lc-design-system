@@ -34,6 +34,27 @@ function contrast(a: string, b: string): number {
   return (hi + 0.05) / (lo + 0.05);
 }
 
+/**
+ * The stylesheet as written, with each `@include docked.<name>;` replaced by
+ * that mixin's body from _sidenav-docked.scss (3.6, AS-18: the docked boxes
+ * moved there verbatim and are included back in place), so the source
+ * checks below read the same rules as before.
+ */
+function withDockedIncludes(scss: string, partial: string): string {
+  const bodies = new Map<string, string>();
+  for (const m of partial.matchAll(/^@mixin ([\w-]+) \{\n/gm)) {
+    let depth = 1;
+    let i = (m.index ?? 0) + m[0].length;
+    const start = i;
+    for (; depth > 0 && i < partial.length; i++) {
+      if (partial[i] === '{') depth++;
+      else if (partial[i] === '}') depth--;
+    }
+    bodies.set(m[1], partial.slice(start, i - 1));
+  }
+  return scss.replace(/@include docked\.([\w-]+);/g, (_, name: string) => bodies.get(name) ?? `/* missing mixin ${name} */`);
+}
+
 const items: NavigationItem[] = [
   { id: 'today', icon: 'sun', label: 'Heute', route: '/', displayOrder: 1 },
   { id: 'household', icon: 'home', label: 'Haushalt', route: '/household', displayOrder: 2 },
@@ -43,7 +64,10 @@ const items: NavigationItem[] = [
 describe('SidenavComponent — app shell (AS-4, LK-8)', () => {
   let fixture: ComponentFixture<SidenavComponent>;
   let el: HTMLElement;
-  const scss = readFileSync(resolve(__dirname, 'sidenav.component.scss'), 'utf-8');
+  const scss = withDockedIncludes(
+    readFileSync(resolve(__dirname, 'sidenav.component.scss'), 'utf-8'),
+    readFileSync(resolve(__dirname, '_sidenav-docked.scss'), 'utf-8'),
+  );
   const source = readFileSync(resolve(__dirname, 'sidenav.component.ts'), 'utf-8');
 
   function set(inputs: Record<string, unknown>): void {

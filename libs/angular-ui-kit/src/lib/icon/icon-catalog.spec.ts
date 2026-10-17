@@ -2,8 +2,8 @@ import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import { ICON_ALIASES, isInlineIconName } from './icon-catalog';
 import { ICON_NAMES, isValidIconName } from '../icon-names/icon-names';
-import { INLINE_ICON_SVGS } from './icon-inline-svgs';
-import { INLINE_TABLER_NAMES, INLINE_TABLER_SVGS } from './icon-inline-tabler.data';
+// 3.6 (AS-17): the maps moved to the lazy internal entry.
+import { INLINE_ICON_SVGS, INLINE_TABLER_NAMES, INLINE_TABLER_SVGS } from '@lifecorner/angular-ui-kit/internal/icon-set';
 
 describe('icon catalog', () => {
   describe('ICON_NAMES', () => {

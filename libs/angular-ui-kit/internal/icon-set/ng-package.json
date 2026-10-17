@@ -1,0 +1,5 @@
+{
+  "lib": {
+    "entryFile": "../../src/lib/internal/icon-set/index.ts"
+  }
+}

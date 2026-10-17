@@ -7,7 +7,14 @@ import {
   computed,
   ViewEncapsulation,
 } from '@angular/core';
-import { IconComponent } from '@lifecorner/angular-ui-kit/icon';
+import { IconComponent, ɵprovideKitIcons } from '@lifecorner/angular-ui-kit/icon';
+import {
+  ICON_CHECK_CIRCLE,
+  ICON_CIRCLE_X,
+  ICON_EXCLAMATION_TRIANGLE,
+  ICON_INFORMATION_CIRCLE,
+  ICON_X_MARK,
+} from '@lifecorner/angular-ui-kit/icons';
 
 export type AlertVariant = 'success' | 'error' | 'warning' | 'info';
 
@@ -52,6 +59,9 @@ export type AlertActionsLayout = 'inline' | 'stacked';
   selector: 'lc-alert',
   standalone: true,
   imports: [IconComponent],
+  viewProviders: [
+    ɵprovideKitIcons([ICON_X_MARK, ICON_CHECK_CIRCLE, ICON_CIRCLE_X, ICON_EXCLAMATION_TRIANGLE, ICON_INFORMATION_CIRCLE]),
+  ],
   templateUrl: './alert.component.html',
   styleUrls: ['./alert.component.scss'],
   encapsulation: ViewEncapsulation.None, // Required for dynamic variant class styling

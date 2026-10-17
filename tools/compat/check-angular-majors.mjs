@@ -20,8 +20,12 @@
  *
  * Prerequisite: `npx nx build angular-ui-kit` (reads dist/libs/angular-ui-kit).
  *
+ * `--measure` also builds tools/compat/bundle (the F1 shell, Angular 22)
+ * against 3.5.1 and this build and checks the initial-JS savings of request
+ * 002 (AS-17 icons, AS-18 deferred side navigation); see bundle-size.mjs.
+ *
  * Usage: node tools/compat/check-angular-majors.mjs [--only=21.0,22] [--keep]
- *          [--legacy-peer-deps] [--work=<dir>]
+ *          [--legacy-peer-deps] [--work=<dir>] [--measure]
  */
 import { execFileSync, spawnSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
@@ -29,6 +33,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { inlineIconsModule } from './inline-icons.mjs';
+import { kb, measureBundles } from './bundle-size.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const args = Object.fromEntries(
@@ -101,6 +106,11 @@ const EXPECT_IN_HTML = [
   // 3.5.1: this build keeps Angular's defaults (22: incremental hydration's
   // event-dispatch script; 21: critical-CSS `onload`); the csp build is below.
   ["Angular's default inline scripts (not the csp settings)", (html) => html.includes('</html>') && !noInlineScript(html), 'tt/index.html'],
+  // 3.6 (request 002), on the home page (probe-36.ts)
+  ['registered glyph, decorated (AS-17)', /<lc-icon[^>]*id="compat-registered"[^>]*><div[^>]*class="icon-container[^"]*\bicon-solid\b[^"]*"[^>]*><svg(?=[^>]*width="24px")(?=[^>]*role="img")(?=[^>]*aria-label="Start")[^>]*><path d="M11\.47 3\.841/],
+  // (Angular may write a [class] string's classes in another order: lookaheads.)
+  ['sidenav placeholder: inert, hidden, the docked rail (AS-18)', /<lc-sidenav-placeholder(?=[^>]*id="compat-sidenav-placeholder")(?=[^>]*aria-hidden="true")(?=[^>]*\binert\b)(?=[^>]*class="[^"]*\blc-sidenav-container--docked\b)[^>]*>[^]*?<div(?=[^>]*class="lc-sidenav(?=[^"]*\blc-sidenav--docked\b)(?=[^"]*\blc-sidenav--open\b)[^"]*")(?=[^>]*style="width: 240px;?")[^>]*>/],
+  ['inline link in running text (AS-19)', /<a(?=[^>]*href="\/de\/datenschutz")(?=[^>]*class="[^"]*\bbtn-link\b)(?=[^>]*class="[^"]*\bbtn-inline\b)[^>]*>/],
 ];
 
 /**
@@ -222,6 +232,16 @@ for (const entry of MATRIX.filter((m) => !only || only.includes(m.name))) {
   results.push(result);
 }
 
+let measured = null;
+if (args.measure) {
+  console.log('\nMeasuring the F1 shell (tools/compat/bundle) against 3.5.1 …');
+  try {
+    measured = measureBundles({ work, tarball, run });
+  } catch (error) {
+    measured = { error: String(error.stack ?? error) };
+  }
+}
+
 let failed = false;
 for (const r of results) {
   const checks = r.checks.map(([l, ok]) => `${ok ? 'ok' : 'MISSING'} ${l}`).join(', ');
@@ -232,6 +252,16 @@ for (const r of results) {
   if (checks) console.log(`  prerendered HTML: ${checks}`);
   if (r.warnings.length) console.log(`  warnings:\n    ${r.warnings.join('\n    ')}`);
   if (r.error) console.log(`  ${r.error.replace(/\n/g, '\n  ')}`);
+}
+if (measured?.error) {
+  failed = true;
+  console.log(`\n[FAIL] bundle measurement\n  ${measured.error.replace(/\n/g, '\n  ')}`);
+} else if (measured) {
+  const ok = measured.checks.every(([, v]) => v);
+  failed ||= !ok;
+  console.log(`\n[${ok ? 'PASS' : 'FAIL'}] bundle measurement (initial JS; kB = 1000 bytes, gzip -9)`);
+  for (const [label, r] of measured.rows) console.log(`  ${label.padEnd(34)} ${kb(r.raw).padStart(10)} raw ${kb(r.gzip).padStart(9)} gzip  (${r.lazyFiles} lazy files)`);
+  for (const [label, ok, detail] of measured.checks) console.log(`  ${ok ? 'ok' : 'FAIL'} ${label}${detail ? `: ${detail}` : ''}`);
 }
 console.log(`\nWork dir: ${work}`);
 if (!args.keep && !args.work && !failed) rmSync(work, { recursive: true, force: true });

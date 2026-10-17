@@ -8,7 +8,8 @@ import {
   ElementRef,
   viewChild,
 } from '@angular/core';
-import { IconComponent } from '@lifecorner/angular-ui-kit/icon';
+import { IconComponent, ɵprovideKitIcons } from '@lifecorner/angular-ui-kit/icon';
+import { ICON_FILE, ICON_X_MARK } from '@lifecorner/angular-ui-kit/icons';
 
 export interface FileUploadFile {
   file: File;
@@ -34,6 +35,7 @@ export interface FileUploadFile {
   selector: 'lc-file-upload',
   standalone: true,
   imports: [IconComponent],
+  viewProviders: [ɵprovideKitIcons([ICON_FILE, ICON_X_MARK])],
   templateUrl: './file-upload.component.html',
   styleUrls: ['./file-upload.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

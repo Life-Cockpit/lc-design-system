@@ -10,7 +10,8 @@ import {
   viewChild,
 } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
-import { IconComponent } from '@lifecorner/angular-ui-kit/icon';
+import { IconComponent, ɵprovideKitIcons } from '@lifecorner/angular-ui-kit/icon';
+import { ICON_PLUS } from '@lifecorner/angular-ui-kit/icons';
 
 /** Number of decimals a number is written with (`0.001` → 3, `1e-7` → 7, `5` → 0). */
 function decimalsOf(n: number): number {
@@ -45,6 +46,7 @@ function sanitizeNumericText(raw: string): string {
   selector: 'lc-number-input',
   standalone: true,
   imports: [IconComponent],
+  viewProviders: [ɵprovideKitIcons([ICON_PLUS])],
   templateUrl: './number-input.component.html',
   styleUrls: ['./number-input.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

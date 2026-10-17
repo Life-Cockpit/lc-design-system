@@ -1,6 +1,5 @@
-import { INLINE_ICON_SVGS } from './icon-inline-svgs';
-import { INLINE_TABLER_SVGS } from './icon-inline-tabler.data';
 import { ICON_FALLBACK_SVG } from './icon-placeholder';
+import { buildSvg } from './icon-svg-builder';
 
 /**
  * The `lc-icon` Trusted Types policy (3.5, gap AS-14).
@@ -12,6 +11,12 @@ import { ICON_FALLBACK_SVG } from './icon-placeholder';
  * on the first icon render, never at import time and never on the server, and
  * at most once per page: when the page's CSP refuses it, the kit says so once
  * and never asks again. Not exported from the entry.
+ *
+ * Since 3.6 (AS-17) the kit's strings are no longer all in the bundle. "The
+ * kit's own strings" are those it was handed as glyphs — registered
+ * `ICON_*` constants and the lazily loaded set — plus the placeholder, and
+ * each of them must also pass the allow-list builder that fetched icons go
+ * through. A registered string that fails it is never parsed.
  *
  * @internal
  */
@@ -43,27 +48,41 @@ export const ICON_POLICY_REFUSED_WARNING =
 
 /** One state per page (keyed by its window). */
 let states = new WeakMap<object, IconPolicyState>();
-let bundled: ReadonlySet<string> | undefined;
+/** The strings the kit was handed as glyphs (registered or loaded), and the placeholder. */
+let offered = new Set<string>([ICON_FALLBACK_SVG]);
+/** The allow-list builder's verdict per offered string, checked once. */
+let verdicts = new Map<string, boolean>();
 
-/** Every SVG string the kit ships: the hand-picked set, the inlined Tabler set and the placeholder. */
+/** Hands glyph markup to the policy: a registered constant or a string of the loaded kit set. */
+export function offerIconSvgs(svgs: Iterable<string>): void {
+  for (const svg of svgs) offered.add(svg);
+}
+
+/** Every SVG string the kit was handed so far: registered glyphs, the loaded set and the placeholder. */
 export function bundledIconSvgs(): ReadonlySet<string> {
-  if (!bundled) {
-    const svgs = new Set<string>([ICON_FALLBACK_SVG]);
-    for (const set of [INLINE_ICON_SVGS, INLINE_TABLER_SVGS]) {
-      for (const variants of Object.values(set)) {
-        for (const svg of Object.values(variants)) if (svg) svgs.add(svg);
-      }
-    }
-    bundled = svgs;
+  return offered;
+}
+
+/**
+ * Whether `svg` may be parsed: it was handed to the kit as a glyph and the
+ * allow-list builder accepts it (same rules as a fetched icon).
+ */
+export function isAdmittedIconSvg(doc: Document, svg: string): boolean {
+  if (typeof svg !== 'string' || !offered.has(svg)) return false;
+  let ok = verdicts.get(svg);
+  if (ok === undefined) {
+    ok = buildSvg(doc, svg).svg !== undefined;
+    verdicts.set(svg, ok);
   }
-  return bundled;
+  return ok;
 }
 
 /** The policy's rules: `createHTML` only, and only for the kit's own strings. */
-export function iconPolicyRules(): IconPolicyRules {
+export function iconPolicyRules(doc?: Document): IconPolicyRules {
   return {
     createHTML(input: string): string {
-      if (typeof input === 'string' && bundledIconSvgs().has(input)) return input;
+      const owner = doc ?? (typeof document === 'undefined' ? undefined : document);
+      if (owner && isAdmittedIconSvg(owner, input)) return input;
       throw new TypeError('lc-icon: not a bundled icon');
     },
   };
@@ -82,7 +101,7 @@ export function iconPolicy(win: Window | null): IconPolicyState {
   let state: IconPolicyState = NONE;
   if (factory && typeof factory.createPolicy === 'function') {
     try {
-      state = { kind: 'ready', policy: factory.createPolicy(ICON_POLICY_NAME, iconPolicyRules()) };
+      state = { kind: 'ready', policy: factory.createPolicy(ICON_POLICY_NAME, iconPolicyRules(win.document)) };
     } catch {
       state = REFUSED;
       console.warn(ICON_POLICY_REFUSED_WARNING);
@@ -99,4 +118,6 @@ export function iconPolicy(win: Window | null): IconPolicyState {
  */
 export function resetIconPolicy(): void {
   states = new WeakMap();
+  offered = new Set([ICON_FALLBACK_SVG]);
+  verdicts = new Map();
 }

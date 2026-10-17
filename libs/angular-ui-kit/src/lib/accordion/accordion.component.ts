@@ -9,7 +9,8 @@ import {
   effect,
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
-import { IconComponent } from '@lifecorner/angular-ui-kit/icon';
+import { IconComponent, ɵprovideKitIcons } from '@lifecorner/angular-ui-kit/icon';
+import { ICON_CHEVRON_DOWN } from '@lifecorner/angular-ui-kit/icons';
 import { AccordionHeaderDirective } from './accordion-header.directive';
 import { AccordionContentDirective } from './accordion-content.directive';
 
@@ -58,6 +59,7 @@ export type AccordionChevronPosition = 'leading' | 'trailing';
   selector: 'lc-accordion',
   standalone: true,
   imports: [IconComponent, NgTemplateOutlet],
+  viewProviders: [ɵprovideKitIcons([ICON_CHEVRON_DOWN])],
   templateUrl: './accordion.component.html',
   styleUrl: './accordion.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

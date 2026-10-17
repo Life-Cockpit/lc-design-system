@@ -1,6 +1,6 @@
 import { buildSvg } from './icon-svg-builder';
 import { ICON_FALLBACK_SVG } from './icon-placeholder';
-import { iconPolicy, resetIconPolicy } from './icon-trusted-types';
+import { iconPolicy, isAdmittedIconSvg, resetIconPolicy } from './icon-trusted-types';
 
 /**
  * How `lc-icon` turns markup into DOM (3.5, gap AS-14). Every `<svg>` is a
@@ -21,7 +21,8 @@ let parsed = new WeakMap<Document, Map<string, SVGElement>>();
 /**
  * A bundled SVG constant as a fresh `<svg>` of `doc`, for the browser. `null`
  * when the page refused the `lc-icon` policy (the caller shows the
- * placeholder through the builder) or the constant would not parse.
+ * placeholder through the builder), the constant would not parse, or it was
+ * not handed to the kit as a glyph or fails the allow-list (3.6, AS-17).
  */
 export function parseBundledSvg(doc: Document, markup: string): SVGElement | null {
   const state = iconPolicy(doc.defaultView);
@@ -30,6 +31,9 @@ export function parseBundledSvg(doc: Document, markup: string): SVGElement | nul
   if (!cache) parsed.set(doc, (cache = new Map()));
   let template = cache.get(markup);
   if (!template) {
+    // Registered markup is not necessarily the kit's: it passes the
+    // allow-list builder before any parser sees it, with or without a policy.
+    if (!isAdmittedIconSvg(doc, markup)) return null;
     if (typeof DOMParser === 'undefined') return buildSvg(doc, markup).svg ?? null;
     // With Trusted Types the parser only takes the policy's TrustedHTML; the
     // policy hands back nothing but the kit's own strings.

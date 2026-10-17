@@ -152,7 +152,7 @@ export const WithIcons: Story = {
   }),
 };
 
-/** `variant="link"` with `inline` reads as a link inside running text. */
+/** `variant="link"` with `inline` reads as a link inside running text — underlined at rest since 3.6 (AS-19). */
 export const InlineInText: Story = {
   render: () => ({
     template: `
@@ -161,6 +161,53 @@ export const InlineInText: Story = {
         <a lcButton variant="link" [inline]="true" href="#so-bauen-wir">So bauen wir</a>,
         jede mit Datum.
       </p>
+    `,
+  }),
+};
+
+const wrapCopy = {
+  en: { before: 'By signing in you accept the', link: 'privacy policy and the terms of use of the household app', after: 'for everyone in it.' },
+  de: { before: 'Mit der Anmeldung stimmst du der', link: 'Datenschutzerklärung und den Nutzungsbedingungen der Haushalts-App', after: 'für alle Mitglieder zu.' },
+};
+
+/**
+ * 3.6 (AS-19): the underline is decoration — it takes no space, so a link
+ * that wraps over two lines keeps the paragraph's line boxes. Each paragraph
+ * twice: with the default underline and with `--lc-btn-inline-text-decoration: none`.
+ */
+export const InlineLinkWrapping: Story = {
+  name: 'Inline link wrapping',
+  argTypes: {
+    '--lc-btn-inline-text-decoration': {
+      control: false,
+      description:
+        'CSS hook on `a[lcButton]` / `lc-button` with `inline`: the `text-decoration` of the inline link. `none` only for a non-text use (a linked counter in a table); keep the default in running text (WCAG 1.4.1).',
+      table: { category: 'CSS hooks', defaultValue: { summary: 'underline' } },
+    },
+  } as Meta<ButtonLinkComponent>['argTypes'],
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'A sign-in page at 360 px (312 px of text), English and German, the link wrapping over two lines. The left paragraph of each pair has the default underline, the right one `--lc-btn-inline-text-decoration: none`: both are the same height, so the line changes neither line height nor wrapping.',
+      },
+    },
+  },
+  render: () => ({
+    props: { copy: [wrapCopy.en, wrapCopy.de] },
+    template: `
+      <div style="display: flex; flex-direction: column; gap: 24px;">
+        @for (text of copy; track text.link) {
+          <div style="display: flex; flex-wrap: wrap; gap: 24px;">
+            <p class="wrap-default" style="max-width: 312px; margin: 0; font-size: 16px; line-height: 1.5; color: var(--color-text-primary);">
+              {{ text.before }} <a lcButton variant="link" [inline]="true" href="#datenschutz">{{ text.link }}</a> {{ text.after }}
+            </p>
+            <p class="wrap-none" style="max-width: 312px; margin: 0; font-size: 16px; line-height: 1.5; color: var(--color-text-primary); --lc-btn-inline-text-decoration: none;">
+              {{ text.before }} <a lcButton variant="link" [inline]="true" href="#datenschutz">{{ text.link }}</a> {{ text.after }}
+            </p>
+          </div>
+        }
+      </div>
     `,
   }),
 };

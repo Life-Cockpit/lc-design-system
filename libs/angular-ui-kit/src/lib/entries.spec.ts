@@ -62,9 +62,17 @@ describe('secondary entries (AS-15)', () => {
   const entries = sourceEntries();
   const publicEntries = entries.filter((e) => !e.startsWith('internal/'));
 
-  it('has one entry per folder: 109 public and 3 internal', () => {
-    expect(publicEntries).toHaveLength(109);
-    expect(entries.filter((e) => e.startsWith('internal/'))).toEqual(['internal/chart', 'internal/overlay', 'internal/url']);
+  // 3.6 (request 002) added the public `icons` and `sidenav-placeholder` entries
+  // and the internal `icon-set` (AS-17) and `navigation` (AS-18) entries.
+  it('has one entry per folder: 111 public and 5 internal', () => {
+    expect(publicEntries).toHaveLength(111);
+    expect(entries.filter((e) => e.startsWith('internal/'))).toEqual([
+      'internal/chart',
+      'internal/icon-set',
+      'internal/navigation',
+      'internal/overlay',
+      'internal/url',
+    ]);
     expect(entries).toContain('icon-names');
     expect(isDir(join(SRC_LIB, 'shared'))).toBe(false);
   });

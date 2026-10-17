@@ -19,7 +19,13 @@ import {
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { MarkdownComponent } from '@lifecorner/angular-ui-kit/markdown';
-import { IconComponent } from '@lifecorner/angular-ui-kit/icon';
+import { IconComponent, ɵprovideKitIcons } from '@lifecorner/angular-ui-kit/icon';
+import {
+  ICON_CHECK_CIRCLE,
+  ICON_CIRCLE_X,
+  ICON_EXCLAMATION_TRIANGLE,
+  ICON_INFORMATION_CIRCLE,
+} from '@lifecorner/angular-ui-kit/icons';
 
 export type ChatMessageRole = 'user' | 'agent' | 'system';
 
@@ -97,6 +103,7 @@ export interface ChatFileAttachEvent {
   selector: 'lc-chat',
   standalone: true,
   imports: [NgTemplateOutlet, MarkdownComponent, IconComponent],
+  viewProviders: [ɵprovideKitIcons([ICON_INFORMATION_CIRCLE, ICON_CHECK_CIRCLE, ICON_EXCLAMATION_TRIANGLE, ICON_CIRCLE_X])],
   templateUrl: './chat.component.html',
   styleUrls: ['./chat.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

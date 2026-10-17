@@ -1,0 +1,72 @@
+<!-- The docked lc-sidenav's DOM skeleton: same classes and element types, so
+     the shared box rules (sidenav/_sidenav-docked.scss) give the same boxes.
+     <aside>, <nav>, <a> and <button> become <div>s: the host is inert and
+     aria-hidden, so nothing here is a landmark, a link or a tab stop. -->
+<div [class]="railClasses()" [style.width]="railWidth()">
+  @if (showLogo()) {
+    <div class="lc-sidenav__logo" [class]="'lc-sidenav__logo--size-' + logoSize()">
+      <span class="lc-sidenav-placeholder__shape lc-sidenav-placeholder__logo"></span>
+    </div>
+  }
+
+  @if (items().length > 0) {
+    <div class="lc-sidenav__nav lc-sidenav__nav--docked">
+      @for (item of sortedItems(); track item.id; let i = $index) {
+        @if (item.isSection) {
+          <div class="lc-sidenav__section">
+            <div class="lc-sidenav__section-header">
+              <h2 class="lc-sidenav__section-title"><span class="lc-sidenav-placeholder__shape lc-sidenav-placeholder__title"></span></h2>
+            </div>
+            @if (item.children?.length) {
+              <ul class="lc-sidenav__section-items">
+                @for (child of item.children; track child.id; let j = $index) {
+                  <li>
+                    <div class="lc-sidenav__nav-item-row">
+                      <div class="lc-sidenav__nav-item">
+                        @if (child.icon) {
+                          <span class="lc-sidenav__nav-icon lc-sidenav-placeholder__shape lc-sidenav-placeholder__icon"></span>
+                        }
+                        <span class="lc-sidenav__nav-label"><span class="lc-sidenav-placeholder__shape lc-sidenav-placeholder__label" [style.width]="labelWidth(j)"></span></span>
+                      </div>
+                    </div>
+                    @if (child.children?.length && isExpanded(child)) {
+                      <div class="lc-sidenav__nav-children">
+                        @for (grandchild of child.children; track grandchild.id; let k = $index) {
+                          <div class="lc-sidenav__nav-item">
+                            @if (grandchild.icon) {
+                              <span class="lc-sidenav__nav-icon lc-sidenav-placeholder__shape lc-sidenav-placeholder__icon"></span>
+                            }
+                            <span class="lc-sidenav__nav-label"><span class="lc-sidenav-placeholder__shape lc-sidenav-placeholder__label" [style.width]="labelWidth(k + 1)"></span></span>
+                          </div>
+                        }
+                      </div>
+                    }
+                  </li>
+                }
+              </ul>
+            }
+          </div>
+        } @else {
+          <div class="lc-sidenav__nav-item-row">
+            <div class="lc-sidenav__nav-item">
+              <span class="lc-sidenav__nav-icon lc-sidenav-placeholder__shape lc-sidenav-placeholder__icon"></span>
+              <span class="lc-sidenav__nav-label"><span class="lc-sidenav-placeholder__shape lc-sidenav-placeholder__label" [style.width]="labelWidth(i)"></span></span>
+            </div>
+          </div>
+          @if (item.children?.length && isExpanded(item)) {
+            <div class="lc-sidenav__nav-children">
+              @for (child of item.children; track child.id; let j = $index) {
+                <div class="lc-sidenav__nav-item">
+                  <span class="lc-sidenav__nav-icon lc-sidenav-placeholder__shape lc-sidenav-placeholder__icon"></span>
+                  <span class="lc-sidenav__nav-label"><span class="lc-sidenav-placeholder__shape lc-sidenav-placeholder__label" [style.width]="labelWidth(j + 1)"></span></span>
+                </div>
+              }
+            </div>
+          }
+        }
+      }
+    </div>
+  }
+
+  <div class="lc-sidenav__content lc-sidenav__content--docked"></div>
+</div>
