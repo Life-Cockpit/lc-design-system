@@ -11,6 +11,8 @@
       "Bash(npm run build:tokens)",
       "Bash(node tools/agents/story-shots.mjs *)",
       "Bash(node tools/compat/check-angular-majors.mjs *)",
+      "Bash(node tools/compat/check-trusted-types.mjs *)",
+      "Bash(node tools/compat/check-entries.mjs *)",
       "Bash(npm pack --dry-run dist/libs/angular-ui-kit)",
       "Bash(npm view @lifecorner/angular-ui-kit*)",
       "Bash(npm stage list @lifecorner/angular-ui-kit)",
