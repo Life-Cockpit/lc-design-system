@@ -1,10 +1,20 @@
 name: Publish to npm
 
+# Two ways in:
+# - workflow_dispatch from main with the version (the release-manager agent, after it pushed
+#   the release commit): test, build and stage it, then tag the commit v<version>. A failed
+#   run leaves no tag behind.
+# - pushing a tag v<version> by hand: the same, without the tag job.
 on:
   push:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release; must equal libs/angular-ui-kit/package.json on main'
+        required: true
+        type: string
 
 env:
   NODE_VERSION: '24'
@@ -15,8 +25,26 @@ jobs:
     permissions:
       contents: read
       id-token: write
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Check the version
+        id: version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          version=$(node -p "require('./libs/angular-ui-kit/package.json').version")
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            [ "$GITHUB_REF" = "refs/heads/main" ] || { echo "::error::Releases are dispatched from main, not $GITHUB_REF"; exit 1; }
+            [ "$INPUT_VERSION" = "$version" ] || { echo "::error::Input $INPUT_VERSION does not match package.json $version"; exit 1; }
+            grep -q "^## \[$version\]" libs/angular-ui-kit/CHANGELOG.md || { echo "::error::CHANGELOG.md has no section for $version"; exit 1; }
+            if git ls-remote --exit-code --tags origin "refs/tags/v$version" > /dev/null; then
+              echo "::error::Tag v$version exists already"; exit 1
+            fi
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
 
       # No dependency cache in release builds (npm's trusted-publishing guidance).
       - uses: actions/setup-node@v4
@@ -76,3 +104,27 @@ jobs:
             echo "::error::npm stage publish failed with exit code $status"
             exit $status
           fi
+
+  # Its own job, so contents: write never runs next to npm ci and the publish token.
+  # A tag pushed with GITHUB_TOKEN starts no workflow run, so this never publishes twice.
+  tag:
+    needs: publish
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Tag the release commit
+        env:
+          VERSION: ${{ needs.publish.outputs.version }}
+        run: |
+          subject=$(git log -1 --format=%s)
+          summary=${subject#"release: $VERSION — "}
+          [ "$summary" != "$subject" ] || summary="release $VERSION"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "v$VERSION" -m "v$VERSION – $summary"
+          git push origin "v$VERSION"
+          echo "Tagged $(git rev-parse --short HEAD) as v$VERSION" >> "$GITHUB_STEP_SUMMARY"
