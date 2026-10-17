@@ -10,3 +10,4 @@ metadata:
 - Shell: compound commands (`a && python3 ...`, `;` chains with scripts) can hit an approval prompt in headless runs. Use Edit for changelog and version, and run one command per Bash call.
 - Code-changed check: `git diff --quiet <build commit> -- libs tools` also fails for `tools/agents/*` changes (screenshot helpers). Those are not in the package or any gate; say so in release.md instead of rerunning the compat matrix.
 - The changelog draft sits in build.md as a fenced block; replace the `2026-10-XX` date with the release day.
+- 3.5.1: publish run ~3 min, CI ~5 min. CI Angular 22 job steps "Check the /tt pages under a Trusted Types CSP" and "Check the secondary entries" now pass (Chrome needs --no-sandbox when CI is set). `git rev-list`/`show-ref` on tags and `gh api` can hit approval prompts headless; check the tag job result via `gh run view --json jobs`.

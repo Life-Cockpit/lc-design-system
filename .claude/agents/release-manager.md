@@ -28,12 +28,13 @@ You are the release manager of the LifeCorner Design System. A release is the pr
 
 1. `git switch main && git merge --ff-only <branch>`. If that is not possible because `main` moved, go back to step 1.3; no merge commits.
 2. `git push origin main`. This also starts *CI* and *Deploy Docs*.
-3. `gh workflow run publish-npm.yml --ref main -f version=X.Y.Z`. Then find the run: `gh run list --workflow=publish-npm.yml --limit 3 --json databaseId,headSha,status,event`. It must be the `workflow_dispatch` run whose `headSha` is your release commit.
-4. Wait for it with `gh run watch <id> --exit-status --interval 60 > tmp/<NNN>/run-<id>.log 2>&1; tail -n 5 tmp/<NNN>/run-<id>.log` (watch output is long). Its two jobs: *publish* (version check, tests, build, `npm stage publish` with provenance) and *tag* (`vX.Y.Z` on the release commit, only after staging succeeded). If it fails, run `gh run view <id> --log-failed | tail -80`. A code failure goes to `web-developer`. An npm, OIDC or infrastructure failure goes to `owner`. Never retry by tagging by hand.
-5. `git fetch --tags origin` and check that `vX.Y.Z` points at the release commit.
-6. Wait for *CI* and *Deploy Docs* on `main` the same way, also through a log. Then check that `curl -fsS https://design.life-cockpit.de/index.json` lists the new story IDs.
-7. `npm stage list @lifecorner/angular-ui-kit` gives the stage ID, if this machine is logged in to npm.
-8. Don't make any commit after the push. The outcome goes into your reply: the runs with their result, the tag, and the stage ID. The package is public once the npm stage is approved with 2FA (`npm stage approve <id>`), the one protection the pipeline keeps against a compromised run. Then `next: none`.
+3. **Wait for *CI* on the release commit** (`gh run list --workflow=ci.yml --limit 3 --json databaseId,headSha`, then `gh run watch <id> --exit-status --interval 60` through a log). CI runs what the publish run doesn't: the compat matrix, the Trusted Types and entry checks, and the Storybook build. If it is red, nothing gets published: `gh run view <id> --log-failed | tail -80`, then hand off to `web-developer` (code) or `owner` (infrastructure). The next version fixes it; never publish a version whose CI failed.
+4. **Only then** `gh workflow run publish-npm.yml --ref main -f version=X.Y.Z`. Then find the run: `gh run list --workflow=publish-npm.yml --limit 3 --json databaseId,headSha,status,event`. It must be the `workflow_dispatch` run whose `headSha` is your release commit.
+5. Wait for it with `gh run watch <id> --exit-status --interval 60 > tmp/<NNN>/run-<id>.log 2>&1; tail -n 5 tmp/<NNN>/run-<id>.log` (watch output is long). Its two jobs: *publish* (version check, tests, build, `npm stage publish` with provenance) and *tag* (`vX.Y.Z` on the release commit, only after staging succeeded). If it fails, run `gh run view <id> --log-failed | tail -80`. A code failure goes to `web-developer`. An npm, OIDC or infrastructure failure goes to `owner`. Never retry by tagging by hand.
+6. `git fetch --tags origin` and check that `vX.Y.Z` points at the release commit.
+7. Wait for *Deploy Docs* the same way, then check that `curl -fsS https://design.life-cockpit.de/index.json` lists the new story IDs.
+8. `npm stage list @lifecorner/angular-ui-kit` gives the stage ID, if this machine is logged in to npm.
+9. Don't make any commit after the push. The outcome goes into your reply: the runs with their result, the tag, and the stage ID. The package is public once the npm stage is approved with 2FA (`npm stage approve <id>`), the one protection the pipeline keeps against a compromised run. Then `next: none`.
 
 To verify later (`/lc-release --verify X.Y.Z`): `npm view @lifecorner/angular-ui-kit@X.Y.Z version dist.attestations --json`. That shows it is public with provenance.
 

@@ -24,6 +24,7 @@
       "Bash(git tag --sort=*)",
       "Bash(git fetch origin *)",
       "Bash(git fetch --tags origin)",
+      "Bash(git ls-remote *)",
       "Bash(git switch *)",
       "Bash(git add *)",
       "Bash(git commit *)",
