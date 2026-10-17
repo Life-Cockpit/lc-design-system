@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.5.1] - 2026-10-17
+
+Follow-ups from the 3.5.0 review. Documentation only in the package; no API breaks.
+
+### Fixed
+
+- **`lc-sidenav`: `activeRoute` says how routes are compared.** Routes are
+  compared as written, so give them as absolute paths (`'/household'`). With
+  `activeRoute` empty, a relative `route` (`'settings'`) never matches the
+  router's path, while 3.4.1's `routerLinkActive` painted it. The JSDoc (and
+  with it the MCP), the docs table and the control now say so (AS-16).
+- **`lc-icon` docs name the warning production logs.** Production logs
+  `[lc-icon] Unknown icon "…"` only for a malformed name. A well-formed unknown
+  name is requested once per page and logs `… could not be loaded (404)` or
+  `… returned non-SVG content`: search production logs for those (AS-15).
+
+### Compatibility
+
+- The kit's consumer check builds Angular's defaults again on Angular 21.0,
+  21, 22.0 and 22, so Angular 22's default incremental hydration (with its
+  event-dispatch script) is prerendered with the kit on every release. life-os's
+  settings (`withNoIncrementalHydration()`, `inlineCritical: false`) are built
+  separately for the Trusted Types browser check, which now runs in CI.
+- No API breaks. The only source change in the package is one JSDoc sentence
+  (`SidenavComponent.activeRoute`).
+
 ## [3.5.0] - 2026-10-17
 
 Four gaps that block life-os feature F1 (the LifeCorner app: sign-in, Today,

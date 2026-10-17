@@ -33,4 +33,4 @@ Interactively, in this repository: `/lc-request <requirement or path> [--from <p
 
 | Request | From | Gap IDs | Status | Version |
 |---|---|---|---|---|
-| [001](001-f1-app-shell-gaps/) F1 app-shell gaps | life-os | AS-12, AS-14, AS-15, AS-16 (AS-13 optional) | 3.5.0 staged; build (3.5.1 CI fix) | 3.5.0 |
+| [001](001-f1-app-shell-gaps/) F1 app-shell gaps | life-os | AS-12, AS-14, AS-15, AS-16 (AS-13 optional) | 3.5.1 | 3.5.1 |
