@@ -1,0 +1,1 @@
+- [Release pitfalls](release_pitfalls.md) — build/pack numbers, shell limits, what the pack contains

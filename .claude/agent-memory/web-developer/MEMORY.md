@@ -1,0 +1,2 @@
+- [Gates and measuring](reference_gates-and-measuring.md) — real Jest counts, cold build time, lint baseline, bundle sizes, PNG diffs, story-shots quirks
+- [Build pitfalls](feedback_build-pitfalls.md) — TT fakes in Jest, NG0502 from div-in-p, CSP-safe fixtures, skeleton widths, literal BOM, story routers

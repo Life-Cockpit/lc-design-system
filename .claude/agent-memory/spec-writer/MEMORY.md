@@ -1,0 +1,2 @@
+- [life-os sources](reference_life-os-sources.md) — where gap registers, B-decisions, ADRs, CSP constants and kit-pinning tests live in life-os
+- [Kit consumers](project_kit-consumers.md) — life-os app/website, LC Factory: configs that constrain semver and "unchanged defaults"

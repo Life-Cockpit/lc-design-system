@@ -2,6 +2,108 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.5.0] - 2026-10-17
+
+Four gaps that block life-os feature F1 (the LifeCorner app: sign-in, Today,
+household, settings), from the app-shell concept's gap register (§7.1): a busy
+page, icons under Trusted Types, secondary entry points with a smaller initial
+bundle, and one current item in the side navigation. Plus `mermaid` only for
+the apps that use `lc-markdown`. No API breaks: every export of 3.4.1 stays,
+with the same name and kind, in `@lifecorner/angular-ui-kit`.
+
+### Added
+
+- **Secondary entry points** (AS-15, AS-13; life-os ADR-0012 budget of
+  150 kB gzip initial JS). Every component folder is its own entry,
+  `@lifecorner/angular-ui-kit/<folder>`: 109 public entries, for example
+  `import { IconComponent } from '@lifecorner/angular-ui-kit/icon'` or
+  `import { AppShellComponent, AppPageComponent } from '@lifecorner/angular-ui-kit/app-shell'`.
+  Each entry is a separate module, so an app bundles only what it imports and
+  a lazy route takes the kit parts only it uses into its own chunk. Measured
+  with an Angular 22 fixture (an F1 shell eager, charts, table, markdown and
+  modal on a lazy route): initial JS **839.0 → 581.9 kB raw, 226.1 → 161.6 kB
+  gzip** (Angular CLI estimate 192.3 → 138.0 kB), the kit's part
+  485.4 → 277.5 kB raw. `@lifecorner/angular-ui-kit` keeps working and
+  re-exports every entry (with esbuild it splits the same way). Every
+  component's documentation and the MCP's `get-documentation` show its import
+  line; *Installation* lists the entries whose name isn't the selector's
+  (`lc-app-page` → `app-shell`, `a[lcButton]` → `button`, `ToastService` →
+  `toast`, …).
+- **`@lifecorner/angular-ui-kit/icon-names`**: `ICON_NAMES` and
+  `isValidIconName` (also still exported by the primary entry).
+- **`lc-app-page` `busy`** (AS-12, life-os Today): `aria-busy="true"` on the
+  page's `<main>` while a skeleton stands in for the content, no attribute
+  while `false` (default). No visual change. Screen readers may hold back
+  changes inside a busy region, so an announced loading status belongs outside
+  `<main>`. Story *Layout / App Shell / Today (loading, busy page)*.
+
+### Changed
+
+- **`lc-icon` works under Trusted Types** (AS-14; every life-os page with an
+  icon). Bundled icons go through one policy, **`lc-icon`**, created on the
+  first icon render, that accepts only the kit's own SVG strings; there is no
+  `bypassSecurityTrustHtml` and no `[innerHTML]` any more, so icons don't need
+  `angular#unsafe-bypass`. Checked in Chromium under
+  `require-trusted-types-for 'script'; trusted-types angular lc-icon`: 0
+  violations on the F1 pages and all 133 inline icons. If the CSP refuses the
+  policy, bundled icons show the placeholder (with their size, colour and
+  label) and the console says so once. The DOM is the same as in 3.4.1.
+- **Fetched icons are rebuilt from an allow-list** (AS-14): basic shapes
+  (`g`, `path`, `circle`, `ellipse`, `line`, `polyline`, `polygon`, `rect`,
+  `text`) with paint and geometry attributes, node by node, without an HTML or
+  XML parser. Scripts, event handlers, references (`href`, `url(…)`), a
+  DOCTYPE, files over 32 KB or anything malformed drop the icon (placeholder
+  and one warning naming the reason); `data-*`, `style`, `id` and similar are
+  dropped silently. All 6,146 Tabler icons pass.
+- **Unknown icon names in production** (AS-15): production builds no longer
+  ship the ~5,000 names (19.8 kB gzip). They check a name by its form, request
+  a well-formed unknown name **once per page**, and show the placeholder with
+  one warning when the answer isn't an icon (404 included). Development builds
+  check the list as before and never request an unknown name; `strict` still
+  throws there.
+- **A 404 for an icon is cached** for the page: a later instance of the same
+  missing name sends no second request. Transient failures are still retried
+  and evicted.
+- **Prerendered icons carry their size, colour and accessibility attributes**
+  (3.4.1 prerendered the bare SVG).
+
+### Fixed
+
+- **`lc-sidenav` marks exactly one link as current** (AS-16; life-os Today and
+  household, WCAG 1.3.1 and 4.1.2). Angular's `routerLinkActive` removed
+  `aria-current` after each navigation, so the start page (`/`) looked current
+  but was never announced. The look and `aria-current="page"` now come from one
+  rule: with `activeRoute` set, the first link whose `route` equals it; without
+  it, the link matching the router URL's path, otherwise the longest route the
+  path starts with (`/` only on `/`). Routes are compared as written, so give
+  them as absolute paths (`'/household'`). Changed edge cases: a router-matched
+  link other than `activeRoute` no longer looks current; with `activeRoute`
+  empty and several matches only the deepest one is current, and now
+  announced. Story *Navigation / Sidenav / Router-matched current item*.
+
+### Compatibility
+
+- No API breaks. All 497 exports of 3.4.1's primary entry keep their name and
+  kind, `fesm2022/lifecorner-angular-ui-kit.mjs` and its types keep their
+  paths, and so do `./styles`, `./styles/*`, `./icon-names.json` and the
+  assets. Peer range unchanged (`^21.0.0 || ^22.0.0`). Checked on Angular
+  21.0, 21, 22.0 and 22 (build and prerender), with imports from the primary
+  entry and from secondary entries.
+- `mermaid` (optional peer) is now needed only by the `markdown`, `chat` and
+  `document-viewer` entries and by the primary entry. An app that imports
+  neither builds without `mermaid` and without `externalDependencies`.
+- `@lifecorner/angular-ui-kit/internal/*` is the kit's own and has no semver
+  guarantee.
+
+### Migration
+
+- If your app enforces Trusted Types, add **`lc-icon`** to `trusted-types`,
+  for example `trusted-types angular lc-icon`. With two copies of the kit on
+  one page, the second needs `'allow-duplicates'`. `lc-markdown`,
+  `lc-code-block`, `lc-log-viewer`, `lc-rich-text-editor` and
+  `lc-document-viewer` still need `angular#unsafe-bypass`.
+- Optional: import from the secondary entries (`@lifecorner/angular-ui-kit/<folder>`).
+
 ## [3.4.1] - 2026-10-16
 
 Two hyphenation fixes found while rendering the LifeCorner legal pages on a
