@@ -2,6 +2,39 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.6.1] - 2026-10-17
+
+`lc-code-block` works under a Trusted Types CSP (life-os app shell, AS-20). No
+API breaks.
+
+### Fixed
+
+- **`lc-code-block` renders under Trusted Types** (AS-20). Under
+  `require-trusted-types-for 'script'` it showed no code ("This document
+  requires 'TrustedHTML' assignment"). The tokens are now `<span class="token-…">`
+  elements and text nodes from the template: no `innerHTML`, no `DomSanitizer`,
+  no policy to allow. Source text is never parsed (`<img onerror=…>` shows as
+  text), and prerendered HTML contains the spans.
+- **Angular's HTML sanitizer leaves your initial chunk.** With the block on a
+  lazy route, a bare Angular 22 app's initial JS drops from 80.57 to 76.98 kB
+  gzip (-3.59 kB, -9.44 kB raw). The block's lazy chunk is 10.84 kB gzip (3.6.0:
+  10.74 kB).
+- **Copy button: no axe `svg-img-alt`.** Its icons are decorative
+  (`aria-hidden="true"`, no `role`).
+- **Comments meet AA.** `.token-comment` uses the block's muted ink, 7.02:1
+  (was 2.99:1). Python and Java comments are the only pixels that change.
+- **SCSS shows the source** (`&:hover > .x`; 3.6.0 showed `&amp;:hover &gt;`),
+  and an empty line before a bash command keeps its height (was 0 px without
+  line numbers).
+
+### Compatibility
+
+- No API breaks: inputs, selectors, `token-*`/`code-block__*` classes and custom
+  properties are unchanged. Every other language renders 3.6.0's text and token
+  classes. A 2,000-line block renders in one 115 ms task.
+- `lc-log-viewer`, `lc-markdown` and `lc-rich-text-editor` still use
+  `[innerHTML]`; `lc-icon`'s defaults are unchanged.
+
 ## [3.6.0] - 2026-10-17
 
 Three gaps that block life-os feature F1 (the LifeCorner app shell, §7.1 of the

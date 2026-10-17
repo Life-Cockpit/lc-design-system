@@ -16,7 +16,8 @@ metadata:
   - App-shell nav column: at 1024 and 1280 it is 240 wide, with pills x 24, 192×48 and the first one at y 112; at 1920 it is 280 wide with 232 px pills. `lc-sidenav-placeholder` matches every box of `lc-sidenav`, except the section title width (84 vs 90.9 px).
   - The `.btn-inline` underline is 1 px with a 0.15em offset. A 312 px paragraph is 72 px (EN) and 96 px (DE), with or without the line.
 - **Inline link colours (3.5.1).** Light rgb(26,106,121): 6.21:1 on white, 2.86:1 against the text. Dark rgb(163,213,223): 11.78:1, 1.47:1 against the text.
-- **Baselines.** `tmp/story-shots/001/{baseline,r1}` and `tmp/story-shots/002/baseline` (66 stories, 700 ms wait).
+- **lc-code-block 3.6.0 (request 003).** Code text is 12.25 px mono with a 13.475 px line height. The header is 45 px, the copy button 76.8×44 and its icon 20 px. The number box is x 33, w 40; the content starts at x 73. A 2,000-line block (10k spans) renders in 66 ms and re-renders in 59 ms. Token contrast on #0c1722 is ≥ 5.66, **except comment #5c6370 at 2.99**. Golden output: `requests/003-…/golden-3.6.0.json`. 3.6.1: every line rect 13.469 px (empty lines too), comment #93a4ad 7.02:1, Python/Java shots differ from 3.6.0, the other 72 are identical.
+- **Baselines.** `tmp/story-shots/001/{baseline,r1}`; `002/baseline` (66 stories, 700 ms wait); `003/baseline` (14 code-block stories, `--full`, 84 shots, re-run 84/84 identical).
 - **Storybook router.** `routerLinkActive` never matches anything in Storybook, so a router-matched state needs its own story router.
 
 Related: [[feedback-design-pitfalls]]

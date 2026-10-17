@@ -13,6 +13,7 @@ metadata:
 - **CSS specificity.** `a.btn` (0,1,1) beats `.btn-inline`; use `.btn.btn-inline`.
 - **Spec premises.** Measure a requester's size figures before accepting a target. In 002, "136 SVGs ≈ 20 kB" turned out to be 12.0 kB.
 - **Token values.** Read the value before writing "token (N px)". `--border-radius-sm` is 10 px, and there is no 4 px radius token.
+- **"Output equal to the old version."** Capture the old output in the browser before promising it. The innerHTML-era code block had quirks that came from HTML-parser recovery: SCSS showed `&amp;`, multi-line tokens were coloured on the first line only, and an empty line collapsed to 0 px (003).
 - **Wording.** Check an AC's wording (for example "no emitted .js contains X", "file unchanged") against what the design has to move.
 
 **Why:** each of these cost a round trip or would have broken the build.

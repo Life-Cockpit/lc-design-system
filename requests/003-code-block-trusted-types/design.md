@@ -1,6 +1,8 @@
 # Design 003: lc-code-block under Trusted Types
 
-- **Status:** ready, pending the spec answers Q1 and Q2 (§1). Each answer is designed below, so the build needs no further design round.
+> **Change note (review round 1, 2026-10-17):** the spec answered Q1 (D1 and D2 allowed) and Q2 with (a), AC-15. §9 risks: the AC-15 assertion belongs in a new spec file, because AC-14 keeps `code-block.component.spec.ts` unmodified (the build did that, in `code-block.rendering.spec.ts`).
+
+- **Status:** ready. Q1 and Q2 are settled in spec.md (§1), and the build needed no further design round.
 - **Spec:** [spec.md](spec.md), AC-1 … AC-14. Golden data: [golden-3.6.0.json](golden-3.6.0.json). Baselines: `tmp/story-shots/003/baseline` (84 shots).
 
 ## 1. Approach
@@ -165,4 +167,4 @@ No story is added or changed (AC-14: the manifest lists the stories). The review
 - Template whitespace inside `<pre>` (§3).
 - If the fallback is used: an effect, not `afterRender`, because the server has to write the spans.
 - A golden test written against the old regexes. Freeze the samples first.
-- Q2a forgotten in `theme-contrast` thinking: the colour is component-local, so assert it in `code-block.component.spec.ts`.
+- Q2a forgotten in `theme-contrast` thinking: the colour is component-local, so assert it in a new spec file next to the component (not in `code-block.component.spec.ts`, which AC-14 keeps unmodified).

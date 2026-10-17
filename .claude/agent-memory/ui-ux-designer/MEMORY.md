@@ -1,3 +1,3 @@
-- [Measured reference values](reference_measured-values.md) — sidenav/app-page/icon DOM (3.4.1–3.6), icon data 12.0 kB gzip, 3.6 compat sizes, lazy-nav geometry, link contrast; baselines
+- [Measured reference values](reference_measured-values.md) — sidenav/app-page/icon DOM (3.4.1–3.6), icon data, compat sizes, link contrast, code-block 3.6.0 metrics; baselines
 - [Design pitfalls](feedback_design-pitfalls.md) — entries, esbuild shared chunks, @defer deps, CSP hydration, DOM APIs, .btn-inline specificity, size premises, token values
 - [Review techniques](reference_review-techniques.md) — browser-side math via --measure, Bash-safe syntax, cmp across runs, unstable baseline shots, worktree

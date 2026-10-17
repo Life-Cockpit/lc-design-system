@@ -18,6 +18,8 @@ Traps from request 001 (2026-10-17), each cost a debugging round:
 - **Entry graph (request 002):** ng-packagr finds entry dependencies with `ts.preProcessFile`, which counts `import type` and dynamic `import()`; a type-only import back from a lazily imported entry is a cycle. Comments with `from '@lifecorner/…'` trip `entries.spec.ts` (cycle/self-import regex).
 - **Specs that read SCSS source text** (`sidenav.app-shell.spec.ts`) break when rules move to a partial; inline the partial's mixins in the spec setup instead of touching assertions. `--border-radius-sm` is 10 px in DS 2.0 (designs sometimes say 4 px).
 
+- **`lc-icon` in Jest (request 003):** names outside the inline set (`clipboard-document` → Tabler `clipboard`) are fetched; the fetch cache is module-level and `resetIconCache` is not public. Register a fake glyph in the TestBed (`provideLcIcons([{ name, variant: 'outline', svg }])`) so it renders synchronously.
+- **Text runs inside `<pre>`:** `@else{{{ x }}}}` compiles fine; write control flow with no whitespace. `[attr.class]` renders 10,000 token spans faster than `[class]` (115 vs 123 ms long task). Prerendered HTML gets a `<!---->` per `@for`/`@if` anchor.
 **Why:** these are not visible in the code and each looked like a kit regression at first.
 **How to apply:** check this list before debugging a failing fixture, browser check or story; add new traps here.
 
